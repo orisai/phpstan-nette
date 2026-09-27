@@ -1,0 +1,12 @@
+parameters:
+	customRulesetUsed: true
+	bootstrapFiles:
+		- ../../../vendor/autoload.php
+	stubFiles:
+		- ../../../stubs/forms-control-value-types.stub
+
+services:
+	-
+		class: OriPhpstan\Nette\Forms\Graph\ComponentAffectingNodeVisitor
+		tags:
+			- phpstan.parser.richParserNodeVisitor

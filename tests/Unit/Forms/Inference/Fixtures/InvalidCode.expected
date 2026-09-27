@@ -1,0 +1,20 @@
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:103:PHPDoc tag @var with type Nette\Forms\Controls\TextArea is not subtype of native type Nette\Forms\Controls\TextInput.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:114:Form component 'nope' does not exist.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:125:PHPDoc tag @var with type Nette\Forms\Controls\TextArea is not subtype of native type Nette\Forms\Controls\Checkbox.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:145:Access to an undefined property Tests\OriPhpstan\Nette\Unit\Forms\Inference\Fixtures\Dto::$notOnDto.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:163:Form value 'neitherParentNorChild' does not exist.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:176:Cannot call method format() on int|null.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:184:Form value 'absent' does not exist.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:196:Strict comparison using === between ''|int and 'notnum' will always evaluate to false.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:205:Strict comparison using === between ''|int and null will always evaluate to false.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:223:Form field 'i' (Nette\Forms\Controls\TextInput) accepts scalar|Stringable|null, array{1, 2} given.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:239:Parameter #1 $value of method Tests\OriPhpstan\Nette\Unit\Forms\Inference\Fixtures\InvalidCodeRuleCast::stringOnly() expects string, int|string given.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:24:Form value 'doesNotExist' does not exist.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:258:Strict comparison using === between 'a'|'b'|null and 'zzz' will always evaluate to false.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:267:Strict comparison using === between 'draft'|'live'|null and 'archived' will always evaluate to false.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:276:Strict comparison using === between 'a'|'b'|null and 'zzz' will always evaluate to false.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:40:Form value 'neverAdded' does not exist.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:61:PHPDoc tag @var with type Nette\Forms\Controls\TextArea is not subtype of native type Nette\Forms\Controls\TextInput.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:72:Form component 'doesNotExist' does not exist.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:81:PHPDoc tag @var with type Nette\Forms\Controls\TextArea is not subtype of native type Nette\Forms\Controls\TextInput.
+tests/Unit/Forms/Inference/Fixtures/InvalidCode.php:92:Form value 'gone' does not exist.

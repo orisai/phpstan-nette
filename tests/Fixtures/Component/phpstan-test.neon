@@ -1,0 +1,7 @@
+parameters:
+	customRulesetUsed: true
+	bootstrapFiles:
+		- ../../../vendor/autoload.php
+
+includes:
+	- ../../../extension.neon

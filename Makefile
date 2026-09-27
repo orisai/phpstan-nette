@@ -6,7 +6,6 @@ PHPCS_CONFIG=tools/phpcs.xml
 PHPSTAN_CONFIG=tools/phpstan.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
 PHPUNIT_CONFIG=tools/phpunit.xml
-INFECTION_CONFIG=tools/infection.json
 
 ## Install
 
@@ -44,22 +43,6 @@ coverage-clover: ## Generate code coverage in XML format
 
 coverage-html: ## Generate code coverage in HTML format
 	$(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-html=var/coverage/html $(ARGS)
-
-mutations: ## Check code for mutants
-	make mutations-tests
-	make mutations-infection
-
-mutations-tests:
-	mkdir -p var/coverage
-	$(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-xml=var/coverage/xml --log-junit=var/coverage/junit.xml
-
-mutations-infection:
-	$(PRE_PHP) vendor/bin/infection \
-		--configuration=$(INFECTION_CONFIG) \
-		--threads=$(LOGICAL_CORES) \
-		--coverage=../var/coverage \
-		--skip-initial-tests \
-		$(ARGS)
 
 ## Utilities
 

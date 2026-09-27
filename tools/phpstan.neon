@@ -14,6 +14,12 @@ parameters:
 	excludePaths:
 		- ../tests/Fixtures
 		- ../tests/Doubles
+		- ../tests/Unit/Forms/Support
+		- ../tests/Unit/Forms/Component/Fixtures
+		- ../tests/Unit/Forms/Component/Unit/Support
+		- ../tests/Unit/Forms/Index/Fixtures
+		- ../tests/Unit/Forms/Inference/Fixtures
+		- ../tests/Unit/Forms/Inference/Unit/Support
 
 	checkBenevolentUnionTypes: true
 	checkMissingCallableSignature: true
@@ -25,3 +31,50 @@ parameters:
 	exceptions:
 		check:
 			tooWideThrowType: true
+
+	ignoreErrors:
+		# The analysed-paths universe walk reuses PHPStan's own file finder.
+		-
+			identifier: phpstanApi.method
+			path: ../src/Forms/Index/RegistrationIndex.php
+		-
+			identifier: phpstanApi.method
+			path: ../src/Forms/Cache/FormFactSalt.php
+
+		# Catalogs are read by reflection only, never called.
+		-
+			identifier: shipmonk.deadMethod
+			path: ../src/Forms/Catalog/Stub/FormValueTypeCatalog.php
+		-
+			identifier: shipmonk.deadMethod
+			path: ../src/Forms/Catalog/Stub/FormModifierCatalog.php
+		-
+			identifier: shipmonk.deadMethod
+			path: ../src/Forms/Catalog/Stub/FormRuleTypeCatalog.php
+		-
+			identifier: shipmonk.deadMethod
+			path: ../src/Forms/Catalog/Stub/FormReplicatorCatalog.php
+
+		# The freshness gate calls every accessor in ParentAccessors off a data provider, which is
+		# the point: a table entry is only pinned if the installed method behind it is really run.
+		-
+			identifier: method.dynamicName
+			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
+
+		# Tests building PHPStan internals by hand.
+		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Unit/Forms/Inference/InferenceDumpParityTest.php
+		-
+			identifier: phpstanApi.classConstant
+			path: ../tests/Unit/Forms/Inference/InferenceReplicatorOffsetAccessRuleTest.php
+		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Toolkit/TestFileFinder.php
+		-
+			identifier: phpstanApi.classConstant
+			path: ../tests/Toolkit/TestFileFinder.php
+		# DirectoryWalker is passed only where the installed PHPStan has it.
+		-
+			identifier: arguments.count
+			path: ../tests/Toolkit/TestFileFinder.php

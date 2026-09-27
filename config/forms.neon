@@ -7,3 +7,393 @@ parameters:
 			catalogs: []
 			internals:
 				indexShadowCompare: false
+	stubFiles:
+		- ../stubs/forms-control-value-types.stub
+	scanFiles:
+		- ../src/Forms/Testing/dumpComponent.php
+		- ../src/Forms/Testing/assertComponent.php
+		- ../src/Forms/Testing/dumpFormValues.php
+		- ../src/Forms/Testing/assertFormValues.php
+
+services:
+	formShapeDependencyRecorder:
+		class: OriPhpstan\Nette\Forms\Cache\DependencyRecorder
+
+	formShapeDependencyCollector:
+		class: OriPhpstan\Nette\Forms\Cache\ShapeDependencyCollector
+		arguments:
+			reflectionProvider: @reflectionProvider
+			recorder: @formShapeDependencyRecorder
+
+	formShapeRecordingParser:
+		class: OriPhpstan\Nette\Forms\Cache\RecordingParser
+		arguments:
+			delegate: @defaultAnalysisParser
+			recorder: @formShapeDependencyRecorder
+
+	formShapeRecordingRichParser:
+		class: OriPhpstan\Nette\Forms\Cache\RecordingParser
+		arguments:
+			delegate: @currentPhpVersionRichParser
+			recorder: @formShapeDependencyRecorder
+
+	formShapeCache:
+		class: OriPhpstan\Nette\Forms\Cache\FormShapeCache
+		arguments:
+			baseDirectory: %tmpDir%/form-shape-cache
+			recorder: @formShapeDependencyRecorder
+			shapeDependencies: @formShapeDependencyCollector
+			defaultContainerClass: %orisaiNette.forms.defaultContainerClass%
+
+	formFactSalt:
+		class: OriPhpstan\Nette\Forms\Cache\FormFactSalt
+		arguments:
+			# The config's declared paths, not the CLI-narrowed analysedPaths (same reasoning as
+			# registrationIndex below): the salt must be a property of the project, so a single-file
+			# or IDE run cannot flip it and discard the whole result cache.
+			analysedPaths: %paths%
+			fileFinder: @fileFinderAnalyse
+			# Persists the whole-universe token scan content-addressed by the universe manifest, so a
+			# run in which nothing changed pays only the sha1_file sweep.
+			cache: @formShapeCache
+
+	-
+		class: OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta
+		arguments:
+			enabled: %orisaiNette.forms.enabled%
+			salt: @formFactSalt
+		tags:
+			- phpstan.resultCacheMetaExtension
+
+	formControlValueTypeReader:
+		class: OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader
+		arguments:
+			reflectionProvider: @reflectionProvider
+			catalogs: %orisaiNette.forms.catalogs%
+
+	-
+		class: OriPhpstan\Nette\Forms\Graph\ComponentAffectingNodeVisitor
+		tags:
+			- phpstan.parser.richParserNodeVisitor
+
+	-
+		class: OriPhpstan\Nette\Forms\Graph\ExistenceCheckMarkingNodeVisitor
+		tags:
+			- phpstan.parser.richParserNodeVisitor
+
+	-
+		class: OriPhpstan\Nette\Forms\Inference\FormAccessExpressionTypeResolver
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			# The config's declared paths, shared by every consumer of the one FormShapeCache: the
+			# analysed/vendor line the registrar detector draws must be the same in all of them (see
+			# AnalyzerStackFactory), and a property of the project rather than of the invocation.
+			analysedPaths: %paths%
+			parser: @formShapeRecordingParser
+			# The rich parser, for the analyzer's callee following only: a helper the builder hands the
+			# form to may live outside PHPStan's CLI-narrowed analysedFiles, where the default analysis
+			# parser strips method bodies (see fileFactIndex below). Every FormShapeAnalyzer must hold
+			# the same parser — they share one FormShapeCache.
+			richParser: @formShapeRecordingRichParser
+			cache: @formShapeCache
+			catalogReader: @formControlValueTypeReader
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormWriteAccessRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormShapeUnknownAccessRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+		tags:
+			- phpstan.rules.rule
+
+	# The other half of the same question: where the absence rule stays silent because an isset()
+	# marked the access as an existence CHECK, the check's own answer may still be constant.
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormExistenceCheckConstantRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+		tags:
+			- phpstan.rules.rule
+
+	componentShapeDescriber:
+		class: OriPhpstan\Nette\Forms\Rule\ComponentShapeDescriber
+		arguments:
+			model: @containerModel
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\ComponentShapeDumpRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			describer: @componentShapeDescriber
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\ComponentShapeAssertRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			describer: @componentShapeDescriber
+		tags:
+			- phpstan.rules.rule
+
+	formValuesDescriber:
+		class: OriPhpstan\Nette\Forms\Rule\FormValuesDescriber
+		arguments:
+			model: @containerModel
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormValuesDumpRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			describer: @formValuesDescriber
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormValuesAssertRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			describer: @formValuesDescriber
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\CreateComponentReturnsUiFormRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\ComponentNameRegistrationRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormAddsAnnotationRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			reader: @formControlValueTypeReader
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\UnannotatedRegistrarRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.reportUnannotatedRegistrars%
+			# The config's declared paths, not the CLI-narrowed %analysedPaths%: which code is OURS is a
+			# property of the project, so a single-file/IDE run must draw the line exactly where a whole
+			# project run does (mirrors containerModel / indexShapeResolver above).
+			analysedPaths: %paths%
+			reader: @formControlValueTypeReader
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Rule\FormValuesMappedTypeRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\ComponentAccessTypeResolver
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			# The config's declared paths, shared by every consumer of the one FormShapeCache: the
+			# analysed/vendor line the registrar detector draws must be the same in all of them (see
+			# AnalyzerStackFactory), and a property of the project rather than of the invocation.
+			analysedPaths: %paths%
+			parser: @formShapeRecordingParser
+			# See formAccessExpressionTypeResolver above: the analyzer's callee following needs bodies.
+			richParser: @formShapeRecordingRichParser
+			cache: @formShapeCache
+			catalogReader: @formControlValueTypeReader
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension
+
+	containerModel:
+		class: OriPhpstan\Nette\Forms\Component\ContainerModel
+		arguments:
+			enabled: %orisaiNette.forms.enabled%
+			parser: @formShapeRecordingParser
+			richParser: @formShapeRecordingRichParser
+			# The config's declared paths, not the CLI-narrowed analysedPaths (mirrors registrationIndex
+			# / indexShapeResolver above): the vendor-method gates below distinguish project files from
+			# genuine vendor code, and a single-file/IDE run must draw that line identically to a full run.
+			analysedPaths: %paths%
+			cache: @formShapeCache
+			indexShapeResolver: @indexShapeResolver
+			catalogReader: @formControlValueTypeReader
+
+	componentModelAccessExtension:
+		class: OriPhpstan\Nette\Forms\Component\ComponentModelAccessDynamicReturnTypeExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.broker.dynamicMethodReturnTypeExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\HandlerParamFormTypeResolver
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\ReplicatorMethodReturnTypeExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			model: @containerModel
+		tags:
+			- phpstan.broker.dynamicMethodReturnTypeExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\FormGetValuesDynamicReturnTypeExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.broker.dynamicMethodReturnTypeExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\WizardGetValuesDynamicReturnTypeExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.broker.dynamicMethodReturnTypeExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\FormControlGetValueTypeResolver
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\FormValidatedTypeSpecifyingExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.typeSpecifier.methodTypeSpecifyingExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\FormValuesParamTypeResolver
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
+			model: @containerModel
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension
+
+	-
+		class: OriPhpstan\Nette\Forms\Component\SmartObjectEventPropertyReflectionExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+		tags:
+			- phpstan.broker.propertiesClassReflectionExtension
+
+	registrationRecognizer:
+		class: OriPhpstan\Nette\Forms\Index\RegistrationRecognizer
+
+	fileFactIndex:
+		class: OriPhpstan\Nette\Forms\Index\FileFactIndex
+		arguments:
+			cache: @formShapeCache
+			# The rich parser, not the default analysis parser: PathRoutingParser strips method bodies
+			# for any file outside PHPStan's own CLI-narrowed analysedFiles set, which is every
+			# non-CLI-listed file the config-paths universe now folds in (see registrationIndex above).
+			parser: @formShapeRecordingRichParser
+			recognizer: @registrationRecognizer
+			# phpVersion (PHPStan\Php\PhpVersion) is left to autowiring — it has no stable service name,
+			# only a type-matched autowired definition. It salts the per-file fact entries AND, via
+			# configIdentity() consumed by RegistrationIndex::manifest, the fold-blob key.
+
+	registrationIndex:
+		class: OriPhpstan\Nette\Forms\Index\RegistrationIndex
+		arguments:
+			# The config's declared paths, not the CLI-narrowed analysedPaths — a single-file/IDE run must
+			# still fold the whole config universe (see RegistrationIndex's class docblock).
+			analysedPaths: %paths%
+			fileFinder: @fileFinderAnalyse
+			facts: @fileFactIndex
+			# Persists the built reverse maps content-addressed by the universe manifest, so the
+			# whole-universe fold runs once per manifest per run instead of once per demanding worker.
+			cache: @formShapeCache
+		setup:
+			# Push this index into the recorder as the fingerprint validator from THIS service's setup,
+			# not the recorder's: the recorder is a construction dependency of formShapeCache (hence of
+			# this index), so a setup edge from the recorder back to the index would close a DI cycle.
+			# Wiring it here keeps the recorder a leaf. Lets DependencyRecorder::stillValid refold the
+			# universe to validate an embedding entry's recorded contributor fingerprints.
+			- @formShapeDependencyRecorder::setFingerprintValidator(@self)
+
+	indexShapeResolver:
+		class: OriPhpstan\Nette\Forms\Index\IndexShapeResolver
+		arguments:
+			index: @registrationIndex
+			cache: @formShapeCache
+			# The rich parser: the registration site the index resolves may live outside PHPStan's
+			# CLI-narrowed analysedFiles set (see fileFactIndex above), and the default analysis parser
+			# strips method bodies for those files.
+			parser: @formShapeRecordingRichParser
+			reflectionProvider: @reflectionProvider
+			catalogReader: @formControlValueTypeReader
+			# The pass-through containment gate reads config paths (%paths%), the same universe source the
+			# fold uses — not CLI-narrowed %analysedPaths%. A single-file/IDE run resolves a pass-through
+			# chain whose callee lives anywhere in the project, matching handler-kind resolution (which has
+			# no containment gate) for invocation-style-independent precision. Widening only: an edge that
+			# now resolves merges a shape in, never narrows one.
+			analysedPaths: %paths%
+
+	-
+		class: OriPhpstan\Nette\Forms\Index\ShadowCandidateCollector
+		arguments:
+			enabled: %orisaiNette.forms.internals.indexShadowCompare%
+		tags:
+			- phpstan.collector
+
+	-
+		class: OriPhpstan\Nette\Forms\Index\ShadowDivergenceRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.internals.indexShadowCompare%
+			resolver: @indexShapeResolver
+		tags:
+			- phpstan.rules.rule

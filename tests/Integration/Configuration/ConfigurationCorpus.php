@@ -3,11 +3,45 @@
 namespace Tests\OriPhpstan\Nette\Integration\Configuration;
 
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
+use function sprintf;
+use function strlen;
+use function strpos;
+use function substr;
 
 final class ConfigurationCorpus
 {
 
 	public const PATHS = ['src'];
+
+	// phpstan-nette's own component and getValues() typing would otherwise pre-empt the extension's
+	public const PHPSTAN_NETTE_SWITCHES = [
+		'netteComponentModelDynamicReturnType' => false,
+		'netteFormContainerValuesDynamicReturnType' => false,
+	];
+
+	/**
+	 * @param list<array{file: string, line: int, message: string, identifier: string|null}> $messages
+	 * @return list<string>
+	 */
+	public static function findings(ScratchProject $project, array $messages, string $identifierPrefix): array
+	{
+		$findings = [];
+		foreach ($messages as $message) {
+			$identifier = $message['identifier'] ?? '';
+			if (strpos($identifier, $identifierPrefix) !== 0) {
+				continue;
+			}
+
+			$findings[] = sprintf(
+				'%s:%d %s',
+				(string) substr($message['file'], strlen($project->path(''))),
+				$message['line'],
+				$identifier,
+			);
+		}
+
+		return $findings;
+	}
 
 	public static function write(ScratchProject $project): void
 	{
@@ -26,6 +60,12 @@ final class HomePresenter extends Presenter
 		return new ProfileControl();
 	}
 
+	public function renderDefault(): void
+	{
+		$detached = new ProfileControl();
+		$detached->getPresenter();
+	}
+
 }
 
 PHP);
@@ -36,6 +76,7 @@ namespace Corpus;
 
 use Nette\Application\UI\Control;
 use Nette\Application\UI\Form;
+use Nette\ComponentModel\IComponent;
 
 final class ProfileControl extends Control
 {
@@ -52,6 +93,11 @@ final class ProfileControl extends Control
 		$form->addText('name', 'Name');
 
 		return $form;
+	}
+
+	public function nope(): IComponent
+	{
+		return $this['form']['nope'];
 	}
 
 }

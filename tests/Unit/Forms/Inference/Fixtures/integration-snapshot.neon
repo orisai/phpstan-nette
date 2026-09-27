@@ -1,0 +1,13 @@
+parameters:
+	customRulesetUsed: true
+	netteFormContainerValuesDynamicReturnType: false
+	bootstrapFiles:
+		- ../../../../../vendor/autoload.php
+	scanFiles:
+		- ../../../../Doubles/Forms/functions.php
+	orisaiNette:
+		forms:
+			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
+
+includes:
+	- ../../../../../extension.neon

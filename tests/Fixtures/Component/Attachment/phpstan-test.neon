@@ -1,0 +1,8 @@
+parameters:
+	customRulesetUsed: true
+	bootstrapFiles:
+		- ../../../../vendor/autoload.php
+
+includes:
+	- ../../../../vendor/phpstan/phpstan-nette/extension.neon
+	- ../../../../extension.neon

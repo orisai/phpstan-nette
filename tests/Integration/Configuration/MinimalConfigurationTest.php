@@ -14,6 +14,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 	{
 		parent::setUp();
 		$this->project = ScratchProject::create('minimal-configuration');
+		ConfigurationCorpus::write($this->project);
 	}
 
 	protected function tearDown(): void
@@ -22,14 +23,44 @@ final class MinimalConfigurationTest extends BaseTestCase
 		parent::tearDown();
 	}
 
-	public function testQuickStart(): void
+	public function testQuickStartIsAccepted(): void
 	{
-		ConfigurationCorpus::write($this->project);
+		$result = $this->project->analyse($this->quickStartParameters(), ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+	}
 
+	public function testFormsAndComponent(): void
+	{
 		$result = $this->project->analyse($this->quickStartParameters(), ConfigurationCorpus::PATHS);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
-		self::markTestIncomplete('areas arrive in Tasks 7-10');
+		self::assertSame(
+			[
+				'src/HomePresenter.php:18 orisaiNette.component.unattachedParentAccess',
+				'src/ProfileControl.php:28 orisaiNette.forms.noSuchComponent',
+			],
+			[
+				...ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.component.'),
+				...ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.forms.'),
+			],
+		);
+	}
+
+	public function testLatte(): void
+	{
+		self::markTestIncomplete('Latte arrives in Task 9: template findings appear');
+	}
+
+	public function testDic(): void
+	{
+		self::markTestIncomplete('Dic arrives in Task 8: container typing appears');
+	}
+
+	public function testLatteForms(): void
+	{
+		self::markTestIncomplete(
+			'The Latte-Forms bridge arrives in Task 10: {input nope} is reported without a bridge flag',
+		);
 	}
 
 	/**
@@ -37,7 +68,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 	 */
 	private function quickStartParameters(): array
 	{
-		return [
+		return ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 			'fileExtensions' => ['php', 'latte'],
 			'orisaiNette' => [
 				'latte' => ['enabled' => true],

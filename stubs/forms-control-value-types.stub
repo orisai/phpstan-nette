@@ -1,0 +1,83 @@
+<?php
+
+namespace Nette\Forms\Controls;
+
+/**
+ * @form-read-type string
+ */
+class TextInput
+{
+}
+
+/**
+ * @form-read-type string
+ */
+class TextArea
+{
+}
+
+/**
+ * @form-read-type bool
+ */
+class Checkbox
+{
+}
+
+/**
+ * @form-read-type string|null
+ */
+class HiddenField
+{
+}
+
+/**
+ * @form-read-type int|string|null
+ * @form-choice single int|string
+ * @property array<int|string, mixed> $items
+ * @property-read mixed $selectedItem
+ */
+abstract class ChoiceControl
+{
+}
+
+/**
+ * @form-read-type list<int|string>
+ * @form-choice multi int|string
+ * @property array<int|string, mixed> $items
+ * @property-read array<int|string, mixed> $selectedItems
+ */
+abstract class MultiChoiceControl
+{
+}
+
+/**
+ * @form-read-type Nette\Http\FileUpload|null
+ */
+class UploadControl
+{
+}
+
+/**
+ * @form-read-type DateTimeImmutable|null
+ */
+class DateTimeControl
+{
+}
+
+/**
+ * @form-read-type string
+ */
+class ColorPicker
+{
+}
+
+/**
+ * A plain button stays in getValues(): the button that submitted the form holds its caption
+ * (rendered as the value attribute, a string), every other button is null. SubmitButton /
+ * ImageButton set omitted on themselves and never reach this catalog entry.
+ *
+ * @form-read-type string|null
+ */
+class Button
+{
+}

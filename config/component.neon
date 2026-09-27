@@ -2,3 +2,53 @@ parameters:
 	orisaiNette:
 		component:
 			enabled: true
+
+services:
+	# Tags expressions that are compared to null with === or !==, so rules can fold
+	# `$container->getComponent('x', false) !== null` into `isset($container['x'])`.
+	-
+		class: OriPhpstan\Nette\Component\NullComparisonParentVisitor
+		tags:
+			- phpstan.parser.richParserNodeVisitor
+
+	# Tags the expression of a Stmt\Expression (a statement whose value is unused),
+	# so rules can gate value-returning rewrites (e.g. addComponent() -> assignment)
+	# on the call site not using the return value.
+	-
+		class: OriPhpstan\Nette\Component\StatementExpressionVisitor
+		tags:
+			- phpstan.parser.richParserNodeVisitor
+
+	# Tags a method call whose receiver is provably detached, so UnattachedParentAccessRule
+	# can decide the accessor half with the receiver's type in hand. Attachment is a per-body fact a
+	# rule bound to the call node cannot walk out for itself.
+	-
+		class: OriPhpstan\Nette\Component\DetachedReceiverVisitor
+		tags:
+			- phpstan.parser.richParserNodeVisitor
+
+	# `?Presenter` and `?Form` are lies on the default path: with $throw left true the lookup
+	# behind each throws instead of answering null, so a no-argument call never returns null.
+	-
+		class: OriPhpstan\Nette\Component\Attachment\ParentAccessorReturnTypeExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.component.enabled%
+		tags:
+			- phpstan.broker.dynamicMethodReturnTypeExtension
+
+	-
+		class: OriPhpstan\Nette\Component\UnattachedParentAccessRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.component.enabled%
+		tags:
+			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Component\MagicMethodReturnTypeRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.component.enabled%
+		tags:
+			- phpstan.rules.rule

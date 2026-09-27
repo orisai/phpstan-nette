@@ -1,0 +1,25 @@
+parameters:
+	customRulesetUsed: true
+	level: 8
+	phpVersion: 70400
+	bootstrapFiles:
+		- ../../../../vendor/autoload.php
+	# The scratch corpus builds real Nette forms, which the app's own phpat rules forbid in favour of
+	# its App\Base\Form subclasses, and declares consumer methods nothing calls. Both are properties
+	# of the corpus, not of invalidation - and the App-named phpat messages would couple this
+	# library matrix to the analysed application. Unmatched entries are expected: several scenarios
+	# delete the file that produced them.
+	reportUnmatchedIgnoredErrors: false
+	ignoreErrors:
+		- identifier: shipmonk.deadMethod
+		# The docblock-typed variant of the shared helper exists so one row can move a PHPDoc and
+		# nothing else; the native-typehint rule has no bearing on invalidation.
+		- identifier: shipmonk.missingNativeReturnTypehint
+		# The scratch corpus's shared helper is a generic adder by construction - that is what makes it
+		# the body-only-edit row - so it carries the missing-tag hint in every scenario. Annotating it
+		# would change what the rows measure (the tag resolves the name the body edit is supposed to
+		# move); repeating the hint in ~25 full error-set expectations measures nothing.
+		- identifier: orisaiNette.forms.unannotatedRegistrar
+
+includes:
+	- ../../../../extension.neon

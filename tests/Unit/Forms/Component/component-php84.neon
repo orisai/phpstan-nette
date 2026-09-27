@@ -1,0 +1,10 @@
+includes:
+	- component-real.neon
+
+parameters:
+	phpVersion: 80400
+	# Override the php74 sibling's fold universe (component-real.neon) with the php8 fixture trees this
+	# harness analyses, so a handler-param reader's RegistrationIndex fold sees their registrations.
+	paths!:
+		- Fixtures/DumpTypePhp84
+		- ../../../Doubles/Forms/MatrixAssert

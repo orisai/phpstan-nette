@@ -1,0 +1,17 @@
+<?php declare(strict_types = 1);
+
+namespace Tests\OriPhpstan\Nette\Unit\Forms\Index\Fixtures;
+
+use Nette\Application\UI\Form;
+
+final class AliasedFormFactory
+{
+
+	private Form $prebuilt;
+
+	public function create(): Form
+	{
+		return $this->prebuilt;
+	}
+
+}

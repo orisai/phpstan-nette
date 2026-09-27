@@ -1,0 +1,17 @@
+includes:
+	- ../Component/component-real.neon
+
+parameters:
+	orisaiNette:
+		forms:
+			internals:
+				indexShadowCompare: true
+	# Resets the inherited Makefile paths (../app etc.) to the fixture directories this shadow corpus
+	# actually needs, so the RegistrationIndex universe never pulls in the real App\ codebase or the
+	# PHP8-only fixture trees this PHP7.4-targeted config cannot parse.
+	paths!:
+		- ../Component/Fixtures/DumpType
+		- Fixtures/CacheProbe
+		- Fixtures/MergeOrder
+		- Fixtures/OffsetOrder
+		- Fixtures/UniverseFold

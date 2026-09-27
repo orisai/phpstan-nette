@@ -1,0 +1,18 @@
+parameters:
+	customRulesetUsed: true
+	# Same setting as the real config and as the sibling integration-snapshot.neon: phpstan-nette's
+	# own getValues() extension ALWAYS returns non-null, and PHPStan unions the results of every
+	# matching dynamic method return extension. Left on, it widens our projected shape back to a
+	# bare ArrayHash for any receiver whose type the expression-level resolvers do not short-circuit
+	# first - a form held in a property being exactly that case, which made a rule fixture over one
+	# silently vacuous here while the same code reported correctly in production.
+	netteFormContainerValuesDynamicReturnType: false
+	bootstrapFiles:
+		- ../../../../vendor/autoload.php
+	orisaiNette:
+		forms:
+			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
+
+includes:
+	- ../../../../vendor/phpstan/phpstan-nette/extension.neon
+	- ../../../../extension.neon

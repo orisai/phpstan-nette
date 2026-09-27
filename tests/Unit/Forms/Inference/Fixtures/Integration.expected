@@ -1,0 +1,10 @@
+tests/Unit/Forms/Inference/Fixtures/Integration.php:234:Cannot access offset 'year' on Nette\ComponentModel\IComponent.
+tests/Unit/Forms/Inference/Fixtures/Integration.php:234:Cannot access offset 'year' on Nette\ComponentModel\IComponent.
+tests/Unit/Forms/Inference/Fixtures/Integration.php:240:Cannot access offset 'year' on Nette\ComponentModel\IComponent.
+tests/Unit/Forms/Inference/Fixtures/Integration.php:265:Cannot access offset 'year' on Nette\ComponentModel\IComponent.
+tests/Unit/Forms/Inference/Fixtures/Integration.php:265:Cannot access offset 'year' on Nette\ComponentModel\IComponent.
+tests/Unit/Forms/Inference/Fixtures/Integration.php:271:Cannot access offset 'year' on Nette\ComponentModel\IComponent.
+tests/Unit/Forms/Inference/Fixtures/Integration.php:564:Expected type string, actual: mixed
+tests/Unit/Forms/Inference/Fixtures/Integration.php:565:Expected type int|string|null, actual: mixed
+tests/Unit/Forms/Inference/Fixtures/Integration.php:566:Expected type array<int, Nette\Utils\ArrayHash{id: string|null, operator: int|string|null, opposite: bool, type: int|string|null, business_type: int|string|null, indefinite: int|string|null, manage_service: int|string|null, ...<mixed>}>, actual: mixed
+tests/Unit/Forms/Inference/Fixtures/Integration.php:575:Dumped type: Tests\OriPhpstan\Nette\Doubles\Forms\Form\ApplicationForm

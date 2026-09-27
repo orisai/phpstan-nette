@@ -11,6 +11,15 @@
 	<!-- Import coding-standard -->
 	<rule ref="./../vendor/orisai/coding-standard/src/ruleset-7.4.xml"/>
 
+	<!-- Analyser input fixtures crafted to exercise specific shapes; coding-standard checks don't apply. -->
+	<exclude-pattern>tests/Doubles/*</exclude-pattern>
+	<exclude-pattern>tests/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Forms/Component/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Forms/Index/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Forms/Inference/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Forms/Support/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Forms/Component/Unit/Support/*</exclude-pattern>
+
 	<!-- Configure PSR-4 rule -->
 	<rule ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName">
 		<properties>
@@ -19,6 +28,25 @@
 				<element key="tests" value="Tests\OriPhpstan\Nette"/>
 			</property>
 		</properties>
+	</rule>
+
+	<!-- Moved verbatim from spring, whose coding standard exempts these for its whole tests/ tree. -->
+	<rule ref="SlevomatCodingStandard.Files.LineLength.LineTooLong">
+		<exclude-pattern>src/Forms/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Forms/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.Functions.DisallowEmptyFunction.EmptyFunction">
+		<exclude-pattern>src/Forms/Testing/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.Variables.UnusedVariable.UnusedVariable">
+		<exclude-pattern>src/Forms/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator">
+		<exclude-pattern>src/Forms/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Forms/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.Commenting.InlineDocCommentDeclaration.MissingVariable">
+		<exclude-pattern>src/Forms/*</exclude-pattern>
 	</rule>
 
 </ruleset>

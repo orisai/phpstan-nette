@@ -1,0 +1,12 @@
+includes:
+	- ../Component/component-php84.neon
+
+parameters:
+	orisaiNette:
+		forms:
+			internals:
+				indexShadowCompare: true
+	# Resets the inherited Makefile paths (../app etc.) to the one fixture directory this PHP8.4
+	# shadow corpus needs — see shadow-compare.neon for the PHP7.4 sibling's rationale.
+	paths!:
+		- ../../../Doubles/Forms/MatrixAssert

@@ -1,0 +1,29 @@
+includes:
+	- ../../../../vendor/phpstan/phpstan/conf/bleedingEdge.neon
+	- ../../../../extension.neon
+
+parameters:
+	level: 8
+	phpVersion: 70400
+	bootstrapFiles:
+		- ../../../../vendor/autoload.php
+	scanFiles:
+		- ../../../Doubles/Forms/functions.php
+	# The extension's own replacements for these phpstan-nette return-type extensions project the
+	# precise shapes, which phpstan-nette's would otherwise widen back.
+	netteComponentModelDynamicReturnType: false
+	netteFormContainerValuesDynamicReturnType: false
+	netteServiceLocatorDynamicReturnType: false
+	# This harness analyses the self-enclosed library fixtures, so the fallback container is the
+	# library's sample container.
+	orisaiNette:
+		forms:
+			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
+	excludePaths!:
+		analyse: []
+		analyseAndScan: []
+	# Every reader folds the RegistrationIndex over %paths%; the self-enclosed fixture trees this
+	# harness analyses hold every registration a handler-param reader needs.
+	paths!:
+		- Fixtures/DumpType
+		- ../Inference/Fixtures
