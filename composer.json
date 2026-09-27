@@ -34,7 +34,7 @@
 		"orisai/coding-standard": "^3.0.0",
 		"phpstan/extension-installer": "^1.0.0",
 		"phpstan/phpstan-deprecation-rules": "^2.0.0",
-		"phpstan/phpstan-nette": "^2.0.0",
+		"phpstan/phpstan-nette": "^2.0.8",
 		"phpstan/phpstan-phpunit": "^2.0.0",
 		"phpstan/phpstan-strict-rules": "^2.0.0",
 		"phpunit/phpunit": "^9.5.0",
