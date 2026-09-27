@@ -1,0 +1,67 @@
+--- a/extension.neon
++++ b/extension.neon
+@@ -1,4 +1,7 @@
+ parameters:
++	netteComponentModelDynamicReturnType: true
++	netteFormContainerValuesDynamicReturnType: true
++	netteServiceLocatorDynamicReturnType: true
+ 	additionalConstructors:
+ 		- Nette\Application\UI\Presenter::startup
+ 	exceptions:
+@@ -50,6 +53,23 @@
+ 			- terminate
+ 			- forward
+ 
++parametersSchema:
++	netteComponentModelDynamicReturnType: bool()
++	netteFormContainerValuesDynamicReturnType: bool()
++	netteServiceLocatorDynamicReturnType: bool()
++
++conditionalTags:
++	PHPStan\Type\Nette\ComponentModelArrayAccessDynamicReturnTypeExtension:
++		phpstan.broker.dynamicMethodReturnTypeExtension: %netteComponentModelDynamicReturnType%
++	PHPStan\Type\Nette\ComponentModelDynamicReturnTypeExtension:
++		phpstan.broker.dynamicMethodReturnTypeExtension: %netteComponentModelDynamicReturnType%
++	PHPStan\Type\Nette\FormContainerValuesDynamicReturnTypeExtension:
++		phpstan.broker.dynamicMethodReturnTypeExtension: %netteFormContainerValuesDynamicReturnType%
++	PHPStan\Type\Nette\FormContainerUntrustedValuesDynamicReturnTypeExtension:
++		phpstan.broker.dynamicMethodReturnTypeExtension: %netteFormContainerValuesDynamicReturnType%
++	PHPStan\Type\Nette\ServiceLocatorDynamicReturnTypeExtension:
++		phpstan.broker.dynamicMethodReturnTypeExtension: %netteServiceLocatorDynamicReturnType%
++
+ services:
+ 	-
+ 		class: PHPStan\Stubs\Nette\Application\StubFilesExtensionLoader
+@@ -70,13 +90,9 @@
+ 
+ 	-
+ 		class: PHPStan\Type\Nette\ComponentModelArrayAccessDynamicReturnTypeExtension
+-		tags:
+-			- phpstan.broker.dynamicMethodReturnTypeExtension
+ 
+ 	-
+ 		class: PHPStan\Type\Nette\ComponentModelDynamicReturnTypeExtension
+-		tags:
+-			- phpstan.broker.dynamicMethodReturnTypeExtension
+ 
+ 	-
+ 		class: PHPStan\Type\Nette\ComponentLookupDynamicReturnTypeExtension
+@@ -100,18 +116,12 @@
+ 
+ 	-
+ 		class: PHPStan\Type\Nette\ServiceLocatorDynamicReturnTypeExtension
+-		tags:
+-			- phpstan.broker.dynamicMethodReturnTypeExtension
+ 
+ 	-
+ 		class: PHPStan\Type\Nette\FormContainerUntrustedValuesDynamicReturnTypeExtension
+-		tags:
+-			- phpstan.broker.dynamicMethodReturnTypeExtension
+ 
+ 	-
+ 		class: PHPStan\Type\Nette\FormContainerValuesDynamicReturnTypeExtension
+-		tags:
+-			- phpstan.broker.dynamicMethodReturnTypeExtension
+ 
+ 	-
+ 		class: PHPStan\Rule\Nette\PresenterInjectedPropertiesExtension

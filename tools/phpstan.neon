@@ -1,0 +1,25 @@
+includes:
+	- ../vendor/phpstan/phpstan/conf/bleedingEdge.neon
+	- phpstan.baseline.neon
+
+parameters:
+	phpVersion: 80400
+	level: 8
+	tmpDir: ../var/tools/PHPStan
+	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
+
+	excludePaths:
+		- ../tests/Fixtures
+		- ../tests/Doubles
+
+	checkBenevolentUnionTypes: true
+	checkMissingCallableSignature: true
+	checkInternalClassCaseSensitivity: true
+	checkTooWideReturnTypesInProtectedAndPublicMethods: true
+	reportAnyTypeWideningInVarTag: true
+	reportPossiblyNonexistentConstantArrayOffset: true
+
+	exceptions:
+		check:
+			missingCheckedExceptionInThrows: true
+			tooWideThrowType: true
