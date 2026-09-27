@@ -142,6 +142,11 @@ final class ConfigurationGuard
 
 	private function validateCatalogMethods(): void
 	{
+		if ($this->config['forms']['catalogs'] === []) {
+			return;
+		}
+
+		// Inherited methods count too, so a user catalog extending a built-in one is rejected as a duplicate.
 		$declaredBy = [];
 		foreach ([...self::BUILT_IN_CATALOGS, ...$this->config['forms']['catalogs']] as $catalogName) {
 			if (!$this->reflectionProvider->hasClass($catalogName)) {

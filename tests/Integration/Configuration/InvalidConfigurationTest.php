@@ -146,6 +146,21 @@ final class InvalidConfigurationTest extends BaseTestCase
 		);
 	}
 
+	public function testCatalogExtendingABuiltInIsADuplicate(): void
+	{
+		$this->project->write(
+			'src/ExtendingCatalog.php',
+			"<?php declare(strict_types = 1);\n\n"
+				. "interface ExtendingCatalog extends OriPhpstan\\Nette\\Forms\\Catalog\\Stub\\FormValueTypeCatalog\n{\n\n}\n",
+		);
+
+		$this->assertRejected(
+			['orisaiNette' => ['forms' => ['catalogs' => ['ExtendingCatalog']]]],
+			'orisaiNette.forms.catalogs: method "addText" is declared by both '
+				. 'OriPhpstan\\Nette\\Forms\\Catalog\\Stub\\FormValueTypeCatalog and ExtendingCatalog.',
+		);
+	}
+
 	/**
 	 * @param array<string, mixed> $parameters
 	 */
