@@ -3,7 +3,9 @@ includes:
 	- phpstan.baseline.neon
 
 parameters:
-	phpVersion: 80400
+	phpVersion:
+		min: 70400
+		max: 80400
 	level: 8
 	tmpDir: ../var/tools/PHPStan
 	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
@@ -21,5 +23,4 @@ parameters:
 
 	exceptions:
 		check:
-			missingCheckedExceptionInThrows: true
 			tooWideThrowType: true
