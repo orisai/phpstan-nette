@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Index;
 
+use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
@@ -25,9 +26,9 @@ final class ShadowCandidateCollector implements Collector
 
 	private bool $enabled;
 
-	public function __construct(bool $enabled)
+	public function __construct(ConfigurationGuard $guard, bool $enabled)
 	{
-		$this->enabled = $enabled;
+		$this->enabled = $guard->isFormsEnabled() && $enabled;
 	}
 
 	public function getNodeType(): string

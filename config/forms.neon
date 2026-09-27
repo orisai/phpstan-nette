@@ -7,6 +7,7 @@ parameters:
 			catalogs: []
 			internals:
 				indexShadowCompare: false
+	# Loaded even with orisaiNette.forms.enabled off: stubFiles cannot be conditional, and it only adds @form-* tags.
 	stubFiles:
 		- ../stubs/forms-control-value-types.stub
 	scanFiles:
@@ -37,6 +38,12 @@ services:
 			delegate: @currentPhpVersionRichParser
 			recorder: @formShapeDependencyRecorder
 
+	formCatalogIdentity:
+		class: OriPhpstan\Nette\Forms\Cache\CatalogIdentity
+		arguments:
+			catalogs: %orisaiNette.forms.catalogs%
+		autowired: false
+
 	formShapeCache:
 		class: OriPhpstan\Nette\Forms\Cache\FormShapeCache
 		arguments:
@@ -44,6 +51,7 @@ services:
 			recorder: @formShapeDependencyRecorder
 			shapeDependencies: @formShapeDependencyCollector
 			defaultContainerClass: %orisaiNette.forms.defaultContainerClass%
+			catalogIdentity: @formCatalogIdentity
 
 	formFactSalt:
 		class: OriPhpstan\Nette\Forms\Cache\FormFactSalt
@@ -62,6 +70,7 @@ services:
 		arguments:
 			enabled: %orisaiNette.forms.enabled%
 			salt: @formFactSalt
+			catalogIdentity: @formCatalogIdentity
 		tags:
 			- phpstan.resultCacheMetaExtension
 
@@ -385,6 +394,7 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Index\ShadowCandidateCollector
 		arguments:
+			guard: @orisaiNette.configurationGuard
 			enabled: %orisaiNette.forms.internals.indexShadowCompare%
 		tags:
 			- phpstan.collector

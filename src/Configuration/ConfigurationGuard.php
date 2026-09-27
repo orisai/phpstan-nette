@@ -2,12 +2,17 @@
 
 namespace OriPhpstan\Nette\Configuration;
 
+use OriPhpstan\Nette\Forms\Catalog\Stub\FormModifierCatalog;
+use OriPhpstan\Nette\Forms\Catalog\Stub\FormReplicatorCatalog;
+use OriPhpstan\Nette\Forms\Catalog\Stub\FormRuleTypeCatalog;
+use OriPhpstan\Nette\Forms\Catalog\Stub\FormValueTypeCatalog;
 use PHPStan\Reflection\ReflectionProvider;
 use function in_array;
 use function is_array;
 use function is_file;
 use function is_readable;
 use function sprintf;
+use function strtolower;
 
 /**
  * @phpstan-type OrisaiNetteConfig array{
@@ -42,6 +47,13 @@ use function sprintf;
  */
 final class ConfigurationGuard
 {
+
+	private const BUILT_IN_CATALOGS = [
+		FormValueTypeCatalog::class,
+		FormModifierCatalog::class,
+		FormRuleTypeCatalog::class,
+		FormReplicatorCatalog::class,
+	];
 
 	private const FORMULAS = [
 		'vendor-two-candidate',
@@ -112,6 +124,8 @@ final class ConfigurationGuard
 			}
 		}
 
+		$this->validateCatalogMethods();
+
 		foreach ($latte['discovery']['formulas'] as $class => $formula) {
 			$name = is_array($formula) ? ($formula['formula'] ?? null) : $formula;
 			if (!in_array($name, self::FORMULAS, true)) {
@@ -124,6 +138,31 @@ final class ConfigurationGuard
 		}
 
 		$this->validated = true;
+	}
+
+	private function validateCatalogMethods(): void
+	{
+		$declaredBy = [];
+		foreach ([...self::BUILT_IN_CATALOGS, ...$this->config['forms']['catalogs']] as $catalogName) {
+			if (!$this->reflectionProvider->hasClass($catalogName)) {
+				continue;
+			}
+
+			$catalog = $this->reflectionProvider->getClass($catalogName);
+			foreach ($catalog->getNativeReflection()->getMethods() as $method) {
+				$name = strtolower($method->getName());
+				if (isset($declaredBy[$name]) && $declaredBy[$name] !== $catalog->getName()) {
+					throw new InvalidConfiguration(sprintf(
+						'orisaiNette.forms.catalogs: method "%s" is declared by both %s and %s.',
+						$method->getName(),
+						$declaredBy[$name],
+						$catalog->getName(),
+					));
+				}
+
+				$declaredBy[$name] = $catalog->getName();
+			}
+		}
 	}
 
 	public function isFormsEnabled(): bool

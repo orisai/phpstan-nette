@@ -34,6 +34,9 @@ final class SmartObjectEventPropertyReflectionExtension implements PropertiesCla
 	public function hasProperty(ClassReflection $classReflection, string $propertyName): bool
 	{
 		$this->guard->validate();
+		if (!$this->guard->isFormsEnabled()) {
+			return false;
+		}
 
 		if (!$this->isEventPropertyName($propertyName)) {
 			return false;

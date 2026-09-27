@@ -131,6 +131,21 @@ final class InvalidConfigurationTest extends BaseTestCase
 		);
 	}
 
+	public function testDuplicateCatalogMethod(): void
+	{
+		$this->project->write(
+			'src/DuplicateCatalog.php',
+			"<?php declare(strict_types = 1);\n\ninterface DuplicateCatalog\n{\n\n"
+				. "\t/** @form-read-type int */\n\tpublic function ADDTEXT(): void;\n\n}\n",
+		);
+
+		$this->assertRejected(
+			['orisaiNette' => ['forms' => ['catalogs' => ['DuplicateCatalog']]]],
+			'orisaiNette.forms.catalogs: method "ADDTEXT" is declared by both '
+				. 'OriPhpstan\\Nette\\Forms\\Catalog\\Stub\\FormValueTypeCatalog and DuplicateCatalog.',
+		);
+	}
+
 	/**
 	 * @param array<string, mixed> $parameters
 	 */

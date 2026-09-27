@@ -45,7 +45,7 @@ final class ShadowDivergenceRule implements Rule
 	)
 	{
 		$guard->validate();
-		$this->enabled = $enabled;
+		$this->enabled = $guard->isFormsEnabled() && $enabled;
 		$this->resolver = $resolver;
 		$this->renderer = new ComponentShapeRenderer(new ControlAcceptedTypeResolver($typeStringResolver));
 	}

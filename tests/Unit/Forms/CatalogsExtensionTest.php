@@ -2,16 +2,12 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Forms;
 
-use OriPhpstan\Nette\Configuration\InvalidConfiguration;
 use OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader;
-use OriPhpstan\Nette\Forms\Catalog\Stub\FormValueTypeCatalog;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
 use PHPStan\Type\VerbosityLevel;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Catalog\ColorCatalog;
-use Tests\OriPhpstan\Nette\Doubles\Forms\Catalog\DuplicateTextCatalog;
 use function dirname;
-use function sprintf;
 
 final class CatalogsExtensionTest extends PHPStanTestCase
 {
@@ -48,18 +44,6 @@ final class CatalogsExtensionTest extends PHPStanTestCase
 		$type = $this->reader([ColorCatalog::class])->readTypeForAddMethod('addText');
 		self::assertNotNull($type);
 		self::assertSame('string', $type->describe(VerbosityLevel::precise()));
-	}
-
-	public function testDuplicateMethodAcrossCatalogsIsRejected(): void
-	{
-		$this->expectException(InvalidConfiguration::class);
-		$this->expectExceptionMessage(sprintf(
-			'orisaiNette.forms.catalogs: method "addText" is declared by both %s and %s.',
-			FormValueTypeCatalog::class,
-			DuplicateTextCatalog::class,
-		));
-
-		$this->reader([DuplicateTextCatalog::class])->readTypeForAddMethod('addRgbColor');
 	}
 
 }

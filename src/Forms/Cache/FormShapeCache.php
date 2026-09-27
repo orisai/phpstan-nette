@@ -34,7 +34,13 @@ final class FormShapeCache
 	/** @var array<string, true> */
 	private static array $prunedBaseDirectories = [];
 
-	private string $directory;
+	private string $baseDirectory;
+
+	private string $versionedDirectory;
+
+	private ?string $directory = null;
+
+	private ?CatalogIdentity $catalogIdentity;
 
 	private DependencyRecorder $recorder;
 
@@ -57,7 +63,8 @@ final class FormShapeCache
 		?DependencyRecorder $recorder = null,
 		?ShapeDependencyCollector $shapeDependencies = null,
 		?string $codeVersion = null,
-		?string $defaultContainerClass = null
+		?string $defaultContainerClass = null,
+		?CatalogIdentity $catalogIdentity = null
 	)
 	{
 		// The wiring supplies recorder + shapeDependencies; codeVersion defaults to the real
@@ -68,19 +75,37 @@ final class FormShapeCache
 		// resolved from the call site. Configured per analysed application via wiring; the Nette
 		// base is only the inert default for direct-construction tests.
 		$this->defaultContainerClass = $defaultContainerClass ?? NetteContainer::class;
-		$this->directory = $baseDirectory . '/v' . ($codeVersion ?? FormsCodeVersion::get(
+		$this->baseDirectory = $baseDirectory;
+		$this->versionedDirectory = $baseDirectory . '/v' . ($codeVersion ?? FormsCodeVersion::get(
 			$this->defaultContainerClass,
 		));
+		$this->catalogIdentity = $catalogIdentity;
 		$this->rememberCache = new BoundedMap(self::REMEMBER_CACHE_LIMIT);
 		$this->interproceduralCache = new BoundedMap(self::INTERPROCEDURAL_CACHE_LIMIT);
+	}
+
+	/**
+	 * User catalogs are read through the reflection provider, which knows the analysed classes only
+	 * once analysis runs - so the directory is resolved on first use, not at container build.
+	 */
+	private function directory(): string
+	{
+		if ($this->directory !== null) {
+			return $this->directory;
+		}
+
+		$catalogs = $this->catalogIdentity !== null ? $this->catalogIdentity->get() : '';
+		$directory = $catalogs === '' ? $this->versionedDirectory : $this->versionedDirectory . '-' . $catalogs;
 
 		// Content-validated, so no clearing — only drop directories from older analyser
 		// versions, once, from the main process (workers share this run's directory).
 		$isWorker = ($_SERVER['argv'][1] ?? null) === 'worker';
-		if (!$isWorker && !isset(self::$prunedBaseDirectories[$baseDirectory])) {
-			self::$prunedBaseDirectories[$baseDirectory] = true;
-			self::pruneOtherVersions($baseDirectory, $this->directory);
+		if (!$isWorker && !isset(self::$prunedBaseDirectories[$this->baseDirectory])) {
+			self::$prunedBaseDirectories[$this->baseDirectory] = true;
+			self::pruneOtherVersions($this->baseDirectory, $directory);
 		}
+
+		return $this->directory = $directory;
 	}
 
 	public function recorder(): DependencyRecorder
@@ -204,7 +229,7 @@ final class FormShapeCache
 
 	private function readFormFactSaltEntry(string $key): ?string
 	{
-		$cached = self::readFile($this->directory . '/' . $key . '.ser');
+		$cached = self::readFile($this->directory() . '/' . $key . '.ser');
 		if ($cached === null) {
 			return null;
 		}
@@ -219,7 +244,7 @@ final class FormShapeCache
 	 */
 	private function readRegistrationIndexEntry(string $key): ?array
 	{
-		$cached = self::readFile($this->directory . '/' . $key . '.ser');
+		$cached = self::readFile($this->directory() . '/' . $key . '.ser');
 		if ($cached === null) {
 			return null;
 		}
@@ -346,7 +371,7 @@ final class FormShapeCache
 		$this->rememberCache->clear();
 		$this->interproceduralCache->clear();
 		$this->interproceduralMisses = [];
-		self::deleteDirectory($this->directory);
+		self::deleteDirectory($this->directory());
 	}
 
 	private function interproceduralKey(string $ipKey): string
@@ -421,7 +446,7 @@ final class FormShapeCache
 	 */
 	private function readEntry(string $key): ?array
 	{
-		$cached = self::readFile($this->directory . '/' . $key . '.ser');
+		$cached = self::readFile($this->directory() . '/' . $key . '.ser');
 		if ($cached === null) {
 			return null;
 		}
@@ -465,12 +490,12 @@ final class FormShapeCache
 	private function acquireLock(string $key)
 	{
 		try {
-			FileSystem::createDir($this->directory);
+			FileSystem::createDir($this->directory());
 		} catch (Throwable $e) {
 			return null;
 		}
 
-		$handle = @fopen($this->directory . '/' . $key . '.lock', 'c');
+		$handle = @fopen($this->directory() . '/' . $key . '.lock', 'c');
 		if ($handle === false) {
 			return null;
 		}
@@ -495,8 +520,8 @@ final class FormShapeCache
 
 	private function writeAtomic(string $key, string $serialized): void
 	{
-		$path = $this->directory . '/' . $key . '.ser';
-		$tmp = $this->directory . '/' . $key . '.' . uniqid('', true) . '.tmp';
+		$path = $this->directory() . '/' . $key . '.ser';
+		$tmp = $this->directory() . '/' . $key . '.' . uniqid('', true) . '.tmp';
 
 		try {
 			FileSystem::write($tmp, $serialized);

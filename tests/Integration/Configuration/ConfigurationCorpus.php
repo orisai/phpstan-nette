@@ -13,7 +13,7 @@ final class ConfigurationCorpus
 
 	public const PATHS = ['src'];
 
-	// phpstan-nette's own component and getValues() typing would otherwise pre-empt the extension's
+	// Required setup: phpstan-nette's own component and getValues() typing otherwise pre-empts the extension's.
 	public const PHPSTAN_NETTE_SWITCHES = [
 		'netteComponentModelDynamicReturnType' => false,
 		'netteFormContainerValuesDynamicReturnType' => false,

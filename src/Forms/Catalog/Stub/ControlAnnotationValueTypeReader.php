@@ -3,7 +3,6 @@
 namespace OriPhpstan\Nette\Forms\Catalog\Stub;
 
 use Nette\ComponentModel\IComponent;
-use OriPhpstan\Nette\Configuration\InvalidConfiguration;
 use OriPhpstan\Nette\Forms\Catalog\ChoiceModel;
 use OriPhpstan\Nette\Forms\Catalog\ComponentClassName;
 use OriPhpstan\Nette\Forms\Catalog\FormAddsSpec;
@@ -27,7 +26,6 @@ use function preg_match;
 use function preg_match_all;
 use function preg_replace;
 use function rtrim;
-use function sprintf;
 use function strpos;
 use function substr;
 use function trim;
@@ -93,8 +91,6 @@ final class ControlAnnotationValueTypeReader
 	/** @var list<string> */
 	private array $catalogs;
 
-	private bool $catalogsChecked = false;
-
 	/**
 	 * @param list<string> $catalogs
 	 */
@@ -109,48 +105,12 @@ final class ControlAnnotationValueTypeReader
 		$this->catalogs = $catalogs;
 	}
 
-	private function assertNoDuplicateCatalogMethod(): void
-	{
-		$declaredBy = [];
-		$builtIns = [
-			FormValueTypeCatalog::class,
-			FormModifierCatalog::class,
-			FormRuleTypeCatalog::class,
-			FormReplicatorCatalog::class,
-		];
-		foreach ([...$builtIns, ...$this->catalogs] as $catalogName) {
-			if (!$this->reflectionProvider->hasClass($catalogName)) {
-				continue;
-			}
-
-			$catalog = $this->reflectionProvider->getClass($catalogName);
-			foreach ($catalog->getNativeReflection()->getMethods() as $method) {
-				$name = $method->getName();
-				if (isset($declaredBy[$name]) && $declaredBy[$name] !== $catalog->getName()) {
-					throw new InvalidConfiguration(sprintf(
-						'orisaiNette.forms.catalogs: method "%s" is declared by both %s and %s.',
-						$name,
-						$declaredBy[$name],
-						$catalog->getName(),
-					));
-				}
-
-				$declaredBy[$name] = $catalog->getName();
-			}
-		}
-	}
-
 	/**
 	 * @param class-string $builtIn
 	 * @return list<ClassReflection>
 	 */
 	private function catalogsOf(string $builtIn): array
 	{
-		if (!$this->catalogsChecked) {
-			$this->assertNoDuplicateCatalogMethod();
-			$this->catalogsChecked = true;
-		}
-
 		$catalogs = [];
 		foreach ([$builtIn, ...$this->catalogs] as $catalogName) {
 			if ($this->reflectionProvider->hasClass($catalogName)) {

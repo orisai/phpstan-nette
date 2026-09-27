@@ -62,7 +62,7 @@ final class UnannotatedRegistrarRule implements Rule
 	)
 	{
 		$guard->validate();
-		$this->enabled = $enabled;
+		$this->enabled = $guard->isFormsEnabled() && $enabled;
 		$this->analysedPaths = new AnalysedPaths($analysedPaths);
 		$this->reader = $reader;
 		$this->detector = new ContainerRegistrationDetector();

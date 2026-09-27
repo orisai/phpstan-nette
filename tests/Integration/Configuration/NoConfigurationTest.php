@@ -46,6 +46,37 @@ final class NoConfigurationTest extends BaseTestCase
 		);
 	}
 
+	public function testOutOfTheBoxPhpstanNetteShadowsFormsTyping(): void
+	{
+		$result = $this->project->analyse([], ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			['src/HomePresenter.php:18 orisaiNette.component.unattachedParentAccess'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.'),
+		);
+	}
+
+	public function testDisabledAreasReportNothing(): void
+	{
+		$result = $this->project->analyse(
+			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
+				'orisaiNette' => [
+					'forms' => ['enabled' => false],
+					'component' => ['enabled' => false],
+				],
+			],
+			ConfigurationCorpus::PATHS,
+		);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.forms.'));
+		self::assertSame(
+			[],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.component.'),
+		);
+	}
+
 	public function testLatte(): void
 	{
 		self::markTestIncomplete('Latte arrives in Task 9: the template stays unanalysed without configuration');

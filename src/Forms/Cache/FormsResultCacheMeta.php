@@ -33,10 +33,13 @@ final class FormsResultCacheMeta implements ResultCacheMetaExtension
 
 	private FormFactSalt $salt;
 
-	public function __construct(bool $enabled, FormFactSalt $salt)
+	private ?CatalogIdentity $catalogIdentity;
+
+	public function __construct(bool $enabled, FormFactSalt $salt, ?CatalogIdentity $catalogIdentity = null)
 	{
 		$this->enabled = $enabled;
 		$this->salt = $salt;
+		$this->catalogIdentity = $catalogIdentity;
 	}
 
 	public function getKey(): string
@@ -46,7 +49,14 @@ final class FormsResultCacheMeta implements ResultCacheMetaExtension
 
 	public function getHash(): string
 	{
-		return $this->enabled ? $this->salt->get() : 'disabled';
+		if (!$this->enabled) {
+			return 'disabled';
+		}
+
+		// A user catalog's tags feed every shape without being a dependency of any analysed file.
+		$catalogs = $this->catalogIdentity !== null ? $this->catalogIdentity->get() : '';
+
+		return $catalogs === '' ? $this->salt->get() : $this->salt->get() . '|' . $catalogs;
 	}
 
 }
