@@ -161,7 +161,7 @@ abstract class FormsInvalidationMatrixCase extends BaseTestCase
 	// For the rows whose component stops resolving to a shape at all.
 	protected function rawDump(int $line, string $rendered, string $file = 'ScratchChildControl.php'): string
 	{
-		return $file . ':' . $line . ' :: orisaiNette.forms.dump :: ' . $rendered;
+		return $file . ':' . $line . ' :: orisaiNette.forms.formValuesDump :: ' . $rendered;
 	}
 
 	protected function undefinedSetRequired(): string

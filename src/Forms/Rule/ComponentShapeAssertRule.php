@@ -54,7 +54,7 @@ final class ComponentShapeAssertRule extends BaseDumpAssertRule
 				"Component shape does not match assertComponent() expectation.\n"
 				. "expected:\n" . $expected . "\n"
 				. "actual:\n" . $actual,
-				'orisaiNette.forms.assert',
+				'orisaiNette.forms.componentShapeAssert',
 				$node,
 			),
 		];

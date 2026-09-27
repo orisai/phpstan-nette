@@ -338,7 +338,7 @@ final class FormShapeUnknownAccessRule implements Rule
 					"Form component path '" . $displayName . "' has an invalid segment '"
 					. $walk->getSegment() . "'; a component name must be a non-empty alphanumeric string.",
 				)
-					->identifier('orisaiNette.forms.invalidComponentName')
+					->identifier('orisaiNette.forms.shapeInvalidComponentName')
 					->line($node->getStartLine())
 					->build(),
 			];

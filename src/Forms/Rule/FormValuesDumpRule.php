@@ -32,7 +32,7 @@ final class FormValuesDumpRule extends BaseDumpAssertRule
 		return [
 			$this->buildError(
 				$this->describer->describe($args[0]->value, $node, $scope),
-				'orisaiNette.forms.dump',
+				'orisaiNette.forms.formValuesDump',
 				$node,
 			),
 		];

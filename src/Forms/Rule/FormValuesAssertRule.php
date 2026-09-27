@@ -50,7 +50,7 @@ final class FormValuesAssertRule extends BaseDumpAssertRule
 				"Form values do not match assertFormValues() expectation.\n"
 				. "expected:\n" . $expected . "\n"
 				. "actual:\n" . $actual,
-				'orisaiNette.forms.assert',
+				'orisaiNette.forms.formValuesAssert',
 				$node,
 			),
 		];

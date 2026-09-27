@@ -276,7 +276,7 @@ final class InferenceComponentShapeDumpTest extends BaseTestCase
 			$result = [];
 			foreach ($decoded['files'] ?? [] as $info) {
 				foreach ($info['messages'] ?? [] as $message) {
-					if (($message['identifier'] ?? null) === 'orisaiNette.forms.dump') {
+					if (($message['identifier'] ?? null) === 'orisaiNette.forms.componentShapeDump') {
 						$result[$message['line']] = $message['message'];
 					}
 				}

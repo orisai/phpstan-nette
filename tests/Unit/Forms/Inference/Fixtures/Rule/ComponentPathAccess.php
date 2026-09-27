@@ -119,7 +119,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-10: Form component path 'outer-' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.invalidComponentName] — the empty segment a trailing
+	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — the empty segment a trailing
 	// separator produces can never be in $components (addComponent() applies the same NameRegexp),
 	// so getComponent() throws no matter what the container holds
 	public function cp10(): void
@@ -131,7 +131,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-11: Form component path '-a' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.invalidComponentName]
+	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName]
 	public function cp11(): void
 	{
 		$form = new ApplicationForm();
@@ -140,7 +140,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-12: Form component path 'outer--a' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.invalidComponentName]
+	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName]
 	public function cp12(): void
 	{
 		$form = new ApplicationForm();
@@ -150,7 +150,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-13: Form component path '-' has an invalid segment ''; a component name must be a non-empty
-	// alphanumeric string. [orisaiNette.forms.invalidComponentName] — a name that is only the separator
+	// alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — a name that is only the separator
 	public function cp13(): void
 	{
 		$form = new ApplicationForm();
@@ -159,7 +159,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-14: Form component path 'nope-' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.invalidComponentName] — the invalid segment is
+	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — the invalid segment is
 	// reported even though the vendor would fail on 'nope' first: BOTH throw, and validation is
 	// eager because an invalid segment can never be reached without every earlier one resolving
 	public function cp14(): void
@@ -170,7 +170,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-15: Form component path 'nope-' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.invalidComponentName] — and it reports on an OPEN
+	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — and it reports on an OPEN
 	// shape too, the ONE arm of this rule that does not need the shape closed: no build step the
 	// analyser failed to enumerate could ever have registered an empty name
 	public function cp15(string $dynamic): void
