@@ -1,0 +1,20 @@
+parameters:
+	orisaiNette:
+		latte:
+			enabled: false
+			narrowing:
+				enabled: false
+				storePath: %currentWorkingDirectory%/phpstan-latte-store
+			discovery:
+				enabled: false
+				storePath: %tmpDir%/orisai-nette/latte-discovery
+				coarseInvalidationAccepted: false
+				formulas: []
+			engineLoader: null
+			templateFactoryContainerLoader: null
+			firstPartyPaths: %paths%
+			templateTypeRequired: false
+			includeIsolation: false
+			allowNarrowingOverride: false
+			reportWrongPhpDocTypeInVarType: true
+			reportAnyTypeWideningInVarType: true

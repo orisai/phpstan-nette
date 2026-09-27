@@ -1,0 +1,9 @@
+parameters:
+	orisaiNette:
+		forms:
+			enabled: true
+			defaultContainerClass: Nette\Forms\Container
+			reportUnannotatedRegistrars: true
+			catalogs: []
+			internals:
+				indexShadowCompare: false

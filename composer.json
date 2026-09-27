@@ -31,6 +31,7 @@
 		"nette/application": "^3.1.15",
 		"nette/di": "^3.1.3",
 		"nette/forms": "^3.1.11",
+		"nette/neon": "^3.3",
 		"orisai/coding-standard": "^3.0.0",
 		"phpstan/extension-installer": "^1.0.0",
 		"phpstan/phpstan-deprecation-rules": "^2.0.0",
@@ -39,7 +40,8 @@
 		"phpstan/phpstan-strict-rules": "^2.0.0",
 		"phpunit/phpunit": "^9.5.0",
 		"shipmonk/dead-code-detector": "^0.15.0",
-		"staabm/annotate-pull-request-from-checkstyle": "^1.7.0"
+		"staabm/annotate-pull-request-from-checkstyle": "^1.7.0",
+		"symfony/process": "^5.4|^6.0|^7.0"
 	},
 	"conflict": {
 		"kdyby/forms-replicator": "<2.0.0",

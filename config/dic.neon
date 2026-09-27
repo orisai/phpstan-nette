@@ -1,0 +1,4 @@
+parameters:
+	orisaiNette:
+		dic:
+			containerLoader: null

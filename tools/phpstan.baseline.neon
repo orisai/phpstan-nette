@@ -1,0 +1,31 @@
+parameters:
+	ignoreErrors:
+		-
+			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isBridgeEnabled
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: ../src/Configuration/ConfigurationGuard.php
+
+		-
+			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isComponentEnabled
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: ../src/Configuration/ConfigurationGuard.php
+
+		-
+			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isDicEnabled
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: ../src/Configuration/ConfigurationGuard.php
+
+		-
+			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isLatteDiscoveryEnabled
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: ../src/Configuration/ConfigurationGuard.php
+
+		-
+			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isLatteNarrowingEnabled
+			identifier: shipmonk.deadMethod
+			count: 1
+			path: ../src/Configuration/ConfigurationGuard.php

@@ -1,0 +1,4 @@
+parameters:
+	orisaiNette:
+		component:
+			enabled: true
