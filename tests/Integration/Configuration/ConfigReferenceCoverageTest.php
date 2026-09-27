@@ -14,7 +14,6 @@ use function array_values;
 use function dirname;
 use function file_get_contents;
 use function implode;
-use function in_array;
 use function is_array;
 use function preg_match;
 use function preg_match_all;
@@ -63,23 +62,24 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 		$schemaLeaves = self::leaves($schemaPaths);
 		self::assertSame(self::SCHEMA_LEAVES, $schemaLeaves);
 
-		$docs = self::read($root . '/docs/README.md');
-		$documented = [];
-		foreach (self::configurationNeonBlocks($docs) as $block) {
+		$section = self::configurationSection(self::read($root . '/docs/README.md'));
+		$inNeon = [];
+		foreach (self::neonBlocks($section) as $block) {
 			$decoded = Neon::decode($block);
 			$orisaiNette = $decoded['parameters']['orisaiNette'] ?? $decoded['orisaiNette'] ?? null;
 			if (is_array($orisaiNette)) {
-				$documented = array_merge($documented, self::documentedPaths($orisaiNette, '', $schemaPaths));
+				$inNeon = array_merge($inNeon, self::documentedPaths($orisaiNette, '', $schemaPaths));
 			}
 		}
 
-		preg_match_all('~orisaiNette\.([A-Za-z][A-Za-z.]*[A-Za-z])~', $docs, $mentions);
-		$documented = array_merge($documented, $mentions[1]);
-		$documented = array_values(array_unique($documented));
-		sort($documented);
+		preg_match_all('~orisaiNette\.([A-Za-z][A-Za-z.]*[A-Za-z])~', $section, $mentions);
 
-		$missing = array_values(array_diff($schemaLeaves, $documented));
-		$unknown = array_values(array_diff($documented, array_keys($schemaPaths)));
+		$missing = array_values(array_diff($schemaLeaves, $inNeon));
+		$unknown = array_values(array_unique(array_diff(
+			array_merge($inNeon, $mentions[1]),
+			array_keys($schemaPaths),
+		)));
+		sort($unknown);
 
 		self::markTestIncomplete(sprintf(
 			'docs arrive in Task 11; undocumented: [%s]; unknown: [%s]',
@@ -145,13 +145,10 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 		return $paths;
 	}
 
-	/**
-	 * @return list<string>
-	 */
-	private static function configurationNeonBlocks(string $docs): array
+	private static function configurationSection(string $docs): string
 	{
 		if (preg_match('~^(#{1,6}) Configuration\b.*$~m', $docs, $heading, PREG_OFFSET_CAPTURE) !== 1) {
-			return [];
+			return '';
 		}
 
 		$level = strlen($heading[1][0]);
@@ -160,16 +157,17 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 			$section = (string) substr($section, 0, $next[0][1]);
 		}
 
+		return $section;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	private static function neonBlocks(string $section): array
+	{
 		preg_match_all('~^```neon\n(.*?)^```~ms', $section, $blocks);
 
-		$result = [];
-		foreach ($blocks[1] as $block) {
-			if (!in_array($block, $result, true)) {
-				$result[] = $block;
-			}
-		}
-
-		return $result;
+		return $blocks[1];
 	}
 
 	private static function read(string $path): string

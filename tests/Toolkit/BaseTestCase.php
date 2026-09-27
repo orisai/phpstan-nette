@@ -8,7 +8,6 @@ abstract class BaseTestCase extends TestCase
 {
 
 	/** @var bool */
-	// phpcs:ignore SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
-	protected $preserveGlobalState = false;
+	protected $preserveGlobalState = false; // phpcs:ignore SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint
 
 }
