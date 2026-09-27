@@ -1,0 +1,7 @@
+{
+	"patches": {
+		"phpstan/phpstan-nette": {
+			"Make component-model, form values and service-locator dynamic return types switchable": "patches/phpstan-nette-conditional-dynamic-return-types.patch"
+		}
+	}
+}

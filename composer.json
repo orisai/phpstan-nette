@@ -85,10 +85,6 @@
 				"extension.neon"
 			]
 		},
-		"patches": {
-			"phpstan/phpstan-nette": {
-				"Conditional dynamic return types (component model, form getValues())": "patches/phpstan-nette-conditional-dynamic-return-types.patch"
-			}
-		}
+		"patches-file": "patches/composer-dev-patches.json"
 	}
 }
