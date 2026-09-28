@@ -467,11 +467,7 @@ final class DiscoveryResolverTest extends PHPStanTestCase
 
 	public function testUnmappedPresenterIsOpaqueNeverGuessed(): void
 	{
-		// A mapping source that knows only the Fleet namespace: this presenter is unmapped.
-		$discovery = $this->discoveryFor(
-			DiscoveryVendorPresenter::class,
-			__DIR__ . '/../Fixtures/fleet-mapping-container-loader.php',
-		);
+		$discovery = $this->discoveryFor(DiscoveryVendorPresenter::class, null);
 
 		self::assertSame(['default' => [], 'detail' => []], $discovery->getViewCandidates());
 		self::assertSame([], $discovery->getLayoutCandidates());
@@ -480,13 +476,15 @@ final class DiscoveryResolverTest extends PHPStanTestCase
 		self::assertSame([], $discovery->getExistenceSet());
 	}
 
-	public function testWithoutAMappingSourceAnUnmappedPresenterIsNotOpaque(): void
+	public function testALoaderReturningABareContainerResolvesTheSameMapping(): void
 	{
-		$discovery = $this->discoveryFor(DiscoveryVendorPresenter::class, null);
-
-		self::assertSame(['default' => [], 'detail' => []], $discovery->getViewCandidates());
-		self::assertSame([], $discovery->getLayoutCandidates());
-		self::assertSame([], $discovery->getOpaques());
+		self::assertEquals(
+			$this->discoveryFor(DiscoverySetFileActionPresenter::class),
+			$this->discoveryFor(
+				DiscoverySetFileActionPresenter::class,
+				__DIR__ . '/../Fixtures/presenter-mapping-bare-container-loader.php',
+			),
+		);
 	}
 
 	public function testEffectiveActionSetFileSuppressesFormulaCandidatesForThatViewOnly(): void

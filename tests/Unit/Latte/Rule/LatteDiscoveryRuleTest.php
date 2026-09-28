@@ -39,6 +39,8 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 
 	private ?string $cacheDir = null;
 
+	private ?string $guardLoader = self::MappingLoaderFile;
+
 	protected function tearDown(): void
 	{
 		parent::tearDown();
@@ -64,7 +66,7 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 		$discoveryResolver = new DiscoveryResolver(self::MappingLoaderFile, self::AssignedFormulas, $projectRoot);
 
 		return new LatteDiscoveryRule(
-			TestGuard::latte(true, false, true),
+			TestGuard::latte(true, false, true, $this->guardLoader),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),
 				$parser,
@@ -155,6 +157,38 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 					9,
 				],
 			],
+		);
+	}
+
+	// With no templateFactoryContainerLoader configured every presenter reads as unmapped, so the
+	// rule stays silent on that one reason - while the cached fact keeps the opaque, which is what
+	// holds templateMissing open for the class.
+	public function testWithoutAMappingSourceTheUnmappedPresenterOpaqueIsNotReported(): void
+	{
+		$this->guardLoader = null;
+
+		$this->analyse([self::FixtureDir . '/DiscoveryUnmappedEndpoint.php'], []);
+
+		$appRoot = realpath(self::FixtureDir);
+		self::assertNotFalse($appRoot);
+		/** @var Parser $parser */
+		$parser = self::getContainer()->getService('currentPhpVersionRichParser');
+		$discovery = (new PhpRenderWalk(
+			self::createReflectionProvider(),
+			$parser,
+			[$appRoot],
+			new TemplateFactoryDefaultResolver(null),
+			new DiscoveryResolver(null, self::AssignedFormulas, $appRoot),
+		))->factsFor(DiscoveryUnmappedEndpoint::class)->getDiscovery();
+		self::assertNotNull($discovery);
+		self::assertSame(
+			[
+				[
+					'reason' => DiscoveryResolver::UNRESOLVED_PRESENTER_REASON . DiscoveryUnmappedEndpoint::class,
+					'line' => null,
+				],
+			],
+			$discovery->getOpaques(),
 		);
 	}
 

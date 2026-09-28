@@ -58,7 +58,7 @@ use const SORT_STRING;
 //     RECORDS_HASH - the one exported node that does carry store changes across - stays identical
 //     and the documented one-run-later recovery never fires. Answered per-file, both went
 //     PERMANENTLY stale in both directions after a one-line body edit; see
-//     tests/PHPStanTests/Latte/Integration/Invalidation for the reproduction as a committed test.
+//     tests/Integration/Latte/Invalidation for the reproduction as a committed test.
 // CollectedDataNode rules run in AnalyserResultFinalizer, after the result cache has been restored
 // AND saved, over cached-plus-fresh per-file data that is re-aggregated in full every run - so this
 // placement is cold == warm by construction, with no whole-cache salt and no invalidation edge,

@@ -40,7 +40,8 @@ final class TestGuard
 	public static function latte(
 		bool $enabled = true,
 		bool $narrowing = false,
-		bool $discovery = false
+		bool $discovery = false,
+		?string $templateFactoryContainerLoader = null
 	): ConfigurationGuard
 	{
 		return new ConfigurationGuard(
@@ -63,7 +64,7 @@ final class TestGuard
 						'formulas' => [],
 					],
 					'engineLoader' => null,
-					'templateFactoryContainerLoader' => null,
+					'templateFactoryContainerLoader' => $templateFactoryContainerLoader,
 					'firstPartyPaths' => [],
 					'templateTypeRequired' => false,
 					'includeIsolation' => false,

@@ -42,6 +42,9 @@ use const DIRECTORY_SEPARATOR;
 final class DiscoveryResolver
 {
 
+	// The opaque reason prefix for a presenter no configured mapping reverse-maps; the class name follows.
+	public const UNRESOLVED_PRESENTER_REASON = 'presenter name unresolved: no mapping reverse-maps class ';
+
 	private const FORMAT_TEMPLATE_FILES_METHOD = 'formatTemplateFiles';
 
 	private const FORMAT_LAYOUT_TEMPLATE_FILES_METHOD = 'formatLayoutTemplateFiles';
@@ -164,13 +167,10 @@ final class DiscoveryResolver
 		if ($presenter) {
 			$name = $this->presenterNameFor($entryClass->getName());
 			if ($name === null) {
-				// Without a configured mapping source there is no mapping to miss, so nothing is opaque.
-				if ($this->containerLoaderFile !== null) {
-					$opaques[] = [
-						'reason' => 'presenter name unresolved: no mapping reverse-maps class ' . $entryClass->getName(),
-						'line' => null,
-					];
-				}
+				$opaques[] = [
+					'reason' => self::UNRESOLVED_PRESENTER_REASON . $entryClass->getName(),
+					'line' => null,
+				];
 			} else {
 				[$module, $presenterSegment] = Helpers::splitName($name);
 
@@ -929,6 +929,10 @@ final class DiscoveryResolver
 			$containers = require $this->containerLoaderFile;
 		} catch (Throwable $e) {
 			return null;
+		}
+
+		if ($containers instanceof Container) {
+			$containers = ['default' => $containers];
 		}
 
 		if (!is_array($containers)) {

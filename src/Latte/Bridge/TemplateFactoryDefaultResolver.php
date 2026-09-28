@@ -107,6 +107,10 @@ final class TemplateFactoryDefaultResolver
 			return [];
 		}
 
+		if ($loaded instanceof Container) {
+			$loaded = ['default' => $loaded];
+		}
+
 		if (!is_array($loaded)) {
 			return [];
 		}

@@ -191,6 +191,11 @@ final class ConfigurationGuard
 		return $this->isLatteEnabled() && $this->config['latte']['discovery']['enabled'];
 	}
 
+	public function hasTemplateFactoryContainerLoader(): bool
+	{
+		return $this->config['latte']['templateFactoryContainerLoader'] !== null;
+	}
+
 	public function isDicEnabled(): bool
 	{
 		return $this->config['dic']['containerLoader'] !== null;

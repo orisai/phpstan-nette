@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
+use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryResolver;
 use OriPhpstan\Nette\Latte\Bridge\MutationFact;
 use OriPhpstan\Nette\Latte\Bridge\PhpFactsCache;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderFacts;
@@ -16,6 +17,7 @@ use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use function sprintf;
+use function strpos;
 use function substr_compare;
 
 /**
@@ -36,6 +38,8 @@ final class LatteDiscoveryRule implements Rule
 
 	private bool $discoveryEnabled;
 
+	private bool $mappingSourceConfigured;
+
 	public function __construct(ConfigurationGuard $guard, PhpRenderWalk $renderWalk, PhpFactsCache $renderFactsCache)
 	{
 		$guard->validate();
@@ -43,6 +47,7 @@ final class LatteDiscoveryRule implements Rule
 		$this->renderFactsCache = $renderFactsCache;
 		$this->enabled = $guard->isLatteEnabled();
 		$this->discoveryEnabled = $guard->isLatteDiscoveryEnabled();
+		$this->mappingSourceConfigured = $guard->hasTemplateFactoryContainerLoader();
 	}
 
 	public function getNodeType(): string
@@ -95,6 +100,15 @@ final class LatteDiscoveryRule implements Rule
 			&& !self::nothingToDiscover($classReflection, $facts, $scope->getFile(), $ownSetFileLines)
 		) {
 			foreach ($discovery->getOpaques() as $opaque) {
+				// With no mapping source configured every presenter reads as unmapped, which tells the user
+				// nothing; the fact keeps the opaque, so templateMissing still backs off from it.
+				if (
+					!$this->mappingSourceConfigured
+					&& strpos($opaque['reason'], DiscoveryResolver::UNRESOLVED_PRESENTER_REASON) === 0
+				) {
+					continue;
+				}
+
 				$line = $opaque['line'];
 				$errors[] = RuleErrorBuilder::message(
 					sprintf('Template file discovery is opaque: %s.', $opaque['reason']),

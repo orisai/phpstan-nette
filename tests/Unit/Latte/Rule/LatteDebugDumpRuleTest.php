@@ -107,9 +107,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 
 	private const MappingLoaderFile = __DIR__ . '/../Bridge/Fixtures/presenter-mapping-container-loader.php';
 
-	// A mapping source that maps only the Fleet namespace, so the App presenters stay unresolved.
-	private const UnrelatedMappingLoaderFile = __DIR__ . '/../Bridge/Fixtures/fleet-mapping-container-loader.php';
-
 	private const DiscoveryFormulas = [
 		FixtureTemplatesPathControlBase::class => 'dirname-templates-lcfirst',
 	];
@@ -1682,7 +1679,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	{
 		$file = self::fixtureFile(OverwriteOrderViewPresenter::class);
 
-		$errors = $this->discoveryRule(self::UnrelatedMappingLoaderFile)->processNode(
+		$errors = $this->discoveryRule(null)->processNode(
 			$this->funcCall(
 				'OriPhpstan\Nette\Latte\Testing\dumpLatteDiscovery',
 				[$this->classConstFetch(OverwriteOrderViewPresenter::class)],
@@ -1716,7 +1713,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	{
 		$file = self::fixtureFile(LifecycleViewsPresenter::class);
 
-		$errors = $this->discoveryRule(self::UnrelatedMappingLoaderFile)->processNode(
+		$errors = $this->discoveryRule(null)->processNode(
 			$this->funcCall(
 				'OriPhpstan\Nette\Latte\Testing\dumpLatteDiscovery',
 				[$this->classConstFetch(LifecycleViewsPresenter::class)],
@@ -1758,7 +1755,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	// empty views section), and listed with the lifecycle phase that proves them ineffective.
 	public function testDumpDiscoveryListsIneffectiveMutationsWithTheirPhase(): void
 	{
-		$errors = $this->discoveryRule(self::UnrelatedMappingLoaderFile)->processNode(
+		$errors = $this->discoveryRule(null)->processNode(
 			$this->funcCall(
 				'OriPhpstan\Nette\Latte\Testing\dumpLatteDiscovery',
 				[$this->classConstFetch(ShutdownOnlyViewPresenter::class)],
