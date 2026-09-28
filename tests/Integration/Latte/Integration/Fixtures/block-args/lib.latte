@@ -1,0 +1,6 @@
+{* lib: param-less block b, referencing a free $x it never declares - probe-5 pairing
+   (CrossFileScopeParityTest::testImportExplicitIncludeArgWinsOverParamAndLocal) *}
+{define b}
+	{do \PHPStan\dumpType($x)}
+	{$x}
+{/define}

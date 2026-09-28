@@ -1,0 +1,4 @@
+parameters:
+	customRulesetUsed: true
+	bootstrapFiles:
+		- ../../../../vendor/autoload.php

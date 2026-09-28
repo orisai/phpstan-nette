@@ -1,0 +1,26 @@
+{varType bool $cond}
+{varType array $items}
+{varType string $activeClass}
+{varType string $tagName}
+
+<div n:if="$cond">shown</div>
+
+<ul>
+	<li n:foreach="$items as $item">{$item}</li>
+</ul>
+
+<div n:inner-foreach="$items as $item">{$item}</div>
+
+<div n:tag-if="$cond">tag-if content</div>
+
+<div n:class="$cond ? 'active', $activeClass, 'base'">class</div>
+
+<div n:class="$cond ? 'form-group has-error' : 'form-group'">always-truthy class</div>
+
+<div n:attr="data-x => $cond ? 1 : null"></div>
+
+<div n:tag="$tagName">tag</div>
+
+<p n:ifcontent>{if $cond}x{/if}</p>
+
+<script n:nonce>window.x=1;</script>

@@ -1,0 +1,7 @@
+{* f2-user: imports f2-target.latte and includes its block greet with a compatible $name,
+   WITHOUT ever providing $fileLevel - proves the file's own top-level contract never joins the
+   block's own contract (the {import} edge itself separately reports $fileLevel missing against
+   the unrelated, pre-existing file-level check) *}
+{import 'f2-target.latte'}
+
+{include greet, name: 'ok'}

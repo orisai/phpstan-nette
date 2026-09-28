@@ -1,0 +1,15 @@
+{varType string $x}
+
+{capture $v}
+	captured {$x}
+{/capture}
+
+{spaceless}
+	<div>
+		<span>{$x}</span>
+	</div>
+{/spaceless}
+
+{l}literal brace{r}
+
+{dump $x}

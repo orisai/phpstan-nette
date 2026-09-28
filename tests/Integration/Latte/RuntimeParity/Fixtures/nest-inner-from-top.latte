@@ -1,0 +1,1 @@
+{define outer}{var $o = 'outer-local'}{define inner}{=$o ?? 'UNDEF'}{/define}{include inner}{/define}{include inner}

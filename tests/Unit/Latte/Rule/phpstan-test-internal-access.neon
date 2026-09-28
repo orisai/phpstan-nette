@@ -1,0 +1,11 @@
+parameters:
+	customRulesetUsed: true
+	bootstrapFiles:
+		- ../../../../vendor/autoload.php
+	fileExtensions: [php, latte]
+	orisaiNette:
+		latte:
+			enabled: true
+
+includes:
+	- ../../../../extension.neon

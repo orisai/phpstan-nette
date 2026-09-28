@@ -28,9 +28,13 @@ final class ParametersPropertyTypeExtension implements ExpressionTypeResolverExt
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
+		if (!$expr instanceof PropertyFetch) {
+			return null;
+		}
+
 		$this->guard->validate();
 
-		if (!$expr instanceof PropertyFetch || !$this->registry->isActive()) {
+		if (!$this->registry->isActive()) {
 			return null;
 		}
 

@@ -1,0 +1,6 @@
+{* layout-drift-child: local top-level {var} must reach the layout via topLevelVars, not just
+   the includer's own declaredVars - regression fixture for the checker/resolver per-tag scope
+   drift (see EdgeScope) *}
+{varType string $title}
+{var $childVar = 1}
+{layout 'layout-drift-lay.latte'}

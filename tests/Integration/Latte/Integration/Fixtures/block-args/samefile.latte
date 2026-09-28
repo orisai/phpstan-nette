@@ -1,0 +1,12 @@
+{* samefile: same-file direct-dispatch pairing - block b IS passed x, sibling block c is NOT (no
+   blanket suppression: c must still report $x undefined) *}
+{define b}
+	{$x}
+{/define}
+
+{define c}
+	{$x}
+{/define}
+
+{include b, x: 'val'}
+{include c}

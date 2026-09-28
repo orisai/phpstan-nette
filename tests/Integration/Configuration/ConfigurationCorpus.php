@@ -127,7 +127,7 @@ final class ProfileControl extends Control
 }
 
 PHP);
-		$project->write('src/tpl.latte', "{form form}{input nope}{/form}\n");
+		$project->write('src/tpl.latte', "{form form}{input nope}{/form}\n{\$x|nope}\n");
 		$project->write('src/AppContainer.php', <<<'PHP'
 <?php declare(strict_types = 1);
 

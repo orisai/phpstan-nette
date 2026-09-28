@@ -1,0 +1,4 @@
+{* ambig-parent-b: includes ambig-mid.latte without providing $maybe (its other incoming context)
+   and is the SOLE includer of ambig-mid-solo.latte (the single-context control) *}
+{include 'ambig-mid.latte'}
+{include 'ambig-mid-solo.latte'}

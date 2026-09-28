@@ -1,0 +1,4 @@
+{var $q = 1}
+{varType int $x}{var $x = 1}{block foo}{varType string $x}{var $x = 'a'}{/block}
+{block bar}{ifset $q}{varType string $z}{var $z = 1}{/ifset}{/block}
+{$x}{$q}

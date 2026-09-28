@@ -89,8 +89,6 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
-		$this->guard->validate();
-
 		if (!$this->enabled) {
 			return null;
 		}
@@ -98,6 +96,8 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 		if (!$this->index->hasAnyTrackedForm($scope->getFile())) {
 			return null;
 		}
+
+		$this->guard->validate();
 
 		if ($expr instanceof MethodCall) {
 			return $this->methodCallType($expr, $scope);

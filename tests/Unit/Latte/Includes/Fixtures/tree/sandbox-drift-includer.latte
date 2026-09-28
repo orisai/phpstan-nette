@@ -1,0 +1,5 @@
+{* sandbox-drift-includer: declares $x with a type conflicting with the sandboxed target's own
+   declared type, but never passes it as a sandbox arg - the target must see only its own default,
+   never the includer's context type *}
+{varType string $x}
+{sandbox 'sandbox-drift-target.latte'}

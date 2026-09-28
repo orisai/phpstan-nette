@@ -13,18 +13,6 @@ parameters:
 			path: ../src/Configuration/ConfigurationGuard.php
 
 		-
-			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isLatteDiscoveryEnabled
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Configuration/ConfigurationGuard.php
-
-		-
-			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isLatteNarrowingEnabled
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Configuration/ConfigurationGuard.php
-
-		-
 			rawMessage: 'Offset string might not exist on array{getService: true, getByName: true, createService: false}.'
 			identifier: offsetAccess.notFound
 			count: 1
@@ -85,16 +73,73 @@ parameters:
 			path: ../src/Forms/Type/FormShapeType.php
 
 		-
-			rawMessage: Unused Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario::getSourceDir
-			identifier: shipmonk.deadMethod
+			rawMessage: 'Parameter #1 $args of method OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk::classConstArgClassName() expects array<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder>, array<PhpParser\Node\Arg|PhpParser\Node\ArgPlaceholder|PhpParser\Node\VariadicPlaceholder> given.'
+			identifier: argument.type
 			count: 1
-			path: ../tests/Toolkit/InvalidationScenario.php
+			path: ../src/Latte/Bridge/PhpRenderWalk.php
 
 		-
-			rawMessage: Unused Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario::projectRelative
-			identifier: shipmonk.deadMethod
+			rawMessage: 'Parameter #1 $args of method OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk::firstArgValue() expects array<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder>, array<PhpParser\Node\Arg|PhpParser\Node\ArgPlaceholder|PhpParser\Node\VariadicPlaceholder> given.'
+			identifier: argument.type
+			count: 5
+			path: ../src/Latte/Bridge/PhpRenderWalk.php
+
+		-
+			rawMessage: 'Strict comparison using === between OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
 			count: 1
-			path: ../tests/Toolkit/InvalidationScenario.php
+			path: ../src/Latte/Cache/LatteResultCacheMeta.php
+
+		-
+			rawMessage: '''
+				Access to constant on deprecated interface Nette\Bridges\ApplicationLatte\ILatteFactory:
+				use Nette\Bridges\ApplicationLatte\LatteFactory
+			'''
+			identifier: classConstant.deprecatedInterface
+			count: 1
+			path: ../src/Latte/Customs/EngineSource.php
+
+		-
+			rawMessage: 'Method OriPhpstan\Nette\Latte\Includes\FactoryProvidedVars::intersect() should return array<string, array{certainty: ''happens''|''maybe''|''never''|''unknown'', type: string, class: string}> but returns array<string, array{certainty: string, type: string, class: non-falsy-string}>.'
+			identifier: return.type
+			count: 1
+			path: ../src/Latte/Includes/FactoryProvidedVars.php
+
+		-
+			rawMessage: Variable $resolved on left side of ?? always exists and is not nullable.
+			identifier: nullCoalesce.variable
+			count: 1
+			path: ../src/Latte/Includes/FactoryProvidedVars.php
+
+		-
+			rawMessage: Instanceof between PhpParser\Node\Arg and PhpParser\Node\Arg will always evaluate to true.
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: ../src/Latte/Postprocess/Eliminator/BlockDispatchEliminator.php
+
+		-
+			rawMessage: 'Parameter #2 $args of method OriPhpstan\Nette\Latte\Postprocess\FilterRewriter::rewriteResolvedCall() expects array<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder>, array<PhpParser\Node\Arg|PhpParser\Node\ArgPlaceholder|PhpParser\Node\VariadicPlaceholder> given.'
+			identifier: argument.type
+			count: 4
+			path: ../src/Latte/Postprocess/FilterRewriter.php
+
+		-
+			rawMessage: PHPDoc tag @var with type array<PHPStan\Rules\Rule<TNodeType of PhpParser\Node>> is not subtype of type array<PHPStan\Rules\Rule<PhpParser\Node>>.
+			identifier: varTag.type
+			count: 1
+			path: ../src/Latte/Rule/LatteFixStrippingRegistry.php
+
+		-
+			rawMessage: PHPDoc tag @var with type array<PHPStan\Rules\Rule<TNodeType of PhpParser\Node>> is not subtype of type array<PHPStan\Rules\Rule<PhpParser\Node>>.
+			identifier: varTag.type
+			count: 1
+			path: ../src/Latte/Rule/LatteProvenanceTipRegistry.php
+
+		-
+			rawMessage: 'AnonymousClassd4c9323cc75a6c77b547bdb84751a99f::__construct() does not call parent constructor from Nette\Security\User.'
+			identifier: constructor.missingParentCall
+			count: 1
+			path: ../tests/Integration/Latte/Parity/Factory/TemplateFactoryInjectionParityTest.php
 
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''Nette\\ComponentModel\\Container'' and Nette\ComponentModel\Container will always evaluate to true.'
@@ -125,3 +170,57 @@ parameters:
 			identifier: staticMethod.alreadyNarrowedType
 			count: 2
 			path: ../tests/Unit/Forms/Index/ManifestConfigIdentityTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with 1 and 1 will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 10
+			path: ../tests/Unit/Latte/Bridge/PhpFactsCacheTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with 2 and 1 will always evaluate to false.'
+			identifier: staticMethod.impossibleType
+			count: 11
+			path: ../tests/Unit/Latte/Bridge/PhpFactsCacheTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with array{convention: 10, formula: 20, setFile: 5} and array{formula?: int<1, max>, layout?: int<1, max>, setFile?: int<1, max>, convention?: int<1, max>} will always evaluate to false.'
+			identifier: staticMethod.impossibleType
+			count: 1
+			path: ../tests/Unit/Latte/Bridge/PhpRenderWalkScaleTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with array{convention: 10, literal: 5, opaque: 5} and array{literal?: int<1, max>, convention?: int<1, max>, opaque?: int<1, max>} will always evaluate to false.'
+			identifier: staticMethod.impossibleType
+			count: 1
+			path: ../tests/Unit/Latte/Bridge/PhpRenderWalkScaleTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with 42 and 42 will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: ../tests/Unit/Latte/Compile/VendorErrorContainmentTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with 1 and 1 will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 2
+			path: ../tests/Unit/Latte/Includes/LatteAnalysisCacheTest.php
+
+		-
+			rawMessage: 'Parameter #1 $collectorType of method PHPStan\Node\CollectedDataNode::get() expects class-string<PHPStan\Collectors\Collector<PhpParser\Node, mixed>>, string given.'
+			identifier: argument.type
+			count: 1
+			path: ../tests/Unit/Latte/Rule/Fixtures/CollectedDataEchoRule.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''PHPStan\\Rules\\IdentifierRuleError'' and PHPStan\Rules\IdentifierRuleError will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: ../tests/Unit/Latte/Rule/LatteFixStrippingRuleFileErrorTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''PHPStan\\Rules\\IdentifierRuleError'' and PHPStan\Rules\IdentifierRuleError will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: ../tests/Unit/Latte/Rule/LatteProvenanceTipRuleFileErrorTest.php

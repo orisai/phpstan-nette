@@ -1,0 +1,10 @@
+{varType array<int, string> $items}
+{varType string $title}
+{foreach ($items|slice: 0, 2) as $key => $item}
+	{do \PHPStan\dumpType($key)}
+	{$key}: {$item}
+{/foreach}
+{foreach ($items|slice: 2, 2, true) as $item}
+	{$item}
+{/foreach}
+{$title|slice: 0, 3}

@@ -1,0 +1,9 @@
+{* page: declares {varType int $count}, includes partial.latte (clean) and bad.latte (mismatch),
+   uses {layout} to hand $count down to layout.latte's context *}
+{varType int $count}
+{layout 'layout.latte'}
+
+{include 'partial.latte', n => $count}
+{include 'bad.latte', s => $count}
+
+{block slot}Slot content.{/block}

@@ -1,0 +1,19 @@
+{varType object $riskyDependency}
+
+{block content}
+	block body
+{/block}
+
+{include #content}
+
+<div n:snippet="s1">snippet content</div>
+
+{snippet s2}
+	explicit snippet
+{/snippet}
+
+{try}
+	{$riskyDependency->attempt()}
+{else}
+	caught
+{/try}

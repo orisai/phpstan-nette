@@ -1,0 +1,12 @@
+{* layout: content block slot for {include #content}, uses $count from the child's context, and a
+   var no extender provides *}
+{block content}{/block}
+
+{include #content}
+
+{$count}
+
+{$nobodyHasThis}
+
+{* slot: optional block only an extender declares - layout-slot idiom *}
+{ifset #slot}{include #slot}{/ifset}

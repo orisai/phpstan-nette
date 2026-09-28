@@ -1,0 +1,4 @@
+{* unknown-templatetype-target: declares a templateType class that does not exist, exercising the
+   OPEN degrade in DeclaredVarsResolver::forFile() - never a duplicate of the diagnostic the owning
+   file's own DeclarationInjector run reports *}
+{templateType Totally\Missing\ClassName}

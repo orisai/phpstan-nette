@@ -79,7 +79,13 @@ final class NoConfigurationTest extends BaseTestCase
 
 	public function testLatte(): void
 	{
-		self::markTestIncomplete('Latte arrives in Task 9: the template stays unanalysed without configuration');
+		$result = $this->project->analyse(
+			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES,
+			[...ConfigurationCorpus::PATHS, 'src/tpl.latte'],
+		);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'));
 	}
 
 	public function testDic(): void

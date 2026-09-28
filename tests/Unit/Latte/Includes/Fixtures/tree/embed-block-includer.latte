@@ -1,0 +1,5 @@
+{* embed-block-includer: {embed block} mirrors {include #block}'s orisaiNette.latte.unknownBlock check -
+   localBlock is reachable (defined here), missingBlock is not *}
+{block localBlock}Local block content.{/block}
+{embed block localBlock}{/embed}
+{embed block missingBlock}{/embed}

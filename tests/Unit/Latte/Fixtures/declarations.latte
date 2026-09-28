@@ -1,0 +1,13 @@
+{templateType Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Support\FixtureTemplate}
+{varType string $label}
+
+{var $x = 1}
+{var int $y = 2}
+{default $z = 3}
+{php $noop = null}
+{do $noop = 1}
+{$label} {$x} {$y} {$z}
+{default bool $flag = false}
+{if $flag}on{/if}
+{varType string $late}
+{$late}

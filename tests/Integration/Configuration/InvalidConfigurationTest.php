@@ -18,7 +18,7 @@ final class InvalidConfigurationTest extends BaseTestCase
 		parent::setUp();
 		$this->project = ScratchProject::create('invalid-configuration');
 		$this->project->write('src/X.php', "<?php declare(strict_types = 1);\n\nfinal class X\n{\n\n}\n");
-		$this->project->write('src/a.latte', "{\$x}\n");
+		$this->project->write('src/a.latte', "{var \$x = 1}{\$x}\n");
 		$this->project->write('loader.php', "<?php declare(strict_types = 1);\n\nreturn null;\n");
 		$this->project->write(
 			'container-loader.php',

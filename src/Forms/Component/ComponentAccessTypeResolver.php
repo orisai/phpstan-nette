@@ -61,8 +61,6 @@ final class ComponentAccessTypeResolver implements ExpressionTypeResolverExtensi
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
-		$this->guard->validate();
-
 		if (!$this->enabled) {
 			return null;
 		}
@@ -72,6 +70,8 @@ final class ComponentAccessTypeResolver implements ExpressionTypeResolverExtensi
 		if (!$expr instanceof ArrayDimFetch || $expr->dim === null) {
 			return null;
 		}
+
+		$this->guard->validate();
 
 		$names = $scope->getType($expr->dim)->getConstantStrings();
 		if (count($names) !== 1) {

@@ -25,6 +25,18 @@ parameters:
 		- ../tests/Unit/Dic/Metadata/Fixtures
 		- ../tests/Unit/Dic/Rule/Fixtures
 		- ../tests/Unit/Dic/Type/Fixtures
+		- ../tests/Unit/Latte/Fixtures
+		- ../tests/Unit/Latte/Bridge/Fixtures
+		- ../tests/Unit/Latte/Bridge/Discovery/Fixtures
+		- ../tests/Unit/Latte/Bridge/Pairing/Fixtures
+		- ../tests/Unit/Latte/Customs/Fixtures
+		- ../tests/Unit/Latte/Declarations/Fixtures
+		- ../tests/Unit/Latte/Includes/Fixtures
+		- ../tests/Integration/Latte/Integration/Fixtures
+		- ../tests/Integration/Latte/Parity/Factory/Fixtures
+		- ../tests/Integration/Latte/Parity/Includes/Fixtures
+		- ../tests/Integration/Latte/Parity/Lifecycle/Fixtures
+		- ../tests/Integration/Latte/RuntimeParity/Fixtures
 
 	checkBenevolentUnionTypes: true
 	checkMissingCallableSignature: true
@@ -75,6 +87,125 @@ parameters:
 			identifier: method.notFound
 			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
 			reportUnmatched: false
+
+		# Latte: runtime helpers are called only from generated template code.
+		-
+			identifier: shipmonk.deadMethod
+			path: ../src/Latte/Runtime/
+		# Latte: the source locator, cache and rule-registry decorators wrap PHPStan's own services;
+		# there is no BC-promised way to answer a BetterReflection identifier, intercept its cache
+		# storage or decorate rule dispatch.
+		-
+			identifier: return.internalInterface
+			path: ../src/Latte/Reflection/LatteTemplateSourceLocator.php
+		-
+			identifier: phpstanApi.method
+			path: ../src/Latte/Reflection/LatteTemplateSourceLocator.php
+		-
+			identifiers: [phpstanApi.class, phpstanApi.classConstant, phpstanApi.method]
+			path: ../src/Latte/Reflection/InnerSourceLocatorFactory.php
+		# Called through its neon factory reference only.
+		-
+			identifier: shipmonk.deadMethod
+			path: ../src/Latte/Reflection/InnerSourceLocatorFactory.php
+		-
+			identifiers: [phpstanApi.interface, phpstanApi.method]
+			path: ../src/Latte/Cache/LatteReflectionCacheBypass.php
+		-
+			identifiers: [phpstanApi.interface, phpstanApi.method]
+			path: ../src/Latte/Rule/LatteFixStrippingRegistry.php
+		-
+			identifier: phpstanApi.interface
+			path: ../src/Latte/Rule/LatteFixStrippingRule.php
+		-
+			identifiers: [phpstanApi.interface, phpstanApi.method]
+			path: ../src/Latte/Rule/LatteProvenanceTipRegistry.php
+		# Mirrors RichParser's tagged-visitor loop; the tag name is only exposed as this constant.
+		-
+			identifier: phpstanApi.classConstant
+			path: ../src/Latte/Postprocess/RichAttributeDecorator.php
+		# Ports WrongVariableNameInVarTagRule + VarTagTypeRuleHelper, which have no BC-promised equivalent.
+		-
+			identifiers: [phpstanApi.instanceofType, phpstanApi.method]
+			path: ../src/Latte/Rule/VarTypeExpressionChecker.php
+		# The pre-analysis index build reuses PHPStan's own analyse excluder.
+		-
+			identifier: phpstanApi.method
+			path: ../src/Latte/Bridge/Discovery/PreAnalysisIndexBuilder.php
+		# Latte ships no public accessor for its filter/function registry or macro-tag tokenizer.
+		-
+			identifiers: [new.internalClass, method.internalClass, classConstant.internalClass]
+			path: ../src/Latte/Postprocess/FilterTable.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../src/Latte/Postprocess/FunctionTable.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../src/Latte/Postprocess/CaseMismatchScanner.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../src/Latte/Compile/LatteCompiler.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Declarations/DeclarationScanner.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Includes/TemplateFactExtractor.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Includes/ArgTyper.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Postprocess/EdgeAnchorInjector.php
+		# Resolves a filter callable the way Engine::invokeFilter() does, through Latte's @internal FilterExecutor.
+		-
+			identifiers: [instanceof.internalClass, property.internalClass, property.dynamicName]
+			path: ../src/Latte/Customs/CustomsHarvester.php
+
+		# Latte tests exercising the mechanisms above directly.
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../tests/Unit/Latte/Postprocess/FilterTableTest.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../tests/Unit/Latte/Postprocess/FunctionTableTest.php
+		-
+			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
+			path: ../tests/Unit/Latte/Reflection/LatteTemplateSourceLocatorTest.php
+		-
+			identifier: phpstanApi.classConstant
+			path: ../tests/Unit/Latte/Postprocess/RichAttributeDecoratorTest.php
+		-
+			identifier: phpstanApi.classConstant
+			path: ../tests/Unit/Latte/Cache/LatteReflectionCacheBypassTest.php
+		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Unit/Latte/Rule/LatteSiteScopeWriterRuleTest.php
+		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Unit/Latte/Rule/LatteAnalyzedFileMarkerCollectorTest.php
+		-
+			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
+			path: ../tests/Unit/Latte/Rule/LatteTemplateGraphRuleTest.php
+		-
+			identifiers: [phpstanApi.classConstant, staticMethod.dynamicCall]
+			path: ../tests/Unit/Latte/Rule/LatteFixStrippingRegistryTest.php
+		-
+			identifiers: [phpstanApi.classConstant, staticMethod.dynamicCall]
+			path: ../tests/Unit/Latte/Rule/LatteProvenanceTipRegistryTest.php
+		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Unit/Latte/Bridge/Discovery/PreAnalysisIndexBuilderTest.php
+		# fixNode() is the official fixer API despite its @internal tag; the diff getter is how the no-fix pin reads it.
+		-
+			identifier: method.internal
+			path: ../tests/Unit/Latte/Rule/LatteFixStrippingRuleFileErrorTest.php
+		-
+			identifier: method.internal
+			path: ../tests/Unit/Latte/Rule/LatteDiagnosticRuleTest.php
+		-
+			identifier: method.internal
+			path: ../tests/Unit/Latte/Rule/Fixtures/
 
 		# Tests building PHPStan internals by hand.
 		-

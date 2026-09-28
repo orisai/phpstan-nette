@@ -1,0 +1,6 @@
+{var $rows = \Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Support\VarTypeExpressionFixtureSource::rows()}
+{var $nums = [1, 2]}
+{varType string $item}
+{foreach $rows as $item}{$item}{/foreach}
+{varType string $bad}
+{foreach $nums as $bad}{$bad}{/foreach}

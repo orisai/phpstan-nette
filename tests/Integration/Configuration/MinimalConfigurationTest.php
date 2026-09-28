@@ -48,7 +48,16 @@ final class MinimalConfigurationTest extends BaseTestCase
 
 	public function testLatte(): void
 	{
-		self::markTestIncomplete('Latte arrives in Task 9: template findings appear');
+		$result = $this->project->analyse($this->quickStartParameters(), ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			[
+				'src/HomePresenter.php:7 orisaiNette.latte.fileDiscoveryOpaque',
+				'src/tpl.latte:2 orisaiNette.latte.unknownFilter',
+			],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'),
+		);
 	}
 
 	public function testDic(): void

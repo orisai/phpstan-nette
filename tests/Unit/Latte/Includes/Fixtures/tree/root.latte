@@ -1,0 +1,5 @@
+{* root: declares two typed params, includes the shared partial and the menu *}
+{varType int $count}
+{varType string $title}
+{include 'partial.latte', extra => $count}
+{include '_menu.latte'}

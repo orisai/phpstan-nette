@@ -1,0 +1,4 @@
+{* third-root: same declarations and include args as root.latte, exercises identical-context dedup *}
+{varType int $count}
+{varType string $title}
+{include 'partial.latte', extra => $count}

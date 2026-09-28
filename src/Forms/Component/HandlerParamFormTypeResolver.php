@@ -41,8 +41,6 @@ final class HandlerParamFormTypeResolver implements ExpressionTypeResolverExtens
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
-		$this->guard->validate();
-
 		if (!$this->enabled) {
 			return null;
 		}
@@ -50,6 +48,8 @@ final class HandlerParamFormTypeResolver implements ExpressionTypeResolverExtens
 		if (!$expr instanceof Variable || !is_string($expr->name) || $expr->name === 'this') {
 			return null;
 		}
+
+		$this->guard->validate();
 
 		$class = $this->model->paramClassForVariable($expr, $scope);
 

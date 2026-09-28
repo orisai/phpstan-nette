@@ -1,0 +1,44 @@
+{varType int $count}
+{varType array<string> $items}
+{var string $title = 'Hello World'}
+
+{$title}
+{$title|upper}
+{$title|truncate:10}
+{$count}
+
+<ul>
+{foreach $items as $item}
+	<li n:class="$count > 0 ? 'has-count'">{$item}</li>
+{/foreach}
+</ul>
+
+<div n:class="$count > 0 ? 'panel panel-danger' : 'panel'">always-truthy class</div>
+
+{foreach $items as $item}
+	{if $iterator->isFirst()}first {/if}{$item}{if $iterator->isLast()} last{/if}
+{/foreach}
+
+{if $count > 0}
+	has items
+{else}
+	empty
+{/if}
+
+{block content}
+	static block body
+{/block}
+
+{include #content}
+
+<div n:snippet="s1">
+	snippet content
+</div>
+
+<form n:name="f">
+	<input n:name="x">
+	{label x /}
+	{inputError x}
+</form>
+
+{dump $count}

@@ -1,0 +1,4 @@
+{* maybe-mismatch-includer: provides a wider declared-typed var so the target's narrower declared
+   type is neither a match nor a definite mismatch (maybe) *}
+{varType int|string $x}
+{include 'maybe-mismatch-target.latte', v => $x}

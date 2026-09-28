@@ -1,0 +1,16 @@
+{varType string $x}
+{varType string $name}
+{varType \DateTimeImmutable $created}
+
+{$x}
+{=1 + 2}
+{$x|upper}
+{$x|truncate:10}
+{$created|date:'j.n.Y'}
+{$x|noescape}
+{$x|upper|truncate:10}
+{capture $trimmed|trim}
+	{$x}
+{/capture}
+{_ 'text'}
+{translate}greeting{/translate}

@@ -1,0 +1,3 @@
+{* sandbox-parent: declares a var and sandboxes blocks.latte to verify sandbox excludes C's vars *}
+{varType int $secret}
+{sandbox 'blocks.latte', label => 'x'}

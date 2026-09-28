@@ -21,6 +21,9 @@
 	<exclude-pattern>tests/Unit/Forms/Component/Unit/Support/*</exclude-pattern>
 	<exclude-pattern>tests/Unit/Dic/Fixtures/*</exclude-pattern>
 	<exclude-pattern>tests/Unit/Dic/*/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Latte/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Latte/*/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Integration/Latte/*/Fixtures/*</exclude-pattern>
 
 	<!-- Configure PSR-4 rule -->
 	<rule ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName">
@@ -32,8 +35,14 @@
 		</properties>
 	</rule>
 
-	<!-- Moved verbatim from spring, whose coding standard exempts these for its whole tests/ tree. -->
+	<!-- Moved verbatim from spring, whose coding standard exempts these for its whole tests/ tree. The native
+	     type hint sniffs stay off for Latte because its classes implement untyped Latte 2 interfaces. -->
 	<rule ref="SlevomatCodingStandard.Files.LineLength.LineTooLong">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Toolkit/LattePhpstanConfig.php</exclude-pattern>
+		<exclude-pattern>tests/Toolkit/PipelineFactory.php</exclude-pattern>
 		<exclude-pattern>src/Forms/*</exclude-pattern>
 		<exclude-pattern>tests/Unit/Forms/*</exclude-pattern>
 		<exclude-pattern>tests/Unit/Dic/*</exclude-pattern>
@@ -43,17 +52,50 @@
 		<exclude-pattern>tests/Integration/Dic/*</exclude-pattern>
 	</rule>
 	<rule ref="SlevomatCodingStandard.Functions.DisallowEmptyFunction.EmptyFunction">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
 		<exclude-pattern>src/Forms/Testing/*</exclude-pattern>
 	</rule>
 	<rule ref="SlevomatCodingStandard.Variables.UnusedVariable.UnusedVariable">
 		<exclude-pattern>src/Forms/*</exclude-pattern>
 	</rule>
 	<rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
 		<exclude-pattern>src/Forms/*</exclude-pattern>
 		<exclude-pattern>tests/Unit/Forms/*</exclude-pattern>
 	</rule>
 	<rule ref="SlevomatCodingStandard.Commenting.InlineDocCommentDeclaration.MissingVariable">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
 		<exclude-pattern>src/Forms/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingNativeTypeHint">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
+	</rule>
+	<rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingNativeTypeHint">
+		<exclude-pattern>src/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
+	</rule>
+	<!-- LifecycleState is a phpstan-type array shape, not a class an assert() could check. -->
+	<rule ref="SlevomatCodingStandard.PHP.RequireExplicitAssertion.RequiredExplicitAssertion">
+		<exclude-pattern>src/Latte/Bridge/PhpRenderWalk.php</exclude-pattern>
+	</rule>
+	<!-- Spring exempts its whole tests/ tree: the inline @var types there describe mocks and stubs. -->
+	<rule ref="SlevomatCodingStandard.PHP.RequireExplicitAssertion">
+		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
 	</rule>
 
 </ruleset>

@@ -1,0 +1,5 @@
+{* ambig-mid: two-context includer of ambig-target.latte (via ambig-parent-a/-b), forwards no args
+   itself - $maybe (as a conflicting string) is provided in only one of its two incoming contexts,
+   so the checker's "count($providedTypes) < count($contexts)" valve must fire and stay silent
+   rather than report a mismatch off incomplete evidence *}
+{include 'ambig-target.latte'}

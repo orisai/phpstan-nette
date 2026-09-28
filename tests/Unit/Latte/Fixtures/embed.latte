@@ -1,0 +1,12 @@
+{varType string $mode}
+
+{block sub}embedded sub block{/block}
+
+{embed file 'blocks-snippets.latte', mode => $mode}
+	{block content}
+		override content {$mode}
+	{/block}
+{/embed}
+
+{embed block sub}
+{/embed}

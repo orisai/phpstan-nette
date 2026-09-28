@@ -1,0 +1,19 @@
+{block content}
+	block body
+{/block}
+
+{include #content}
+
+<div n:snippet="s1">snippet content</div>
+
+{snippet s2}
+	explicit snippet
+{/snippet}
+
+{if $this->getReferringTemplate() !== null}
+	referring
+{/if}
+
+{if $this->global->coreExceptionHandler !== null}
+	handler
+{/if}

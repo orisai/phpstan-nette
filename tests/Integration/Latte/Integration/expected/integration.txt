@@ -1,0 +1,39 @@
+tests/Integration/Latte/Integration/Fixtures/block-args/lib.latte:4:Dumped type: string
+tests/Integration/Latte/Integration/Fixtures/block-args/samefile.latte:8:Undefined variable: $x
+tests/Integration/Latte/Integration/Fixtures/block-contract/f2-user.latte:5:Include target 'tests/Integration/Latte/Integration/Fixtures/block-contract/f2-target.latte' requires variable $fileLevel (int) that is not provided and has no default.
+tests/Integration/Latte/Integration/Fixtures/block-contract/mismatch.latte:5:Variable $label provided as int does not match declared type string in 'tests/Integration/Latte/Integration/Fixtures/block-contract/target.latte#item'.
+tests/Integration/Latte/Integration/Fixtures/block-contract/missing.latte:5:Include target 'tests/Integration/Latte/Integration/Fixtures/block-contract/target.latte#item' requires variable $label (string) that is not provided and has no default.
+tests/Integration/Latte/Integration/Fixtures/broken.latte:3:Missing {/if}
+tests/Integration/Latte/Integration/Fixtures/cross/cyc1.latte:2:Include cycle detected: 'tests/Integration/Latte/Integration/Fixtures/cross/cyc1.latte' includes 'tests/Integration/Latte/Integration/Fixtures/cross/cyc2.latte', which cycles back to an includer already being resolved.
+tests/Integration/Latte/Integration/Fixtures/cross/cyc2.latte:2:Include cycle detected: 'tests/Integration/Latte/Integration/Fixtures/cross/cyc2.latte' includes 'tests/Integration/Latte/Integration/Fixtures/cross/cyc1.latte', which cycles back to an includer already being resolved.
+tests/Integration/Latte/Integration/Fixtures/cross/dyn.latte:4:Include target cannot be determined statically.
+tests/Integration/Latte/Integration/Fixtures/cross/gone.latte:2:Include target 'tests/Integration/Latte/Integration/Fixtures/cross/absent.latte' does not exist.
+tests/Integration/Latte/Integration/Fixtures/cross/layout.latte:9:Undefined variable: $nobodyHasThis
+tests/Integration/Latte/Integration/Fixtures/cross/page.latte:7:Variable $s provided as int does not match declared type string in 'tests/Integration/Latte/Integration/Fixtures/cross/bad.latte'.
+tests/Integration/Latte/Integration/Fixtures/cross/partial.latte:6:Undefined variable: $undeclaredFromContext
+tests/Integration/Latte/Integration/Fixtures/declaration-consistency/block-duplicate.latte:2:Variable $x in 'tests/Integration/Latte/Integration/Fixtures/declaration-consistency/block-duplicate.latte#item' is declared as string both natively and via {varType} - the {varType} is redundant.
+tests/Integration/Latte/Integration/Fixtures/declaration-consistency/block-impossible.latte:2:Variable $x in 'tests/Integration/Latte/Integration/Fixtures/declaration-consistency/block-impossible.latte#item' is declared via {varType} as int, which is incompatible with its native type string.
+tests/Integration/Latte/Integration/Fixtures/declaration-consistency/block-narrowing.latte:2:Variable $x in 'tests/Integration/Latte/Integration/Fixtures/declaration-consistency/block-narrowing.latte#item' is narrowed via {varType} from its native type Throwable to Exception.
+tests/Integration/Latte/Integration/Fixtures/declaration-consistency/file-duplicate.latte:2:Variable $exact in 'tests/Integration/Latte/Integration/Fixtures/declaration-consistency/file-duplicate.latte' is declared as string both natively and via {varType} - the {varType} is redundant.
+tests/Integration/Latte/Integration/Fixtures/declaration-consistency/file-impossible.latte:2:Variable $unrelated in 'tests/Integration/Latte/Integration/Fixtures/declaration-consistency/file-impossible.latte' is declared via {varType} as int, which is incompatible with its native type string.
+tests/Integration/Latte/Integration/Fixtures/declaration-consistency/file-narrowing.latte:2:Variable $narrow in 'tests/Integration/Latte/Integration/Fixtures/declaration-consistency/file-narrowing.latte' is narrowed via {varType} from its native type Throwable to Exception.
+tests/Integration/Latte/Integration/Fixtures/declared-parameters.latte:7:Undefined variable: $virtualOnly
+tests/Integration/Latte/Integration/Fixtures/deprecated-ifcontent.latte:2:Unnecessary n:ifcontent on empty element <br> (on line 2)
+tests/Integration/Latte/Integration/Fixtures/errors.latte:10:Unknown Latte filter 'whatsappFormat'.
+tests/Integration/Latte/Integration/Fixtures/errors.latte:12:Unknown Latte macro or attribute 'g_'.
+tests/Integration/Latte/Integration/Fixtures/errors.latte:14:Parameter #1 (array<string>) of echo cannot be converted to string.
+tests/Integration/Latte/Integration/Fixtures/errors.latte:16:Undefined variable: $undefinedDumpVar
+tests/Integration/Latte/Integration/Fixtures/errors.latte:2:Mid-file {varType} for $items must sit directly above an assignment to $items, not above an output tag.
+tests/Integration/Latte/Integration/Fixtures/errors.latte:4:Undefined variable: $undefinedVariable
+tests/Integration/Latte/Integration/Fixtures/errors.latte:6:Parameter #2 $length of static method Latte\Runtime\Filters::padLeft() expects int, string given.
+tests/Integration/Latte/Integration/Fixtures/errors.latte:8:Static property LatteTpl_tests_Integration_Latte_Integration_Fixtures_errors_latte_88179b6e::$prop_2_mismatched (int) does not accept string.
+tests/Integration/Latte/Integration/Fixtures/filter-slice.latte:4:Dumped type: (int|string)
+tests/Integration/Latte/Integration/Fixtures/internal-access.latte:13:Access to Latte runtime internal $this->getReferringTemplate() from template code.
+tests/Integration/Latte/Integration/Fixtures/internal-access.latte:17:Access to Latte runtime internal $this->global from template code.
+tests/Integration/Latte/Integration/Fixtures/malformed-define.latte:1:Unexpected end.
+tests/Integration/Latte/Integration/Fixtures/malformed-parameters.latte:1:Unexpected end.
+tests/Integration/Latte/Integration/Fixtures/typed.latte:5:Cannot access property $missing on int.
+tests/Integration/Latte/Integration/Fixtures/unknown-type.latte:1:Unknown template type class Totally\Missing\ClassName.
+tests/Integration/Latte/Integration/Fixtures/vartype-expression.latte:2:{varType} for $bad with type string is not subtype of native type 1.
+tests/Integration/Latte/Integration/Fixtures/vartype-placement.latte:2:Mid-file {varType} for $stray must sit directly above an assignment to $stray, not above an output tag.
+tests/Integration/Latte/Integration/Fixtures/vartype-placement.latte:4:Variable $wrongName in {varType} does not match assigned variable $named.

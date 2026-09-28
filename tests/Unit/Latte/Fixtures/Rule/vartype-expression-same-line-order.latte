@@ -1,0 +1,4 @@
+{var $q = \Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Support\VarTypeExpressionFixtureSource::maybeString()}
+{var $s = \Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Support\VarTypeExpressionFixtureSource::maybeString()}
+{varType string|null $x}{var $x = $q}{varType int $x}{var $x = $s}
+{$x}

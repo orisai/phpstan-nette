@@ -1,0 +1,23 @@
+parameters:
+	customRulesetUsed: true
+	# Every spawn-based Latte integration test built its fixtures/assertions against narrowing
+	# being live - the opt-in flag's own library default is false, so this shared fixture opts back
+	# in to keep every test in this directory byte-for-byte unaffected. Flag-off behaviour has its
+	# own dedicated test/config (NarrowingFlagTest) that overrides
+	# orisaiNette.latte.narrowing.enabled explicitly instead of relying on this file.
+	orisaiNette:
+		latte:
+			narrowing:
+				enabled: true
+	bootstrapFiles:
+		- ../../../../../vendor/autoload.php
+	# Support/ classes (e.g. TypedFixtureTemplate, a {templateType} target) exist to be reflected,
+	# not analysed: a directory-mode spawn that also analysed them would flag their properties as
+	# shipmonk.deadProperty findings (never read/written from visible PHP - the whole point of a
+	# templateType target is to be read only via the .latte body's synthesized locals). A per-file
+	# spawn never pulled them into the analysed set at all, since paths named a single .latte file.
+	excludePaths:
+		- Support/*
+
+includes:
+	- ../../../../../extension.neon

@@ -1,0 +1,57 @@
+{varType bool $show}
+{varType int $level}
+{varType array $items}
+{varType bool $flag}
+{varType bool $showCaptured}
+
+{if $show}
+	shown
+{elseif $level > 1}
+	high
+{else}
+	hidden
+{/if}
+
+{ifset $items[0]}
+	first set
+{/ifset}
+
+{switch $level}
+	{case 1}
+		one
+	{case 2, 3}
+		two or three
+	{default}
+		other
+{/switch}
+
+{var $i = 0}
+{while $i < 3}
+	{do $i++}
+{/while}
+
+{for $j = 0; $j < 3; $j++}
+	loop {$j}
+{/for}
+
+{try}
+	risky
+	{if $flag}{rollback}{/if}
+{else}
+	caught
+{/try}
+
+{ifchanged $level}
+	changed to {$level}
+{/ifchanged}
+
+{foreach $items as $item}
+	{continueIf $item === null}
+	{breakIf $item === 'stop'}
+	{skipIf $item === 'skip'}
+	{$item}
+{/foreach}
+
+{if}
+	captured block
+{/if $showCaptured}

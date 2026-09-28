@@ -98,7 +98,8 @@ final class ScratchProject
 				'-c',
 				$config,
 			],
-			$this->libraryRoot,
+			// The project's own root, as a real consumer runs it: Latte relativizes templates against the cwd.
+			$this->path(''),
 			['XDEBUG_MODE' => 'off'],
 			null,
 			null,

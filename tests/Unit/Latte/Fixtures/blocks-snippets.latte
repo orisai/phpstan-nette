@@ -1,0 +1,23 @@
+{varType string $x}
+
+{block content}
+	block body {$x}
+{/block}
+
+{define typed, string $p}
+	typed body {$p}
+{/define}
+
+{include #content}
+
+{include #typed, 'value'}
+
+<div n:snippet="s1">snippet content</div>
+
+{snippet s2}
+	explicit snippet
+{/snippet}
+
+{snippetArea area1}
+	{snippet inner}area snippet{/snippet}
+{/snippetArea}

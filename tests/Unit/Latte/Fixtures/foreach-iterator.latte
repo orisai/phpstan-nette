@@ -1,0 +1,23 @@
+{varType array $items}
+{varType array $groups}
+
+{foreach $items as $item}
+	{$item}
+{/foreach}
+
+{foreach $items as $key => $item}
+	{if $iterator->isFirst()}first {/if}{$item}{if $iterator->isLast()} last{/if}
+{/foreach}
+
+{foreach $groups as $group}
+	{foreach $group as $item}
+		{first}head {/first}{$item}{last} tail{/last}
+	{/foreach}
+{/foreach}
+
+{foreach $items as $item}
+	{iterateWhile}
+		{$item}
+	{/iterateWhile $item === $item}
+	{sep}, {/sep}
+{/foreach}

@@ -41,8 +41,6 @@ final class FormValuesParamTypeResolver implements ExpressionTypeResolverExtensi
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
-		$this->guard->validate();
-
 		if (!$this->enabled) {
 			return null;
 		}
@@ -50,6 +48,8 @@ final class FormValuesParamTypeResolver implements ExpressionTypeResolverExtensi
 		if (!$expr instanceof Variable || !is_string($expr->name)) {
 			return null;
 		}
+
+		$this->guard->validate();
 
 		$shape = $this->model->resolveEventCallbackFormShape($expr, $scope);
 		if ($shape === null) {

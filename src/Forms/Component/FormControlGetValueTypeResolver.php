@@ -45,8 +45,6 @@ final class FormControlGetValueTypeResolver implements ExpressionTypeResolverExt
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
-		$this->guard->validate();
-
 		if (!$this->enabled) {
 			return null;
 		}
@@ -60,6 +58,8 @@ final class FormControlGetValueTypeResolver implements ExpressionTypeResolverExt
 		) {
 			return null;
 		}
+
+		$this->guard->validate();
 
 		$guardKey = $scope->getFile() . '|' . spl_object_id($expr);
 		if (isset($this->resolving[$guardKey])) {

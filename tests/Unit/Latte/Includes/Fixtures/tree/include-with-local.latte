@@ -1,0 +1,4 @@
+{* include-with-local: has a top-level local var, then plain-includes leak-check-target.latte to
+   verify include does NOT leak the includer's topLevelVars (only layout does) *}
+{var $localOnly = 5}
+{include 'leak-check-target.latte'}

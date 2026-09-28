@@ -1,0 +1,11 @@
+{foreach [1, 2, 3] as $item}
+	{continueIf $item === 2}
+	{$item}
+{/foreach}
+
+<ul>
+	<li n:foreach="[1, 2, 3] as $x">
+		{breakIf $x === 3}
+		{$x}
+	</li>
+</ul>

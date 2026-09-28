@@ -1,0 +1,4 @@
+{* ambig-parent-a: includes ambig-mid.latte, providing $maybe as a string - conflicts with
+   ambig-target.latte's declared int, exercising the ambiguity valve (not a real mismatch: only
+   ONE of ambig-mid's two incoming contexts carries this type) *}
+{include 'ambig-mid.latte', maybe => 'conflict'}

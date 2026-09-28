@@ -1,0 +1,10 @@
+{varType string $dest}
+{varType string $label}
+
+{ifCurrent $dest, mode => 'x'}
+	{$label}
+{/ifCurrent}
+
+{ifCurrent}
+	{$label}
+{/ifCurrent}
