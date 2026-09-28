@@ -1,0 +1,15 @@
+includes:
+	- ../../../../vendor/phpstan/phpstan-nette/extension.neon
+	- ../../../../extension.neon
+
+expandRelativePaths:
+	- '[parameters][orisaiNette][dic][containerLoader]'
+
+parameters:
+	customRulesetUsed: true
+	orisaiNette:
+		dic:
+			containerLoader: ../Fixtures/fixture-container-loader.php
+	netteComponentModelDynamicReturnType: false
+	netteFormContainerValuesDynamicReturnType: false
+	netteServiceLocatorDynamicReturnType: false

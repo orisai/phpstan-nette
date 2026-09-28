@@ -1,0 +1,10 @@
+# Requires shipmonk/dead-code-detector: include this file next to extension.neon so services the
+# analysed container constructs, calls in setup or passes to factories are not reported as dead.
+services:
+	-
+		class: OriPhpstan\Nette\Dic\DeadCode\ContainerUsageExtractor
+
+	-
+		class: OriPhpstan\Nette\Dic\DeadCode\DicUsageProvider
+		tags:
+			- shipmonk.deadCode.memberUsageProvider

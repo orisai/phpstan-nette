@@ -2,6 +2,7 @@ includes:
 	- ../vendor/phpstan/phpstan/conf/bleedingEdge.neon
 	- phpstan.baseline.neon
 	- ../extension.neon
+	- ../config/dic-dead-code.neon
 
 parameters:
 	phpVersion:
@@ -20,6 +21,10 @@ parameters:
 		- ../tests/Unit/Forms/Index/Fixtures
 		- ../tests/Unit/Forms/Inference/Fixtures
 		- ../tests/Unit/Forms/Inference/Unit/Support
+		- ../tests/Unit/Dic/Fixtures
+		- ../tests/Unit/Dic/Metadata/Fixtures
+		- ../tests/Unit/Dic/Rule/Fixtures
+		- ../tests/Unit/Dic/Type/Fixtures
 
 	checkBenevolentUnionTypes: true
 	checkMissingCallableSignature: true
@@ -60,6 +65,16 @@ parameters:
 		-
 			identifier: method.dynamicName
 			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
+
+		# Runtime parity pins what the compiled container really does, so it asserts what the types already say.
+		-
+			identifier: staticMethod.alreadyNarrowedType
+			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
+		# Container::initialize() is declared on the base class only by newer nette/di releases.
+		-
+			identifier: method.notFound
+			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
+			reportUnmatched: false
 
 		# Tests building PHPStan internals by hand.
 		-

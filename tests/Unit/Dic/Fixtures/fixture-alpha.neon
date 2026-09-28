@@ -1,0 +1,52 @@
+extensions:
+	aliasProvider: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\AliasProvidingExtension
+	initializationProbe: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\InitializationProbeExtension
+
+parameters:
+	stringParam: alpha-secret-value
+	intParam: 42
+	floatParam: 3.14
+	boolParam: true
+	nullParam: null
+	listParam: [1, 2, 3]
+	emptyParam: []
+	mixedTypeParam: 42
+	nested:
+		shared: hello
+		alphaOnly: [a, b]
+	alphaOnlyParam: only-in-alpha
+
+services:
+	foo: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooService
+	bar.baz: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\BarService
+	'06': Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\NumericNameService
+	sharedName: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\AlphaVariant
+	alphaOnly: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\AlphaOnlyService
+	dupA: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\DuplicateService
+	dupB: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\DuplicateService
+	notAutowired:
+		factory: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\NotAutowiredService
+		autowired: false
+	tagged:
+		factory: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\TaggedService
+		tags:
+			alpha.tag: true
+			shared.tag: [priority: 5]
+	imported:
+		type: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ImportedService
+		imported: true
+	widget.factory:
+		implement: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\WidgetFactory
+		factory: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\Widget
+	foo.accessor:
+		implement: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooAccessor
+	setupSvc:
+		factory: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\SetupService
+		setup:
+			- setDependency(@foo)
+			- Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\StaticConfigurator::configure(@self)
+	childService:
+		factory: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ChildService
+		setup:
+			- configureParent()
+	fooAlias: @foo

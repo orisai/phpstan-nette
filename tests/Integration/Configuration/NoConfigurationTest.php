@@ -84,7 +84,17 @@ final class NoConfigurationTest extends BaseTestCase
 
 	public function testDic(): void
 	{
-		self::markTestIncomplete('Dic arrives in Task 8: no container typing without a loader');
+		$result = $this->project->analyse(ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES, ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.dic.'));
+		self::assertSame(
+			[
+				'src/ContainerConsumer.php:12 Dumped type: Corpus\\Mailer',
+				'src/ContainerConsumer.php:13 Dumped type: object',
+			],
+			ConfigurationCorpus::dumpedTypes($this->project, $result['messages']),
+		);
 	}
 
 	public function testLatteForms(): void

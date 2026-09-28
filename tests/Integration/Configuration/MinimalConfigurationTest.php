@@ -53,7 +53,20 @@ final class MinimalConfigurationTest extends BaseTestCase
 
 	public function testDic(): void
 	{
-		self::markTestIncomplete('Dic arrives in Task 8: container typing appears');
+		$result = $this->project->analyse($this->quickStartParameters(), ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			[
+				'src/ContainerConsumer.php:12 Dumped type: Corpus\\Mailer',
+				'src/ContainerConsumer.php:13 Dumped type: Corpus\\Mailer',
+			],
+			ConfigurationCorpus::dumpedTypes($this->project, $result['messages']),
+		);
+		self::assertSame(
+			['src/ContainerConsumer.php:18 orisaiNette.dic.serviceNotFound'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.dic.'),
+		);
 	}
 
 	public function testLatteForms(): void

@@ -13,10 +13,11 @@ final class ConfigurationCorpus
 
 	public const PATHS = ['src'];
 
-	// Required setup: phpstan-nette's own component and getValues() typing otherwise pre-empts the extension's.
+	// Required setup: phpstan-nette's own component, getValues() and service locator typing otherwise pre-empts the extension's.
 	public const PHPSTAN_NETTE_SWITCHES = [
 		'netteComponentModelDynamicReturnType' => false,
 		'netteFormContainerValuesDynamicReturnType' => false,
+		'netteServiceLocatorDynamicReturnType' => false,
 	];
 
 	/**
@@ -41,6 +42,29 @@ final class ConfigurationCorpus
 		}
 
 		return $findings;
+	}
+
+	/**
+	 * @param list<array{file: string, line: int, message: string, identifier: string|null}> $messages
+	 * @return list<string>
+	 */
+	public static function dumpedTypes(ScratchProject $project, array $messages): array
+	{
+		$dumps = [];
+		foreach ($messages as $message) {
+			if ($message['identifier'] !== 'phpstan.dumpType') {
+				continue;
+			}
+
+			$dumps[] = sprintf(
+				'%s:%d %s',
+				(string) substr($message['file'], strlen($project->path(''))),
+				$message['line'],
+				$message['message'],
+			);
+		}
+
+		return $dumps;
 	}
 
 	public static function write(ScratchProject $project): void
@@ -117,10 +141,56 @@ final class AppContainer extends Container
 }
 
 PHP);
+		$project->write('src/Mailer.php', <<<'PHP'
+<?php declare(strict_types = 1);
+
+namespace Corpus;
+
+final class Mailer
+{
+
+}
+
+PHP);
+		$project->write('src/ContainerConsumer.php', <<<'PHP'
+<?php declare(strict_types = 1);
+
+namespace Corpus;
+
+use Nette\DI\Container;
+
+final class ContainerConsumer
+{
+
+	public function mailer(Container $container): void
+	{
+		\PHPStan\dumpType($container->getByType(Mailer::class));
+		\PHPStan\dumpType($container->getService('mailer'));
+	}
+
+	public function nope(Container $container): object
+	{
+		return $container->getService('nope');
+	}
+
+}
+
+PHP);
+		$project->write('services.neon', "services:\n\tmailer: Corpus\\Mailer\n");
 		$project->write('container-loader.php', <<<'PHP'
 <?php declare(strict_types = 1);
 
-return new Nette\DI\Container();
+require_once __DIR__ . '/src/Mailer.php';
+
+$loader = new Nette\DI\ContainerLoader(__DIR__ . '/container-cache', true);
+$className = $loader->load(
+	static function (Nette\DI\Compiler $compiler): void {
+		$compiler->loadConfig(__DIR__ . '/services.neon');
+	},
+	'corpus',
+);
+
+return ['default' => new $className()];
 
 PHP);
 	}

@@ -13,12 +13,6 @@ parameters:
 			path: ../src/Configuration/ConfigurationGuard.php
 
 		-
-			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isDicEnabled
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Configuration/ConfigurationGuard.php
-
-		-
 			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isLatteDiscoveryEnabled
 			identifier: shipmonk.deadMethod
 			count: 1
@@ -29,6 +23,12 @@ parameters:
 			identifier: shipmonk.deadMethod
 			count: 1
 			path: ../src/Configuration/ConfigurationGuard.php
+
+		-
+			rawMessage: 'Offset string might not exist on array{getService: true, getByName: true, createService: false}.'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: ../src/Dic/Type/ServiceReturnTypeExtension.php
 
 		-
 			rawMessage: Instanceof between PhpParser\Node\Expr\Assign and PhpParser\Node\Expr\Assign will always evaluate to true.
@@ -85,12 +85,6 @@ parameters:
 			path: ../src/Forms/Type/FormShapeType.php
 
 		-
-			rawMessage: Unused Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario::getScratchDir
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../tests/Toolkit/InvalidationScenario.php
-
-		-
 			rawMessage: Unused Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario::getSourceDir
 			identifier: shipmonk.deadMethod
 			count: 1
@@ -113,6 +107,12 @@ parameters:
 			identifier: staticMethod.alreadyNarrowedType
 			count: 1
 			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
+
+		-
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''PHPStan\\Analyser\\ResultCache\\ResultCacheMetaExtension'' and OriPhpstan\Nette\Dic\Cache\ContainerResultCacheMetaExtension will always evaluate to true.'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: ../tests/Unit/Dic/Cache/ContainerResultCacheMetaExtensionTest.php
 
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with 2 and 1 will always evaluate to false.'

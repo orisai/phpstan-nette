@@ -1,0 +1,26 @@
+includes:
+	- phpstan-test.neon
+
+expandRelativePaths:
+	- '[parameters][dicNarrowingLoader]'
+
+parameters:
+	dicNarrowingLoader: ../Fixtures/fixture-container-loader.php
+
+parametersSchema:
+	dicNarrowingLoader: string()
+
+services:
+	dicNarrowingRegistry:
+		class: OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry
+		arguments:
+			loaderFile: %dicNarrowingLoader%
+		autowired: false
+
+	-
+		class: OriPhpstan\Nette\Dic\Type\HasServiceTypeSpecifyingExtension
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			registry: @dicNarrowingRegistry
+		tags:
+			- phpstan.typeSpecifier.methodTypeSpecifyingExtension

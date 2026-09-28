@@ -20,6 +20,10 @@ final class InvalidConfigurationTest extends BaseTestCase
 		$this->project->write('src/X.php', "<?php declare(strict_types = 1);\n\nfinal class X\n{\n\n}\n");
 		$this->project->write('src/a.latte', "{\$x}\n");
 		$this->project->write('loader.php', "<?php declare(strict_types = 1);\n\nreturn null;\n");
+		$this->project->write(
+			'container-loader.php',
+			"<?php declare(strict_types = 1);\n\nreturn ['default' => new Nette\\DI\\Container()];\n",
+		);
 	}
 
 	protected function tearDown(): void
@@ -47,7 +51,7 @@ final class InvalidConfigurationTest extends BaseTestCase
 					'engineLoader' => $this->project->path('loader.php'),
 					'templateFactoryContainerLoader' => $this->project->path('loader.php'),
 				],
-				'dic' => ['containerLoader' => $this->project->path('loader.php')],
+				'dic' => ['containerLoader' => $this->project->path('container-loader.php')],
 			],
 		], ['src']);
 

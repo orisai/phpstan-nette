@@ -1,0 +1,19 @@
+parameters:
+	customRulesetUsed: true
+	level: 8
+	phpVersion: 70400
+	# phpstan-nette's own ServiceLocator extension answers Container::getService() with a bare object
+	# and wins the first-non-null race, which would erase the very channel this matrix reads.
+	netteServiceLocatorDynamicReturnType: false
+	# shipmonk.deadMethod is deliberately NOT ignored: DicUsageProvider is the one DIC consumer whose
+	# answer is not a pure function of the container files, so the dead-code channel is the only one
+	# that can see a hierarchy edit going stale. seedErrors() states the corpus's dead set instead.
+	ignoreErrors:
+		# The corpus reads Container::$parameters on purpose (its typing is under test); nette/di
+		# deprecates the property, which phpstan-deprecation-rules reports.
+		-
+			identifier: property.deprecated
+
+includes:
+	- ../../../../extension.neon
+	- ../../../../config/dic-dead-code.neon

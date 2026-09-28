@@ -19,6 +19,8 @@
 	<exclude-pattern>tests/Unit/Forms/Inference/Fixtures/*</exclude-pattern>
 	<exclude-pattern>tests/Unit/Forms/Support/*</exclude-pattern>
 	<exclude-pattern>tests/Unit/Forms/Component/Unit/Support/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Dic/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/Dic/*/Fixtures/*</exclude-pattern>
 
 	<!-- Configure PSR-4 rule -->
 	<rule ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName">
@@ -34,6 +36,11 @@
 	<rule ref="SlevomatCodingStandard.Files.LineLength.LineTooLong">
 		<exclude-pattern>src/Forms/*</exclude-pattern>
 		<exclude-pattern>tests/Unit/Forms/*</exclude-pattern>
+		<exclude-pattern>tests/Unit/Dic/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/Dic/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.EmptyCatchComment.Missing">
+		<exclude-pattern>tests/Integration/Dic/*</exclude-pattern>
 	</rule>
 	<rule ref="SlevomatCodingStandard.Functions.DisallowEmptyFunction.EmptyFunction">
 		<exclude-pattern>src/Forms/Testing/*</exclude-pattern>
