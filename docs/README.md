@@ -73,6 +73,10 @@ Install with [Composer](https://getcomposer.org):
 composer require --dev orisai/phpstan-nette
 ```
 
+The package requires `nette/forms`, `nette/application`, `nette/di`, `nette/component-model`, `nette/utils` and
+`latte/latte` 2.11 — Composer installs them with it. The extensions load classes from all of them at start, whether the
+matching feature is on or off.
+
 With [phpstan/extension-installer](https://github.com/phpstan/extension-installer) the extension is registered
 automatically. Otherwise, include it in your PHPStan config:
 
