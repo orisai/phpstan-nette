@@ -84,16 +84,18 @@ includes:
 ### Patch phpstan-nette
 
 > [!IMPORTANT]
-> Forms and DI typing need a small patch of [phpstan/phpstan-nette](https://github.com/phpstan/phpstan-nette) and three
-> parameters that switch its own extensions off. phpstan-nette answers first — `IComponent`, `ArrayHash`, `mixed` — and
-> would silently shadow the types this package infers.
+> If you use [phpstan/phpstan-nette](https://github.com/phpstan/phpstan-nette) (extension-installer loads it
+> automatically), Forms and DI typing need a small patch of it and three parameters that switch its own extensions off.
+> phpstan-nette answers first — `IComponent`, `ArrayHash`, `mixed` — and would silently shadow the types this package
+> infers. Without phpstan-nette, skip this step — the parameters exist only in the patched phpstan-nette.
 >
 > Declare the patch in your root `composer.json`
 > (with [cweagans/composer-patches](https://github.com/cweagans/composer-patches) 1.x, a dependency's own patches are
-> never applied):
+> never applied) and allow the plugin — Composer 2.2+ blocks plugins not listed in `config.allow-plugins`:
 >
 > ```json
 > "require-dev": { "cweagans/composer-patches": "^1.7.0" },
+> "config": { "allow-plugins": { "cweagans/composer-patches": true } },
 > "extra": { "patches": { "phpstan/phpstan-nette": {
 > 	"Make component-model, form values and service-locator dynamic return types switchable": "vendor/orisai/phpstan-nette/patches/phpstan-nette-conditional-dynamic-return-types.patch"
 > } } }
@@ -153,7 +155,8 @@ return [
 ];
 ```
 
-All profiles are analysed together, so a service registered only for the web is reported where the console needs it.
+All profiles are analysed together: every lookup on a `Nette\DI\Container` is checked against each profile, so a
+service registered only for the web is reported as missing in the console profile.
 A single returned container is a shorthand for `['default' => $container]`.
 
 Register the loader:
@@ -169,8 +172,8 @@ The whole contract is in [DI loader contract](#di-loader-contract).
 
 ### Set up Forms
 
-Nothing to configure. Forms and component analysis is on by default — only the
-[phpstan-nette patch](#patch-phpstan-nette) is required.
+Nothing to configure. Forms and component analysis is on by default. If you use phpstan/phpstan-nette, the
+[patch and its three switches](#patch-phpstan-nette) are required.
 
 ### Set up Latte
 
@@ -370,7 +373,7 @@ It needs `orisaiNette.dic.containerLoader`.
 
 ### Validation
 
-Checks spanning more than one option run when the first file is analysed. Each rejection is a one-sentence message:
+Checks beyond the schema run when the first file is analysed. Each rejection is a one-sentence message:
 
 - `orisaiNette.latte.enabled requires "latte" in fileExtensions.`
 - `orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.`
@@ -483,29 +486,21 @@ dumpLatteDiscovery(HomePresenter::class);
 - `array<string, Nette\DI\Container>` – containers keyed by profile name; all of them are analysed together
 - `Nette\DI\Container` – a shorthand for `['default' => $container]`
 
-The file is required once per PHPStan process. It runs your bootstrap, so:
+The file may be required several times per run — DI, Latte customs and template discovery each read it. Keep it
+idempotent: no function or class declarations and no side effects which must not repeat. Returning a fresh container
+each time and returning a memoized one both work.
 
-- build the containers the way your application does, for every profile which runs (web, console, API, …)
-- keep debug mode off, unless debug-only services should be analysed too
-- if building a container registers an autoloader (e.g. RobotLoader), unregister it before returning — PHPStan already
-  knows your classes
+Build the containers the way your application does, for every profile which runs (web, console, API, …):
 
 ```php
 <?php declare(strict_types = 1);
 
 require __DIR__ . '/../../vendor/autoload.php';
 
-$before = spl_autoload_functions();
-$containers = [
+return [
 	'web' => App\Bootstrap::boot()->createContainer(),
+	'console' => App\Bootstrap::bootConsole()->createContainer(),
 ];
-foreach (spl_autoload_functions() as $autoloader) {
-	if (!in_array($autoloader, $before, true)) {
-		spl_autoload_unregister($autoloader);
-	}
-}
-
-return $containers;
 ```
 
 The result cache depends on the compiled container files, so a change of the DI config invalidates it.
@@ -743,7 +738,7 @@ Examples use a presenter `app/Ui/Admin/UserPresenter.php` (presenter `Admin:User
 | `samedir-single`                     | `<dir>/<Presenter>.<view>.latte`                                                                                         | `app/Ui/Admin/User.edit.latte`            |
 | `dirname-lcfirst`                    | `<dir>/<lcfirst class name>.latte`                                                                                       | `app/Ui/userGrid.latte`                   |
 | `dirname-templates-lcfirst`          | `<dir>/templates/<lcfirst class name>.latte`                                                                             | `app/Ui/templates/userGrid.latte`         |
-| `dirname-templates-lcfirst-fallback` | as `dirname-templates-lcfirst`, or `<dir>/templates/<sharedFallback>` when that file does not exist                      | `app/Ui/templates/@grid.latte`            |
+| `dirname-templates-lcfirst-fallback` | as `dirname-templates-lcfirst`, or `<declaring dir>/templates/<sharedFallback>` when that file does not exist, where `<declaring dir>` is the directory of the class declaring the override | `app/Ui/templates/@grid.latte`            |
 | `dirname-property-lcfirst`           | `<dir>/<default of the nameProperty property>.latte`; for a `null` default, `<dir>/<lcfirst directory name>.latte`       | `app/Ui/default.latte` (default `'default'`) |
 
 `sharedFallback` is required by `dirname-templates-lcfirst-fallback` only, `nameProperty` by `dirname-property-lcfirst`
@@ -758,8 +753,9 @@ Nothing to add. The bridge uses what Forms and Latte know — annotations and fo
 
 ### Rules with fixes
 
-Writing your own PHPStan rule which offers a fix (`fixNode()`)? Call `OriPhpstan\Nette\Latte\FixSupport::supportsFixes($scope)`
-first — code analysed from a `.latte` file has no source to rewrite, and a fix there crashes PHPStan.
+Writing your own PHPStan rule which offers a fix (`fixNode()`)? Code analysed from a `.latte` file has no source to
+rewrite, so fixes on template code are dropped. Check `OriPhpstan\Nette\Latte\FixSupport::supportsFixes($scope)` to
+skip building them.
 
 ## Features
 

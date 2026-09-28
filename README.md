@@ -28,6 +28,10 @@
 
 ```neon
 parameters:
+	# with phpstan/phpstan-nette, patch it and switch its extensions off, see docs
+	netteComponentModelDynamicReturnType: false
+	netteFormContainerValuesDynamicReturnType: false
+	netteServiceLocatorDynamicReturnType: false
 	fileExtensions: [php, latte]
 	orisaiNette:
 		latte:
