@@ -52,11 +52,49 @@ final class MinimalConfigurationTest extends BaseTestCase
 		self::assertSame([], $result['errors'], $result['stderr']);
 
 		self::assertSame(
+			['src/tpl.latte:2 orisaiNette.latte.unknownFilter'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'),
+		);
+	}
+
+	public function testLatteWithoutDiscovery(): void
+	{
+		$parameters = $this->quickStartParameters();
+		$parameters['orisaiNette']['latte']['discovery'] = ['enabled' => false];
+		$result = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			['src/tpl.latte:2 orisaiNette.latte.unknownFilter'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'),
+		);
+	}
+
+	// The corpus container has no presenter mapping, so with a mapping source configured the
+	// presenter's template discovery is opaque - and switching discovery off silences exactly that.
+	public function testDiscoveryOptOutSilencesOpaqueDiscovery(): void
+	{
+		$parameters = $this->quickStartParameters();
+		$parameters['orisaiNette']['latte']['templateFactoryContainerLoader'] = $this->project->path(
+			'container-loader.php',
+		);
+
+		$enabled = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
+		self::assertSame([], $enabled['errors'], $enabled['stderr']);
+		self::assertSame(
 			[
 				'src/HomePresenter.php:7 orisaiNette.latte.fileDiscoveryOpaque',
 				'src/tpl.latte:2 orisaiNette.latte.unknownFilter',
 			],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'),
+			ConfigurationCorpus::findings($this->project, $enabled['messages'], 'orisaiNette.latte.'),
+		);
+
+		$parameters['orisaiNette']['latte']['discovery'] = ['enabled' => false];
+		$disabled = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
+		self::assertSame([], $disabled['errors'], $disabled['stderr']);
+		self::assertSame(
+			['src/tpl.latte:2 orisaiNette.latte.unknownFilter'],
+			ConfigurationCorpus::findings($this->project, $disabled['messages'], 'orisaiNette.latte.'),
 		);
 	}
 

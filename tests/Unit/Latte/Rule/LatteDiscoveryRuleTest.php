@@ -64,7 +64,7 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 		$discoveryResolver = new DiscoveryResolver(self::MappingLoaderFile, self::AssignedFormulas, $projectRoot);
 
 		return new LatteDiscoveryRule(
-			TestGuard::latte(),
+			TestGuard::latte(true, false, true),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),
 				$parser,

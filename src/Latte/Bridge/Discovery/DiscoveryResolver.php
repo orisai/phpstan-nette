@@ -164,10 +164,13 @@ final class DiscoveryResolver
 		if ($presenter) {
 			$name = $this->presenterNameFor($entryClass->getName());
 			if ($name === null) {
-				$opaques[] = [
-					'reason' => 'presenter name unresolved: no mapping reverse-maps class ' . $entryClass->getName(),
-					'line' => null,
-				];
+				// Without a configured mapping source there is no mapping to miss, so nothing is opaque.
+				if ($this->containerLoaderFile !== null) {
+					$opaques[] = [
+						'reason' => 'presenter name unresolved: no mapping reverse-maps class ' . $entryClass->getName(),
+						'line' => null,
+					];
+				}
 			} else {
 				[$module, $presenterSegment] = Helpers::splitName($name);
 

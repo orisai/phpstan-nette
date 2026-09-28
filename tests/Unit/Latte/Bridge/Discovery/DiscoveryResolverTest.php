@@ -467,13 +467,26 @@ final class DiscoveryResolverTest extends PHPStanTestCase
 
 	public function testUnmappedPresenterIsOpaqueNeverGuessed(): void
 	{
-		$discovery = $this->discoveryFor(DiscoveryVendorPresenter::class, null);
+		// A mapping source that knows only the Fleet namespace: this presenter is unmapped.
+		$discovery = $this->discoveryFor(
+			DiscoveryVendorPresenter::class,
+			__DIR__ . '/../Fixtures/fleet-mapping-container-loader.php',
+		);
 
 		self::assertSame(['default' => [], 'detail' => []], $discovery->getViewCandidates());
 		self::assertSame([], $discovery->getLayoutCandidates());
 		self::assertCount(1, $discovery->getOpaques());
 		self::assertStringContainsString(DiscoveryVendorPresenter::class, $discovery->getOpaques()[0]['reason']);
 		self::assertSame([], $discovery->getExistenceSet());
+	}
+
+	public function testWithoutAMappingSourceAnUnmappedPresenterIsNotOpaque(): void
+	{
+		$discovery = $this->discoveryFor(DiscoveryVendorPresenter::class, null);
+
+		self::assertSame(['default' => [], 'detail' => []], $discovery->getViewCandidates());
+		self::assertSame([], $discovery->getLayoutCandidates());
+		self::assertSame([], $discovery->getOpaques());
 	}
 
 	public function testEffectiveActionSetFileSuppressesFormulaCandidatesForThatViewOnly(): void

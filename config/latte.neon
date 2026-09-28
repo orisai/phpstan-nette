@@ -6,7 +6,7 @@ parameters:
 				enabled: false
 				storePath: %currentWorkingDirectory%/phpstan-latte-store
 			discovery:
-				enabled: false
+				enabled: true
 				storePath: %tmpDir%/orisai-nette/latte-discovery
 				coarseInvalidationAccepted: false
 				formulas: []

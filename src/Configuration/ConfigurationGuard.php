@@ -101,10 +101,6 @@ final class ConfigurationGuard
 			throw new InvalidConfiguration('orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.');
 		}
 
-		if ($latte['discovery']['enabled'] && !$latte['enabled']) {
-			throw new InvalidConfiguration('orisaiNette.latte.discovery.enabled requires orisaiNette.latte.enabled.');
-		}
-
 		$loaders = [
 			'dic.containerLoader' => $this->config['dic']['containerLoader'],
 			'latte.engineLoader' => $latte['engineLoader'],

@@ -34,12 +34,15 @@ final class LatteDiscoveryRule implements Rule
 
 	private bool $enabled;
 
+	private bool $discoveryEnabled;
+
 	public function __construct(ConfigurationGuard $guard, PhpRenderWalk $renderWalk, PhpFactsCache $renderFactsCache)
 	{
 		$guard->validate();
 		$this->renderWalk = $renderWalk;
 		$this->renderFactsCache = $renderFactsCache;
 		$this->enabled = $guard->isLatteEnabled();
+		$this->discoveryEnabled = $guard->isLatteDiscoveryEnabled();
 	}
 
 	public function getNodeType(): string
@@ -85,8 +88,10 @@ final class LatteDiscoveryRule implements Rule
 		$errors = [];
 		$discovery = $facts->getDiscovery();
 		$ownSetFileLines = self::ownSetFileLines($facts, $scope->getFile());
+		// With discovery switched off there is nothing to be opaque about.
 		if (
-			$discovery !== null
+			$this->discoveryEnabled
+			&& $discovery !== null
 			&& !self::nothingToDiscover($classReflection, $facts, $scope->getFile(), $ownSetFileLines)
 		) {
 			foreach ($discovery->getOpaques() as $opaque) {

@@ -76,12 +76,15 @@ final class InvalidConfigurationTest extends BaseTestCase
 		);
 	}
 
-	public function testDiscoveryWithoutLatte(): void
+	public function testDiscoveryWithoutLatteIsInert(): void
 	{
-		$this->assertRejected(
+		$result = $this->project->analyse(
 			['orisaiNette' => ['latte' => ['discovery' => ['enabled' => true]]]],
-			'orisaiNette.latte.discovery.enabled requires orisaiNette.latte.enabled.',
+			['src'],
 		);
+
+		self::assertSame([], $result['errors'], $result['stderr']);
+		self::assertSame(0, $result['exitCode'], $result['stderr']);
 	}
 
 	public function testMissingContainerLoader(): void
