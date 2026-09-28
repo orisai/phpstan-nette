@@ -18,9 +18,9 @@ no other Forms import creeps in. `FormsCodeVersion` digests
 `src/Component/Attachment/` together with `src/Forms/`, so an edit to the attachment machinery
 rotates the persisted Forms shape cache.
 
-Two classes here are read by code outside the library. `FixSupport` (in `src/Latte/`) is the only
-public helper. Beyond it, a consuming application's own component rules may read the node attribute
-constants of `OriPhpstan\Nette\Component\NullComparisonParentVisitor` and
+Three classes are read by code outside the library. `FixSupport` lives in `src/Latte/` and is the
+only public helper. Beyond it, a consuming application's own component rules may read the node
+attribute constants of `OriPhpstan\Nette\Component\NullComparisonParentVisitor` and
 `OriPhpstan\Nette\Component\StatementExpressionVisitor`; treat those constants as an internal
 contract — renaming one breaks such a rule without any error in this library.
 

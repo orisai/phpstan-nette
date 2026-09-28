@@ -1186,10 +1186,9 @@ limitations*.
 
 ### Layout reachability (a class that renders no view cannot reach its layout)
 
-`DiscoveryRecords::forClass()` used to append a layout record for **every** class whose directory
-walk produced a layout candidate, independent of whether that class renders anything at all —
-`getLayoutCandidates()` is view-independent by vendor design, so nothing about the walk itself
-proves the layout is ever loaded. `mayReachALayout()` closes that gap with a runtime proof:
+`getLayoutCandidates()` is view-independent by vendor design, so a directory walk that produces a
+layout candidate proves nothing about whether the layout is ever loaded. `DiscoveryRecords::forClass()`
+therefore appends a layout record only when `mayReachALayout()` holds, which rests on a runtime proof:
 `Presenter::findLayoutTemplateFile()` is called from more than one live site in the vendor tree —
 `UIRuntime::initialize()` and the `{extends auto}`/`{layout auto}` macro compiled by `UIMacros`
 (plus two Latte-3-only sites in `UIExtension.php` that never execute against the installed
@@ -1693,13 +1692,11 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   "is this class ever instantiated" analysis — effectively-abstract detection, which is dead-code
   territory this extension deliberately leaves to shipmonk/dead-code-detector. Reporting on it
   without that capability would trade a silent miss for a false positive on correct code, which
-  ranks worse. Revisit if effectively-abstract detection lands. Originally this only
-  affected a control with no layout channel at all — such a control's only possible record source
-  is its own (missing) view candidate. Since *Layout reachability* (above), it now also affects
-  presenters: a presenter's convention layout candidate used to host the finding unconditionally,
-  whether or not the presenter rendered anything, so a presenter with a missing view and a
-  (correctly) dropped layout link now links no template at all and falls into this same hole instead
-  of being reported on its layout, per the *Consequence for `orisaiNette.latte.templateMissing`* note above.
+  ranks worse. Revisit if effectively-abstract detection lands. The hole covers a control with no
+  layout channel (its only possible record source is its own missing view candidate) and, because of
+  *Layout reachability* (above), a presenter with a missing view whose layout link is (correctly)
+  dropped: it links no template at all, per the *Consequence for `orisaiNette.latte.templateMissing`*
+  note above.
 - **`{default $x = expr}` and null diverge from runtime in one case.** It is modeled as
   `$x ??= expr`, but Latte's runtime `EXTR_SKIP` checks variable *existence*, not nullness: a
   variable that already exists but is `null` keeps `null` at runtime, while the analysis sees the
@@ -1920,8 +1917,7 @@ And the implementation-ledgered additions:
 
 ## Operational notes
 
-- **Naming a `.latte` file directly on the command line re-enters the parser, and used to
-  SIGSEGV.** PHPStan builds reflection source locators per analysed path: a directory gets an
+- **Naming a `.latte` file directly on the command line re-enters the parser.** PHPStan builds reflection source locators per analysed path: a directory gets an
   `OptimizedDirectorySourceLocator`, whose class→file map comes from tokenizing raw file text — no
   raw template declares a class, so a directory-shaped run never asks the parser about a template at
   all. A *file* gets an `OptimizedSingleFileSourceLocator`, which answers **every** identifier
@@ -1929,12 +1925,11 @@ And the implementation-ledgered additions:
   returns. Parsing a template asks the `ReflectionProvider` about classes — `PairingJudge` checks
   whether a recorded renderer's paired template class exists — so the fetch re-enters
   `LatteRoutingParser::parseFile()` for the file it is already parsing, which asks again, without
-  bound. PHP 7.4 has no stack-limit detection (`zend.max_allowed_stack_size` is 8.3+), so this
-  overflowed the C stack and killed the process with `Segmentation fault (core dumped)`, exit 139,
-  and no output whatsoever — before the first analysed file was even reported. `phpstan analyse templates/@layout.latte`
-  reproduced it; a whole-project run never did, and
-  neither did a template no renderer records (nothing to reflect, so nothing to re-enter).
-  `LatteRoutingParser` now guards re-entry per file and answers the nested fetch with the compiled
+  bound. PHP 7.4 has no stack-limit detection (`zend.max_allowed_stack_size` is 8.3+), so unguarded
+  re-entry overflows the C stack and kills the process with `Segmentation fault (core dumped)`, exit
+  139, and no output whatsoever — before the first analysed file is reported. Only a single-file run
+  such as `phpstan analyse templates/@layout.latte` can trigger it, and only for a template some
+  renderer records (otherwise there is nothing to reflect). `LatteRoutingParser` guards re-entry per file and answers the nested fetch with the compiled
   class alone — no contexts, no injected declarations, no edge constants — which is exactly the
   question asked (*which symbols does this file export*) and nothing more. Answering `[]` instead
   terminates too but is observably wrong: the locator would latch an empty symbol set and PHPStan
@@ -1956,10 +1951,10 @@ And the implementation-ledgered additions:
   dedicated determinism test over the fixture corpus (parallelism-independence follows from the
   store's single end-of-run writer and canonical serialization, not from a parallelism-varying
   test; the harvest is per-process-memoized, proven byte-identical across two harvests of the same
-  state). One historical correction: PHPStan's persistent reflection caches key `.latte` entries by file
-  content hash alone, while compiled templates also depend on neighbor-derived contexts — until
-  the `cacheStorage` bypass for `.latte` entries landed, a cross-invocation stale reflection
-  was possible in principle (no real witness was ever observed; the fix predates any).
+  state). PHPStan's persistent reflection caches key `.latte` entries by file content hash alone,
+  while compiled templates also depend on neighbor-derived contexts, so `LatteReflectionCacheBypass`
+  keeps `.latte` entries out of `cacheStorage`; without it a cross-invocation stale reflection is
+  possible.
   The store itself is not an input held
   constant across a *regeneration* sequence: it is a fixpoint reached by repeated plain
   analysis runs (see *Call-site narrowing* above), and re-running at the committed
@@ -2024,7 +2019,8 @@ And the implementation-ledgered additions:
 - **Phase 3** — presenter/control render analysis (`$template->x` assignments, `render`/`setFile`
   resolution) to provide real root contexts across the PHP↔Latte boundary, add the convention
   edges that lift the `orisaiNette.latte.unknownBlock` suppression above, and enable sound modeling of
-  imperative filter/function/macro registration (today: baselined, see *Known limitations*).
+  imperative filter/function/macro registration (today such names report as unknown, see *Known
+  limitations*).
   Three slices are shipped: per-class render-fact extraction (*`dumpLatteRenderFacts()`* above),
   template-class pairing (*Template-class pairing* above) and template-file discovery
   (*Template-file discovery* above — convention edges now exist for every linked template, which

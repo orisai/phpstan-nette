@@ -533,8 +533,8 @@ And from the type checks in particular:
   new consumer needs "does it exist" it wants `lookup()`; if it needs "what is it" it wants
   `identify()`, and it must treat null the way every other unresolved answer here is treated.
 - **`LOOKUP_UNRESOLVED` blocks, it does not mean "not present".** Every place the join accumulates
-  evidence, unresolved has to stop the accumulation, not be skipped over. Four review rounds removed
-  the false-positive shape that comes from getting this wrong.
+  evidence, unresolved has to stop the accumulation, not be skipped over; skipping it is
+  exactly the false-positive shape.
 - **Acceptance for any change here must be mutation-based.** A real project's finding delta is
   typically 0, so a green analysis says nothing. Rename a control in a builder and the finding must
   appear; turn one into a container, or point a `{label}` at a button, and the type checks must fire.
