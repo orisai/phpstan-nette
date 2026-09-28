@@ -752,7 +752,7 @@ Examples use a presenter `app/Ui/Admin/UserPresenter.php` (presenter `Admin:User
 | `samedir-single`                     | `<dir>/<Presenter>.<view>.latte`                                                                                         | `app/Ui/Admin/User.edit.latte`            |
 | `dirname-lcfirst`                    | `<dir>/<lcfirst class name>.latte`                                                                                       | `app/Ui/userGrid.latte`                   |
 | `dirname-templates-lcfirst`          | `<dir>/templates/<lcfirst class name>.latte`                                                                             | `app/Ui/templates/userGrid.latte`         |
-| `dirname-templates-lcfirst-fallback` | as `dirname-templates-lcfirst`, or `<declaring dir>/templates/<sharedFallback>` when that file does not exist         | `app/Ui/templates/@grid.latte`            |
+| `dirname-templates-lcfirst-fallback` | as `dirname-templates-lcfirst`, or `<declaring dir>/templates/<sharedFallback>` when that file does not exist            | `app/Ui/templates/@grid.latte`            |
 | `dirname-property-lcfirst`           | `<dir>/<default of the nameProperty property>.latte`; for a `null` default, `<dir>/<lcfirst directory name>.latte`       | `app/Ui/default.latte` (default `'default'`) |
 
 `sharedFallback` is required by `dirname-templates-lcfirst-fallback` only, `nameProperty` by `dirname-property-lcfirst`
@@ -884,9 +884,10 @@ template's lines. PHPStan's own rules (`variable.undefined`, `method.notFound`, 
 - templates are linked to the presenters and controls rendering them; each render method of a control links its own
   template
 
+- errors caused by generated code carry a tip naming the filter or macro which produced it
+
 The package replaces PHPStan's `defaultAnalysisParser` and `cacheStorage` services for every consumer, Latte on or
 off; both delegate to PHPStan's own services for everything but `.latte` files.
-- errors caused by generated code carry a tip naming the filter or macro which produced it
 
 | What is checked or typed                                                 | Error identifier                                | Notes                                              |
 |--------------------------------------------------------------------------|-------------------------------------------------|----------------------------------------------------|
