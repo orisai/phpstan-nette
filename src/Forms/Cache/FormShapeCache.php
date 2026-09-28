@@ -38,6 +38,8 @@ final class FormShapeCache
 
 	private string $versionedDirectory;
 
+	private string $codeVersion;
+
 	private ?string $directory = null;
 
 	private ?CatalogIdentity $catalogIdentity;
@@ -58,13 +60,17 @@ final class FormShapeCache
 	/** @var array<string, true> */
 	private array $interproceduralComputing = [];
 
+	/**
+	 * @param list<string> $analysedPaths
+	 */
 	public function __construct(
 		string $baseDirectory,
 		?DependencyRecorder $recorder = null,
 		?ShapeDependencyCollector $shapeDependencies = null,
 		?string $codeVersion = null,
 		?string $defaultContainerClass = null,
-		?CatalogIdentity $catalogIdentity = null
+		?CatalogIdentity $catalogIdentity = null,
+		array $analysedPaths = []
 	)
 	{
 		// The wiring supplies recorder + shapeDependencies; codeVersion defaults to the real
@@ -76,9 +82,8 @@ final class FormShapeCache
 		// base is only the inert default for direct-construction tests.
 		$this->defaultContainerClass = $defaultContainerClass ?? NetteContainer::class;
 		$this->baseDirectory = $baseDirectory;
-		$this->versionedDirectory = $baseDirectory . '/v' . ($codeVersion ?? FormsCodeVersion::get(
-			$this->defaultContainerClass,
-		));
+		$this->codeVersion = $codeVersion ?? FormsCodeVersion::get($this->defaultContainerClass, $analysedPaths);
+		$this->versionedDirectory = $baseDirectory . '/v' . $this->codeVersion;
 		$this->catalogIdentity = $catalogIdentity;
 		$this->rememberCache = new BoundedMap(self::REMEMBER_CACHE_LIMIT);
 		$this->interproceduralCache = new BoundedMap(self::INTERPROCEDURAL_CACHE_LIMIT);
@@ -116,6 +121,11 @@ final class FormShapeCache
 	public function defaultContainerClass(): string
 	{
 		return $this->defaultContainerClass;
+	}
+
+	public function codeVersion(): string
+	{
+		return $this->codeVersion;
 	}
 
 	public function recordShapeDependencies(FormShape $shape): void

@@ -2,10 +2,14 @@
 
 namespace OriPhpstan\Nette\Latte\Includes;
 
+use function array_unique;
+use function array_values;
 use function realpath;
+use function sort;
 use function strlen;
 use function strncmp;
 use const DIRECTORY_SEPARATOR;
+use const SORT_STRING;
 
 // The one first-party boundary every Latte consumer shares: which files may be walked, which
 // templates the orphan check may judge, which classes may be renderers. Bases are resolved once -
@@ -29,6 +33,20 @@ final class FirstPartyPaths
 		}
 
 		$this->bases = $bases;
+	}
+
+	// The resolved bases as a cache identity: two declarations of the same boundary (reordered,
+	// duplicated, through a symlink) must read as one value.
+
+	/**
+	 * @return list<string>
+	 */
+	public function normalized(): array
+	{
+		$bases = array_values(array_unique($this->bases));
+		sort($bases, SORT_STRING);
+
+		return $bases;
 	}
 
 	public function contains(string $file): bool

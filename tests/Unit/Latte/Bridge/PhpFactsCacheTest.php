@@ -121,6 +121,45 @@ final class PhpFactsCacheTest extends BaseTestCase
 		self::assertSame($secondFacts->getCanonicalHash(), $third->getCanonicalHash());
 	}
 
+	// The first-party boundary is a config value no read-set file reflects: the walk's app-root gate
+	// decides which classes qualify, so the envelope compares the normalised value.
+	public function testRememberRecomputesWhenFirstPartyPathsChange(): void
+	{
+		$classFile = $this->writeFile('ClassFile.php', 'class-fp-v1');
+		$inside = $this->factsAssigning('inside', $classFile);
+		$respelled = $this->factsAssigning('respelled', $classFile);
+		$outside = $this->factsAssigning('outside', $classFile);
+		$unbounded = $this->factsAssigning('unbounded', $classFile);
+
+		$first = $this->cache(null, null, [$this->workDir . '/app'])
+			->remember('App\\FooPresenter', static fn (): PhpRenderFacts => $inside);
+		self::assertSame($inside->getCanonicalHash(), $first->getCanonicalHash());
+
+		// A respelling of the same boundary (duplicated, unordered) is the same identity: still cached.
+		$second = $this->cache(null, null, [$this->workDir . '/app', $this->workDir . '/app'])
+			->remember('App\\FooPresenter', static fn (): PhpRenderFacts => $respelled);
+		self::assertSame($inside->getCanonicalHash(), $second->getCanonicalHash());
+
+		$third = $this->cache(null, null, [$this->workDir . '/elsewhere'])
+			->remember('App\\FooPresenter', static fn (): PhpRenderFacts => $outside);
+		self::assertSame($outside->getCanonicalHash(), $third->getCanonicalHash());
+
+		$fourth = $this->cache(null, null, [])
+			->remember('App\\FooPresenter', static fn (): PhpRenderFacts => $unbounded);
+		self::assertSame($unbounded->getCanonicalHash(), $fourth->getCanonicalHash());
+	}
+
+	private function factsAssigning(string $variable, string $classFile): PhpRenderFacts
+	{
+		return new PhpRenderFacts(
+			[$variable => new AssignmentFact('string', Certainty::HAPPENS, [['file' => $classFile, 'line' => 1]])],
+			[],
+			null,
+			[],
+			[$classFile],
+		);
+	}
+
 	public function testRememberMemoizesInProcessEvenAfterReadSetMemberChangesOnDisk(): void
 	{
 		$classFile = $this->writeFile('ClassFile.php', 'class-c-v1');
@@ -734,15 +773,20 @@ final class PhpFactsCacheTest extends BaseTestCase
 		self::assertSame(2, $calls);
 	}
 
+	/**
+	 * @param list<string> $firstPartyPaths
+	 */
 	private function cache(
 		?string $containerLoaderFile = null,
-		?DiscoveryResolver $discoveryResolver = null
+		?DiscoveryResolver $discoveryResolver = null,
+		array $firstPartyPaths = []
 	): PhpFactsCache
 	{
 		return new PhpFactsCache(
 			new LatteAnalysisCache($this->cacheDir(), 'testv1'),
 			new TemplateFactoryDefaultResolver($containerLoaderFile),
 			$discoveryResolver ?? new DiscoveryResolver(null, [], $this->workDir),
+			$firstPartyPaths,
 		);
 	}
 

@@ -373,6 +373,7 @@ final class PreAnalysisIndexBuilderTest extends PHPStanTestCase
 				new LatteAnalysisCache($scratchDir . '/cache', 'testv1'),
 				$templateFactoryDefault,
 				$discoveryResolver,
+				[],
 			),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),

@@ -7,14 +7,20 @@ use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use function array_unique;
+use function array_values;
 use function assert;
 use function dirname;
+use function implode;
 use function is_dir;
 use function ksort;
+use function realpath;
 use function sha1;
 use function sha1_file;
+use function sort;
 use function strlen;
 use function substr;
+use const SORT_STRING;
 
 final class FormsCodeVersion
 {
@@ -26,17 +32,46 @@ final class FormsCodeVersion
 	/** @var array<string, string> */
 	private static array $versions = [];
 
-	public static function get(string $defaultContainerClass): string
+	/**
+	 * @param list<string> $analysedPaths
+	 */
+	public static function get(string $defaultContainerClass, array $analysedPaths = []): string
 	{
-		if (isset(self::$versions[$defaultContainerClass])) {
-			return self::$versions[$defaultContainerClass];
+		$pathsDigest = self::pathsDigest($analysedPaths);
+		$memoKey = $defaultContainerClass . '|' . $pathsDigest;
+		if (isset(self::$versions[$memoKey])) {
+			return self::$versions[$memoKey];
 		}
 
 		$serialized = self::filesDigest()
 			. 'container:' . $defaultContainerClass . '|'
+			. 'paths:' . $pathsDigest . '|'
 			. 'phpstan:' . self::phpstanVersion() . '|';
 
-		return self::$versions[$defaultContainerClass] = sha1($serialized);
+		return self::$versions[$memoKey] = sha1($serialized);
+	}
+
+	// The declared paths decide which files count as project code: ContainerModel's vendor-method
+	// gates, the registrar convention check and the index containment gate all branch on
+	// AnalysedPaths::isAnalysed(), and the shapes derived under one answer persist under content-only
+	// keys. Normalised so a reordered, duplicated or symlinked declaration of the same universe
+	// shares one store.
+
+	/**
+	 * @param list<string> $analysedPaths
+	 */
+	public static function pathsDigest(array $analysedPaths): string
+	{
+		$bases = [];
+		foreach ($analysedPaths as $path) {
+			$real = realpath($path);
+			$bases[] = $real === false ? $path : $real;
+		}
+
+		$bases = array_values(array_unique($bases));
+		sort($bases, SORT_STRING);
+
+		return sha1(implode("\0", $bases));
 	}
 
 	/**

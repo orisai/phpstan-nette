@@ -257,4 +257,50 @@ final class FormShapeCacheTest extends BaseTestCase
 		self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $version);
 	}
 
+	// The declared paths decide which files count as project code (AnalysedPaths::isAnalysed()), so
+	// they are part of the store identity - normalised, so a respelling of one universe is one store.
+	public function testAnalysedPathsAreVersionInputsUpToNormalisation(): void
+	{
+		$narrow = FormsCodeVersion::get('Nette\\Forms\\Container', [$this->dir . '/src']);
+		$widened = FormsCodeVersion::get('Nette\\Forms\\Container', [$this->dir . '/src', $this->dir . '/lib']);
+
+		self::assertNotSame(FormsCodeVersion::get('Nette\\Forms\\Container'), $narrow);
+		self::assertNotSame($narrow, $widened);
+		self::assertSame(
+			$widened,
+			FormsCodeVersion::get(
+				'Nette\\Forms\\Container',
+				[$this->dir . '/lib', $this->dir . '/src', $this->dir . '/src'],
+			),
+		);
+
+		FileSystem::createDir($this->dir . '/real');
+		self::assertSame(
+			FormsCodeVersion::get('Nette\\Forms\\Container', [$this->dir . '/real']),
+			FormsCodeVersion::get('Nette\\Forms\\Container', [$this->dir . '/./real/']),
+		);
+	}
+
+	public function testAnalysedPathsRotateTheVersionDirectory(): void
+	{
+		$narrow = new FormShapeCache($this->dir, null, null, null, null, null, [$this->dir . '/src']);
+		$narrow->remember('h', 'n', static fn (): FormShape => FormShape::empty('A'));
+
+		$widened = new FormShapeCache(
+			$this->dir,
+			null,
+			null,
+			null,
+			null,
+			null,
+			[$this->dir . '/src', $this->dir . '/lib'],
+		);
+		$widened->remember('h', 'n', static fn (): FormShape => FormShape::empty('B'));
+
+		$dirs = glob($this->dir . '/v*', GLOB_ONLYDIR);
+		self::assertNotFalse($dirs);
+		self::assertCount(2, $dirs);
+		self::assertNotSame($narrow->codeVersion(), $widened->codeVersion());
+	}
+
 }

@@ -1199,6 +1199,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				new LatteAnalysisCache($cacheDir),
 				$factoryDefault,
 				new DiscoveryResolver(null, [], $cacheDir),
+				[],
 			);
 			$vanishedFact = new TemplateClassFact(
 				self::VanishedTemplateClass,
@@ -1429,6 +1430,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				new LatteAnalysisCache($cacheDir),
 				new TemplateFactoryDefaultResolver(null),
 				new DiscoveryResolver(null, [], $cacheDir),
+				[],
 			);
 			$cache->remember(
 				DiscoveryVendorPresenter::class,

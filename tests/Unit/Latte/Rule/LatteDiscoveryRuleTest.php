@@ -74,7 +74,12 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 				$factoryDefault,
 				$discoveryResolver,
 			),
-			new PhpFactsCache(new LatteAnalysisCache($this->isolatedCacheDir()), $factoryDefault, $discoveryResolver),
+			new PhpFactsCache(
+				new LatteAnalysisCache($this->isolatedCacheDir()),
+				$factoryDefault,
+				$discoveryResolver,
+				[],
+			),
 		);
 	}
 

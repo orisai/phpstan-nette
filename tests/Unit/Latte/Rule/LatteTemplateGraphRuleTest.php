@@ -369,7 +369,7 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 		$discoveryResolver = new DiscoveryResolver($mappingLoaderFile, [], $projectRoot ?? $appRoot);
 
 		return new DiscoveryRecordSource(
-			new PhpFactsCache(new LatteAnalysisCache($dir . '/cache'), $templateFactoryDefault, $discoveryResolver),
+			new PhpFactsCache(new LatteAnalysisCache($dir . '/cache'), $templateFactoryDefault, $discoveryResolver, []),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),
 				$parser,

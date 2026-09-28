@@ -5,7 +5,6 @@ namespace OriPhpstan\Nette\Forms\Analyzer;
 use Nette\Forms\Container as NetteContainer;
 use OriPhpstan\Nette\Component\Attachment\AttachmentTransitions;
 use OriPhpstan\Nette\Component\Attachment\ContainerLazyRead;
-use OriPhpstan\Nette\Forms\Cache\FormsCodeVersion;
 use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
 use OriPhpstan\Nette\Forms\Cache\TypeCanonicalizer;
 use OriPhpstan\Nette\Forms\Catalog\ControlValueResolution;
@@ -202,7 +201,7 @@ final class FormShapeAnalyzer
 
 	private function codeVersion(): string
 	{
-		return FormsCodeVersion::get($this->cache->defaultContainerClass());
+		return $this->cache->codeVersion();
 	}
 
 	/**

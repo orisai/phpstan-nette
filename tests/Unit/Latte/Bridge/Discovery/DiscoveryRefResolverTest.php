@@ -183,6 +183,7 @@ final class DiscoveryRefResolverTest extends PHPStanTestCase
 				new LatteAnalysisCache($this->scratchDir() . '/cache', 'testv1'),
 				$templateFactoryDefault,
 				$discoveryResolver,
+				[],
 			),
 			$walk,
 		);

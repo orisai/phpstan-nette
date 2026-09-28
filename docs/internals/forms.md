@@ -1952,6 +1952,11 @@ following changes (`FormsCodeVersion`):
   a persisted shape can have been derived by; adding a tree there costs one full invalidation).
 - The `orisaiNette.forms.defaultContainerClass` parameter — the class a custom container/replicator falls back to when its
   concrete type can't be resolved from the call site.
+- The declared `paths` (`FormsCodeVersion::pathsDigest()`: resolved, deduplicated, sorted). `AnalysedPaths::isAnalysed()`
+  decides which files count as project code — `ContainerModel`'s vendor-method gates, the registrar convention check in
+  `NetteEffectiveControlValueTypeResolver` and `IndexShapeResolver`'s containment gate branch on it — and the shapes
+  derived under one answer persist under content-only keys, so a directory moving in or out of `paths` over unchanged
+  files would otherwise be served stale. A respelling of the same universe keeps the store.
 - The installed `phpstan/phpstan` version — its serialized `Type` layout can change across releases.
 
 The `-<catalogs>` suffix is `CatalogIdentity`: a sha1 over the sorted `orisaiNette.forms.catalogs` class names, each

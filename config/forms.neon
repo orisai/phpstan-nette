@@ -52,6 +52,9 @@ services:
 			shapeDependencies: @formShapeDependencyCollector
 			defaultContainerClass: %orisaiNette.forms.defaultContainerClass%
 			catalogIdentity: @formCatalogIdentity
+			# The config's declared paths, as every consumer below: they decide which files count as
+			# project code, so they are part of the store's identity (see FormsCodeVersion::pathsDigest).
+			analysedPaths: %paths%
 
 	formFactSalt:
 		class: OriPhpstan\Nette\Forms\Cache\FormFactSalt

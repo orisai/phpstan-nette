@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryFact;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryResolver;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\TemplateDirectoryListing;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
+use OriPhpstan\Nette\Latte\Includes\FirstPartyPaths;
 use function array_key_exists;
 use function is_array;
 use function is_bool;
@@ -40,8 +41,10 @@ final class PhpFactsCache
 	// so discovery carries file-derived views and the existence-set a third probe kind whose
 	// result is a directory-listing digest - a version-8 envelope has neither. Version 10: facts
 	// gained createTemplate()'s resolved control argument - a version-9 envelope lacks the key
-	// fromArray() now requires.
-	public const FORMAT_VERSION = 10;
+	// fromArray() now requires. Version 11: the envelope gained the normalised first-party paths the
+	// walk's app-root gate reads - a version-10 envelope would keep serving facts computed under a
+	// superseded orisaiNette.latte.firstPartyPaths value.
+	public const FORMAT_VERSION = 11;
 
 	private const NAMESPACE_PREFIX = 'phpfacts|';
 
@@ -62,6 +65,9 @@ final class PhpFactsCache
 
 	private DiscoveryResolver $discoveryResolver;
 
+	/** @var list<string> */
+	private array $firstPartyPaths;
+
 	/** @var array<string, PhpRenderFacts> */
 	private array $inProcessCache = [];
 
@@ -70,15 +76,20 @@ final class PhpFactsCache
 	/** @var array<string, bool|string> */
 	private array $probedThisRun = [];
 
+	/**
+	 * @param list<string> $firstPartyPaths
+	 */
 	public function __construct(
 		LatteAnalysisCache $cache,
 		TemplateFactoryDefaultResolver $templateFactoryDefault,
-		DiscoveryResolver $discoveryResolver
+		DiscoveryResolver $discoveryResolver,
+		array $firstPartyPaths
 	)
 	{
 		$this->cache = $cache;
 		$this->templateFactoryDefault = $templateFactoryDefault;
 		$this->discoveryResolver = $discoveryResolver;
+		$this->firstPartyPaths = (new FirstPartyPaths($firstPartyPaths))->normalized();
 	}
 
 	/**
@@ -114,6 +125,7 @@ final class PhpFactsCache
 				'factoryDefault' => $this->templateFactoryDefault->resolve(),
 				'mapping' => $this->discoveryResolver->resolveMapping(),
 				'formulas' => $this->discoveryResolver->getFormulas(),
+				'firstPartyPaths' => $this->firstPartyPaths,
 				'existenceSet' => $discovery === null ? [] : $discovery->getExistenceSet(),
 			]);
 		}
@@ -157,6 +169,16 @@ final class PhpFactsCache
 		if (
 			!array_key_exists('formulas', $stored)
 			|| $stored['formulas'] !== $this->discoveryResolver->getFormulas()
+		) {
+			return false;
+		}
+
+		// Same live-config discipline for the first-party boundary the walk's app-root gate reads:
+		// whether a class qualifies at all, and which ancestors and callees it may follow, depend on
+		// orisaiNette.latte.firstPartyPaths, which no read-set file reflects.
+		if (
+			!array_key_exists('firstPartyPaths', $stored)
+			|| $stored['firstPartyPaths'] !== $this->firstPartyPaths
 		) {
 			return false;
 		}

@@ -881,6 +881,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 				new LatteAnalysisCache($dir . '/cache'),
 				$templateFactoryDefault,
 				$discoveryResolver,
+				[],
 			),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),

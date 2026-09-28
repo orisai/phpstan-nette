@@ -895,6 +895,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 				new LatteAnalysisCache($dir . '/cache'),
 				$templateFactoryDefault,
 				$discoveryResolver,
+				[],
 			),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),

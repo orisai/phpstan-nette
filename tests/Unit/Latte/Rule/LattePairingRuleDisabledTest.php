@@ -64,6 +64,7 @@ final class LattePairingRuleDisabledTest extends RuleTestCase
 				new LatteAnalysisCache($this->isolatedCacheDir()),
 				$factoryDefault,
 				new DiscoveryResolver(null, [], $appRoot),
+				[],
 			),
 			new PairingJudge($reflectionProvider),
 		);

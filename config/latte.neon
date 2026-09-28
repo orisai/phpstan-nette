@@ -345,6 +345,9 @@ services:
 			cache: @latteAnalysisCache
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
 			discoveryResolver: @latteDiscoveryResolver
+			# The same boundary lattePhpRenderWalk reads: it decides which classes qualify, so it is part
+			# of the envelope identity, not of any read-set file.
+			firstPartyPaths: %orisaiNette.latte.firstPartyPaths%
 		autowired: false
 
 	# Per-run pure verdict component (see PairingJudge's own class doc); reflectionProvider is left

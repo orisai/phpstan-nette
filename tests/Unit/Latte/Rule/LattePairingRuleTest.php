@@ -67,6 +67,7 @@ final class LattePairingRuleTest extends RuleTestCase
 			new LatteAnalysisCache($this->isolatedCacheDir()),
 			$factoryDefault,
 			$discoveryResolver,
+			[],
 		);
 
 		// Pre-warmed cache entry naming a class reflection cannot resolve - the state cache-loaded

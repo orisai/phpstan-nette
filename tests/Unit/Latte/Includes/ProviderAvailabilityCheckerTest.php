@@ -182,7 +182,7 @@ final class ProviderAvailabilityCheckerTest extends PHPStanTestCase
 		$discoveryResolver = new DiscoveryResolver(null, [], $appRoot);
 
 		return new DiscoveryRecordSource(
-			new PhpFactsCache(new LatteAnalysisCache($dir . '/cache'), $templateFactoryDefault, $discoveryResolver),
+			new PhpFactsCache(new LatteAnalysisCache($dir . '/cache'), $templateFactoryDefault, $discoveryResolver, []),
 			new PhpRenderWalk(
 				self::createReflectionProvider(),
 				$parser,
