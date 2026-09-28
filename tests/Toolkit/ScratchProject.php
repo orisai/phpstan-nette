@@ -181,7 +181,18 @@ final class ScratchProject
 
 	private static function makeDirectory(string $path): void
 	{
-		if (!is_dir($path) && !@mkdir($path, 0777, true) && !is_dir($path)) {
+		if (is_dir($path)) {
+			return;
+		}
+
+		// Level by level rather than mkdir(recursive): under paratest a sibling worker creating the
+		// shared parent first makes the recursive call fail with the leaf still missing.
+		$parent = dirname($path);
+		if ($parent !== $path && !is_dir($parent)) {
+			self::makeDirectory($parent);
+		}
+
+		if (!@mkdir($path, 0777) && !is_dir($path)) {
 			throw new RuntimeException(sprintf('Cannot create directory "%s".', $path));
 		}
 	}
