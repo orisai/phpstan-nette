@@ -13,7 +13,6 @@ use function array_unique;
 use function array_values;
 use function dirname;
 use function file_get_contents;
-use function implode;
 use function is_array;
 use function preg_match;
 use function preg_match_all;
@@ -81,11 +80,8 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 		)));
 		sort($unknown);
 
-		self::markTestIncomplete(sprintf(
-			'docs arrive in Task 11; undocumented: [%s]; unknown: [%s]',
-			implode(', ', $missing),
-			implode(', ', $unknown),
-		));
+		self::assertSame([], $missing);
+		self::assertSame([], $unknown);
 	}
 
 	/**

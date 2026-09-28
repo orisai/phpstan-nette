@@ -22,4 +22,23 @@
 	<a href="https://packagist.org/packages/orisai/phpstan-nette"><img src="https://badgen.net/packagist/dt/orisai/phpstan-nette?cache=3600"></a>
 	<a href="https://packagist.org/packages/orisai/phpstan-nette"><img src="https://badgen.net/packagist/v/orisai/phpstan-nette?cache=3600"></a>
 	<a href="https://choosealicense.com/licenses/mpl-2.0/"><img src="https://badgen.net/badge/license/MPL-2.0/blue?cache=3600"></a>
-<p>
+</p>
+
+##
+
+```neon
+parameters:
+	fileExtensions: [php, latte]
+	orisaiNette:
+		latte:
+			enabled: true
+		dic:
+			containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
+```
+
+```php
+// tests/phpstan/container-loader.php
+return App\Bootstrap::boot()->createContainer();
+```
+
+... and [more](docs/README.md).
