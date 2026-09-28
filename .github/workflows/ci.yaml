@@ -4,12 +4,12 @@ on:
   pull_request:
     types: [ "opened", "synchronize", "edited", "reopened" ]
     paths-ignore:
-      - "docs/**"
+      - "docs/internals/**"
   push:
     branches:
       - "**"
     paths-ignore:
-      - "docs/**"
+      - "docs/internals/**"
   schedule:
     - cron: "0 8 * * 1" # At 08:00 on Monday
   workflow_dispatch:

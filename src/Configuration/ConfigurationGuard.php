@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Forms\Catalog\Stub\FormReplicatorCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormRuleTypeCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormValueTypeCatalog;
 use PHPStan\Reflection\ReflectionProvider;
+use function array_keys;
 use function in_array;
 use function is_array;
 use function is_file;
@@ -63,6 +64,13 @@ final class ConfigurationGuard
 		'dirname-templates-lcfirst',
 		'dirname-templates-lcfirst-fallback',
 		'dirname-property-lcfirst',
+	];
+
+	private const FORMULA_OPTIONS = ['formula', 'sharedFallback', 'nameProperty'];
+
+	private const REQUIRED_FORMULA_OPTIONS = [
+		'dirname-templates-lcfirst-fallback' => 'sharedFallback',
+		'dirname-property-lcfirst' => 'nameProperty',
 	];
 
 	/** @var OrisaiNetteConfig */
@@ -123,12 +131,33 @@ final class ConfigurationGuard
 		$this->validateCatalogMethods();
 
 		foreach ($latte['discovery']['formulas'] as $class => $formula) {
-			$name = is_array($formula) ? ($formula['formula'] ?? null) : $formula;
+			$options = is_array($formula) ? $formula : ['formula' => $formula];
+			$name = $options['formula'] ?? null;
 			if (!in_array($name, self::FORMULAS, true)) {
 				throw new InvalidConfiguration(sprintf(
 					'orisaiNette.latte.discovery.formulas: unknown formula "%s" for %s.',
 					(string) $name,
 					$class,
+				));
+			}
+
+			foreach (array_keys($options) as $option) {
+				if (!in_array($option, self::FORMULA_OPTIONS, true)) {
+					throw new InvalidConfiguration(sprintf(
+						'orisaiNette.latte.discovery.formulas: unknown option "%s" for %s.',
+						$option,
+						$class,
+					));
+				}
+			}
+
+			$required = self::REQUIRED_FORMULA_OPTIONS[$name] ?? null;
+			if ($required !== null && !isset($options[$required])) {
+				throw new InvalidConfiguration(sprintf(
+					'orisaiNette.latte.discovery.formulas: formula "%s" for %s requires option "%s".',
+					$name,
+					$class,
+					$required,
 				));
 			}
 		}

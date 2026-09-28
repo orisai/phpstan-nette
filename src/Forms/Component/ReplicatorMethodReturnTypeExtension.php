@@ -19,13 +19,16 @@ final class ReplicatorMethodReturnTypeExtension implements DynamicMethodReturnTy
 
 	private ConfigurationGuard $guard;
 
+	private bool $enabled;
+
 	private ContainerModel $model;
 
-	public function __construct(ConfigurationGuard $guard, ContainerModel $model)
+	public function __construct(ConfigurationGuard $guard, bool $enabled, ContainerModel $model)
 	{
 		// PHPStan builds type extensions with the container, before the reflection provider knows the
 		// analysed paths (and in the stub validator's container too), so validate on first use.
 		$this->guard = $guard;
+		$this->enabled = $enabled;
 		$this->model = $model;
 	}
 
@@ -49,6 +52,10 @@ final class ReplicatorMethodReturnTypeExtension implements DynamicMethodReturnTy
 		Scope $scope
 	): ?Type
 	{
+		if (!$this->enabled) {
+			return null;
+		}
+
 		$innerShape = $this->model->resolveReplicatorInnerShape($methodCall->var, $scope);
 		if ($innerShape === null) {
 			return null;

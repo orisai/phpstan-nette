@@ -85,6 +85,7 @@ parameters:
 			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
 		# Container::initialize() is declared on the base class only by newer nette/di releases.
 		-
+			message: '#^Call to an undefined method Nette\\DI\\Container::initialize\(\)\.$#'
 			identifier: method.notFound
 			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
 			reportUnmatched: false

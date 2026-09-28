@@ -60,8 +60,10 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 
 	public function testLoaderReturningNonArrayThrows(): void
 	{
-		$registry = new MultiContainerRegistry(__DIR__ . '/Fixtures/bad-loader-non-array.php');
+		$loaderFile = __DIR__ . '/Fixtures/bad-loader-non-array.php';
+		$registry = new MultiContainerRegistry($loaderFile);
 		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage(self::invalidLoaderMessage($loaderFile));
 		$registry->getProfiles();
 	}
 
@@ -70,10 +72,7 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 		$loaderFile = __DIR__ . '/Fixtures/bad-loader-empty.php';
 		$registry = new MultiContainerRegistry($loaderFile);
 		$this->expectException(LogicException::class);
-		$this->expectExceptionMessage(
-			'DIC container loader "' . $loaderFile . '" must return a Nette\DI\Container or a non-empty array of '
-			. 'Nette\DI\Container instances keyed by profile name.',
-		);
+		$this->expectExceptionMessage(self::invalidLoaderMessage($loaderFile));
 		$registry->getProfiles();
 	}
 
@@ -90,9 +89,17 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 
 	public function testLoaderReturningInvalidEntryThrows(): void
 	{
-		$registry = new MultiContainerRegistry(__DIR__ . '/Fixtures/bad-loader-invalid-entry.php');
+		$loaderFile = __DIR__ . '/Fixtures/bad-loader-invalid-entry.php';
+		$registry = new MultiContainerRegistry($loaderFile);
 		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage(self::invalidLoaderMessage($loaderFile));
 		$registry->getProfiles();
+	}
+
+	private static function invalidLoaderMessage(string $loaderFile): string
+	{
+		return 'DIC container loader "' . $loaderFile . '" must return a Nette\DI\Container or a non-empty array of '
+			. 'Nette\DI\Container instances keyed by profile name.';
 	}
 
 	public function testLoaderReturningIntegerProfileKeyThrows(): void

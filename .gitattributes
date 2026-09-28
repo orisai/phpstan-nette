@@ -11,4 +11,5 @@ tools export-ignore
 Makefile export-ignore
 README.md export-ignore
 /composer.lock export-ignore
+/var export-ignore
 /vendor export-ignore

@@ -28,7 +28,7 @@
 
 ```neon
 parameters:
-	# with phpstan/phpstan-nette, patch it and switch its extensions off, see docs
+	# with phpstan/phpstan-nette: patch it and switch its extensions off (see docs); without it, remove these three lines
 	netteComponentModelDynamicReturnType: false
 	netteFormContainerValuesDynamicReturnType: false
 	netteServiceLocatorDynamicReturnType: false

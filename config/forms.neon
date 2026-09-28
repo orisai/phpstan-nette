@@ -68,6 +68,7 @@ services:
 			# run in which nothing changed pays only the sha1_file sweep.
 			cache: @formShapeCache
 
+	# internal: used by the invalidation fixture to disable the catalog salt
 	formsResultCacheMeta:
 		class: OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta
 		arguments:
@@ -285,6 +286,7 @@ services:
 		class: OriPhpstan\Nette\Forms\Component\ReplicatorMethodReturnTypeExtension
 		arguments:
 			guard: @orisaiNette.configurationGuard
+			enabled: %orisaiNette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension

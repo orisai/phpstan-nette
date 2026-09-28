@@ -138,6 +138,41 @@ final class InvalidConfigurationTest extends BaseTestCase
 		);
 	}
 
+	public function testUnknownFormulaOption(): void
+	{
+		$this->assertRejected(
+			[
+				'fileExtensions' => ['php', 'latte'],
+				'orisaiNette' => [
+					'latte' => [
+						'enabled' => true,
+						'discovery' => [
+							'enabled' => true,
+							'formulas' => ['X' => ['formula' => 'samedir-single', 'sharedFallbak' => 'form.latte']],
+						],
+					],
+				],
+			],
+			'orisaiNette.latte.discovery.formulas: unknown option "sharedFallbak" for X.',
+		);
+	}
+
+	public function testFormulaMissingItsRequiredOption(): void
+	{
+		$this->assertRejected(
+			[
+				'fileExtensions' => ['php', 'latte'],
+				'orisaiNette' => [
+					'latte' => [
+						'enabled' => true,
+						'discovery' => ['enabled' => true, 'formulas' => ['X' => 'dirname-property-lcfirst']],
+					],
+				],
+			],
+			'orisaiNette.latte.discovery.formulas: formula "dirname-property-lcfirst" for X requires option "nameProperty".',
+		);
+	}
+
 	public function testDuplicateCatalogMethod(): void
 	{
 		$this->project->write(

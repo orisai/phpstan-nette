@@ -9,6 +9,9 @@ use PHPStan\Testing\PHPStanTestCase;
 use function assert;
 use function is_array;
 
+/**
+ * @phpstan-import-type OrisaiNetteConfig from ConfigurationGuard
+ */
 final class TestGuard
 {
 
@@ -65,19 +68,19 @@ final class TestGuard
 	}
 
 	/**
-	 * @param array<string, mixed> $config
+	 * @param OrisaiNetteConfig $config
 	 */
 	private static function create(array $config): ConfigurationGuard
 	{
 		return new ConfigurationGuard(
-			$config, // @phpstan-ignore argument.type
+			$config,
 			['php', 'latte'],
 			PHPStanTestCase::getContainer()->getByType(ReflectionProvider::class),
 		);
 	}
 
 	/**
-	 * @return array<string, mixed>
+	 * @return OrisaiNetteConfig
 	 */
 	private static function defaults(): array
 	{

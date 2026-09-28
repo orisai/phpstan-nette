@@ -596,7 +596,7 @@ imperative `addFilter()` calls. Two channels are modeled; a third is deliberatel
   `C`'s own tagged/attributed methods become filters/functions (below).
 - **Imperative render-time registration** (`$template->addFilter(...)`,
   `$compiler->addFilter(...)` called from presenter/control code) stays out of scope — see *Known
-  limitations*. All such names still analyse (as `orisaiNette.latte.unknownFilter`, baselined), just without
+  limitations*. All such names still analyse (reported as `orisaiNette.latte.unknownFilter`), just without
   real-signature checking.
 
 ### Engine harvest (global customs)
@@ -1768,7 +1768,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   (`$template->addFilter(...)`/`addFunction()`, `$compiler->addFilter(...)`/`addMacro()` called
   from presenter/control PHP code, as opposed to construction-time engine wiring) is not modeled —
   phase 3 territory (needs call-site analysis of the PHP side).** These names still report
-  `orisaiNette.latte.unknownFilter`/`orisaiNette.latte.unknownMacro` and are baselined, same as any other unrecognized
+  `orisaiNette.latte.unknownFilter`/`orisaiNette.latte.unknownMacro` as unknown, same as any other unrecognized
   name; only their *typing* is unavailable, not their *reporting*. Their runtime behavior carries
   the same order-dependence landmine as the per-template leak above — a filter registered
   imperatively is available only from the point it's registered onward, in whatever order presenters
@@ -1917,7 +1917,8 @@ And the implementation-ledgered additions:
 
 ## Operational notes
 
-- **Naming a `.latte` file directly on the command line re-enters the parser.** PHPStan builds reflection source locators per analysed path: a directory gets an
+- **Naming a `.latte` file directly on the command line re-enters the parser.** PHPStan builds reflection
+  source locators per analysed path: a directory gets an
   `OptimizedDirectorySourceLocator`, whose class→file map comes from tokenizing raw file text — no
   raw template declares a class, so a directory-shaped run never asks the parser about a template at
   all. A *file* gets an `OptimizedSingleFileSourceLocator`, which answers **every** identifier
@@ -1929,7 +1930,8 @@ And the implementation-ledgered additions:
   re-entry overflows the C stack and kills the process with `Segmentation fault (core dumped)`, exit
   139, and no output whatsoever — before the first analysed file is reported. Only a single-file run
   such as `phpstan analyse templates/@layout.latte` can trigger it, and only for a template some
-  renderer records (otherwise there is nothing to reflect). `LatteRoutingParser` guards re-entry per file and answers the nested fetch with the compiled
+  renderer records (otherwise there is nothing to reflect). `LatteRoutingParser` guards re-entry per
+  file and answers the nested fetch with the compiled
   class alone — no contexts, no injected declarations, no edge constants — which is exactly the
   question asked (*which symbols does this file export*) and nothing more. Answering `[]` instead
   terminates too but is observably wrong: the locator would latch an empty symbol set and PHPStan

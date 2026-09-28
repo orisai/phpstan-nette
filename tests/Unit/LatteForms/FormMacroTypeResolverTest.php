@@ -5,6 +5,7 @@ namespace Tests\OriPhpstan\Nette\Unit\LatteForms;
 use Nette\Forms\Controls\CheckboxList;
 use Nette\Forms\Controls\TextInput;
 use Nette\Utils\FileSystem;
+use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
 use OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader;
 use OriPhpstan\Nette\Forms\Index\FileFactIndex;
@@ -17,10 +18,17 @@ use OriPhpstan\Nette\Forms\Type\FormShapeType;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\CandidatePath;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\LatteForms\FormMacroCollector;
 use OriPhpstan\Nette\LatteForms\FormMacroTypeResolver;
 use OriPhpstan\Nette\LatteForms\FormPairing;
 use PhpParser\Node;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\ArrayDimFetch;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Name\FullyQualified;
+use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\CollectedDataEmitter;
 use PHPStan\Analyser\NodeCallbackInvoker;
 use PHPStan\Analyser\Scope;
@@ -260,6 +268,26 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		self::assertNotInstanceOf(FormShapeType::class, $type);
 	}
 
+	// The bridge runs only with Forms, Latte and discovery all on; any of them off makes getType() a
+	// pass-through, before the helper call or the offset is even looked at.
+	public function testDisabledBridgeTypesNothing(): void
+	{
+		$scope = $this->scope();
+		$helperCall = new StaticCall(new FullyQualified(Helpers::class), 'form', [new Arg(new String_('choiceForm'))]);
+		$offset = new ArrayDimFetch(new Variable('form'), new String_('years'));
+
+		foreach ([TestGuard::bridge(false), TestGuard::bridge(true, false), TestGuard::bridge(
+			true,
+			true,
+			false,
+		)] as $guard) {
+			$resolver = $this->resolver([self::TYPING => [TypedRenderer::class]], $guard);
+
+			self::assertNull($resolver->getType($helperCall, $scope));
+			self::assertNull($resolver->getType($offset, $scope));
+		}
+	}
+
 	public function testUnknownTemplateStaysUntyped(): void
 	{
 		$resolver = $this->resolver([self::TYPING => [TypedRenderer::class]]);
@@ -271,12 +299,15 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 	/**
 	 * @param array<string, list<string>> $rendererClassesByTemplate
 	 */
-	private function resolver(array $rendererClassesByTemplate): FormMacroTypeResolver
+	private function resolver(
+		array $rendererClassesByTemplate,
+		?ConfigurationGuard $guard = null
+	): FormMacroTypeResolver
 	{
 		$universe = new LatteUniverse([self::TEMPLATES], self::TEMPLATES);
 
 		return new FormMacroTypeResolver(
-			TestGuard::bridge(),
+			$guard ?? TestGuard::bridge(),
 			new FormMacroCollector($universe),
 			new FormPairing($this->storeWith($rendererClassesByTemplate), $this->makeResolver()),
 			$universe,
