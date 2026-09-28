@@ -1,0 +1,59 @@
+services:
+	# Per-template syntactic form-macro facts. Shares latteAnalysisCache (content-addressed on the
+	# template source, so entries survive across runs and never go stale) and latteUniverse (one
+	# agreed .latte enumeration for every consumer) with the Latte extension - the dependency
+	# direction the bridge is allowed to have.
+	latteFormsMacroCollector:
+		class: OriPhpstan\Nette\LatteForms\FormMacroCollector
+		arguments:
+			universe: @latteUniverse
+			cache: @latteAnalysisCache
+		autowired: false
+
+	# The join: template -> renderer classes (Latte discovery store) -> form shapes (Forms index).
+	# These two services are the bridge's entire cross-extension surface; nothing else of either
+	# extension is reached, which is what keeps both independently extractable.
+	latteFormsPairing:
+		class: OriPhpstan\Nette\LatteForms\FormPairing
+		arguments:
+			store: @latteDiscoveryStore
+			resolver: @indexShapeResolver
+		autowired: false
+
+	# Vendor's own macro semantics, in one place: which method each macro compiles into and which
+	# component can answer it. Reads nothing of either extension - only PHPStan's reflection, for the
+	# one question a class name alone cannot settle (whether a control's getLabel() is vendor's
+	# label-bypassing override or one a subclass took back).
+	latteFormsMacroSuitability:
+		class: OriPhpstan\Nette\LatteForms\MacroSuitability
+		arguments:
+			reflectionProvider: @reflectionProvider
+		autowired: false
+
+	# The diagnostics. Aggregate stage (LatteTemplateGraphRule's placement and for its reason): the
+	# join re-runs in full on every analysis over cached-plus-fresh collected data, so a rename in a
+	# form builder reaches its template on a warm run without a whole-cache salt or a new
+	# invalidation edge. Active when Forms, Latte and template discovery are all on; the reportable
+	# set comes from latteAnalyzedFileMarkerCollector, which discovery switches on too.
+	-
+		class: OriPhpstan\Nette\LatteForms\LatteFormsRule
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			collector: @latteFormsMacroCollector
+			pairing: @latteFormsPairing
+			suitability: @latteFormsMacroSuitability
+			universe: @latteUniverse
+		tags: [phpstan.rules.rule]
+
+	# Analysis-time typing over the same join: {form x} becomes the paired FormShapeType, control
+	# references the builder's class. Active under the same switches as the rule, and silent on
+	# every unproven site (unresolved renderer, two resolved forms, disagreeing classes).
+	-
+		class: OriPhpstan\Nette\LatteForms\FormMacroTypeResolver
+		arguments:
+			guard: @orisaiNette.configurationGuard
+			collector: @latteFormsMacroCollector
+			pairing: @latteFormsPairing
+			universe: @latteUniverse
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension

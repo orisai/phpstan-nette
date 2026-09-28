@@ -172,7 +172,7 @@ final class LatteAnalysisCacheTest extends BaseTestCase
 		$digest = LatteCodeVersion::filesDigest();
 		$root = dirname(__DIR__, 4) . '/src';
 
-		foreach (['Latte'] as $package) {
+		foreach (['Latte', 'LatteForms'] as $package) {
 			$files = $this->phpFilesIn($root . '/' . $package);
 			self::assertNotCount(0, $files, $package . ' must have sources to salt with');
 

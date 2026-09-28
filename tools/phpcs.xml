@@ -24,6 +24,7 @@
 	<exclude-pattern>tests/Unit/Latte/Fixtures/*</exclude-pattern>
 	<exclude-pattern>tests/Unit/Latte/*/Fixtures/*</exclude-pattern>
 	<exclude-pattern>tests/Integration/Latte/*/Fixtures/*</exclude-pattern>
+	<exclude-pattern>tests/Unit/LatteForms/Fixtures/*</exclude-pattern>
 
 	<!-- Configure PSR-4 rule -->
 	<rule ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName">
@@ -41,6 +42,7 @@
 		<exclude-pattern>src/Latte/*</exclude-pattern>
 		<exclude-pattern>tests/Unit/Latte/*</exclude-pattern>
 		<exclude-pattern>tests/Integration/Latte/*</exclude-pattern>
+		<exclude-pattern>tests/Integration/LatteForms/*</exclude-pattern>
 		<exclude-pattern>tests/Toolkit/LattePhpstanConfig.php</exclude-pattern>
 		<exclude-pattern>tests/Toolkit/PipelineFactory.php</exclude-pattern>
 		<exclude-pattern>src/Forms/*</exclude-pattern>

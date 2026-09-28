@@ -37,6 +37,7 @@ parameters:
 		- ../tests/Integration/Latte/Parity/Includes/Fixtures
 		- ../tests/Integration/Latte/Parity/Lifecycle/Fixtures
 		- ../tests/Integration/Latte/RuntimeParity/Fixtures
+		- ../tests/Unit/LatteForms/Fixtures
 
 	checkBenevolentUnionTypes: true
 	checkMissingCallableSignature: true
@@ -87,6 +88,12 @@ parameters:
 			identifier: method.notFound
 			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
 			reportUnmatched: false
+
+		# The bridge's rule test synthesizes PHPStan's CollectedDataNode directly (the aggregation seam is
+		# the mechanism under test) and names FixableNodeRuleError to assert its absence.
+		-
+			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
+			path: ../tests/Unit/LatteForms/LatteFormsRuleTest.php
 
 		# Latte: runtime helpers are called only from generated template code.
 		-

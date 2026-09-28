@@ -48,6 +48,24 @@ final class ConfigurationCorpus
 	 * @param list<array{file: string, line: int, message: string, identifier: string|null}> $messages
 	 * @return list<string>
 	 */
+	public static function messages(array $messages, string $identifierPrefix): array
+	{
+		$texts = [];
+		foreach ($messages as $message) {
+			if (strpos($message['identifier'] ?? '', $identifierPrefix) !== 0) {
+				continue;
+			}
+
+			$texts[] = $message['message'];
+		}
+
+		return $texts;
+	}
+
+	/**
+	 * @param list<array{file: string, line: int, message: string, identifier: string|null}> $messages
+	 * @return list<string>
+	 */
 	public static function dumpedTypes(ScratchProject $project, array $messages): array
 	{
 		$dumps = [];

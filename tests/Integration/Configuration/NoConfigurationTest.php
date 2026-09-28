@@ -105,8 +105,15 @@ final class NoConfigurationTest extends BaseTestCase
 
 	public function testLatteForms(): void
 	{
-		self::markTestIncomplete(
-			'The Latte-Forms bridge arrives in Task 10: {input nope} stays silent while Latte is off',
+		$result = $this->project->analyse(
+			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES,
+			[...ConfigurationCorpus::PATHS, 'src/tpl.latte'],
+		);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			[],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latteForms.'),
 		);
 	}
 

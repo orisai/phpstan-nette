@@ -21,7 +21,7 @@ final class LatteCodeVersion
 	// Every package whose sources shape what lands in LatteAnalysisCache. A producer left out here
 	// would go on serving entries its own bug fixes never invalidate, so the bridge packages that
 	// write into the cache must all be listed.
-	public const SALTED_PACKAGES = ['Latte'];
+	public const SALTED_PACKAGES = ['Latte', 'LatteForms'];
 
 	private static ?string $version = null;
 

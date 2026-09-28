@@ -65,7 +65,7 @@ services:
 			# run in which nothing changed pays only the sha1_file sweep.
 			cache: @formShapeCache
 
-	-
+	formsResultCacheMeta:
 		class: OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta
 		arguments:
 			enabled: %orisaiNette.forms.enabled%

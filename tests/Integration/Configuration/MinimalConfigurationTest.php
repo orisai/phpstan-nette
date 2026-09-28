@@ -118,8 +118,29 @@ final class MinimalConfigurationTest extends BaseTestCase
 
 	public function testLatteForms(): void
 	{
-		self::markTestIncomplete(
-			'The Latte-Forms bridge arrives in Task 10: {input nope} is reported without a bridge flag',
+		$result = $this->project->analyse($this->quickStartParameters(), ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			['src/tpl.latte:1 orisaiNette.latteForms.unknownControl'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latteForms.'),
+		);
+		self::assertContains(
+			"Control 'nope' does not exist on form 'form' (Corpus\\ProfileControl).",
+			ConfigurationCorpus::messages($result['messages'], 'orisaiNette.latteForms.'),
+		);
+	}
+
+	public function testLatteFormsWithoutForms(): void
+	{
+		$parameters = $this->quickStartParameters();
+		$parameters['orisaiNette']['forms'] = ['enabled' => false];
+		$result = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		self::assertSame(
+			[],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latteForms.'),
 		);
 	}
 

@@ -1,0 +1,16 @@
+{form simpleForm}
+	{input address}
+	{inputError address}
+	<input n:name="address">
+	{label send}
+	<span n:label="send"></span>
+	{formContainer email}{/formContainer}
+	<div n:formContainer="email"></div>
+	{formContainer send}{/formContainer}
+	{input name}
+	{label name}
+	{input send}
+	{input address-street}
+	{formContainer address}{label street}{/formContainer}
+	<input n:name="address" n:ifset="$form['address']">
+{/form}

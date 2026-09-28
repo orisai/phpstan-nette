@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isBridgeEnabled
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Configuration/ConfigurationGuard.php
-
-		-
 			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isComponentEnabled
 			identifier: shipmonk.deadMethod
 			count: 1
@@ -35,36 +29,6 @@ parameters:
 			identifier: method.nonObject
 			count: 1
 			path: ../src/Forms/Component/ContainerModel.php
-
-		-
-			rawMessage: Unused OriPhpstan\Nette\Forms\Index\IndexShapeResolver::componentMayBeMutatedExternally
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Forms/Index/IndexShapeResolver.php
-
-		-
-			rawMessage: Unused OriPhpstan\Nette\Forms\Shape\FormShape::withContainer
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Forms/Shape/FormShape.php
-
-		-
-			rawMessage: Unused OriPhpstan\Nette\Forms\Shape\UnknownInfo::getNameReasons
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Forms/Shape/UnknownInfo.php
-
-		-
-			rawMessage: Unused OriPhpstan\Nette\Forms\Shape\UnknownInfo::hasNameUnknown
-			identifier: shipmonk.deadMethod
-			count: 1
-			path: ../src/Forms/Shape/UnknownInfo.php
-
-		-
-			rawMessage: Unused OriPhpstan\Nette\Forms\Shape\UnknownReason::VENDOR_MAGIC_CALL
-			identifier: shipmonk.deadConstant
-			count: 1
-			path: ../src/Forms/Shape/UnknownReason.php
 
 		-
 			rawMessage: 'Calling PHPStan\Type\VerbosityLevel::isPrecise() is not covered by backward compatibility promise. The method might change in a minor PHPStan version.'

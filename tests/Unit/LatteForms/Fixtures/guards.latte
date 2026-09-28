@@ -1,0 +1,22 @@
+{form guardedForm}
+	<button n:ifset="$form['before']" n:name="before">go</button>
+	<button n:name="after" n:ifset="$form['after']">go</button>
+	<div n:ifset="$form['block']">
+		<input n:name="block">
+		<input n:name="sibling">
+	</div>
+	{ifset $form['wrapped']}
+		<input n:name="wrapped">
+	{/ifset}
+	<div n:ifset="$user->name">
+		<input n:name="notAComponentGuard">
+	</div>
+	<span n:ifset="$form[$dynamic]"><input n:name="opaque"></span>
+	{formContainer address}
+		<div n:ifset="$container['street']">
+			<input n:name="street">
+			<input n:name="city">
+		</div>
+	{/formContainer}
+	<input n:name="plain">
+{/form}

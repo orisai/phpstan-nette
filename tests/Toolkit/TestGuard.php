@@ -44,39 +44,72 @@ final class TestGuard
 		?string $templateFactoryContainerLoader = null
 	): ConfigurationGuard
 	{
+		$config = self::defaults();
+		$config['latte']['enabled'] = $enabled || $narrowing || $discovery;
+		$config['latte']['narrowing']['enabled'] = $narrowing;
+		$config['latte']['discovery']['enabled'] = $discovery;
+		$config['latte']['templateFactoryContainerLoader'] = $templateFactoryContainerLoader;
+
+		return self::create($config);
+	}
+
+	// The Latte-Forms bridge runs only with Forms, Latte and template discovery all on.
+	public static function bridge(bool $forms = true, bool $latte = true, bool $discovery = true): ConfigurationGuard
+	{
+		$config = self::defaults();
+		$config['forms']['enabled'] = $forms;
+		$config['latte']['enabled'] = $latte;
+		$config['latte']['discovery']['enabled'] = $discovery;
+
+		return self::create($config);
+	}
+
+	/**
+	 * @param array<string, mixed> $config
+	 */
+	private static function create(array $config): ConfigurationGuard
+	{
 		return new ConfigurationGuard(
-			[
-				'forms' => [
-					'enabled' => true,
-					'defaultContainerClass' => 'Nette\\Forms\\Container',
-					'reportUnannotatedRegistrars' => true,
-					'catalogs' => [],
-					'internals' => ['indexShadowCompare' => false],
-				],
-				'component' => ['enabled' => true],
-				'latte' => [
-					'enabled' => $enabled || $narrowing || $discovery,
-					'narrowing' => ['enabled' => $narrowing, 'storePath' => 'phpstan-latte-store'],
-					'discovery' => [
-						'enabled' => $discovery,
-						'storePath' => 'latte-discovery',
-						'coarseInvalidationAccepted' => false,
-						'formulas' => [],
-					],
-					'engineLoader' => null,
-					'templateFactoryContainerLoader' => $templateFactoryContainerLoader,
-					'firstPartyPaths' => [],
-					'templateTypeRequired' => false,
-					'includeIsolation' => false,
-					'allowNarrowingOverride' => false,
-					'reportWrongPhpDocTypeInVarType' => true,
-					'reportAnyTypeWideningInVarType' => true,
-				],
-				'dic' => ['containerLoader' => null],
-			],
+			$config, // @phpstan-ignore argument.type
 			['php', 'latte'],
 			PHPStanTestCase::getContainer()->getByType(ReflectionProvider::class),
 		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function defaults(): array
+	{
+		return [
+			'forms' => [
+				'enabled' => true,
+				'defaultContainerClass' => 'Nette\\Forms\\Container',
+				'reportUnannotatedRegistrars' => true,
+				'catalogs' => [],
+				'internals' => ['indexShadowCompare' => false],
+			],
+			'component' => ['enabled' => true],
+			'latte' => [
+				'enabled' => true,
+				'narrowing' => ['enabled' => false, 'storePath' => 'phpstan-latte-store'],
+				'discovery' => [
+					'enabled' => false,
+					'storePath' => 'latte-discovery',
+					'coarseInvalidationAccepted' => false,
+					'formulas' => [],
+				],
+				'engineLoader' => null,
+				'templateFactoryContainerLoader' => null,
+				'firstPartyPaths' => [],
+				'templateTypeRequired' => false,
+				'includeIsolation' => false,
+				'allowNarrowingOverride' => false,
+				'reportWrongPhpDocTypeInVarType' => true,
+				'reportAnyTypeWideningInVarType' => true,
+			],
+			'dic' => ['containerLoader' => null],
+		];
 	}
 
 }

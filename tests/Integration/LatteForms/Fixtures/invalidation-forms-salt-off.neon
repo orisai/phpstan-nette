@@ -1,0 +1,14 @@
+# The bridge's own placement, isolated from the OTHER extension's whole-cache salt. With its salt
+# switch off, FormsResultCacheMeta hashes the constant 'disabled' instead of FormFactSalt's digest,
+# so a form-body edit no longer discards the result cache - while Forms itself, and with it
+# indexShapeResolver (what the bridge actually reads), stays enabled. That is the shape a future
+# narrowing of FormFactSalt would take, and the only configuration in which a body-level row can say
+# anything about where the bridge's rule runs. orisaiNette.forms.enabled cannot be the switch: with
+# Forms off the bridge is off too.
+services:
+	formsResultCacheMeta:
+		arguments:
+			enabled: false
+
+includes:
+	- integration.neon
