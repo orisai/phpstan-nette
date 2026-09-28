@@ -348,13 +348,12 @@ final class MultiContainerRegistry
 
 		$containers = require $this->loaderFile;
 
+		if ($containers instanceof Container) {
+			$containers = ['default' => $containers];
+		}
+
 		if (!is_array($containers) || $containers === []) {
-			throw new LogicException(
-				sprintf(
-					'DIC container loader "%s" must return a non-empty array of Nette\DI\Container instances keyed by profile.',
-					$this->loaderFile,
-				),
-			);
+			throw $this->invalidLoaderResult();
 		}
 
 		$factory = new ContainerMetadataFactory();
@@ -362,12 +361,7 @@ final class MultiContainerRegistry
 
 		foreach ($containers as $profile => $container) {
 			if (!is_string($profile) || !$container instanceof Container) {
-				throw new LogicException(
-					sprintf(
-						'DIC container loader "%s" returned an invalid entry (profile keys must be strings, values Nette\DI\Container).',
-						$this->loaderFile,
-					),
-				);
+				throw $this->invalidLoaderResult();
 			}
 
 			$metadata[$profile] = $factory->fromContainer($profile, $container);
@@ -376,6 +370,14 @@ final class MultiContainerRegistry
 		unset($containers);
 
 		return $this->metadata = $metadata;
+	}
+
+	private function invalidLoaderResult(): LogicException
+	{
+		return new LogicException(sprintf(
+			'DIC container loader "%s" must return a Nette\DI\Container or a non-empty array of Nette\DI\Container instances keyed by profile name.',
+			$this->loaderFile,
+		));
 	}
 
 	/**

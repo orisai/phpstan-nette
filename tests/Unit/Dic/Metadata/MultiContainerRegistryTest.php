@@ -67,9 +67,25 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 
 	public function testLoaderReturningEmptyArrayThrows(): void
 	{
-		$registry = new MultiContainerRegistry(__DIR__ . '/Fixtures/bad-loader-empty.php');
+		$loaderFile = __DIR__ . '/Fixtures/bad-loader-empty.php';
+		$registry = new MultiContainerRegistry($loaderFile);
 		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage(
+			'DIC container loader "' . $loaderFile . '" must return a Nette\DI\Container or a non-empty array of '
+			. 'Nette\DI\Container instances keyed by profile name.',
+		);
 		$registry->getProfiles();
+	}
+
+	public function testLoaderReturningBareContainerIsProfileDefault(): void
+	{
+		$registry = new MultiContainerRegistry(__DIR__ . '/Fixtures/bare-container-loader.php');
+
+		self::assertSame(['default'], $registry->getProfiles());
+		self::assertSame(
+			['default' => self::registry()->getContainerFilesByProfile()['alpha']],
+			$registry->getContainerFilesByProfile(),
+		);
 	}
 
 	public function testLoaderReturningInvalidEntryThrows(): void
