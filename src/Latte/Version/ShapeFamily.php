@@ -36,17 +36,13 @@ final class ShapeFamily
 	public static function detect(string $latteVersion, ?string $formsVersion): self
 	{
 		$latte = self::majorMinor($latteVersion);
-		if ($latte === null) {
+		if ($latte === null || !self::supports($latteVersion)) {
 			throw new InvalidArgumentException(sprintf('Unsupported latte/latte version "%s".', $latteVersion));
 		}
 
-		[$major, $minor] = $latte;
-		if ($major === 2) {
+		[, $minor] = $latte;
+		if ($latte[0] === 2) {
 			return new self(self::LATTE_2, self::FORMS_MACROS);
-		}
-
-		if ($major !== 3 || $minor > 1) {
-			throw new InvalidArgumentException(sprintf('Unsupported latte/latte version "%s".', $latteVersion));
 		}
 
 		$forms = $formsVersion !== null ? self::majorMinor($formsVersion) : null;
@@ -55,6 +51,13 @@ final class ShapeFamily
 			: self::FORMS_ITEM;
 
 		return new self($minor === 0 ? self::LATTE_30 : self::LATTE_31, $formsBridge);
+	}
+
+	public static function supports(string $latteVersion): bool
+	{
+		$latte = self::majorMinor($latteVersion);
+
+		return $latte !== null && ($latte[0] === 2 || ($latte[0] === 3 && $latte[1] <= 1));
 	}
 
 	public function id(): string

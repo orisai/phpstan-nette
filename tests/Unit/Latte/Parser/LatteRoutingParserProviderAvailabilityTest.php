@@ -12,7 +12,6 @@ use OriPhpstan\Nette\Latte\Bridge\PhpFactsCache;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\ProviderAvailabilityChecker;
 use OriPhpstan\Nette\Latte\Parser\LatteRoutingParser;
 use OriPhpstan\Nette\Latte\Runtime\Diag;
@@ -97,8 +96,7 @@ final class LatteRoutingParserProviderAvailabilityTest extends PHPStanTestCase
 
 			$parser = new LatteRoutingParser(
 				$this->createMock(Parser::class),
-				TestAdapter::create(),
-				new DeclarationScanner(),
+				TestAdapter::accessor(),
 				PipelineFactory::create($root, null, false),
 				$contextResolver,
 				PipelineFactory::createIncludeContractChecker($root, $contextResolver, null, false),

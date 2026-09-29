@@ -5,7 +5,6 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
-use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
@@ -17,6 +16,7 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function basename;
 use function dirname;
@@ -78,7 +78,7 @@ final class DeterminismTest extends BaseTestCase
 	public function testHarvestedGettextMacroCompilationIsDeterministic(): void
 	{
 		$engineLoaderFile = dirname(__DIR__, 2) . '/Unit/Latte/Customs/Fixtures/engine-loader-gettext.php';
-		$harvester = new CustomsHarvester(new EngineSource(null, $engineLoaderFile));
+		$harvester = TestAdapter::harvester(new EngineSource(null, $engineLoaderFile));
 		$lattePath = dirname(__DIR__, 2) . '/Unit/Latte/Customs/Fixtures/gettext-family.latte';
 		$className = TemplateClassName::forPath('fixtures/gettext-family.latte');
 		$source = FileSystem::read($lattePath);

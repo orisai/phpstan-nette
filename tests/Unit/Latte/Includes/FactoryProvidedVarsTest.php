@@ -784,8 +784,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 
 		return (new LatteRoutingParser(
 			$this->createMock(Parser::class),
-			TestAdapter::create(),
-			new DeclarationScanner(),
+			TestAdapter::accessor(),
 			PipelineFactory::create($root, null, false),
 			$contextResolver,
 			PipelineFactory::createIncludeContractChecker($root, $contextResolver, null, false),

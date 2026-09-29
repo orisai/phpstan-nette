@@ -5,11 +5,12 @@ namespace Tests\OriPhpstan\Nette\Unit\LatteForms;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
+use OriPhpstan\Nette\Latte\Forms\ControlReference;
+use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
-use OriPhpstan\Nette\LatteForms\ControlReference;
 use OriPhpstan\Nette\LatteForms\FormMacroCollector;
-use OriPhpstan\Nette\LatteForms\FormSite;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function basename;
 use function dirname;
 use function getmypid;
@@ -289,7 +290,7 @@ final class FormMacroCollectorTest extends BaseTestCase
 		$cache = new LatteAnalysisCache($directory, 'testv1');
 		$universe = new LatteUniverse([$root . '/' . self::FIXTURE_DIR], $root);
 
-		$sites = (new FormMacroCollector($universe, $cache))->sitesFor($relPath);
+		$sites = (new FormMacroCollector($universe, TestAdapter::accessor(), $cache))->sitesFor($relPath);
 		self::assertCount(1, $sites);
 
 		self::assertSame(
@@ -313,7 +314,11 @@ final class FormMacroCollectorTest extends BaseTestCase
 			$cache->readContentAddressed(sha1(FileSystem::read($root . '/' . $relPath)), 'latteforms-macros-v2'),
 		);
 
-		$reloaded = (new FormMacroCollector($universe, new LatteAnalysisCache($directory, 'testv1')))
+		$reloaded = (new FormMacroCollector(
+			$universe,
+			TestAdapter::accessor(),
+			new LatteAnalysisCache($directory, 'testv1'),
+		))
 			->sitesFor($relPath);
 		self::assertCount(1, $reloaded);
 		self::assertSame('upperForm', $reloaded[0]->getFormName());
@@ -371,7 +376,10 @@ final class FormMacroCollectorTest extends BaseTestCase
 	{
 		$root = $this->projectRoot();
 
-		return new FormMacroCollector(new LatteUniverse([$root . '/' . self::FIXTURE_DIR], $root));
+		return new FormMacroCollector(
+			new LatteUniverse([$root . '/' . self::FIXTURE_DIR], $root),
+			TestAdapter::accessor(),
+		);
 	}
 
 	/**

@@ -5,7 +5,6 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
-use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Parser\LatteRoutingParser;
@@ -88,7 +87,7 @@ final class SnapshotTest extends BaseTestCase
 	public function testGettextFamilySnapshotProvesNativeCompilation(): void
 	{
 		$engineLoaderFile = dirname(__DIR__, 2) . '/Unit/Latte/Customs/Fixtures/engine-loader-gettext.php';
-		$harvester = new CustomsHarvester(new EngineSource(null, $engineLoaderFile));
+		$harvester = TestAdapter::harvester(new EngineSource(null, $engineLoaderFile));
 		$lattePath = dirname(__DIR__, 2) . '/Unit/Latte/Customs/Fixtures/gettext-family.latte';
 		$className = TemplateClassName::forPath('fixtures/gettext-family.latte');
 
@@ -226,8 +225,7 @@ final class SnapshotTest extends BaseTestCase
 
 		return new LatteRoutingParser(
 			$delegate,
-			TestAdapter::create(),
-			new DeclarationScanner(),
+			TestAdapter::accessor(),
 			PipelineFactory::create(),
 			$contextResolver,
 			PipelineFactory::createIncludeContractChecker($projectRoot, $contextResolver),

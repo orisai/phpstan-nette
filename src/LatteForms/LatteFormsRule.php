@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\LatteForms;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Forms\Shape\ComponentPath;
+use OriPhpstan\Nette\Latte\Forms\ControlReference;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
 use PhpParser\Node;

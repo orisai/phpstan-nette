@@ -3,8 +3,8 @@
 namespace OriPhpstan\Nette\Latte\Version;
 
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
+use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
-use OriPhpstan\Nette\LatteForms\FormSite;
 
 final class ExtractedFacts
 {

@@ -138,6 +138,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Customs\CustomsHarvester
 		arguments:
 			engineSource: @latteCustomsEngineSource
+			reader: @latteEngineReader
 		autowired: false
 
 	# Per-{templateType} filter/function entries - modelled off the
@@ -150,8 +151,26 @@ services:
 			phpParser: @currentPhpVersionSimpleDirectParser
 		autowired: false
 
-	latteCompiler:
-		class: OriPhpstan\Nette\Latte\Compile\LatteCompiler
+	latteDeclarationScanner:
+		class: OriPhpstan\Nette\Latte\Declarations\DeclarationScanner
+		autowired: false
+
+	# The one place that knows which Latte is installed: compile, token facts, engine harvest, line
+	# markers and the generated-code family are all reached through what it creates. The adapter
+	# itself is resolved lazily (LatteVersionAdapterAccessor) on the first .latte parse, so with
+	# orisaiNette.latte.enabled off an unsupported install stays a ConfigurationGuard message.
+	latteVersionAdapterFactory:
+		class: OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory
+		arguments:
+			installedVersions: @orisaiNette.installedVersions
+		autowired: false
+
+	latteEngineReader:
+		factory: @latteVersionAdapterFactory::createEngineReader
+		autowired: false
+
+	latteAdapterCollaborators:
+		class: OriPhpstan\Nette\Latte\Version\AdapterCollaborators
 		arguments:
 			cache: @latteAnalysisCache
 			harvester: @latteCustomsHarvester
@@ -159,24 +178,11 @@ services:
 			discoveryStoreEnabled: %orisaiNette.latte.discovery.enabled%
 		autowired: false
 
-	latteDeclarationScanner:
-		class: OriPhpstan\Nette\Latte\Declarations\DeclarationScanner
-		autowired: false
-
-	# The one place that knows which Latte is installed: compile, token facts, engine harvest, line
-	# markers and the generated-code family are all reached through the adapter it creates.
-	latteVersionAdapterFactory:
-		class: OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory
+	latteVersionAdapterAccessor:
+		class: OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor
 		arguments:
-			installedVersions: @orisaiNette.installedVersions
-			compiler: @latteCompiler
-			scanner: @latteDeclarationScanner
-			factExtractor: @latteTemplateFactExtractor
-			formMacroCollector: @latteFormsMacroCollector
-		autowired: false
-
-	latteVersionAdapter:
-		factory: @latteVersionAdapterFactory::create
+			factory: @latteVersionAdapterFactory
+			collaborators: @latteAdapterCollaborators
 		autowired: false
 
 	latteAnalysisCache:
@@ -201,7 +207,7 @@ services:
 			# real statements. currentPhpVersionSimpleDirectParser is the same uncached SimpleParser
 			# (NameResolver included) MINUS that CleaningParser wrapper.
 			phpParser: @currentPhpVersionSimpleDirectParser
-			adapter: @latteVersionAdapter
+			adapterAccessor: @latteVersionAdapterAccessor
 			edgeIndex: @latteTemplateEdgeIndex
 			scanner: @latteDeclarationScanner
 			universe: @latteUniverse
@@ -228,8 +234,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Parser\LatteRoutingParser
 		arguments:
 			delegate: @latteInnerAnalysisParser
-			adapter: @latteVersionAdapter
-			scanner: @latteDeclarationScanner
+			adapterAccessor: @latteVersionAdapterAccessor
 			pipeline: @latteAnalysisPipeline
 			contextResolver: @latteContextResolver
 			contractChecker: @latteIncludeContractChecker

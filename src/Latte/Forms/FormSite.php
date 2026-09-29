@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\LatteForms;
+namespace OriPhpstan\Nette\Latte\Forms;
 
 // One form scope opened in a template by {form X}, {formContext X} or <form n:name="X">, holding
 // every control reference lexically inside it. Scopes nest, and a reference belongs to exactly one

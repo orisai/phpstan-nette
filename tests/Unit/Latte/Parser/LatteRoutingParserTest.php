@@ -8,7 +8,6 @@ use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Parser\LatteRoutingParser;
 use OriPhpstan\Nette\Latte\Runtime\Diag;
@@ -71,7 +70,7 @@ final class LatteRoutingParserTest extends BaseTestCase
 	public function testDisabledParserNeverInvokesTheHarvestLoaderEvenWhenParsingALatteFile(): void
 	{
 		InvocationCounter::$count = 0;
-		$harvester = new CustomsHarvester(
+		$harvester = TestAdapter::harvester(
 			new EngineSource(
 				null,
 				__DIR__ . '/../Customs/Fixtures/engine-loader-counting.php',
@@ -402,8 +401,7 @@ final class LatteRoutingParserTest extends BaseTestCase
 
 		return new LatteRoutingParser(
 			$delegate,
-			TestAdapter::create(),
-			new DeclarationScanner(),
+			TestAdapter::accessor(),
 			PipelineFactory::create(null, null, $narrowingEnabled, $harvester),
 			$contextResolver,
 			PipelineFactory::createIncludeContractChecker($root, $contextResolver, null, $narrowingEnabled),

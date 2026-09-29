@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\LatteForms;
+namespace OriPhpstan\Nette\Latte\Forms;
 
 // One syntactic reference to a control on the form opened by the enclosing FormSite. Purely
 // lexical: nothing here is resolved against a PHP class, and getName() is null whenever the macro

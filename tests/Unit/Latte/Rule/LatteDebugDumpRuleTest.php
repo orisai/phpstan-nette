@@ -14,7 +14,6 @@ use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\TemplateClassFact;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
-use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
@@ -45,6 +44,7 @@ use PHPStan\Type\Type;
 use PHPUnit\Framework\MockObject\Stub;
 use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\ConditionalCertaintyPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryMethodlessPresenter;
@@ -405,7 +405,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		FileSystem::write($dir . '/lonely.latte', "irrelevant\n");
 
 		try {
-			$harvester = new CustomsHarvester(new EngineSource(
+			$harvester = TestAdapter::harvester(new EngineSource(
 				null,
 				__DIR__ . '/../Customs/Fixtures/engine-loader-throwing.php',
 			));

@@ -14,6 +14,7 @@ use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use ReflectionMethod;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function getmypid;
 use function glob;
 use function ob_get_clean;
@@ -161,7 +162,7 @@ final class LatteCompilerTest extends BaseTestCase
 		// regression proof. ob_start()/ob_get_clean() is the other half: proves nothing reached
 		// stdout either, independent of which handler would have caught it.
 		$engineLoaderFile = __DIR__ . '/../Customs/Fixtures/engine-loader-install-trigger-error.php';
-		$harvester = new CustomsHarvester(new EngineSource(null, $engineLoaderFile));
+		$harvester = TestAdapter::harvester(new EngineSource(null, $engineLoaderFile));
 
 		ob_start();
 		$result = (new LatteCompiler(null, $harvester))->compile(
@@ -185,7 +186,7 @@ final class LatteCompilerTest extends BaseTestCase
 		// LatteCompiler::installHarvestedMacroSets() is the first place either guard actually runs.
 		// Both must degrade silently: compile of an unrelated template proceeds clean, no crash.
 		$engineLoaderFile = __DIR__ . '/../Customs/Fixtures/engine-loader-failure-branches.php';
-		$harvester = new CustomsHarvester(new EngineSource(null, $engineLoaderFile));
+		$harvester = TestAdapter::harvester(new EngineSource(null, $engineLoaderFile));
 
 		$result = (new LatteCompiler(null, $harvester))->compile(
 			"{if \$show}<b>{\$name}</b>{/if}\n",
@@ -201,7 +202,7 @@ final class LatteCompilerTest extends BaseTestCase
 	{
 		$engineLoaderFile = __DIR__ . '/../Customs/Fixtures/engine-loader-gettext.php';
 
-		return new CustomsHarvester(new EngineSource(null, $engineLoaderFile));
+		return TestAdapter::harvester(new EngineSource(null, $engineLoaderFile));
 	}
 
 	private function fullAppShapeHarvester(): CustomsHarvester
@@ -210,7 +211,7 @@ final class LatteCompilerTest extends BaseTestCase
 		InstalledVersionsGuard::requireNetteLine('nette/forms', '<3.3');
 		$engineLoaderFile = __DIR__ . '/../Customs/Fixtures/engine-loader-full-app-shape.php';
 
-		return new CustomsHarvester(new EngineSource(null, $engineLoaderFile));
+		return TestAdapter::harvester(new EngineSource(null, $engineLoaderFile));
 	}
 
 	public function testInvalidUtf8ProducesParserFailureDiagnostic(): void

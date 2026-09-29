@@ -168,7 +168,7 @@ parameters:
 		# Resolves a filter callable the way Engine::invokeFilter() does, through Latte's @internal FilterExecutor.
 		-
 			identifiers: [instanceof.internalClass, property.internalClass, property.dynamicName]
-			path: ../src/Latte/Customs/CustomsHarvester.php
+			path: ../src/Latte/Version/Latte2/Latte2EngineReader.php
 
 		# Latte tests exercising the mechanisms above directly.
 		-

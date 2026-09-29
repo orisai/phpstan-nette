@@ -20,9 +20,10 @@ Nothing about it is new machinery: the template side reads the Latte extension's
 to a `.latte` file, and the form side reads the Forms extension's shape resolver
 ([forms.md](forms.md)) for what those classes build. The bridge is
 the join, and it is a separate area: it depends on both extensions, neither depends on it, and
-both stay independently extractable. The one exception is the Latte version adapter's fact
-extraction (`ExtractedFacts`), which produces the bridge's `FormSite` list alongside the template
-facts because the form-macro scan is written against a Latte version's own tokens.
+both stay independently extractable. The form-macro token scan itself lives with the Latte version
+adapters (`Latte\Version\Latte2\FormSiteScanner`, value objects `Latte\Forms\FormSite` and
+`ControlReference`), because it is written against a Latte version's own tokens; the bridge's
+`FormMacroCollector` reads it as `ExtractedFacts::getFormSites()`.
 
 The check is **one-sided by construction**. It reports a name only when it can prove the name is
 absent; every situation it cannot resolve is silent. Read *Silence, and what it does not mean*
@@ -514,7 +515,7 @@ And from the type checks in particular:
 ## For maintainers
 
 - **The package's five classes are the whole surface.** `FormMacroCollector` (per-template,
-  content-addressed, purely syntactic — no PHP class is consulted), `FormPairing` (the join:
+  content-addressed shell over the adapter's `FormSite` facts — no PHP class is consulted), `FormPairing` (the join:
   discovery store → renderer classes → Forms shapes), `ResolvedForm` (`lookup()` for existence,
   `identify()` for kind), `MacroSuitability` (vendor's macro semantics, and the only place PHPStan
   reflection is used) and `LatteFormsRule` (the five diagnostics). The type checks added **no**

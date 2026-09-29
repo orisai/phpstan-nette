@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureMacroSet;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\InvocationCounter;
 use function array_keys;
@@ -214,7 +215,7 @@ final class CustomsHarvesterTest extends BaseTestCase
 
 	private function harvester(?string $containerLoaderFile, ?string $latteEngineLoaderFile): CustomsHarvester
 	{
-		return new CustomsHarvester(new EngineSource($containerLoaderFile, $latteEngineLoaderFile));
+		return TestAdapter::harvester(new EngineSource($containerLoaderFile, $latteEngineLoaderFile));
 	}
 
 	public function testHasConfiguredSourceIsFalseWithNeitherLoaderSet(): void

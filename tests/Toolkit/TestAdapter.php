@@ -2,29 +2,46 @@
 
 namespace Tests\OriPhpstan\Nette\Toolkit;
 
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
-use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
+use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
+use OriPhpstan\Nette\Latte\Customs\EngineSource;
+use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
+use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory;
-use OriPhpstan\Nette\LatteForms\FormMacroCollector;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 
-// The adapter the installed Latte gets in production, over throwaway collaborators: an
-// empty-paths universe, so form-site extraction answers [] for every path.
+// The adapter, engine reader and harvester the installed Latte gets in production, over
+// throwaway collaborators (no analysis cache, no discovery store).
 final class TestAdapter
 {
 
-	public static function create(?LatteCompiler $compiler = null): LatteVersionAdapter
+	public static function factory(): LatteVersionAdapterFactory
 	{
-		return (new LatteVersionAdapterFactory(
-			ProjectInstalledVersions::get(),
-			$compiler ?? new LatteCompiler(),
-			new DeclarationScanner(),
-			new TemplateFactExtractor(),
-			new FormMacroCollector(new LatteUniverse([], '')),
-		))->create();
+		return new LatteVersionAdapterFactory(ProjectInstalledVersions::get());
+	}
+
+	public static function create(?CustomsHarvester $harvester = null): LatteVersionAdapter
+	{
+		return self::accessor($harvester)->get();
+	}
+
+	public static function accessor(?CustomsHarvester $harvester = null): LatteVersionAdapterAccessor
+	{
+		return new LatteVersionAdapterAccessor(
+			self::factory(),
+			new AdapterCollaborators(null, $harvester),
+		);
+	}
+
+	public static function engineReader(): LatteEngineReader
+	{
+		return self::factory()->createEngineReader();
+	}
+
+	public static function harvester(EngineSource $engineSource): CustomsHarvester
+	{
+		return new CustomsHarvester($engineSource, self::engineReader());
 	}
 
 }

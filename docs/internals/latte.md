@@ -22,12 +22,18 @@ parallelism, the result cache, and the baseline all apply uniformly. The library
 Every parameter this extension declares is namespaced under `orisaiNette.latte`.
 
 Everything that reads Latte's own API or depends on the shape of its generated code sits behind
-`LatteVersionAdapter` (`src/Latte/Version/`): compilation, the token-based fact extraction
-(declarations, include edges, form-macro sites), the engine harvest, the line-marker pattern and
-the `ShapeFamily` (Latte line + forms bridge, e.g. `2/macros`). `LatteVersionAdapterFactory` picks
-the adapter from the project's installed `latte/latte` and `nette/forms` versions; `Latte2Adapter`
-wraps the classes described below. The compile cache key carries the family id and the adapter
-class, so a different adapter never serves another's compiled output.
+`LatteVersionAdapter` (`src/Latte/Version/`): `compile()` returns a `CompiledTemplate` — the
+generated code and the `ExtractedFacts` (declarations, include edges, form-macro sites) from the
+same parse — `extractFacts()` is the facts-only path, plus the line-marker pattern and the
+`ShapeFamily` (Latte line + forms bridge, e.g. `2/macros`). The engine harvest is the sibling
+`LatteEngineReader`, which `CustomsHarvester` calls inside its own error containment.
+`LatteVersionAdapterFactory` is the one version switch (installed `latte/latte` and `nette/forms`
+versions); it creates the reader directly and the adapter through `LatteVersionAdapterAccessor`,
+which resolves on the first `.latte` parse so that an unsupported install with Latte analysis off
+stays a `ConfigurationGuard` message instead of a container-build error. `Latte2Adapter` wraps the
+classes described below (`FormSiteScanner` holds the Latte 2 form-macro token scan). The compile
+cache key carries the family id and the adapter class, so a different adapter never serves
+another's compiled output.
 
 For each `.latte` file, `LatteCompiler` (`src/Latte/Compile/`) runs the real
 `Latte\Parser`/`Latte\Compiler` (Latte 2.11 — no `Engine::compile`, no engine cache, no

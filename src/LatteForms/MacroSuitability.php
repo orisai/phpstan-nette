@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\LatteForms;
 use Nette\ComponentModel\Container as ComponentModelContainer;
 use Nette\Forms\Controls\Button;
 use Nette\Forms\Controls\HiddenField;
+use OriPhpstan\Nette\Latte\Forms\ControlReference;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
 use function ltrim;

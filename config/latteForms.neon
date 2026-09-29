@@ -7,6 +7,7 @@ services:
 		class: OriPhpstan\Nette\LatteForms\FormMacroCollector
 		arguments:
 			universe: @latteUniverse
+			adapterAccessor: @latteVersionAdapterAccessor
 			cache: @latteAnalysisCache
 		autowired: false
 

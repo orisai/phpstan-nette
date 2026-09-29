@@ -36,6 +36,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Type\ObjectType;
 use Tests\OriPhpstan\Nette\Toolkit\FormShapeTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestFileFinder;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\ClosedRenderer;
@@ -308,7 +309,7 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 
 		return new FormMacroTypeResolver(
 			$guard ?? TestGuard::bridge(),
-			new FormMacroCollector($universe),
+			new FormMacroCollector($universe, TestAdapter::accessor()),
 			new FormPairing($this->storeWith($rendererClassesByTemplate), $this->makeResolver()),
 			$universe,
 		);

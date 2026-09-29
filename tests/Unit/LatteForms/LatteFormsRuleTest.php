@@ -33,6 +33,7 @@ use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\LineRuleError;
 use PHPStan\Rules\NonIgnorableRuleError;
 use Tests\OriPhpstan\Nette\Toolkit\FormShapeTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestFileFinder;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\BareRenderer;
@@ -669,7 +670,7 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		$universe = new LatteUniverse([self::TEMPLATES], self::TEMPLATES);
 		$rule = new LatteFormsRule(
 			$guard ?? TestGuard::bridge(),
-			new FormMacroCollector($universe),
+			new FormMacroCollector($universe, TestAdapter::accessor()),
 			new FormPairing($this->storeWith($rendererClassesByTemplate), $this->makeResolver()),
 			new MacroSuitability(self::createReflectionProvider()),
 			$universe,

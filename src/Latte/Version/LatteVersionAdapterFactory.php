@@ -7,70 +7,76 @@ use LogicException;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
+use OriPhpstan\Nette\Latte\Version\Latte2\FormSiteScanner;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
-use OriPhpstan\Nette\LatteForms\FormMacroCollector;
+use OriPhpstan\Nette\Latte\Version\Latte2\Latte2EngineReader;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use ReflectionMethod;
 use function class_exists;
 
+// The one version switch. It holds nothing but the installed versions, so the engine reader it
+// creates can feed CustomsHarvester without a harvester -> compiler -> harvester cycle.
 final class LatteVersionAdapterFactory
 {
 
-	// Resolved at runtime only: the Latte 3 adapter is analysed under its own profile and stays
+	// Resolved at runtime only: the Latte 3 classes are analysed under their own profile and stay
 	// out of the default one's type-checked graph.
 	private const LATTE3_ADAPTER_CLASS = 'OriPhpstan\Nette\Latte\Version\Latte3\Latte3Adapter';
 
 	private ProjectInstalledVersions $installedVersions;
 
-	private LatteCompiler $compiler;
+	private ?ShapeFamily $family = null;
 
-	private DeclarationScanner $scanner;
-
-	private TemplateFactExtractor $factExtractor;
-
-	private FormMacroCollector $formMacroCollector;
-
-	public function __construct(
-		ProjectInstalledVersions $installedVersions,
-		LatteCompiler $compiler,
-		DeclarationScanner $scanner,
-		TemplateFactExtractor $factExtractor,
-		FormMacroCollector $formMacroCollector
-	)
+	public function __construct(ProjectInstalledVersions $installedVersions)
 	{
 		$this->installedVersions = $installedVersions;
-		$this->compiler = $compiler;
-		$this->scanner = $scanner;
-		$this->factExtractor = $factExtractor;
-		$this->formMacroCollector = $formMacroCollector;
 	}
 
-	public function create(): LatteVersionAdapter
+	public function family(): ShapeFamily
 	{
-		$family = ShapeFamily::detect(
+		return $this->family ??= ShapeFamily::detect(
 			$this->installedVersions->getVersion('latte/latte') ?? Engine::VERSION,
 			$this->installedVersions->getVersion('nette/forms'),
 		);
-
-		if ($family->latteLine === ShapeFamily::LATTE_2) {
-			return new Latte2Adapter($this->compiler, $this->scanner, $this->factExtractor, $this->formMacroCollector);
-		}
-
-		return self::createLatte3($family);
 	}
 
-	private static function createLatte3(ShapeFamily $family): LatteVersionAdapter
+	public function create(AdapterCollaborators $collaborators): LatteVersionAdapter
 	{
+		$family = $this->family();
+
+		if ($family->latteLine === ShapeFamily::LATTE_2) {
+			return new Latte2Adapter(
+				new LatteCompiler(
+					$collaborators->getCache(),
+					$collaborators->getHarvester(),
+					$collaborators->getDiscoveryStore(),
+					$collaborators->isDiscoveryStoreEnabled(),
+				),
+				new DeclarationScanner(),
+				new TemplateFactExtractor(),
+				new FormSiteScanner(),
+			);
+		}
+
 		if (!class_exists(self::LATTE3_ADAPTER_CLASS)) {
 			throw new LogicException('Latte 3 adapter not available yet');
 		}
 
-		$adapter = (new ReflectionMethod(self::LATTE3_ADAPTER_CLASS, 'create'))->invoke(null, $family);
+		$adapter = (new ReflectionMethod(self::LATTE3_ADAPTER_CLASS, 'create'))->invoke(null, $family, $collaborators);
 		if (!$adapter instanceof LatteVersionAdapter) {
 			throw new LogicException('Latte 3 adapter factory must return a LatteVersionAdapter.');
 		}
 
 		return $adapter;
+	}
+
+	public function createEngineReader(): LatteEngineReader
+	{
+		if ($this->family()->latteLine === ShapeFamily::LATTE_2) {
+			return new Latte2EngineReader();
+		}
+
+		throw new LogicException('Latte 3 engine reader not available yet');
 	}
 
 }

@@ -15,6 +15,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
 use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use function array_fill_keys;
 use function array_keys;
@@ -568,7 +569,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 
 	private function harvester(?string $latteEngineLoaderFile): CustomsHarvester
 	{
-		return new CustomsHarvester(new EngineSource(null, $latteEngineLoaderFile));
+		return TestAdapter::harvester(new EngineSource(null, $latteEngineLoaderFile));
 	}
 
 	private function scratchDir(): string

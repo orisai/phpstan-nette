@@ -2,18 +2,13 @@
 
 namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
-use Latte\Engine;
-use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
-use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
+use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
-use OriPhpstan\Nette\Latte\Version\ParsedTemplate;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
-use OriPhpstan\Nette\LatteForms\FormMacroCollector;
 
 final class Latte2Adapter implements LatteVersionAdapter
 {
@@ -26,7 +21,7 @@ final class Latte2Adapter implements LatteVersionAdapter
 
 	private TemplateFactExtractor $factExtractor;
 
-	private FormMacroCollector $formMacroCollector;
+	private FormSiteScanner $formSiteScanner;
 
 	private ShapeFamily $family;
 
@@ -34,33 +29,31 @@ final class Latte2Adapter implements LatteVersionAdapter
 		LatteCompiler $compiler,
 		DeclarationScanner $scanner,
 		TemplateFactExtractor $factExtractor,
-		FormMacroCollector $formMacroCollector
+		FormSiteScanner $formSiteScanner
 	)
 	{
 		$this->compiler = $compiler;
 		$this->scanner = $scanner;
 		$this->factExtractor = $factExtractor;
-		$this->formMacroCollector = $formMacroCollector;
+		$this->formSiteScanner = $formSiteScanner;
 		$this->family = new ShapeFamily(ShapeFamily::LATTE_2, ShapeFamily::FORMS_MACROS);
 	}
 
-	public function compile(string $source, string $className): CompileResult
+	public function compile(string $source, string $className, string $relativePath): CompiledTemplate
 	{
-		return $this->compiler->compile($source, $className, $this->family->id() . '|' . self::class);
-	}
-
-	public function extractFacts(string $source, ParsedTemplate $parsed): ExtractedFacts
-	{
-		return new ExtractedFacts(
-			$this->scanner->scan($source),
-			$this->factExtractor->extract($source, $parsed->getRelativePath()),
-			$this->formMacroCollector->sitesFor($parsed->getRelativePath()),
+		return new CompiledTemplate(
+			$this->compiler->compile($source, $className, $this->family->id() . '|' . self::class),
+			$this->extractFacts($source, $relativePath),
 		);
 	}
 
-	public function harvestCustoms(Engine $engine): HarvestedCustoms
+	public function extractFacts(string $source, string $relativePath): ExtractedFacts
 	{
-		return CustomsHarvester::enumerate($engine);
+		return new ExtractedFacts(
+			$this->scanner->scan($source),
+			$this->factExtractor->extract($source, $relativePath),
+			$this->formSiteScanner->scan($source),
+		);
 	}
 
 	public function lineMarkerPattern(): string

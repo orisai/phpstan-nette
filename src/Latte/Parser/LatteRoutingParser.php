@@ -8,7 +8,6 @@ use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryRefResolver;
 use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\DeclarationConsistencyChecker;
@@ -24,7 +23,7 @@ use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
 use OriPhpstan\Nette\Latte\Postprocess\DependencyEdgeEmitter;
 use OriPhpstan\Nette\Latte\Postprocess\DiagnosticMaterializer;
 use OriPhpstan\Nette\Latte\Postprocess\RichAttributeDecorator;
-use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 use PhpParser\Node\Stmt;
 use PHPStan\Parser\Parser;
 use ReflectionException;
@@ -42,9 +41,7 @@ final class LatteRoutingParser implements Parser
 
 	private Parser $delegate;
 
-	private LatteVersionAdapter $adapter;
-
-	private DeclarationScanner $scanner;
+	private LatteVersionAdapterAccessor $adapterAccessor;
 
 	private AnalysisPipeline $pipeline;
 
@@ -112,8 +109,7 @@ final class LatteRoutingParser implements Parser
 
 	public function __construct(
 		Parser $delegate,
-		LatteVersionAdapter $adapter,
-		DeclarationScanner $scanner,
+		LatteVersionAdapterAccessor $adapterAccessor,
 		AnalysisPipeline $pipeline,
 		ContextResolver $contextResolver,
 		IncludeContractChecker $contractChecker,
@@ -131,8 +127,7 @@ final class LatteRoutingParser implements Parser
 	)
 	{
 		$this->delegate = $delegate;
-		$this->adapter = $adapter;
-		$this->scanner = $scanner;
+		$this->adapterAccessor = $adapterAccessor;
 		$this->pipeline = $pipeline;
 		$this->contextResolver = $contextResolver;
 		$this->contractChecker = $contractChecker;
@@ -212,11 +207,12 @@ final class LatteRoutingParser implements Parser
 		$relativePath = ProjectRelativePath::relativize($this->projectRoot, $file);
 		$className = TemplateClassName::forPath($relativePath);
 
-		$compiled = $this->adapter->compile($source, $className);
+		$template = $this->adapterAccessor->get()->compile($source, $className, $relativePath);
+		$compiled = $template->getResult();
 		// Arms the re-entrancy guard's answer as early as there is one to give: everything below this
 		// line can reach the ReflectionProvider and so can be re-entered for this same file.
 		$this->parsingFiles[$file] = $compiled->getPhpSource();
-		$declarations = $this->scanner->scan($source);
+		$declarations = $template->getFacts()->getDeclarations();
 		// Shares declarationsFor()'s own memo: a file already parsed as a top-level analysis
 		// target is never re-read+re-scanned again just because some OTHER file's
 		// reachableTemplateTypeClasses() walk reaches it too.
@@ -426,7 +422,9 @@ final class LatteRoutingParser implements Parser
 			return $this->declarationsCache[$relativePath] = null;
 		}
 
-		return $this->declarationsCache[$relativePath] = $this->scanner->scan($source);
+		return $this->declarationsCache[$relativePath] = $this->adapterAccessor->get()
+			->extractFacts($source, $relativePath)
+			->getDeclarations();
 	}
 
 	/**
