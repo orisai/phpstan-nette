@@ -1,0 +1,6 @@
+includes:
+	- component-real.neon
+
+parameters:
+	paths!:
+		- Fixtures/ReplicatorRows

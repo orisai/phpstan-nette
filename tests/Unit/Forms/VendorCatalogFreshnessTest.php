@@ -7,6 +7,7 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Forms\Catalog\Stub\VendorCatalogFreshness;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function implode;
+use function preg_replace;
 use function str_replace;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -105,8 +106,9 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 	{
 		$root = $this->rootWithMutated(
 			self::VENDOR_CONTAINER,
-			'public function addSelect(string $name, $label = null, ?array $items = null, ?int $size = null): Controls\SelectBox',
-			'public function addSelect(string $name, $label = null, ?array $items = null, ?int $size = null)',
+			'~(public function addSelect\([^)]*\))\s*:\s*Controls\\\\SelectBox~',
+			'$1',
+			true,
 		);
 
 		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
@@ -134,7 +136,7 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 	 * Copying rather than editing in place keeps the real vendor tree and the committed catalog
 	 * untouched even when an assertion fails mid-test.
 	 */
-	private function rootWithMutated(string $relativePath, string $search, string $replace): string
+	private function rootWithMutated(string $relativePath, string $search, string $replace, bool $regex = false): string
 	{
 		$real = __DIR__ . '/../../..';
 		$root = sys_get_temp_dir() . '/' . uniqid('forms-vendor-freshness-', true);
@@ -149,7 +151,9 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 		}
 
 		$source = FileSystem::read($root . '/' . $relativePath);
-		$mutated = str_replace($search, $replace, $source);
+		$mutated = $regex
+			? (string) preg_replace($search, $replace, $source, 1)
+			: str_replace($search, $replace, $source);
 		self::assertNotSame($source, $mutated, 'the mutation must actually apply');
 		FileSystem::write($root . '/' . $relativePath, $mutated);
 

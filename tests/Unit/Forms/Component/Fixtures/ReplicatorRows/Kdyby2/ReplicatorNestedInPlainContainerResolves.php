@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType;
+namespace Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\ReplicatorRows\Kdyby2;
 
 use Tests\OriPhpstan\Nette\Doubles\Forms\Form\ApplicationForm;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer;

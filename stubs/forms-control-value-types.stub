@@ -35,6 +35,7 @@ class HiddenField
  * @form-choice single int|string
  * @property array<int|string, mixed> $items
  * @property-read mixed $selectedItem
+ * @property bool|array<bool> $disabled
  */
 abstract class ChoiceControl
 {
@@ -45,6 +46,7 @@ abstract class ChoiceControl
  * @form-choice multi int|string
  * @property array<int|string, mixed> $items
  * @property-read array<int|string, mixed> $selectedItems
+ * @property bool|array<bool> $disabled
  */
 abstract class MultiChoiceControl
 {

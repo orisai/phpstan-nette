@@ -8,11 +8,14 @@ use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Forms\Type\FormShapeType;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\MethodReflection;
+use PHPStan\Type\ArrayType;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\Type;
+use ReflectionNamedType;
 
 final class ReplicatorMethodReturnTypeExtension implements DynamicMethodReturnTypeExtension
 {
@@ -22,6 +25,8 @@ final class ReplicatorMethodReturnTypeExtension implements DynamicMethodReturnTy
 	private bool $enabled;
 
 	private ContainerModel $model;
+
+	private ?bool $rowsAreArray = null;
 
 	public function __construct(ConfigurationGuard $guard, bool $enabled, ContainerModel $model)
 	{
@@ -72,7 +77,28 @@ final class ReplicatorMethodReturnTypeExtension implements DynamicMethodReturnTy
 			return $innerType;
 		}
 
+		if ($this->rowsAreArray($methodReflection->getDeclaringClass())) {
+			return new ArrayType(new IntegerType(), $innerType);
+		}
+
 		return new GenericObjectType(Iterator::class, [new IntegerType(), $innerType]);
+	}
+
+	/**
+	 * kdyby/forms-replicator 2 declares getContainers(): Iterator, 3 declares getContainers(): array.
+	 */
+	private function rowsAreArray(ClassReflection $declaringClass): bool
+	{
+		if ($this->rowsAreArray !== null) {
+			return $this->rowsAreArray;
+		}
+
+		$replicator = $declaringClass->getAncestorWithClassName(KdybyReplicatorContainer::class);
+		$returnType = $replicator !== null
+			? $replicator->getNativeReflection()->getMethod('getContainers')->getReturnType()
+			: null;
+
+		return $this->rowsAreArray = $returnType instanceof ReflectionNamedType && $returnType->getName() === 'array';
 	}
 
 }
