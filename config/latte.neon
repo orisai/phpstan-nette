@@ -227,6 +227,13 @@ services:
 			discoveryRefResolver: @latteDiscoveryRefResolver
 			factoryProvidedVars: @latteFactoryProvidedVars
 			providerAvailabilityChecker: @latteProviderAvailabilityChecker
+			bootstrapFilesLoader: @latteBootstrapFilesLoader
+		autowired: false
+
+	latteBootstrapFilesLoader:
+		class: OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader
+		arguments:
+			files: %bootstrapFiles%
 		autowired: false
 
 	# The phar's original file-backed cache storage under a delegate-able name (same pattern as

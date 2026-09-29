@@ -3,6 +3,8 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Reflection;
 
 use Nette\Utils\FileSystem;
+use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
+use OriPhpstan\Nette\Latte\Compile\DiscoveryClassName;
 use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
@@ -217,6 +219,42 @@ final class LatteTemplateSourceLocatorTest extends BaseTestCase
 			$identifier = new Identifier('LatteSlice_deadbeef', new IdentifierType(IdentifierType::IDENTIFIER_CLASS));
 
 			self::assertNull($locator->locateIdentifier($this->createMock(Reflector::class), $identifier));
+		} finally {
+			FileSystem::delete($fixture['projectRoot']);
+		}
+	}
+
+	public function testDiscoveryStoreFileWrittenAfterAMissIsStillLocated(): void
+	{
+		$fixture = $this->createTempLatteFixture();
+
+		try {
+			$discoveryStoreDir = $fixture['projectRoot'] . '/Latte.discovery';
+			$className = DiscoveryClassName::forPath('templates/foo.latte');
+			$discoveryFile = $discoveryStoreDir . '/' . $className . '.php';
+
+			$signal = new RuntimeException('LatteTemplateSourceLocatorTest discovery delegation probe');
+			$factory = $this->createMock(OptimizedSingleFileSourceLocatorFactory::class);
+			$factory->expects(self::once())
+				->method('create')
+				->with($discoveryFile)
+				->willThrowException($signal);
+
+			$locator = new LatteTemplateSourceLocator(
+				new OptimizedSingleFileSourceLocatorRepository($factory),
+				new LatteUniverse([$fixture['templatesDir']], $fixture['projectRoot']),
+				$fixture['projectRoot'] . '/Latte.sitescope',
+				true,
+				$discoveryStoreDir,
+			);
+
+			$identifier = new Identifier($className, new IdentifierType(IdentifierType::IDENTIFIER_CLASS));
+			self::assertNull($locator->locateIdentifier($this->createMock(Reflector::class), $identifier));
+
+			DiscoveryStore::bootstrap($discoveryStoreDir, ['templates/foo.latte']);
+
+			$this->expectExceptionObject($signal);
+			$locator->locateIdentifier($this->createMock(Reflector::class), $identifier);
 		} finally {
 			FileSystem::delete($fixture['projectRoot']);
 		}

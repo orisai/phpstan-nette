@@ -60,12 +60,28 @@ final class LatteTemplateSourceLocator implements SourceLocator
 			return null;
 		}
 
-		$file = $this->getClassNameToFile()[strtolower($identifier->getName())] ?? null;
+		$file = $this->fileFor($identifier->getName());
 		if ($file === null) {
 			return null;
 		}
 
 		return $this->repository->getOrCreate($file)->locateIdentifier($reflector, $identifier);
+	}
+
+	// The store files are written while the run is under way (PreAnalysisIndexBuilder materializes
+	// the discovery store before the analysis, the narrowing store grows with it), and a worker
+	// forked after this memo was built inherits it, so a miss re-reads the stores before answering.
+	private function fileFor(string $className): ?string
+	{
+		$key = strtolower($className);
+		$file = $this->getClassNameToFile()[$key] ?? null;
+		if ($file !== null) {
+			return $file;
+		}
+
+		$this->classNameToFile = null;
+
+		return $this->getClassNameToFile()[$key] ?? null;
 	}
 
 	/**

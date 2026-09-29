@@ -72,6 +72,8 @@ final class LatteRoutingParser implements Parser
 
 	private ?ProviderAvailabilityChecker $providerAvailabilityChecker;
 
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
 	/** @var array<string, array<Stmt>> */
 	private array $parsedFiles = [];
 
@@ -124,7 +126,8 @@ final class LatteRoutingParser implements Parser
 		bool $narrowingEnabled,
 		?DiscoveryRefResolver $discoveryRefResolver = null,
 		?FactoryProvidedVars $factoryProvidedVars = null,
-		?ProviderAvailabilityChecker $providerAvailabilityChecker = null
+		?ProviderAvailabilityChecker $providerAvailabilityChecker = null,
+		?BootstrapFilesLoader $bootstrapFilesLoader = null
 	)
 	{
 		$this->delegate = $delegate;
@@ -143,6 +146,7 @@ final class LatteRoutingParser implements Parser
 		$this->discoveryRefResolver = $discoveryRefResolver;
 		$this->factoryProvidedVars = $factoryProvidedVars;
 		$this->providerAvailabilityChecker = $providerAvailabilityChecker;
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 	}
 
 	/**
@@ -192,6 +196,10 @@ final class LatteRoutingParser implements Parser
 	 */
 	private function parseLatteFile(string $file): array
 	{
+		if ($this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
+		}
+
 		try {
 			$source = FileSystem::read($file);
 		} catch (IOException $e) {
