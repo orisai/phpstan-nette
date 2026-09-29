@@ -332,7 +332,7 @@ final class ContextResolver
 	// captured-overlay and declared-target overlays each layer their own label on top in
 	// buildEdgeContext(), same order those overlays themselves apply in. namedKeys already identifies
 	// exactly the "explicit arg" names for every tag (see EdgeScope::resolve - sandbox's vars IS its
-	// namedKeys, include/embed's namedKeys is the args subset, layout/import's is empty), so the only
+	// namedKeys, include/embed/layout's namedKeys is the args subset, import's is empty), so the only
 	// tag needing extra handling here is layout/extends' own top-level-var contribution.
 
 	/**

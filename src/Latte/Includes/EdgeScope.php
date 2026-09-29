@@ -48,22 +48,24 @@ final class EdgeScope
 	{
 		$tag = $site->getTag();
 
-		if (in_array($tag, self::LAYOUT_TAGS, true)) {
-			// The child's finished main scope by the time control passes to the layout: its own
-			// context plus its own top-level locals (unlike include, which never sees the includer's
-			// body-level {var} assignments).
-			return [
-				'vars' => array_merge($context->getVars(), $includerTopLevelVars()),
-				'namedKeys' => [],
-				'open' => false,
-			];
-		}
-
 		if ($tag === 'import') {
 			return ['vars' => $context->getVars(), 'namedKeys' => [], 'open' => false];
 		}
 
 		$typed = $argTyper->typeArgs($site, $context);
+
+		if (in_array($tag, self::LAYOUT_TAGS, true)) {
+			// The child's finished main scope by the time control passes to the layout: its own
+			// context plus its own top-level locals (unlike include, which never sees the includer's
+			// body-level {var} assignments), overlaid with the site's explicit args - Latte 3.1's
+			// `{extends file, args}` renders the parent with `$this->parentArgs + $params` (Latte 2
+			// and 3.0 accept no args, so the overlay is empty there).
+			return [
+				'vars' => array_merge($context->getVars(), $includerTopLevelVars(), $typed['vars']),
+				'namedKeys' => $typed['vars'],
+				'open' => $typed['open'],
+			];
+		}
 
 		if ($tag === 'sandbox') {
 			return ['vars' => $typed['vars'], 'namedKeys' => $typed['vars'], 'open' => $typed['open']];
