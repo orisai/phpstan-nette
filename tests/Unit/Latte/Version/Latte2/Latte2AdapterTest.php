@@ -14,6 +14,7 @@ use OriPhpstan\Nette\Latte\Version\Latte2\FormSiteScanner;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2EngineReader;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
@@ -112,7 +113,7 @@ final class Latte2AdapterTest extends BaseTestCase
 	{
 		$pattern = $this->adapter()->lineMarkerPattern();
 
-		self::assertSame(Latte2Adapter::LINE_MARKER_PATTERN, $pattern);
+		self::assertSame(ShapeFamily::LINE_MARKER_PATTERN_LINE, $pattern);
 		self::assertSame(1, preg_match($pattern, 'echo $x /* line 12 */;', $m));
 		self::assertSame('12', $m['line']);
 		self::assertSame(0, preg_match($pattern, 'echo $x /* pos 12:3 */;'));

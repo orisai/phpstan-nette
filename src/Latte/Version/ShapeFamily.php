@@ -23,6 +23,10 @@ final class ShapeFamily
 
 	public const FORMS_PROVIDER = 'provider';
 
+	public const LINE_MARKER_PATTERN_LINE = '~/\* line (?<line>\d+) \*/~';
+
+	public const LINE_MARKER_PATTERN_POS = '~/\* pos (?<line>\d+):\d+ \*/~';
+
 	public string $latteLine;
 
 	public string $formsBridge;
@@ -63,6 +67,12 @@ final class ShapeFamily
 	public function id(): string
 	{
 		return $this->latteLine . '/' . $this->formsBridge;
+	}
+
+	// Latte 2 and 3.0 mark generated lines as `/* line N */`, Latte 3.1 as `/* pos L:C */`.
+	public function lineMarkerPattern(): string
+	{
+		return $this->latteLine === self::LATTE_31 ? self::LINE_MARKER_PATTERN_POS : self::LINE_MARKER_PATTERN_LINE;
 	}
 
 	/**

@@ -3,10 +3,8 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use OriPhpstan\Nette\Latte\Postprocess\LineMapper;
-use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
-use Tests\OriPhpstan\Nette\Toolkit\Latte3\Latte3Layouts;
 
 final class LineMapperTest extends BaseTestCase
 {
@@ -14,7 +12,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testBuildsForwardFilledMap(): void
 	{
 		$php = "<?php\nclass X {\npublic function main(): array\n{\nif (\$a) /* line 4 */ {\necho \$b /* line 5 */;\n}\nreturn [];\n}\n}\n";
-		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(4, $map[5]);
 		self::assertSame(5, $map[6]);
@@ -24,7 +22,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testFirstMarkerOnLineWins(): void
 	{
 		$php = "<?php\necho \$a /* line 2 */ . \$b /* line 3 */;\n";
-		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(2, $map[2]);
 	}
@@ -32,7 +30,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testUnmarkedStatementBeforeAMarkerTakesThatMarker(): void
 	{
 		$php = "<?php\nforeach (\$a as \$b) /* line 2 */ {\necho '<label';\n\$x = f();\necho \$x->y() /* line 3 */;\n}\n";
-		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(2, $map[3]);
 		self::assertSame(3, $map[4]);
@@ -43,7 +41,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testClosingBraceKeepsThePreviousMarker(): void
 	{
 		$php = "<?php\nif (\$a) /* line 4 */ {\necho \$b /* line 5 */;\n}\necho \$c /* line 9 */;\n";
-		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(5, $map[4]);
 		self::assertSame(9, $map[5]);
@@ -52,7 +50,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testNextMarkerBelowThePreviousIsNotTakenBackwards(): void
 	{
 		$php = "<?php\necho \$a /* line 9 */;\n\$tmp = 1;\necho \$b /* line 2 */;\n";
-		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(9, $map[3]);
 	}
@@ -64,7 +62,7 @@ final class LineMapperTest extends BaseTestCase
 			. "if (\$this->global->snippetDriver?->renderSnippets(\$this->blocks[self::LayerSnippet], \$this->params)) {\nreturn;\n}\n\n"
 			. "echo LR\\HtmlHelpers::escapeText(\$label) /* pos 9:1 */;\necho ' ';\necho LR\\HtmlHelpers::escapeText(\$x) /* pos 9:10 */;\n"
 			. "\$flag ??= array_key_exists('flag', get_defined_vars()) ? null : false /* pos 10:1 */;\nif (\$flag) /* pos 11:1 */ {\necho 'on';\n}\n}\n}\n";
-		$map = (new LineMapper(Latte3Layouts::lineMarkerPattern(ShapeFamily::LATTE_31)))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_POS))->buildMap($php);
 
 		self::assertSame(9, $map[3]); // method declaration: prologue takes the first marker
 		self::assertSame(9, $map[5]);
@@ -83,7 +81,7 @@ final class LineMapperTest extends BaseTestCase
 	{
 		$php = "<?php\nclass X {\npublic function prepare(): array\n{\nextract(\$this->params);\n\n"
 			. "\$x = 1 /* line 4 */;\n\$y = 2 /* line 5 */;\n\$z ??= array_key_exists('z', get_defined_vars()) ? null : 3 /* line 6 */;\nreturn get_defined_vars();\n}\n}\n";
-		$map = (new LineMapper(Latte3Layouts::lineMarkerPattern(ShapeFamily::LATTE_30)))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(4, $map[5]);
 		self::assertSame(4, $map[7]);
@@ -96,11 +94,11 @@ final class LineMapperTest extends BaseTestCase
 	{
 		$php = "<?php\necho \$a /* line 4 */;\necho \$b /* pos 7:2 */;\n";
 
-		$byLine = (new LineMapper(Latte3Layouts::lineMarkerPattern(ShapeFamily::LATTE_30)))->buildMap($php);
+		$byLine = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 		self::assertSame(4, $byLine[2]);
 		self::assertSame(4, $byLine[3]);
 
-		$byPos = (new LineMapper(Latte3Layouts::lineMarkerPattern(ShapeFamily::LATTE_31)))->buildMap($php);
+		$byPos = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_POS))->buildMap($php);
 		self::assertSame(1, $byPos[2]);
 		self::assertSame(7, $byPos[3]);
 	}
@@ -133,15 +131,15 @@ final class LineMapperTest extends BaseTestCase
 	 */
 	public function provideBlockDocPatterns(): iterable
 	{
-		yield 'latte 2' => [Latte2Adapter::LINE_MARKER_PATTERN, '/* line 2 */'];
-		yield 'latte 3.0' => [Latte3Layouts::lineMarkerPattern(ShapeFamily::LATTE_30), '/* line 2 */'];
-		yield 'latte 3.1' => [Latte3Layouts::lineMarkerPattern(ShapeFamily::LATTE_31), '/* pos 2:1 */'];
+		yield 'latte 2' => [ShapeFamily::LINE_MARKER_PATTERN_LINE, '/* line 2 */'];
+		yield 'latte 3.0' => [ShapeFamily::LINE_MARKER_PATTERN_LINE, '/* line 2 */'];
+		yield 'latte 3.1' => [ShapeFamily::LINE_MARKER_PATTERN_POS, '/* pos 2:1 */'];
 	}
 
 	public function testEchoedTextMentioningALineIsNotAMarker(): void
 	{
 		$php = "<?php\necho \$a /* line 4 */;\necho '/** {block b} on line 9 */';\necho \$b;\n";
-		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
+		$map = (new LineMapper(ShapeFamily::LINE_MARKER_PATTERN_LINE))->buildMap($php);
 
 		self::assertSame(4, $map[3]);
 		self::assertSame(4, $map[4]);

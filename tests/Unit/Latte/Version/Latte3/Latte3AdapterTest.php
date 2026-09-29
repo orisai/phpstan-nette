@@ -87,7 +87,9 @@ final class Latte3AdapterTest extends BaseTestCase
 		self::assertSame(1, preg_match($pattern, $code, $m));
 		self::assertSame('2', $m['line']);
 		self::assertSame(
-			InstalledVersionsGuard::latteLine() === '3.0' ? Latte3Adapter::LINE_MARKER_PATTERN_30 : Latte3Adapter::LINE_MARKER_PATTERN_31,
+			InstalledVersionsGuard::latteLine() === '3.0'
+				? ShapeFamily::LINE_MARKER_PATTERN_LINE
+				: ShapeFamily::LINE_MARKER_PATTERN_POS,
 			$pattern,
 		);
 	}
@@ -99,9 +101,9 @@ final class Latte3AdapterTest extends BaseTestCase
 		$adapter = Latte3Adapter::create($family, new AdapterCollaborators(new DeclarationScanner()));
 
 		self::assertSame($family, $adapter->family());
-		self::assertSame(Latte3Adapter::LINE_MARKER_PATTERN_31, $adapter->lineMarkerPattern());
+		self::assertSame(ShapeFamily::LINE_MARKER_PATTERN_POS, $adapter->lineMarkerPattern());
 		self::assertSame(
-			Latte3Adapter::LINE_MARKER_PATTERN_30,
+			ShapeFamily::LINE_MARKER_PATTERN_LINE,
 			(new Latte3Adapter(
 				new Latte3Compiler(),
 				new ShapeFamily(ShapeFamily::LATTE_30, ShapeFamily::FORMS_ITEM),

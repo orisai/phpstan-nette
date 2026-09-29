@@ -524,8 +524,7 @@ final class DeclarationInjector
 
 	private function isBlockMethod(ClassMethod $method): bool
 	{
-		return $method->name->toString() !== 'main'
-			&& count($method->params) === 1
+		return count($method->params) === 1
 			&& $method->params[0]->var instanceof Variable
 			&& $method->params[0]->var->name === self::L_ARGS;
 	}

@@ -10,7 +10,6 @@ use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Postprocess\DeclarationInjector;
 use OriPhpstan\Nette\Latte\Postprocess\LineMapper;
-use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Parser\Parser;
@@ -337,15 +336,12 @@ PHP, $this->inject(ShapeFamily::LATTE_2, 'declarations'));
 		assert($parser instanceof Parser);
 		$stmts = $parser->parseString($php);
 
-		$pattern = $latteLine === ShapeFamily::LATTE_2
-			? Latte2Adapter::LINE_MARKER_PATTERN
-			: Latte3Layouts::lineMarkerPattern($latteLine);
-		$lineMapper = new LineMapper($pattern);
-		$lineMapper->remap($stmts, $lineMapper->buildMap($php));
-
 		$family = $latteLine === ShapeFamily::LATTE_2
 			? new ShapeFamily(ShapeFamily::LATTE_2, ShapeFamily::FORMS_MACROS)
 			: Latte3Layouts::family($latteLine);
+		$lineMapper = new LineMapper($family->lineMarkerPattern());
+		$lineMapper->remap($stmts, $lineMapper->buildMap($php));
+
 		$universe = new LatteUniverse([], '');
 		$injector = new DeclarationInjector(
 			$parser,

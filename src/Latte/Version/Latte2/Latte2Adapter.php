@@ -16,8 +16,6 @@ use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 final class Latte2Adapter implements LatteVersionAdapter
 {
 
-	public const LINE_MARKER_PATTERN = '~/\* line (?<line>\d+) \*/~';
-
 	private LatteCompiler $compiler;
 
 	private DeclarationScanner $scanner;
@@ -62,7 +60,7 @@ final class Latte2Adapter implements LatteVersionAdapter
 
 	public function lineMarkerPattern(): string
 	{
-		return self::LINE_MARKER_PATTERN;
+		return $this->family->lineMarkerPattern();
 	}
 
 	public function family(): ShapeFamily

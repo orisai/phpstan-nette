@@ -58,4 +58,36 @@ final class UnknownVarTypeClassSpawnTest extends BaseTestCase
 		self::assertSame($expected, $findings);
 	}
 
+	// A block method is reported at its body's first marker (here the tag's own line), on every line.
+	public function testUnknownVarTypeClassIsReportedOnTheBlockMethodAtTheTagLine(): void
+	{
+		$this->project->write('src/block.latte', "{varType UnknownClass \$x}\n{block b}{\$x}{/block}\n");
+
+		$result = $this->project->analyse(
+			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
+				'fileExtensions' => ['php', 'latte'],
+				'orisaiNette' => ['latte' => ['enabled' => true]],
+			],
+			['src'],
+		);
+		self::assertSame([], $result['errors'], $result['stderr']);
+
+		$findings = [];
+		foreach ($result['messages'] as $message) {
+			if ($message['identifier'] === 'class.notFound') {
+				$findings[] = $message['line'] . ' ' . $message['message'];
+			}
+		}
+
+		$expected = [
+			'2 Parameter $x of method LatteTpl_src_block_latte_3a944519::blockB() has invalid type UnknownClass.',
+			'2 Parameter $x of method LatteTpl_src_block_latte_3a944519::latteMain_ctx0() has invalid type UnknownClass.',
+		];
+		if (InstalledVersionsGuard::latteMajor() === 2) {
+			$expected[] = '2 Parameter $x of method LatteTpl_src_block_latte_3a944519::lattePrepare() has invalid type UnknownClass.';
+		}
+
+		self::assertSame($expected, $findings);
+	}
+
 }

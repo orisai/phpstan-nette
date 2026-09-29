@@ -73,9 +73,9 @@ snapshots of all three lines.
 Line markers differ too: Latte 2 and 3.0 emit `/* line N */`, Latte 3.1 only `/* pos L:C */`. Each
 adapter's `lineMarkerPattern()` names the `<line>` group `LineMapper` reads (the column is ignored),
 and the `/** {block x} on line N */` doc comment every line writes above a block method is a marker
-of its own: the method and a body without markers start at the tag's line, and the comment is a
-barrier the back-fill below never crosses, so a method's trailing statements never borrow the next
-block's line.
+of its own: the method and its prologue take the body's first marker, or the tag's line when the
+body has none, and the comment is a barrier the back-fill below never crosses, so a method's
+trailing statements never borrow the next block's line.
 
 For each `.latte` file, `LatteCompiler` (`src/Latte/Compile/`) runs the real
 `Latte\Parser`/`Latte\Compiler` (Latte 2.11 — no `Engine::compile`, no engine cache, no

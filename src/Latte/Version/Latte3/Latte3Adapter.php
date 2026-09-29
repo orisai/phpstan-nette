@@ -13,11 +13,6 @@ use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 final class Latte3Adapter implements LatteVersionAdapter
 {
 
-	// Latte 3.0's TemplateGenerator marks lines as `/* line N */`, 3.1's as `/* pos L:C */`.
-	public const LINE_MARKER_PATTERN_30 = '~/\* line (?<line>\d+) \*/~';
-
-	public const LINE_MARKER_PATTERN_31 = '~/\* pos (?<line>\d+):\d+ \*/~';
-
 	private Latte3Compiler $compiler;
 
 	private ShapeFamily $family;
@@ -48,9 +43,7 @@ final class Latte3Adapter implements LatteVersionAdapter
 
 	public function lineMarkerPattern(): string
 	{
-		return $this->family->latteLine === ShapeFamily::LATTE_30
-			? self::LINE_MARKER_PATTERN_30
-			: self::LINE_MARKER_PATTERN_31;
+		return $this->family->lineMarkerPattern();
 	}
 
 	public function family(): ShapeFamily

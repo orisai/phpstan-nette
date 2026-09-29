@@ -14,9 +14,9 @@ use function trim;
 final class LineMapper
 {
 
-	// Every Latte line documents a block method as `/** {block name} on line N */`: the method and a
-	// body without markers of its own start at the tag's line, and nothing above the comment
-	// borrows it.
+	// Every Latte line documents a block method as `/** {block name} on line N */`: the method and its
+	// prologue take the body's first marker, or the tag's line when the body has none, and nothing
+	// above the comment borrows it.
 	private const BLOCK_DOC_PATTERN = '~^\s*/\*\* \S.* on line (?<line>\d+) \*/$~';
 
 	private string $markerPattern;
