@@ -177,6 +177,24 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertSame([], $result->getDiagnostics());
 	}
 
+	public function testCacheTagKeyIsDeterministic(): void
+	{
+		$source = "{varType string \$k}\n{cache \$k, expire => '1 hour'}c{\$k}{/cache}\n{cache 'x'}d{/cache}\n";
+
+		$first = (string) $this->compile($source)->getPhpSource();
+		$second = (string) $this->compile($source)->getPhpSource();
+
+		self::assertSame($first, $second);
+		self::assertStringContainsString(
+			"\$this->global->cache->createCache('latte-analysis-cache-2:1', [\$k, 'expire' => '1 hour'])",
+			$first,
+		);
+		self::assertStringContainsString("createCache('latte-analysis-cache-3:1', ['x'])", $first);
+		self::assertStringContainsString('$this->global->cache->end()', $first);
+		self::assertStringContainsString('$this->global->cache->rollback();', $first);
+		self::assertStringContainsString('$this->global->cache->initialize($this);', $first);
+	}
+
 	private function compile(string $source): CompileResult
 	{
 		$compiler = new Latte3Compiler();

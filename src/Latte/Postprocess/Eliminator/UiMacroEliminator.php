@@ -8,6 +8,7 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Instanceof_;
@@ -23,11 +24,20 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
+use function array_slice;
 use function count;
 use function is_string;
 
 final class UiMacroEliminator extends EliminatorVisitor
 {
+
+	// {control $obj} resolves the operand to a component: Latte 2 with an if/else on is_object(),
+	// Latte 3 with a single if (!is_object($ʟ_tmp = ...)) re-assigning the temp.
+	public const ROLE_DYNAMIC_COMPONENT = 'dynamicComponent';
+
+	public const SHAPE_IS_OBJECT_IF_ELSE = 'isObjectIfElse';
+
+	public const SHAPE_NOT_IS_OBJECT_ASSIGN = 'notIsObjectAssign';
 
 	private const HELPERS_CLASS = Helpers::class;
 
@@ -35,13 +45,14 @@ final class UiMacroEliminator extends EliminatorVisitor
 
 	public function describePattern(): string
 	{
-		return '{control}/{control $obj:part} $_tmp = getComponent(...)/is_object($obj) ? ... shell + '
+		return '{control}/{control $obj:part} $_tmp = getComponent(...)/<dynamicComponent> shell + '
 			. 'instanceof Renderable redrawControl guard + render*(...) call -> Helpers::component(<name expr>); '
 			. 'render*(...) call args kept as analyzed statements; {link}/{plink}/n:href uiControl|uiPresenter->link(...) '
 			. '(already unwrapped of its escapeHtmlAttr(...) by EscapingEliminator) -> Helpers::uiLink(<dest>, [<args>]); '
 			. '{ifCurrent dest[, args]}/{ifCurrent} if ($this->global->uiPresenter->isLinkCurrent(<dest>[, <args>])'
 			. '|getLastCreatedRequestFlag("current")) {body} -> if (Helpers::uiIsLinkCurrent(<dest>|null)) {body}, '
-			. '<args> (if present) kept analyzed via a preceding Helpers::analyzed(<args>) statement';
+			. '<args> (if present) kept analyzed via a preceding Helpers::analyzed(<args>) statement: '
+			. $this->patterns()->describe();
 	}
 
 	/**
@@ -122,16 +133,17 @@ final class UiMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		[$destExpr, $argsExpr] = $match;
+		[$destExpr, $argExprs] = $match;
 
 		$result = [];
-		if ($argsExpr !== null) {
+		if ($argExprs !== []) {
+			$args = [];
+			foreach ($argExprs as $argExpr) {
+				$args[] = new Arg($argExpr);
+			}
+
 			$result[] = new Expression(
-				new StaticCall(
-					new FullyQualified(self::HELPERS_CLASS),
-					new Identifier('analyzed'),
-					[new Arg($argsExpr)],
-				),
+				new StaticCall(new FullyQualified(self::HELPERS_CLASS), new Identifier('analyzed'), $args),
 			);
 		}
 
@@ -146,7 +158,7 @@ final class UiMacroEliminator extends EliminatorVisitor
 	}
 
 	/**
-	 * @return array{Expr, Expr|null}|null
+	 * @return array{Expr, list<Expr>}|null
 	 */
 	private function matchIfCurrentCond(Expr $cond): ?array
 	{
@@ -160,16 +172,22 @@ final class UiMacroEliminator extends EliminatorVisitor
 
 		$methodName = $cond->name->toString();
 
-		if ($methodName === 'isLinkCurrent' && count($cond->args) >= 1 && count($cond->args) <= 2) {
+		if ($methodName === 'isLinkCurrent' && count($cond->args) >= 1) {
 			$destArg = $cond->args[0];
 			if (!$destArg instanceof Arg) {
 				return null;
 			}
 
-			$argsArg = $cond->args[1] ?? null;
-			$argsExpr = $argsArg instanceof Arg ? $argsArg->value : null;
+			$argExprs = [];
+			foreach (array_slice($cond->args, 1) as $arg) {
+				if (!$arg instanceof Arg) {
+					return null;
+				}
 
-			return [$destArg->value, $argsExpr];
+				$argExprs[] = $arg->value;
+			}
+
+			return [$destArg->value, $argExprs];
 		}
 
 		if (
@@ -179,7 +197,7 @@ final class UiMacroEliminator extends EliminatorVisitor
 			&& $cond->args[0]->value instanceof String_
 			&& $cond->args[0]->value->value === 'current'
 		) {
-			return [new ConstFetch(new Name('null')), null];
+			return [new ConstFetch(new Name('null')), []];
 		}
 
 		return null;
@@ -227,20 +245,9 @@ final class UiMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$call = $assign->expr;
-		if (!$call instanceof MethodCall || !GlobalPropertyFetchMatcher::matches($call->var, 'uiControl')) {
-			return null;
-		}
+		$nameExpr = $this->matchGetComponentCall($assign->expr);
 
-		if (!$call->name instanceof Identifier || $call->name->toString() !== 'getComponent') {
-			return null;
-		}
-
-		if (count($call->args) !== 1 || !$call->args[0] instanceof Arg) {
-			return null;
-		}
-
-		return [$assign->var->name, $call->args[0]->value];
+		return $nameExpr === null ? null : [$assign->var->name, $nameExpr];
 	}
 
 	/**
@@ -248,11 +255,27 @@ final class UiMacroEliminator extends EliminatorVisitor
 	 */
 	private function matchDynamicGetComponent(?Stmt $stmt): ?array
 	{
-		if (!$stmt instanceof If_ || $stmt->elseifs !== [] || $stmt->else === null) {
+		if (!$stmt instanceof If_ || $stmt->elseifs !== []) {
 			return null;
 		}
 
-		if (count($stmt->stmts) !== 1 || count($stmt->else->stmts) !== 1) {
+		if ($this->patterns()->hasName(self::ROLE_DYNAMIC_COMPONENT, self::SHAPE_IS_OBJECT_IF_ELSE)) {
+			return $this->matchIsObjectIfElse($stmt);
+		}
+
+		if ($this->patterns()->hasName(self::ROLE_DYNAMIC_COMPONENT, self::SHAPE_NOT_IS_OBJECT_ASSIGN)) {
+			return $this->matchNotIsObjectAssign($stmt);
+		}
+
+		return null;
+	}
+
+	/**
+	 * @return array{string, Expr}|null
+	 */
+	private function matchIsObjectIfElse(If_ $stmt): ?array
+	{
+		if ($stmt->else === null || count($stmt->stmts) !== 1 || count($stmt->else->stmts) !== 1) {
 			return null;
 		}
 
@@ -270,28 +293,66 @@ final class UiMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		if (
-			!$elseAssign->expr instanceof MethodCall
-			|| !GlobalPropertyFetchMatcher::matches($elseAssign->expr->var, 'uiControl')
-		) {
+		if ($this->matchGetComponentCall($elseAssign->expr) === null) {
 			return null;
 		}
 
-		if (!$elseAssign->expr->name instanceof Identifier || $elseAssign->expr->name->toString() !== 'getComponent') {
+		$operand = $this->matchIsObjectOperand($stmt->cond);
+
+		return $operand === null ? null : [$ifAssign->var->name, $operand];
+	}
+
+	/**
+	 * @return array{string, Expr}|null
+	 */
+	private function matchNotIsObjectAssign(If_ $stmt): ?array
+	{
+		if ($stmt->else !== null || count($stmt->stmts) !== 1 || !$stmt->cond instanceof BooleanNot) {
 			return null;
 		}
 
-		if (
-			!$stmt->cond instanceof FuncCall
-			|| !$this->isFuncCallNamed($stmt->cond, 'is_object')
-			|| count($stmt->cond->args) !== 1
-		) {
+		$operand = $this->matchIsObjectOperand($stmt->cond->expr);
+		if (!$operand instanceof Assign || !$operand->var instanceof Variable || !is_string($operand->var->name)) {
 			return null;
 		}
 
-		$arg = $stmt->cond->args[0];
+		$tmpVarName = $operand->var->name;
+		$assign = $this->extractAssign($stmt->stmts[0]);
+		if ($assign === null || !$this->isVariableNamed($assign->var, $tmpVarName)) {
+			return null;
+		}
 
-		return $arg instanceof Arg ? [$ifAssign->var->name, $arg->value] : null;
+		$lookup = $this->matchGetComponentCall($assign->expr);
+
+		return $lookup !== null && $this->isVariableNamed($lookup, $tmpVarName) ? [$tmpVarName, $operand->expr] : null;
+	}
+
+	private function matchIsObjectOperand(Expr $cond): ?Expr
+	{
+		if (!$cond instanceof FuncCall || !$this->isFuncCallNamed($cond, 'is_object') || count($cond->args) !== 1) {
+			return null;
+		}
+
+		$arg = $cond->args[0];
+
+		return $arg instanceof Arg ? $arg->value : null;
+	}
+
+	private function matchGetComponentCall(Expr $expr): ?Expr
+	{
+		if (!$expr instanceof MethodCall || !GlobalPropertyFetchMatcher::matches($expr->var, 'uiControl')) {
+			return null;
+		}
+
+		if (!$expr->name instanceof Identifier || $expr->name->toString() !== 'getComponent') {
+			return null;
+		}
+
+		if (count($expr->args) !== 1 || !$expr->args[0] instanceof Arg) {
+			return null;
+		}
+
+		return $expr->args[0]->value;
 	}
 
 	private function extractAssign(Stmt $stmt): ?Assign

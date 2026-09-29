@@ -4,11 +4,11 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Postprocess\DiagnosticMaterializer;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Nop;
-use PhpParser\Node\Stmt\Return_;
 use PhpParser\PrettyPrinter\Standard;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function strpos;
@@ -108,12 +108,12 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 		self::assertCount(1, $class->stmts);
 		$main = $class->stmts[0];
 		self::assertInstanceOf(ClassMethod::class, $main);
-		self::assertSame('main', $main->name->toString());
-		self::assertNotNull($main->returnType);
+		self::assertSame('latteMain', $main->name->toString());
+		self::assertInstanceOf(Identifier::class, $main->returnType);
+		self::assertSame('void', $main->returnType->toString());
 		self::assertNotNull($main->stmts);
-		self::assertCount(2, $main->stmts);
+		self::assertCount(1, $main->stmts);
 		self::assertSame(3, $main->stmts[0]->getStartLine());
-		self::assertInstanceOf(Return_::class, $main->stmts[1]);
 	}
 
 	public function testNonEmptyStmtsWithoutMainFallsBackToTopLevelStatements(): void

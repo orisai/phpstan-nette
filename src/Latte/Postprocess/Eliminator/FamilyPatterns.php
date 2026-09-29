@@ -30,10 +30,7 @@ final class FamilyPatterns
 	];
 
 	public const PROVISIONAL = [
-		AttrShellEliminator::class => [ShapeFamily::LATTE_30, ShapeFamily::LATTE_31],
-		UiMacroEliminator::class => [ShapeFamily::LATTE_30, ShapeFamily::LATTE_31],
 		FormsMacroEliminator::class => [ShapeFamily::LATTE_30, ShapeFamily::LATTE_31],
-		BlockDispatchEliminator::class => [ShapeFamily::LATTE_30, ShapeFamily::LATTE_31],
 	];
 
 	private const LATTE_RUNTIME_FILTERS = ['Latte\Runtime\Filters', 'LR\Filters'];
@@ -192,9 +189,10 @@ final class FamilyPatterns
 		return new PatternSet([
 			DevTagEliminator::ROLE_DROPPED_CALL => ['Tracy\Debugger' => ['barDump']]
 				+ [($latte2 ? 'Latte\Runtime\Tracer' : 'Latte\Essential\Tracer') => ['throw']],
-			DevTagEliminator::ROLE_PRINT_CLASS => $latte2
+			DevTagEliminator::ROLE_PRINT_CLASS => ($latte2
 				? ['Nette\Bridges\ApplicationLatte\UIRuntime' => ['printClass']]
-				: ['Nette\Bridges\ApplicationLatte\Nodes\TemplatePrintNode' => ['printClass']],
+				: ['Nette\Bridges\ApplicationLatte\Nodes\TemplatePrintNode' => ['printClass']])
+				+ ['Nette\Forms\Blueprint' => ['latte', 'dataClass']],
 		]);
 	}
 
@@ -229,36 +227,47 @@ final class FamilyPatterns
 		]);
 	}
 
-	// Latte 2 shapes: n:class array_filter ternary, n:attr htmlAttributes(), n:tag $ʟ_tag with
-	// checkTagSwitch(), n:nonce uiNonce echo, n:ifcontent ob_start(function () {}) shell.
 	private static function attrShell(string $line): PatternSet
 	{
-		self::latte2Only($line, AttrShellEliminator::class);
+		if ($line === ShapeFamily::LATTE_2) {
+			return new PatternSet([
+				AttrShellEliminator::ROLE_ATTRIBUTES => self::calls(self::LATTE_RUNTIME_FILTERS, ['htmlAttributes']),
+			], [
+				NoopObStart::ROLE => [NoopObStart::SHAPE_EMPTY_CLOSURE],
+				AttrShellEliminator::ROLE_TAG_ARRAY => ["\u{29F}_tag"],
+			]);
+		}
 
-		return new PatternSet([
-			'htmlAttributes' => self::calls(self::LATTE_RUNTIME_FILTERS, ['htmlAttributes']),
-			'tagSwitch' => self::calls(self::LATTE_RUNTIME_FILTERS, ['checkTagSwitch']),
-		], [
-			NoopObStart::ROLE => [NoopObStart::SHAPE_EMPTY_CLOSURE],
-			'tmpTemp' => ["\u{29F}_tmp"],
-			'tagTemp' => ["\u{29F}_tag"],
-			'ifcontentTemp' => ["\u{29F}_ifc"],
-			'nonceProvider' => ['uiNonce'],
+		$calls = [
+			AttrShellEliminator::ROLE_ATTRIBUTES => ['Latte\Essential\Nodes\NAttrNode' => ['attrs']],
+			AttrShellEliminator::ROLE_TAG_CHANGE => self::calls(
+				self::LATTE_RUNTIME_HTML_HELPERS,
+				['validateTagChange'],
+			),
+		];
+
+		if ($line === ShapeFamily::LATTE_30) {
+			return new PatternSet($calls, [
+				NoopObStart::ROLE => [NoopObStart::SHAPE_EMPTY_STRING_ARROW],
+				AttrShellEliminator::ROLE_TAG_ARRAY => ["\u{29F}_tag"],
+			]);
+		}
+
+		return new PatternSet($calls, [
+			NoopObStart::ROLE => [NoopObStart::SHAPE_EMPTY_STRING_ARROW],
+			AttrShellEliminator::ROLE_TAG_SCALAR => ["\u{29F}_tag"],
+			AttrShellEliminator::ROLE_TAG_SNAPSHOT => ["\u{29F}_tags"],
 		]);
 	}
 
-	// Latte 2 shapes: {control} getComponent()/instanceof Renderable/render*, {link}/{plink}/n:href
-	// uiControl|uiPresenter->link(), {ifCurrent} isLinkCurrent()/getLastCreatedRequestFlag().
 	private static function uiMacro(string $line): PatternSet
 	{
-		self::latte2Only($line, UiMacroEliminator::class);
-
 		return new PatternSet([], [
-			'renderable' => ['Nette\Application\UI\Renderable'],
-			'controlProvider' => ['uiControl'],
-			'presenterProvider' => ['uiPresenter'],
-			'tmpTemp' => ['_tmp', "\u{29F}_tmp"],
-			'ifCurrent' => ['isLinkCurrent', 'getLastCreatedRequestFlag'],
+			UiMacroEliminator::ROLE_DYNAMIC_COMPONENT => [
+				$line === ShapeFamily::LATTE_2
+					? UiMacroEliminator::SHAPE_IS_OBJECT_IF_ELSE
+					: UiMacroEliminator::SHAPE_NOT_IS_OBJECT_ASSIGN,
+			],
 		]);
 	}
 
@@ -279,19 +288,23 @@ final class FamilyPatterns
 		]);
 	}
 
-	// Latte 2 shapes: renderBlock(name, get_defined_vars()[, contentType[, 'snippet']]),
-	// snippetDriver enter()/leave()/getHtmlId(), enterBlockLayer()/copyBlockLayer()/leaveBlockLayer(),
-	// createTemplate(..., 'embed')->renderToContentType().
 	private static function blockDispatch(string $line): PatternSet
 	{
-		self::latte2Only($line, BlockDispatchEliminator::class);
+		if ($line === ShapeFamily::LATTE_2) {
+			return new PatternSet([], [
+				BlockDispatchEliminator::ROLE_PARENT_BLOCK => ['renderBlockParent'],
+				BlockDispatchEliminator::ROLE_EMBED_DEAD_IF => ['ifFalse'],
+			]);
+		}
 
-		return new PatternSet([], [
-			'renderBlock' => ['renderBlock'],
-			'snippetDriverProvider' => ['snippetDriver'],
-			'snippetDriverMethods' => ['enter', 'leave', 'getHtmlId'],
-			'blockLayerMethods' => ['enterBlockLayer', 'copyBlockLayer', 'leaveBlockLayer'],
-			'embedRelation' => ['embed'],
+		return new PatternSet([
+			BlockDispatchEliminator::ROLE_DYNAMIC_BLOCK_NAME => self::calls(
+				self::LATTE_RUNTIME_HELPERS,
+				['stringOrNull'],
+			),
+		], [
+			BlockDispatchEliminator::ROLE_PARENT_BLOCK => ['renderParentBlock'],
+			BlockDispatchEliminator::ROLE_INLINE_BLOCK_CLOSURE => ['func_get_arg'],
 		]);
 	}
 

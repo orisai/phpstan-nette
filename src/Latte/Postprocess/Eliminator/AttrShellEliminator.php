@@ -11,7 +11,6 @@ use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\BinaryOp\Identical;
-use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\PropertyFetch;
@@ -31,33 +30,52 @@ use PhpParser\Node\Stmt\Finally_;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\TryCatch;
+use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor;
+use PhpParser\NodeVisitorAbstract;
+use function array_merge;
+use function array_slice;
 use function count;
-use function in_array;
+use function is_string;
 
 final class AttrShellEliminator extends EliminatorVisitor
 {
 
-	private const TMP_TEMP = "\u{29F}_tmp";
+	// n:attr's attribute printer: the $ʟ_tmp array assignment before it is inlined as its first argument.
+	public const ROLE_ATTRIBUTES = 'attributes';
 
-	private const TAG_TEMP = "\u{29F}_tag";
+	// n:tag's tag-name validator assigned to $ʟ_tmp; the temp is renamed in the three statements
+	// that make up the opening tag.
+	public const ROLE_TAG_CHANGE = 'tagChange';
+
+	// The per-element closing-tag temp indexed by element: $ʟ_tag[N] -> $latteTagN.
+	public const ROLE_TAG_ARRAY = 'tagArray';
+
+	// The scalar closing-tag temp: $ʟ_tag -> $latteTag.
+	public const ROLE_TAG_SCALAR = 'tagScalar';
+
+	// The per-element snapshot of the scalar temp: $ʟ_tags[N] -> $latteTagN.
+	public const ROLE_TAG_SNAPSHOT = 'tagSnapshot';
+
+	private const TMP_TEMP = "\u{29F}_tmp";
 
 	private const IFCONTENT_TEMP = "\u{29F}_ifc";
 
-	private const FILTERS_CLASS = 'Latte\Runtime\Filters';
+	private const TAG_VARIABLE_PREFIX = 'latteTag';
 
-	private const FILTERS_ALIAS = 'LR\Filters';
+	private const TAG_NAME_VARIABLE = 'latteTagName';
 
 	private const HELPERS_CLASS = Helpers::class;
 
 	public function describePattern(): string
 	{
 		return 'n:class ($ʟ_tmp = array_filter([...])) ? \' class="\'.implode(...).\'"\' : "" ternary echo -> '
-			. 'echo \OriPhpstan\Nette\Latte\Runtime\Helpers::classes([...]); n:attr $ʟ_tmp = [...]; echo htmlAttributes(isset($ʟ_tmp[N])...) pair -> '
-			. 'echo \Latte\Runtime\Filters::htmlAttributes([...]); n:tag $ʟ_tag[N] temp renamed to $latteTagN everywhere '
-			. '(checkTagSwitch call kept analyzed); n:nonce echo $this->global->uiNonce ? ... : "" dropped; n:ifcontent '
-			. 'doubly-nested ob_start/try/finally $ʟ_ifc[N] = rtrim(ob_get_flush()) === \'\' + outer '
-			. 'if ($ʟ_ifc[N] ?? null) { ob_end_clean(); } else { echo ob_get_clean(); } shell -> element body statements only';
+			. 'echo \OriPhpstan\Nette\Latte\Runtime\Helpers::classes([...]); n:attr $ʟ_tmp = [...]; echo <attributes>($ʟ_tmp, ...) '
+			. 'pair -> echo <attributes>([...], ...); n:tag closing-tag temps renamed to $latteTag/$latteTagN everywhere and '
+			. 'the <tagChange> result temp to $latteTagName (the validating call kept analyzed); n:nonce '
+			. 'echo $this->global->uiNonce ? ... : "" dropped; n:ifcontent doubly-nested ob_start/try/finally '
+			. '$ʟ_ifc[N] = rtrim(ob_get_flush()) === \'\' + outer if ($ʟ_ifc[N] ?? null) { ob_end_clean(); } else '
+			. '{ echo ob_get_clean(); } shell -> element body statements only: ' . $this->patterns()->describe();
 	}
 
 	/**
@@ -88,15 +106,29 @@ final class AttrShellEliminator extends EliminatorVisitor
 			}
 		}
 
+		if ($node instanceof ArrayDimFetch && $node->dim instanceof Int_ && $this->isIndexedTagTemp($node->var)) {
+			return new Variable(self::TAG_VARIABLE_PREFIX . $node->dim->value);
+		}
+
 		if (
-			$node instanceof ArrayDimFetch
-			&& $this->isVariableNamed($node->var, self::TAG_TEMP)
-			&& $node->dim instanceof Int_
+			$node instanceof Variable
+			&& is_string($node->name)
+			&& $this->patterns()->hasName(self::ROLE_TAG_SCALAR, $node->name)
 		) {
-			return new Variable('latteTag' . $node->dim->value);
+			return new Variable(self::TAG_VARIABLE_PREFIX);
 		}
 
 		return null;
+	}
+
+	private function isIndexedTagTemp(Node $node): bool
+	{
+		if (!$node instanceof Variable || !is_string($node->name)) {
+			return false;
+		}
+
+		return $this->patterns()->hasName(self::ROLE_TAG_ARRAY, $node->name)
+			|| $this->patterns()->hasName(self::ROLE_TAG_SNAPSHOT, $node->name);
 	}
 
 	/**
@@ -134,6 +166,14 @@ final class AttrShellEliminator extends EliminatorVisitor
 				}
 			}
 
+			if ($this->isTagChangeAssign($stmt)) {
+				$window = $this->renameVariable(array_slice($stmts, $i, 3), self::TMP_TEMP, self::TAG_NAME_VARIABLE);
+				$result = array_merge($result, $window);
+				$i += count($window);
+
+				continue;
+			}
+
 			$result[] = $stmt;
 			$i++;
 		}
@@ -151,28 +191,84 @@ final class AttrShellEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		if (count($next->exprs) !== 1 || !$this->isHtmlAttributesCall($next->exprs[0])) {
+		if (count($next->exprs) !== 1) {
+			return null;
+		}
+
+		$call = $next->exprs[0];
+		if (!$call instanceof StaticCall || !$this->isRoleCall(self::ROLE_ATTRIBUTES, $call) || $call->args === []) {
 			return null;
 		}
 
 		return new Echo_([
-			new StaticCall(new FullyQualified(self::FILTERS_CLASS), new Identifier('htmlAttributes'), [
-				new Arg($stmt->expr->expr),
-			]),
+			new StaticCall(
+				new FullyQualified($call->class->toString()),
+				$call->name->toString(),
+				array_merge([new Arg($stmt->expr->expr)], array_slice($call->args, 1)),
+			),
 		]);
 	}
 
-	private function isHtmlAttributesCall(Expr $expr): bool
+	private function isTagChangeAssign(Stmt $stmt): bool
 	{
-		if (!$expr instanceof StaticCall || !$expr->class instanceof Name || !$expr->name instanceof Identifier) {
+		if (!$stmt instanceof Expression || !$stmt->expr instanceof Assign) {
 			return false;
 		}
 
-		if (!in_array($expr->class->toString(), [self::FILTERS_CLASS, self::FILTERS_ALIAS], true)) {
+		$call = $stmt->expr->expr;
+
+		return $this->isVariableNamed($stmt->expr->var, self::TMP_TEMP)
+			&& $call instanceof StaticCall
+			&& $this->isRoleCall(self::ROLE_TAG_CHANGE, $call);
+	}
+
+	/**
+	 * @phpstan-assert-if-true Name $call->class
+	 * @phpstan-assert-if-true Identifier $call->name
+	 */
+	private function isRoleCall(string $role, StaticCall $call): bool
+	{
+		if (!$call->class instanceof Name || !$call->name instanceof Identifier) {
 			return false;
 		}
 
-		return $expr->name->toString() === 'htmlAttributes' && count($expr->args) === 1;
+		return $this->patterns()->isStaticCall($role, $call->class->toString(), $call->name->toString());
+	}
+
+	/**
+	 * @param array<Stmt> $stmts
+	 * @return array<Stmt>
+	 */
+	private function renameVariable(array $stmts, string $from, string $to): array
+	{
+		$traverser = new NodeTraverser();
+		$traverser->addVisitor(new class ($from, $to) extends NodeVisitorAbstract {
+
+			private string $from;
+
+			private string $to;
+
+			public function __construct(string $from, string $to)
+			{
+				$this->from = $from;
+				$this->to = $to;
+			}
+
+			public function leaveNode(Node $node): ?Node
+			{
+				if ($node instanceof Variable && $node->name === $this->from) {
+					return new Variable($this->to, $node->getAttributes());
+				}
+
+				return null;
+			}
+
+		});
+
+		/** @var array<Stmt> $renamed */
+		$renamed = $traverser->traverse($stmts);
+
+		return $renamed;
 	}
 
 	private function rewriteNClassEcho(Echo_ $node): ?Echo_
@@ -253,7 +349,11 @@ final class AttrShellEliminator extends EliminatorVisitor
 	 */
 	private function matchIfContentShell(Stmt $obStart, TryCatch $tryCatch): ?array
 	{
-		if (!$this->isEmptyObStart($obStart) || count($tryCatch->catches) !== 0 || $tryCatch->finally === null) {
+		if (
+			!NoopObStart::matches($obStart, $this->patterns())
+			|| count($tryCatch->catches) !== 0
+			|| $tryCatch->finally === null
+		) {
 			return null;
 		}
 
@@ -392,26 +492,6 @@ final class AttrShellEliminator extends EliminatorVisitor
 			&& $stmt->expr instanceof FuncCall
 			&& $this->isFuncCallNamed($stmt->expr, 'ob_start')
 			&& count($stmt->expr->args) === 0;
-	}
-
-	private function isEmptyObStart(Stmt $stmt): bool
-	{
-		if (!$stmt instanceof Expression || !$stmt->expr instanceof FuncCall) {
-			return false;
-		}
-
-		if (!$this->isFuncCallNamed($stmt->expr, 'ob_start') || count($stmt->expr->args) !== 1) {
-			return false;
-		}
-
-		$arg = $stmt->expr->args[0];
-		if (!$arg instanceof Arg || !$arg->value instanceof Closure) {
-			return false;
-		}
-
-		$closure = $arg->value;
-
-		return $closure->params === [] && $closure->uses === [] && $closure->stmts === [];
 	}
 
 	private function isBareFuncCall(Stmt $stmt, string $name): bool

@@ -8,11 +8,15 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\BinaryOp\Plus;
+use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Throw_;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -27,6 +31,7 @@ use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\TryCatch;
 use function array_key_exists;
 use function array_pop;
+use function array_slice;
 use function count;
 use function in_array;
 use function is_string;
@@ -34,6 +39,21 @@ use function ucfirst;
 
 final class BlockDispatchEliminator extends EliminatorVisitor
 {
+
+	// {include parent}: a parent block never lives in the same class, so only the
+	// get_defined_vars() argument is flattened.
+	public const ROLE_PARENT_BLOCK = 'parentBlock';
+
+	// The dead if (false) {} mirror Latte 2 emits between enterBlockLayer() and the try.
+	public const ROLE_EMBED_DEAD_IF = 'embedDeadIf';
+
+	// Latte 3's {block $name}: addBlock($ʟ_nm = (<stringOrNull>($ʟ_tmp = <expr>) ?? throw ...), ...)
+	// -> addBlock($ʟ_nm = <expr>, ...), the Latte 2 shape.
+	public const ROLE_DYNAMIC_BLOCK_NAME = 'dynamicBlockName';
+
+	// Latte 3's anonymous filtered {block |f}: (function () { extract(func_get_arg(0)); <body> })
+	// (get_defined_vars()) -> <body>, the Latte 2 shape inside the capture shell.
+	public const ROLE_INLINE_BLOCK_CLOSURE = 'inlineBlockClosure';
 
 	private const HELPERS_CLASS = Helpers::class;
 
@@ -57,7 +77,9 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 			. '->renderToContentType(...)|renderBlock(...)}finally{leaveBlockLayer()} shell -> try body statements only '
 			. '(already-resolved direct block calls kept as-is by the renderBlock handling above), layer calls dropped; '
 			. 'file-form createTemplate(<target>, <args>, "embed")->renderToContentType(...) -> Helpers::embedTemplate('
-			. '<target>), <args> kept analyzed via a preceding Helpers::analyzed(<args>) statement';
+			. '<target>), <args> kept analyzed via a preceding Helpers::analyzed(<args>) statement; {include parent} '
+			. '<parentBlock>(name, get_defined_vars()) argument flattened to []; <dynamicBlockName> unwrapped to the '
+			. 'assigned expression; <inlineBlockClosure> IIFE -> its body: ' . $this->patterns()->describe();
 	}
 
 	/**
@@ -97,7 +119,7 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 	}
 
 	/**
-	 * @return Node|null
+	 * @return Node|array<Stmt>|null
 	 */
 	public function leaveNode(Node $node)
 	{
@@ -117,6 +139,27 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 			$replacement = $this->rebuildDirectCall($node->expr) ?? $this->dropGetDefinedVarsArg($node->expr);
 			if ($replacement !== null) {
 				return new Expression($replacement);
+			}
+		}
+
+		if ($node instanceof Expression && $node->expr instanceof MethodCall && $this->isParentBlockCall($node->expr)) {
+			$replacement = $this->dropGetDefinedVarsArg($node->expr);
+			if ($replacement !== null) {
+				return new Expression($replacement);
+			}
+		}
+
+		if ($node instanceof Expression) {
+			$body = $this->matchInlineBlockClosure($node);
+			if ($body !== null) {
+				return $body;
+			}
+		}
+
+		if ($node instanceof Coalesce) {
+			$unwrapped = $this->unwrapDynamicBlockName($node);
+			if ($unwrapped !== null) {
+				return $unwrapped;
 			}
 		}
 
@@ -187,12 +230,16 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$deadIf = $stmts[$i + 1] ?? null;
-		if (!$deadIf instanceof If_ || !$this->isLiteralFalse($deadIf->cond)) {
-			return null;
+		$cursor = $i + 1;
+		if ($this->patterns()->has(self::ROLE_EMBED_DEAD_IF)) {
+			$deadIf = $stmts[$cursor] ?? null;
+			if (!$deadIf instanceof If_ || !$this->isLiteralFalse($deadIf->cond)) {
+				return null;
+			}
+
+			$cursor++;
 		}
 
-		$cursor = $i + 2;
 		if ($this->matchCopyBlockLayer($stmts[$cursor] ?? null)) {
 			$cursor++;
 		}
@@ -386,6 +433,90 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 			&& $node->name instanceof Identifier
 			&& $node->name->toString() === 'renderBlock'
 			&& count($node->args) >= 2;
+	}
+
+	private function isParentBlockCall(MethodCall $node): bool
+	{
+		return $this->isVariableNamed($node->var, 'this')
+			&& $node->name instanceof Identifier
+			&& $this->patterns()->hasName(self::ROLE_PARENT_BLOCK, $node->name->toString())
+			&& count($node->args) >= 2;
+	}
+
+	/**
+	 * @return array<Stmt>|null
+	 */
+	private function matchInlineBlockClosure(Expression $node): ?array
+	{
+		if (!$this->patterns()->has(self::ROLE_INLINE_BLOCK_CLOSURE)) {
+			return null;
+		}
+
+		$call = $node->expr;
+		if (!$call instanceof FuncCall || !$call->name instanceof Closure || count($call->args) !== 1) {
+			return null;
+		}
+
+		$closure = $call->name;
+		$arg = $call->args[0];
+		if (
+			$closure->params !== []
+			|| $closure->uses !== []
+			|| !$arg instanceof Arg
+			|| !$arg->value instanceof FuncCall
+			|| !$this->isFuncCallNamed($arg->value, 'get_defined_vars')
+		) {
+			return null;
+		}
+
+		$extract = $closure->stmts[0] ?? null;
+		if (
+			!$extract instanceof Expression
+			|| !$extract->expr instanceof FuncCall
+			|| !$this->isFuncCallNamed($extract->expr, 'extract')
+			|| count($extract->expr->args) !== 1
+		) {
+			return null;
+		}
+
+		$extractArg = $extract->expr->args[0];
+		if (
+			!$extractArg instanceof Arg
+			|| !$extractArg->value instanceof FuncCall
+			|| !$this->isFuncCallNamed($extractArg->value, $this->patterns()->name(self::ROLE_INLINE_BLOCK_CLOSURE))
+		) {
+			return null;
+		}
+
+		return array_slice($closure->stmts, 1);
+	}
+
+	private function unwrapDynamicBlockName(Coalesce $node): ?Expr
+	{
+		$call = $node->left;
+		if (
+			!$node->right instanceof Throw_
+			|| !$call instanceof StaticCall
+			|| !$call->class instanceof Name
+			|| !$call->name instanceof Identifier
+			|| count($call->args) !== 1
+		) {
+			return null;
+		}
+
+		if (
+			!$this->patterns()->isStaticCall(
+				self::ROLE_DYNAMIC_BLOCK_NAME,
+				$call->class->toString(),
+				$call->name->toString(),
+			)
+		) {
+			return null;
+		}
+
+		$arg = $call->args[0];
+
+		return $arg instanceof Arg && $arg->value instanceof Assign ? $arg->value->expr : null;
 	}
 
 	private function isSnippetGetHtmlIdCall(MethodCall $node): bool

@@ -6,7 +6,6 @@ use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Runtime\Diag;
 use PhpParser\Modifiers;
 use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -16,7 +15,6 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\Node\Stmt\Return_;
 use function array_merge;
 use function usort;
 
@@ -104,20 +102,16 @@ final class DiagnosticMaterializer
 	 */
 	private function buildMinimalClass(string $className, array $reportStmts): Class_
 	{
-		// Matches the real, successfully-compiled main()'s shape (native `: array` return type,
-		// terminal `return`) so this degenerate stand-in class reports only the parse-error
-		// diagnostic itself, never method-shape noise on top of it.
-		$main = new ClassMethod('main', [
+		// A name no Latte line's Template declares, so the stand-in never overrides a vendor
+		// signature and reports only the parse-error diagnostic itself.
+		$main = new ClassMethod('latteMain', [
 			'flags' => Modifiers::PUBLIC,
-			'returnType' => new Identifier('array'),
-			'stmts' => array_merge($reportStmts, [new Return_(new Array_())]),
+			'returnType' => new Identifier('void'),
+			'stmts' => $reportStmts,
 		], ['startLine' => 1, 'endLine' => 1]);
 
 		$class = new Class_($className, [
 			'flags' => Modifiers::FINAL,
-			// extends Latte\Runtime\Template so main()'s bare `: array` return type inherits the same
-			// override-of-an-already-imprecise-parent exemption a normally-compiled class gets - a
-			// standalone class here would get freshly flagged by missingType.iterableValue instead.
 			'extends' => new FullyQualified('Latte\Runtime\Template'),
 			'stmts' => [$main],
 		], ['startLine' => 1, 'endLine' => 1]);

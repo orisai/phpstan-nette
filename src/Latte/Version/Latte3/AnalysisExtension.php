@@ -8,8 +8,10 @@ use Latte\Compiler\Nodes\AreaNode;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
 use Latte\Extension;
+use Nette\Bridges\CacheLatte\Nodes\CacheNode;
 use stdClass;
 use function array_keys;
+use function is_callable;
 
 // Registered last, so its parsers win Latte's last-registration-wins tag dispatch
 // (TemplateParser::addTags()): every tag the other extensions register is re-registered through
@@ -60,6 +62,16 @@ final class AnalysisExtension extends Extension
 
 		foreach ($this->typeCapture->getTags() as $name => $parser) {
 			$tags[$name] = $parser;
+		}
+
+		// CacheExtension's own parser also flips the flag its initialize() pass reads.
+		$cache = $tags['cache'] ?? null;
+		if (is_callable($cache)) {
+			$tags['cache'] = static function (Tag $tag, TemplateParser $parser) use ($cache): Generator {
+				$node = yield from $cache($tag, $parser);
+
+				return $node instanceof CacheNode ? DeterministicCacheNode::of($node) : $node;
+			};
 		}
 
 		foreach ($this->passthroughTags as $name => $paired) {

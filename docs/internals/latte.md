@@ -43,8 +43,12 @@ Template facts take the same route. `TemplateEdgeIndex::declarationsFor()` (and 
 `findDeclarations()`, null for an unreadable file) is the single declarations reader: contract
 checks, declared-vars resolution, placement checks, the `{templateType}` collector and the debug dump
 all read through it, and `factsFor()` caches under the content-addressed `latte-facts|<family>` node
-id, so a different family never reads another's cached facts. `Latte2Adapter` scans the token
-stream; `Latte3Adapter` reads the node tree of the one parse before the compiler passes mutate it
+id, so a different family never reads another's cached facts. The argument list an include-family
+site carries (`IncludeTarget::getArgsSource()`) is read through `LatteVersionAdapter::parseTagArguments()`
+into version-neutral `TagArgument`s (name, expression source, spread, and a lone variable or
+literal classified), `MacroTokensArguments` on Latte 2 and `TagLexerArguments` on Latte 3;
+`ArgTyper` is the only consumer, so no shared class tokenizes Latte syntax itself. `Latte2Adapter`
+scans the token stream; `Latte3Adapter` reads the node tree of the one parse before the compiler passes mutate it
 (`NodeFactsExtractor`): a `TagRecorder` turns every tag into a `TemplateEvent` stream, and the ported
 scanners (`EventDeclarationScanner`, `EventFactExtractor`, `NodeFormSiteCollector`) apply the Latte 2
 rules — including the Latte 2 head rule — to that stream, which is what keeps the two adapters'
@@ -112,9 +116,24 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   `Latte\Essential\CachingIterator`, opens capturing shells with `ob_start(fn() => '')`, drops
   `{templatePrint}`'s `printClass(...); exit;`, and 3.1 minifies `{spaceless}` through
   `WhitespaceMinifier::start()/end()` and re-wraps a filtered `{capture}` in `Html` behind a
-  `$ʟ_fi->contentType` guard that goes with the shell. `FamilyCoverageTest` fails when a family
-  lacks a table; the consumers still matching their Latte 2 shapes on Latte 3 are the explicit
-  `FamilyPatterns::PROVISIONAL` list.
+  `$ʟ_fi->contentType` guard that goes with the shell. The n:attribute, UI and block shells
+  differ per line too: `n:attr` prints through `NAttrNode::attrs($ʟ_tmp, false)` (Latte 2
+  `Filters::htmlAttributes(...)`) and the temp array is inlined into that call; `n:tag`'s
+  closing-tag temps become `$latteTagN` (Latte 2 and 3.0 index `$ʟ_tag[N]`, 3.1 snapshots a scalar
+  `$ʟ_tag` into `$ʟ_tags[N]`) and 3.x's `validateTagChange()` result temp `$latteTagName`;
+  `n:ifcontent`'s shell opens with the line's no-op `ob_start()`; a dynamic `{control $obj}`
+  is one `if (!is_object($ʟ_tmp = ...))` on Latte 3 (Latte 2: if/else); `{embed}` has no dead
+  `if (false)` mirror on Latte 3; `{include parent}` is `renderParentBlock()` (Latte 2
+  `renderBlockParent()`), its `get_defined_vars()` flattened like an unresolvable block dispatch;
+  Latte 3's dynamic `{block $name}` unwraps `Helpers::stringOrNull($ʟ_tmp = $name) ?? throw ...`
+  to the Latte 2 `addBlock($ʟ_nm = $name, ...)` shape and its anonymous filtered `{block |f}` IIFE
+  to the body Latte 2 prints inline, so the filtered-block capture shell stays the same on every
+  line; `{formPrint}`/`{formClassPrint}`'s `Blueprint::latte|dataClass(...); exit;` is dropped like
+  `{templatePrint}`. A Latte 3 `{cache}` compiles through `DeterministicCacheNode`, keyed by tag
+  position instead of `CacheNode`'s random bytes (Latte 2: `DeterministicCacheMacro`), and the
+  `createCache()/end()/rollback()` calls stay analysed on every line. `FamilyCoverageTest` fails
+  when a family lacks a table; the consumers still matching their Latte 2 shapes on Latte 3 are the
+  explicit `FamilyPatterns::PROVISIONAL` list.
 - **Filter-call rewrite** — `($this->filters->truncate)(...)` becomes the real callable
   (`\Latte\Runtime\Filters::truncate(...)` on Latte 2, `\Latte\Essential\Filters::truncate(...)` on
   Latte 3, `number_format(...)`, ...), so filter arguments check against real vendor signatures;
@@ -659,6 +678,16 @@ it never matches and never warns.
 The error is an ordinary ignorable/baselinable finding: every deliberate use of a Latte runtime
 internal from template code is meant to surface once, get a conscious ignore/baseline entry (or
 get removed), and any *new* use warns immediately instead of blending into normal template code.
+
+The scaffolding itself is ignored by `config/latte.neon`, per Latte line and every entry
+`reportUnmatched: false`, so a project on either line runs with PHPStan's default
+`reportUnmatchedIgnoredErrors` and never sees an unmatched-ignore error for the other line's
+entries: Latte 2's `UIRuntime::initialize()` prologue (`method.internal`) and its private
+`Template::$blocks` read; Latte 3's public `Blocks`/`Source`/`ContentType` template-class constants
+(`shipmonk.deadConstant`, read by Latte's runtime through `static::`) and Latte 3.1's
+`Template::$parentArgs` assignment from `{extends file, args}` (`property.notFound`, a protected
+property PHPStan's reflection of Latte 3.1 does not expose). `RuntimeInternalsIgnoreSpawnTest`
+spawns each line's corpus with unmatched reporting on.
 
 ## Custom filters, functions and macros
 

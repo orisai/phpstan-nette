@@ -24,6 +24,10 @@ final class DevTagEliminatorTest extends BaseTestCase
 		LR\Tracer::throw();
 		Nette\Bridges\ApplicationLatte\UIRuntime::printClass($this, NULL);
 		exit;
+		Nette\Forms\Blueprint::latte(is_object($ʟ_tmp = 'myForm') ? $ʟ_tmp : $this->global->uiControl[$ʟ_tmp]) /* pos 1:1 */;
+		exit;
+		Nette\Forms\Blueprint::dataClass(is_object($ʟ_tmp = $f) ? $ʟ_tmp : $this->global->uiControl[$ʟ_tmp]) /* pos 2:1 */;
+		exit;
 PHP);
 
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
@@ -44,6 +48,8 @@ PHP), self::eliminate($latteLine, $php));
 		LR\Tracer::throw() /* line 3 */;
 		Latte\Essential\Tracer::throw();
 		Nette\Bridges\ApplicationLatte\Nodes\TemplatePrintNode::printClass($this->getParameters(), 'X');
+		exit;
+		Nette\Forms\Blueprint::latte($this->global->uiControl["myForm"]);
 		exit;
 PHP);
 

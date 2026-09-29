@@ -3,12 +3,10 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess\Eliminator;
 
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\AttrShellEliminator;
-use OriPhpstan\Nette\Latte\Postprocess\Eliminator\BlockDispatchEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EliminatorVisitor;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EscapingEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FamilyPatterns;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FormsMacroEliminator;
-use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\FilterRewriter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
@@ -52,7 +50,7 @@ final class FamilyCoverageTest extends BaseTestCase
 		}
 	}
 
-	// The list shrinks as Tasks 13 and 14 give these consumers their own Latte 3 tables; a NEW
+	// The list shrinks as Task 14 gives the forms consumer its own Latte 3 tables; a NEW
 	// provisional entry is a Latte 3 shape silently matched with a Latte 2 table.
 	public function testProvisionalConsumersAreExactlyTheOnesStillOnLatte2Shapes(): void
 	{
@@ -67,22 +65,10 @@ final class FamilyCoverageTest extends BaseTestCase
 
 		self::assertSame(
 			[
-				AttrShellEliminator::class . '@3.0/item',
-				AttrShellEliminator::class . '@3.0/provider',
-				AttrShellEliminator::class . '@3.1/item',
-				AttrShellEliminator::class . '@3.1/provider',
-				UiMacroEliminator::class . '@3.0/item',
-				UiMacroEliminator::class . '@3.0/provider',
-				UiMacroEliminator::class . '@3.1/item',
-				UiMacroEliminator::class . '@3.1/provider',
 				FormsMacroEliminator::class . '@3.0/item',
 				FormsMacroEliminator::class . '@3.0/provider',
 				FormsMacroEliminator::class . '@3.1/item',
 				FormsMacroEliminator::class . '@3.1/provider',
-				BlockDispatchEliminator::class . '@3.0/item',
-				BlockDispatchEliminator::class . '@3.0/provider',
-				BlockDispatchEliminator::class . '@3.1/item',
-				BlockDispatchEliminator::class . '@3.1/provider',
 			],
 			array_keys($provisional),
 		);

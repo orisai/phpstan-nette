@@ -336,33 +336,36 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('echo $x', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testNAttrExpressionsAnalyzed(): void
 	{
 		$php = $this->process("{varType bool \$cond}\n<div n:attr=\"data-x => \$cond ? 1 : null\"></div>\n");
 
-		self::assertStringContainsString('htmlAttributes', $php);
-		self::assertStringContainsString('$cond ?', $php);
-		self::assertStringNotContainsString('ʟ_tmp', $php);
+		self::assertStringContainsString(
+			InstalledVersionsGuard::latteMajor() === 2
+				? '\Latte\Runtime\Filters::htmlAttributes([\'data-x\' => $cond ? 1 : \null])'
+				: '\Latte\Essential\Nodes\NAttrNode::attrs([\'data-x\' => $cond ? 1 : \null], \false)',
+			$php,
+		);
+		self::assertStringNotContainsString('ʟ_', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testNTagExpressionAnalyzed(): void
 	{
 		$php = $this->process("{varType string \$tagName}\n<div n:tag=\"\$tagName\">x</div>\n");
 
-		self::assertStringNotContainsString('ʟ_tag', $php);
+		self::assertStringNotContainsString('ʟ_', $php);
 		self::assertStringContainsString('$tagName', $php);
-		self::assertStringContainsString('checkTagSwitch', $php);
+		if (InstalledVersionsGuard::latteMajor() === 2) {
+			self::assertStringContainsString('checkTagSwitch(\'div\', $latteTag0)', $php);
+		} else {
+			self::assertStringContainsString(
+				'$latteTagName = \Latte\Runtime\HtmlHelpers::validateTagChange($tagName, \'div\');',
+				$php,
+			);
+			self::assertStringContainsString("echo '<', \$latteTagName;", $php);
+		}
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testNIfcontentReducedToBody(): void
 	{
 		$php = $this->process("{varType bool \$cond}\n<p n:ifcontent>{if \$cond}x{/if}</p>\n");
@@ -522,9 +525,6 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('$label', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testEmbedFileFormRoutesThroughHelperAndDropsLayerPlumbing(): void
 	{
 		$php = $this->process(
@@ -544,9 +544,6 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('createTemplate', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testEmbedBlockFormDropsLayerPlumbingKeepsDirectCall(): void
 	{
 		$php = $this->process("{block sub}x{/block}\n{embed block sub}\n{/embed}\n");
@@ -566,9 +563,6 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('ʟ_', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testNoLatteInternalsRemainInEmbedFixture(): void
 	{
 		$php = $this->processFixture('embed.latte');
