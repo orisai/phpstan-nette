@@ -71,6 +71,8 @@ final class LatteTemplateSourceLocator implements SourceLocator
 	// The store files are written while the run is under way (PreAnalysisIndexBuilder materializes
 	// the discovery store before the analysis, the narrowing store grows with it), and a worker
 	// forked after this memo was built inherits it, so a miss re-reads the stores before answering.
+	// That only helps a name first asked after the store write: an earlier miss is memoised by
+	// PHPStan's MemoizingReflector and inherited by forks as well.
 	private function fileFor(string $className): ?string
 	{
 		$key = strtolower($className);

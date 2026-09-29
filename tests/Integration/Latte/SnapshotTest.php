@@ -31,6 +31,7 @@ final class SnapshotTest extends BaseTestCase
 	 */
 	public function testRawCompilationSnapshot(string $lattePath): void
 	{
+		self::requireFixtureTags($lattePath);
 		$className = TemplateClassName::forPath('fixtures/' . basename($lattePath));
 		$result = (new LatteCompiler())->compile(FileSystem::read($lattePath), $className);
 		self::assertNotNull($result->getPhpSource(), 'fixture must compile');
@@ -47,6 +48,7 @@ final class SnapshotTest extends BaseTestCase
 	 */
 	public function testProcessedSnapshot(string $lattePath): void
 	{
+		self::requireFixtureTags($lattePath);
 		$className = TemplateClassName::forPath('fixtures/' . basename($lattePath));
 		$latteSource = FileSystem::read($lattePath);
 		$result = (new LatteCompiler())->compile($latteSource, $className);
@@ -61,19 +63,20 @@ final class SnapshotTest extends BaseTestCase
 		);
 	}
 
+	// {ifCurrent} is gone from nette/application 3.3 (UIMacros dropped with the Latte 2 path).
+	private static function requireFixtureTags(string $lattePath): void
+	{
+		if (basename($lattePath) === 'ifcurrent.latte') {
+			InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
+		}
+	}
+
 	/**
 	 * @return iterable<string, array{string}>
 	 */
 	public function provideFixtures(): iterable
 	{
 		foreach ((array) glob(dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/*.latte') as $path) {
-			if (
-				basename((string) $path) === 'ifcurrent.latte'
-				&& !InstalledVersionsGuard::satisfies('nette/application', '<3.3')
-			) {
-				continue;
-			}
-
 			yield basename((string) $path) => [(string) $path];
 		}
 	}

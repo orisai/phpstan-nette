@@ -205,30 +205,47 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 
 	public function testVersionReadsThisProjectsVendorEvenWithPhpstansPharLoaderRegistered(): void
 	{
-		$expected = null;
-		$pharAutoload = null;
+		$project = null;
 		foreach (InstalledVersions::getAllRawData() as $installed) {
 			if ($installed['root']['name'] === 'orisai/phpstan-nette') {
-				$expected = $installed['versions']['nette/di']['version'] ?? null;
-				$pharAutoload = 'phar://' . ($installed['versions']['phpstan/phpstan']['install_path'] ?? '')
-					. '/phpstan.phar/vendor/autoload.php';
+				$project = $installed['versions'];
 			}
 		}
 
-		self::assertNotNull($expected);
-		self::assertNotNull($pharAutoload);
+		self::assertNotNull($project);
+		$pharAutoload = 'phar://' . ($project['phpstan/phpstan']['install_path'] ?? '') . '/phpstan.phar/vendor/autoload.php';
 		self::assertFileExists($pharAutoload);
 		require_once $pharAutoload;
 
 		$bundled = null;
 		foreach (InstalledVersions::getAllRawData() as $installed) {
 			if ($installed['root']['name'] === 'phpstan/phpstan-src') {
-				$bundled = $installed['versions']['nette/di']['version'] ?? null;
+				$bundled = $installed['versions'];
 			}
 		}
 
 		self::assertNotNull($bundled, 'the phar loader must be registered by now');
-		self::assertSame($expected, InstalledVersionsGuard::version('nette/di'));
+
+		// A package both installs carry at different versions is the only one that can tell the two
+		// answers apart; which one that is depends on the profile.
+		foreach ($bundled as $package => $entry) {
+			$expected = $project[$package]['version'] ?? null;
+			$other = $entry['version'] ?? null;
+			if ($expected === null || $other === null || $expected === $other) {
+				continue;
+			}
+
+			self::assertSame($expected, InstalledVersionsGuard::version($package));
+			self::assertSame(
+				$other,
+				InstalledVersions::getVersion($package),
+				'the merged view answers with the bundled copy',
+			);
+
+			return;
+		}
+
+		self::markTestSkipped('this install and the phar bundle no package at different versions');
 	}
 
 }

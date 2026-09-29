@@ -40,6 +40,10 @@ final class DeterminismTest extends BaseTestCase
 	 */
 	public function testPipelineIsPure(string $lattePath): void
 	{
+		if (basename($lattePath) === 'ifcurrent.latte') {
+			InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
+		}
+
 		$dump1 = $this->dumpFresh($lattePath);
 		$dump2 = $this->dumpFresh($lattePath);
 
@@ -376,13 +380,6 @@ final class DeterminismTest extends BaseTestCase
 	public function provideFixtures(): iterable
 	{
 		foreach ((array) glob(dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/*.latte') as $path) {
-			if (
-				basename((string) $path) === 'ifcurrent.latte'
-				&& !InstalledVersionsGuard::satisfies('nette/application', '<3.3')
-			) {
-				continue;
-			}
-
 			yield basename((string) $path) => [(string) $path];
 		}
 	}

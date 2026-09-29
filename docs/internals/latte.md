@@ -1101,7 +1101,9 @@ tripwires the same way the include-semantics probes are. The facts the model enc
 - **`switch()` (nette/application 3.2) is a view write too** — `run()` turns its `SwitchException`
   into `changeAction()` from an action method and `setView()` from a render method, so the walk
   records it as a mutation of its own kind (`switch`). It does not model the `never` return: a
-  write after `switch()` in the same body is still walked.
+  write after `switch()` in the same body is still walked, so a `setFile()` placed after it is
+  still treated as an effective write — the same class of over-approximation as code following
+  `redirect()`/`terminate()`.
 - **An effective `setFile()` means `formatTemplateFiles()` is never consulted** — a proven,
   unconditional `setFile()` inside a proven dispatch window therefore *suppresses* the formula
   candidates of its scope (its own view for an `action<View>`/`render<View>` body, the whole class
@@ -2033,3 +2035,24 @@ And the implementation-ledgered additions:
   is what lifted the `orisaiNette.latte.unknownBlock` suppression there). What remains is the variable payload:
   root contexts carrying what a renderer actually assigns to `$template->x` across the boundary,
   plus the component-tree contexts that would make those contexts per-render-site.
+
+## Bootstrap files and the parse-time `{templateType}` lookup
+
+`{templateType X}` is resolved with a runtime `class_exists()` while the template is *parsed*
+(`DeclarationInjector`, `DeclaredVarsResolver`, `LatteRoutingParser::templateTypeVars()`). PHPStan
+2.2 defers `bootstrapFiles` to right before the analysis, but `ResultCacheManager::restore()` parses
+every changed file first to diff exported nodes — for a changed `.latte` that is the whole pipeline,
+before any bootstrap-registered autoloader exists. The memoised result (this process, or a worker
+forked from it) then reports `orisaiNette.latte.unknownType` where a cold run does not.
+
+`BootstrapFilesLoader` closes that gap: the routing parser runs `%bootstrapFiles%` (with PHPStan's
+`$container` in scope, exactly like `CommandHelper::executeBootstrapFile()`) before the first
+`.latte` parse in a process and publishes their autoloaders through
+`BootstrapFilesRunner::mergeNewAutoloadFunctions()`; PHPStan's own later run of the same files is a
+`require_once` no-op. Consumer-visible consequence: whenever a `.latte` is parsed in the main
+process before the fork — every warm run with a changed template, and any pre-fork `LatteTpl_*`
+reflection — the resources a bootstrap file opens (database connections, sockets) are inherited by
+the forked workers again, which is what PHPStan's deferral was avoiding. Without the runner's
+publishing hook the loader does nothing and leaves the files to PHPStan. Long-term direction:
+resolve `{templateType}` class existence at analysis time (through the reflection provider) rather
+than at parse time, which makes the early load unnecessary.
