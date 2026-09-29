@@ -9,6 +9,10 @@ final class MutationFact
 
 	public const KIND_SET_ACTION = 'changeAction';
 
+	// nette/application 3.2: throws SwitchException, which run() turns into changeAction() from an
+	// action method and setView() from a render method - a view write either way.
+	public const KIND_SWITCH = 'switch';
+
 	public const KIND_SET_FILE = 'setFile';
 
 	public const PHASE_STARTUP = 'startup';

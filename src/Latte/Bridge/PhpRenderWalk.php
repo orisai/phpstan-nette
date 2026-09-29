@@ -79,7 +79,7 @@ use function strtolower;
 use function substr;
 
 /**
- * @phpstan-type LifecycleState array{presenter: bool, methods: array<int, array{name: string, public: bool, static: bool}>, edges: array<int, list<int>>, mutations: list<array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION, argument: string|null, line: int, conditional: bool, methodId: int, file: string}>, signalTargets: list<array{name: string, conditional: bool}>, signalTargetIds: list<array{id: int, conditional: bool}>, closures: list<array{node: Closure|ArrowFunction, conditional: bool, file: string, declaringClass: ClassReflection}>, closureIds: list<int>}
+ * @phpstan-type LifecycleState array{presenter: bool, methods: array<int, array{name: string, public: bool, static: bool}>, edges: array<int, list<int>>, mutations: list<array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION|MutationFact::KIND_SWITCH, argument: string|null, line: int, conditional: bool, methodId: int, file: string}>, signalTargets: list<array{name: string, conditional: bool}>, signalTargetIds: list<array{id: int, conditional: bool}>, closures: list<array{node: Closure|ArrowFunction, conditional: bool, file: string, declaringClass: ClassReflection}>, closureIds: list<int>}
  * @phpstan-type ViewEntry array{certainty: Certainty::HAPPENS|Certainty::MAYBE, sites: list<array{file: string, line: int}>, sources: list<MutationFact|string>}
  * @phpstan-type SetFileSeed array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, methodId: int, conventionMethod: string|null}
  */
@@ -110,6 +110,8 @@ final class PhpRenderWalk
 	private const SET_VIEW_METHOD = 'setView';
 
 	private const CHANGE_ACTION_METHOD = 'changeAction';
+
+	private const SWITCH_METHOD = 'switch';
 
 	private const ACTION_METHOD_PREFIX = 'action';
 
@@ -1963,7 +1965,7 @@ final class PhpRenderWalk
 	}
 
 	/**
-	 * @return array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION, argument: string|null, line: int}|null
+	 * @return array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION|MutationFact::KIND_SWITCH, argument: string|null, line: int}|null
 	 */
 	private function viewMutationOfStmt(Stmt $stmt): ?array
 	{
@@ -1985,6 +1987,8 @@ final class PhpRenderWalk
 			$kind = MutationFact::KIND_SET_VIEW;
 		} elseif ($name === self::CHANGE_ACTION_METHOD) {
 			$kind = MutationFact::KIND_SET_ACTION;
+		} elseif ($name === self::SWITCH_METHOD) {
+			$kind = MutationFact::KIND_SWITCH;
 		} else {
 			return null;
 		}

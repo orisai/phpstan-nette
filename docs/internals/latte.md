@@ -1098,6 +1098,10 @@ tripwires the same way the include-semantics probes are. The facts the model enc
 - **`changeAction()` rewrites action *and* view, last write wins** — it overwrites a preceding
   `setView()` in the same body. There is no `setAction()` on a presenter at all
   (`Nette\Application\UI\Form::setAction()` is an unrelated method on a different class).
+- **`switch()` (nette/application 3.2) is a view write too** — `run()` turns its `SwitchException`
+  into `changeAction()` from an action method and `setView()` from a render method, so the walk
+  records it as a mutation of its own kind (`switch`). It does not model the `never` return: a
+  write after `switch()` in the same body is still walked.
 - **An effective `setFile()` means `formatTemplateFiles()` is never consulted** — a proven,
   unconditional `setFile()` inside a proven dispatch window therefore *suppresses* the formula
   candidates of its scope (its own view for an `action<View>`/`render<View>` body, the whole class

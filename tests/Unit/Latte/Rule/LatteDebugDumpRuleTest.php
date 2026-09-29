@@ -65,6 +65,7 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\SetFileConditionalPres
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\SetFileConventionPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\SetFileOpaquePresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\ShutdownOnlyViewPresenter;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\SwitchViewsPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\TemplateClassChannelTargetOne;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\TemplateClassChannelTargetThree;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\TemplateClassChannelTargetTwo;
@@ -1711,6 +1712,32 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 
 	// The view axis across every effective lifecycle phase, including the one whose write is
 	// conditional - the only channel that renders a view as `maybe` rather than `happens`.
+	// nette/application 3.2's switch(): a view write from an action method (changeAction semantics)
+	// and from a render method (setView semantics), so the switched-to view joins the set either way.
+	public function testDumpDiscoveryRendersASwitchAsAViewMutation(): void
+	{
+		$file = self::fixtureFile(SwitchViewsPresenter::class);
+
+		$errors = $this->discoveryRule(null)->processNode(
+			$this->funcCall(
+				'OriPhpstan\Nette\Latte\Testing\dumpLatteDiscovery',
+				[$this->classConstFetch(SwitchViewsPresenter::class)],
+			),
+			$this->scopeForFile('/some/where/RegularPresenter.php'),
+		);
+
+		self::assertCount(1, $errors);
+		self::assertStringContainsString(
+			"\nviews:"
+			. "\ndefault (happens) @ {$file}:10 from actionDefault"
+			. "\nfourth (happens) @ {$file}:21 from switch:21"
+			. "\nother (happens) @ {$file}:15, {$file}:12 from actionOther, switch:12"
+			. "\nthird (happens) @ {$file}:19 from renderThird"
+			. "\nview candidates:",
+			$errors[0]->getMessage(),
+		);
+	}
+
 	public function testDumpDiscoveryRendersPerViewCertaintyIncludingAConditionalWrite(): void
 	{
 		$file = self::fixtureFile(LifecycleViewsPresenter::class);
