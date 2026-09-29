@@ -35,6 +35,7 @@ use PhpParser\Node\Stmt;
 use PhpParser\NodeFinder;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsAncestorBasePresenter;
@@ -47,6 +48,7 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsDynamicCo
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsFlashlessPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsFloorPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsFullPresenter;
+use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsMistypedUserPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNarrowedPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNarrowedTemplateReplica;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNoUserPresenter;
@@ -88,19 +90,56 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 
 	private const TemplateRel = 'page.latte';
 
-	// The vendor's own DefaultTemplate, reached through the renderer's @property-read declaration:
-	// four keys, each with the type DefaultTemplate itself declares, three of them nullable because
-	// the factory's own value for them can be null.
+	// The vendor's own DefaultTemplate, reached through the renderer's @property-read declaration,
+	// each key with the type DefaultTemplate itself declares. On 3.1 the unwired keys are untyped
+	// properties holding their implicit null; on 3.2+ they are typed and uninitialized, so absent.
 	public function testVendorDefaultTemplateProvidesTheFactoryVariables(): void
 	{
 		self::assertSame(
-			[
-				'user' => 'Nette\Security\User|null',
-				'baseUrl' => 'string|null',
-				'basePath' => 'string|null',
-				'flashes' => '\stdClass[]',
-			],
+			self::typedDefaultTemplate()
+				? ['flashes' => '\stdClass[]']
+				: [
+					'user' => 'Nette\Security\User|null',
+					'baseUrl' => 'string|null',
+					'basePath' => 'string|null',
+					'flashes' => '\stdClass[]',
+				],
 			$this->typesFor([FactoryVarsVendorDefaultPresenter::class]),
+		);
+	}
+
+	public function testUnwiredUserOfADetachedControlIsNullableOnUntypedDefaultTemplate(): void
+	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '~3.1.0');
+
+		self::assertSame(
+			'Nette\Security\User|null',
+			$this->typesFor([FactoryVarsControlRenderer::class], self::FactoryDefaultLoaderFile)['user'],
+		);
+	}
+
+	/**
+	 * @group nette32
+	 */
+	public function testUnwiredUserOfADetachedControlIsUndefinedOnTypedDefaultTemplate(): void
+	{
+		self::assertArrayNotHasKey(
+			'user',
+			$this->typesFor([FactoryVarsControlRenderer::class], self::FactoryDefaultLoaderFile),
+		);
+	}
+
+	/**
+	 * @group nette32
+	 */
+	public function testWiredUserOfADetachedControlIsNonNullOnTypedDefaultTemplate(): void
+	{
+		$vars = $this->resolveFor([FactoryVarsControlRenderer::class], self::WiredLoaderFile);
+
+		self::assertSame(Certainty::HAPPENS, $vars['user']['certainty']);
+		self::assertSame(
+			'\\' . FactoryVarsUserService::class,
+			$this->typesFor([FactoryVarsControlRenderer::class], self::WiredLoaderFile)['user'],
 		);
 	}
 
@@ -160,6 +199,13 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		$vars = $this->resolveFor([FactoryVarsStandaloneControl::class]);
 		$types = $this->typesFor([FactoryVarsStandaloneControl::class]);
 
+		if (self::typedDefaultTemplate()) {
+			self::assertArrayNotHasKey('presenter', $vars);
+			self::assertArrayNotHasKey('control', $vars);
+
+			return;
+		}
+
 		self::assertSame(Certainty::MAYBE, $vars['presenter']['certainty']);
 		self::assertSame('Nette\Application\UI\Presenter|null', $types['presenter']);
 		self::assertSame(Certainty::MAYBE, $vars['control']['certainty']);
@@ -172,7 +218,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	public function testRendererCreatingTemplatesBothWaysClaimsNothingFromTheControlAxis(): void
 	{
 		self::assertSame(
-			['user', 'baseUrl', 'basePath', 'flashes'],
+			self::typedDefaultTemplate() ? ['flashes'] : ['user', 'baseUrl', 'basePath', 'flashes'],
 			array_keys($this->typesFor([FactoryVarsDisagreeingControl::class])),
 		);
 	}
@@ -361,6 +407,12 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	{
 		$vars = $this->resolveFor([FactoryVarsVendorDefaultPresenter::class]);
 
+		if (self::typedDefaultTemplate()) {
+			self::assertSame(['flashes'], array_keys($vars));
+
+			return;
+		}
+
 		self::assertSame(Certainty::MAYBE, $vars['user']['certainty']);
 		self::assertSame(Certainty::MAYBE, $vars['baseUrl']['certainty']);
 		self::assertSame(Certainty::MAYBE, $vars['basePath']['certainty']);
@@ -389,12 +441,28 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		self::assertSame(Certainty::HAPPENS, $vars['user']['certainty']);
 	}
 
+	// The write's type clause: a wired value the typed property cannot hold never initializes it.
+	public function testTypedPropertyTheWiredValueDoesNotFitIsAbsent(): void
+	{
+		self::assertArrayNotHasKey(
+			'user',
+			$this->resolveFor([FactoryVarsMistypedUserPresenter::class], self::WiredLoaderFile),
+		);
+	}
+
 	// The other half of that gate, and a genuinely different verdict: the container IS there and
 	// wires neither dependency, which is positive evidence of absence rather than missing evidence.
 	// Both land on the conservative answer, and neither may be confused with the wired one.
 	public function testContainerWiringNeitherDependencyKeepsThemConservative(): void
 	{
 		$vars = $this->resolveFor([FactoryVarsVendorDefaultPresenter::class], self::FactoryDefaultLoaderFile);
+		$types = $this->typesFor([FactoryVarsVendorDefaultPresenter::class], self::FactoryDefaultLoaderFile);
+
+		if (self::typedDefaultTemplate()) {
+			self::assertSame(['flashes' => '\stdClass[]'], $types);
+
+			return;
+		}
 
 		self::assertSame(Certainty::MAYBE, $vars['user']['certainty']);
 		self::assertSame(Certainty::MAYBE, $vars['baseUrl']['certainty']);
@@ -405,7 +473,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 				'basePath' => 'string|null',
 				'flashes' => '\stdClass[]',
 			],
-			$this->typesFor([FactoryVarsVendorDefaultPresenter::class], self::FactoryDefaultLoaderFile),
+			$types,
 		);
 	}
 
@@ -436,11 +504,13 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	public function testMultiRendererIntersectsTheProvidedVariables(): void
 	{
 		self::assertSame(
-			[
-				'baseUrl' => 'string|null',
-				'basePath' => 'string|null',
-				'flashes' => 'mixed',
-			],
+			self::typedDefaultTemplate()
+				? ['flashes' => 'mixed']
+				: [
+					'baseUrl' => 'string|null',
+					'basePath' => 'string|null',
+					'flashes' => 'mixed',
+				],
 			$this->typesFor([FactoryVarsVendorDefaultPresenter::class, FactoryVarsNoUserPresenter::class]),
 		);
 	}
@@ -549,17 +619,19 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 
 			self::assertCount(1, $contexts);
 			self::assertSame(
-				[
-					'basePath' => 'string|null',
-					'baseUrl' => 'string|null',
-					'flashes' => '\stdClass[]',
-					'user' => 'Nette\Security\User|null',
-				],
+				self::typedDefaultTemplate()
+					? ['flashes' => '\stdClass[]']
+					: [
+						'basePath' => 'string|null',
+						'baseUrl' => 'string|null',
+						'flashes' => '\stdClass[]',
+						'user' => 'Nette\Security\User|null',
+					],
 				$contexts[0]->getVars(),
 			);
 			self::assertSame(
 				'factory:' . DefaultTemplate::class,
-				$contexts[0]->getProvenance()['user'],
+				$contexts[0]->getProvenance()['flashes'],
 			);
 		} finally {
 			FileSystem::delete($dir);
@@ -578,7 +650,11 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			$vars = $this->contexts($dir, [FactoryVarsVendorDefaultPresenter::class])[0]->getVars();
 
 			self::assertSame(FactoryVarsUserReplica::class, $vars['user']);
-			self::assertSame('string|null', $vars['baseUrl']);
+			if (self::typedDefaultTemplate()) {
+				self::assertArrayNotHasKey('baseUrl', $vars);
+			} else {
+				self::assertSame('string|null', $vars['baseUrl']);
+			}
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -597,7 +673,10 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			$contexts = $this->contexts($dir, [FactoryVarsVendorDefaultPresenter::class], 'partial.latte');
 
 			self::assertCount(1, $contexts);
-			self::assertSame('Nette\Security\User|null', $contexts[0]->getVars()['user']);
+			self::assertSame('\stdClass[]', $contexts[0]->getVars()['flashes']);
+			if (!self::typedDefaultTemplate()) {
+				self::assertSame('Nette\Security\User|null', $contexts[0]->getVars()['user']);
+			}
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -626,7 +705,10 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 
 			self::assertArrayNotHasKey('presenter', $vars);
 			self::assertArrayNotHasKey('control', $vars);
-			self::assertSame('Nette\Security\User|null', $vars['user']);
+			self::assertSame('\stdClass[]', $vars['flashes']);
+			if (!self::typedDefaultTemplate()) {
+				self::assertSame('Nette\Security\User|null', $vars['user']);
+			}
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -917,6 +999,11 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	private function universe(string $dir): LatteUniverse
 	{
 		return new LatteUniverse([$dir . '/templates'], $dir . '/templates');
+	}
+
+	private static function typedDefaultTemplate(): bool
+	{
+		return InstalledVersionsGuard::satisfies('nette/application', '>=3.2');
 	}
 
 	private function scratchDir(): string

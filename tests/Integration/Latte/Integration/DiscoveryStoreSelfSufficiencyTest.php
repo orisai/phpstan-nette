@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Cache\LatteResultCacheMeta;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
@@ -62,8 +63,11 @@ final class DiscoveryStoreSelfSufficiencyTest extends BaseTestCase
 			);
 			// Pins WHICH findings the two runs agree about. Identity alone is satisfiable by two
 			// equally poor runs; these two say the agreement is at the RICH answer.
+			// 3.2 leaves an unwired $user undefined, so the link shows on the renderer's own $control.
 			self::assertNotContains(
-				"$relSrc/tpl.latte:1 :: Undefined variable: \$user :: variable.undefined",
+				InstalledVersionsGuard::satisfies('nette/application', '>=3.2')
+					? "$relSrc/tpl.latte:5 :: Undefined variable: \$control :: variable.undefined"
+					: "$relSrc/tpl.latte:1 :: Undefined variable: \$user :: variable.undefined",
 				$cold['findings'],
 				'the first run must already read the link its own pre-analysis build wrote: '
 				. implode("\n", $cold['findings']),

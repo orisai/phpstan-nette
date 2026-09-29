@@ -12,8 +12,10 @@ use Nette\Security\User;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use ReflectionProperty;
 use Tests\OriPhpstan\Nette\Integration\Latte\Parity\Factory\Fixtures\ParityFlashlessTemplate;
+use Tests\OriPhpstan\Nette\Integration\Latte\Parity\Factory\Fixtures\ParityTemplateVariablePresenter;
 use Tests\OriPhpstan\Nette\Integration\Latte\Parity\Factory\Fixtures\ParityTypedFlashesTemplate;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\FixtureBridgeLatteFactory;
 use TypeError;
 use function array_key_exists;
@@ -23,7 +25,7 @@ use function sort;
 
 // Vendor-upgrade tripwire for FactoryProvidedVars: every rule the availability source applies when
 // deciding whether a template variable exists, and with what value, is proven here against the
-// INSTALLED nette/application (v3.1.15) rather than read off its source once. A vendor upgrade that
+// INSTALLED nette/application (3.1 and 3.2 lines) rather than read off its source once. A vendor upgrade that
 // moves the goalposts breaks a test instead of turning the analysis model into fiction.
 final class TemplateFactoryInjectionParityTest extends BaseTestCase
 {
@@ -38,6 +40,14 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 	public function testFactoryLeavesEveryNullValuedKeyAtItsPropertyDefault(): void
 	{
 		$parameters = $this->factory()->createTemplate()->getParameters();
+
+		// 3.2 types the same properties and leaves them uninitialized, so the unwritten keys are
+		// absent rather than null - FactoryProvidedVars' isInitialized gate.
+		if (self::typedDefaultTemplate()) {
+			self::assertSame(['flashes'], $this->sortedKeys($parameters));
+
+			return;
+		}
 
 		self::assertSame(
 			['basePath', 'baseUrl', 'control', 'flashes', 'presenter', 'user'],
@@ -64,7 +74,11 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 		$parameters = $this->factory()->createTemplate($control)->getParameters();
 
 		self::assertSame($control, $parameters['control']);
-		self::assertNull($parameters['presenter']);
+		if (self::typedDefaultTemplate()) {
+			self::assertArrayNotHasKey('presenter', $parameters);
+		} else {
+			self::assertNull($parameters['presenter']);
+		}
 	}
 
 	// $flashes is the one key the factory's own value is never null for: no presenter means no flash
@@ -91,6 +105,13 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 	{
 		$parameters = (new DefaultTemplate(new Engine()))->getParameters();
 
+		if (self::typedDefaultTemplate()) {
+			self::assertSame(['flashes'], $this->sortedKeys($parameters));
+			self::assertSame([], $parameters['flashes']);
+
+			return;
+		}
+
 		self::assertSame(
 			['basePath', 'baseUrl', 'control', 'flashes', 'presenter', 'user'],
 			$this->sortedKeys($parameters),
@@ -102,18 +123,44 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 		self::assertSame([], $parameters['flashes']);
 	}
 
-	// THE VERSION DIVERGENCE, pinned. v3.1.15 gates injection on property_exists() ALONE: it writes
-	// the value into a declared property whose type cannot hold it, and PHP throws. Newer
-	// nette/application versions add a type-compatibility check that SKIPS such a property instead,
-	// and this test goes red on that upgrade - the signal to add the type condition as a second
-	// clause of the gate (FactoryProvidedVars' own property_exists half). Modelling the check today
-	// would report a variable as unavailable that this installed vendor demonstrably writes, which
-	// is a false variable.undefined on correct code.
+	// THE VERSION DIVERGENCE, pinned. 3.1 gates injection on property_exists() ALONE: it writes the
+	// value into a declared property whose type cannot hold it, and PHP throws. 3.2 swallows the
+	// TypeError and SKIPS the write, so the property keeps its default - or stays uninitialized, and
+	// therefore absent, which is the type clause FactoryProvidedVars applies to a typed property with
+	// no default.
 	public function testInjectionIgnoresPropertyTypeCompatibility(): void
 	{
+		if (self::typedDefaultTemplate()) {
+			self::assertSame(
+				0,
+				$this->factory()->createTemplate(null, ParityTypedFlashesTemplate::class)->getParameters()['flashes'],
+			);
+
+			return;
+		}
+
 		$this->expectException(TypeError::class);
 
 		$this->factory()->createTemplate(null, ParityTypedFlashesTemplate::class);
+	}
+
+	// #[TemplateVariable] (3.2+): Presenter::sendTemplate() copies the public properties carrying it
+	// that are initialized - an uninitialized typed one is left out, which FactoryProvidedVars does not
+	// model (initialization is runtime state) and claims as present with its declared type.
+
+	/**
+	 * @group nette32
+	 */
+	public function testTemplateVariablesAreThePublicInitializedAttributedProperties(): void
+	{
+		$presenter = new ParityTemplateVariablePresenter();
+
+		$names = ParityTemplateVariablePresenter::getReflection()->getTemplateVariables( // @phpstan-ignore method.notFound (nette/application 3.2+ API)
+			$presenter,
+		);
+		sort($names);
+
+		self::assertSame(['initialized', 'nullable'], $names);
 	}
 
 	// THE WIRING READ's own vendor dependency: whether $user/$baseUrl/$basePath are definitely
@@ -168,6 +215,11 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 	private function factory(): TemplateFactory
 	{
 		return new TemplateFactory(new FixtureBridgeLatteFactory());
+	}
+
+	private static function typedDefaultTemplate(): bool
+	{
+		return InstalledVersionsGuard::satisfies('nette/application', '>=3.2');
 	}
 
 	/**

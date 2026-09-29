@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_keys;
@@ -36,7 +37,7 @@ final class FactoryProvidedVarsIntegrationTest extends BaseTestCase
 	// The createTemplate() override that bypasses the vendor body the component would otherwise
 	// inherit, so the factory receives no control at all.
 	private const STANDALONE_FACTORY_MEMBERS = "\tpublic Nette\\Bridges\\ApplicationLatte\\TemplateFactory \$templateFactory;\n\n"
-		. "\tprotected function createTemplate(): Nette\\Application\\UI\\Template\n"
+		. "\tprotected function createTemplate(?string \$class = null): Nette\\Application\\UI\\Template\n"
 		. "\t{\n"
 		. "\t\treturn \$this->templateFactory->createTemplate();\n"
 		. "\t}\n\n";
@@ -62,10 +63,20 @@ final class FactoryProvidedVarsIntegrationTest extends BaseTestCase
 		$this->withCorpus(function (string $projectRoot, string $srcDir, string $relSrc, string $storeDir): void {
 			$tmpDir = dirname($srcDir) . '/pstmp';
 
-			$expected = "$relSrc/tpl.latte:5:Strict comparison using === between "
-				. "Nette\\Application\\UI\\Control and null will always evaluate to false.\n"
-				. "$relSrc/tpl.latte:6:Undefined variable: \$presenter\n"
-				. "$relSrc/tpl.latte:7:Undefined variable: \$undefinedVar\n";
+			// 3.2 types the unwired dependency keys, so they are undefined rather than null.
+			$expected = self::typedDefaultTemplate()
+				? "$relSrc/tpl.latte:1:Undefined variable: \$user\n"
+					. "$relSrc/tpl.latte:2:Undefined variable: \$baseUrl\n"
+					. "$relSrc/tpl.latte:3:Undefined variable: \$basePath\n"
+					. "$relSrc/tpl.latte:5:Strict comparison using === between "
+					. "Nette\\Application\\UI\\Control and null will always evaluate to false.\n"
+					. "$relSrc/tpl.latte:6:Undefined variable: \$presenter\n"
+					. "$relSrc/tpl.latte:7:Undefined variable: \$undefinedVar\n"
+					. "$relSrc/tpl.latte:8:Undefined variable: \$user\n"
+				: "$relSrc/tpl.latte:5:Strict comparison using === between "
+					. "Nette\\Application\\UI\\Control and null will always evaluate to false.\n"
+					. "$relSrc/tpl.latte:6:Undefined variable: \$presenter\n"
+					. "$relSrc/tpl.latte:7:Undefined variable: \$undefinedVar\n";
 
 			self::assertSame(
 				$expected,
@@ -95,8 +106,17 @@ final class FactoryProvidedVarsIntegrationTest extends BaseTestCase
 				$tmpDir = dirname($srcDir) . '/pstmp-standalone';
 				$this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, null);
 
+				// 3.2: every unwritten key is a typed, uninitialized property - undefined, not null.
 				self::assertSame(
-					"$relSrc/tpl.latte:7:Undefined variable: \$undefinedVar\n",
+					self::typedDefaultTemplate()
+						? "$relSrc/tpl.latte:1:Undefined variable: \$user\n"
+							. "$relSrc/tpl.latte:2:Undefined variable: \$baseUrl\n"
+							. "$relSrc/tpl.latte:3:Undefined variable: \$basePath\n"
+							. "$relSrc/tpl.latte:5:Undefined variable: \$control\n"
+							. "$relSrc/tpl.latte:6:Undefined variable: \$presenter\n"
+							. "$relSrc/tpl.latte:7:Undefined variable: \$undefinedVar\n"
+							. "$relSrc/tpl.latte:8:Undefined variable: \$user\n"
+						: "$relSrc/tpl.latte:7:Undefined variable: \$undefinedVar\n",
 					$this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, null)['output'],
 					'a standalone factory call must still provide both axis variables, as the nulls they really are',
 				);
@@ -119,8 +139,11 @@ final class FactoryProvidedVarsIntegrationTest extends BaseTestCase
 				$this->spawn($projectRoot, $srcDir, $unwiredTmp, $storeDir, null);
 
 				self::assertSame(
-					"$relSrc/use.latte:1:Cannot call method isLoggedIn() on Nette\\Security\\User|null.\n"
-					. "$relSrc/use.latte:2:Cannot call method fixtureOnlyMember() on Nette\\Security\\User|null.\n",
+					self::typedDefaultTemplate()
+						? "$relSrc/use.latte:1:Undefined variable: \$user\n"
+							. "$relSrc/use.latte:2:Undefined variable: \$user\n"
+						: "$relSrc/use.latte:1:Cannot call method isLoggedIn() on Nette\\Security\\User|null.\n"
+							. "$relSrc/use.latte:2:Cannot call method fixtureOnlyMember() on Nette\\Security\\User|null.\n",
 					$this->spawn($projectRoot, $srcDir, $unwiredTmp, $storeDir, null)['output'],
 					'no container: the scope is honest about the vendor signature and reports the nullability',
 				);
@@ -136,6 +159,11 @@ final class FactoryProvidedVarsIntegrationTest extends BaseTestCase
 			},
 			"{if \$user->isLoggedIn()}a{/if}\n{if \$user->fixtureOnlyMember()}b{/if}\n",
 		);
+	}
+
+	private static function typedDefaultTemplate(): bool
+	{
+		return InstalledVersionsGuard::satisfies('nette/application', '>=3.2');
 	}
 
 	/**

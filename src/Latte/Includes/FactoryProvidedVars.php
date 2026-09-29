@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Includes;
 
 use LogicException;
+use Nette\Application\Attributes\TemplateVariable;
 use Nette\Application\UI\Presenter;
 use OriPhpstan\Nette\Forms\Shape\Certainty;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryRecordSource;
@@ -17,26 +18,38 @@ use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use PHPStan\DependencyInjection\Container;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionNamedType;
+use ReflectionProperty;
+use ReflectionType;
+use ReflectionUnionType;
 use function array_key_exists;
 use function array_keys;
 use function class_exists;
 use function implode;
 use function in_array;
+use function interface_exists;
 use function is_a;
 use function ltrim;
+use function method_exists;
 use function sort;
 use function strpos;
 use function strtolower;
 use const SORT_STRING;
 
 // The variables Nette\Bridges\ApplicationLatte\TemplateFactory::createTemplate() writes onto the
-// template object before rendering (v3.1.15, lines 101-122), resolved per TEMPLATE from the
-// renderer classes the discovery store links to it.
+// template object before rendering (3.1: createTemplate(); 3.2: injectDefaultVariables()), resolved
+// per TEMPLATE from the renderer classes the discovery store links to it. Nothing about the variables
+// themselves is tabulated here: presence and type are read off the INSTALLED resolved template class
+// (3.1's DefaultTemplate declares them untyped, so an unwritten one is null; 3.2's types them without
+// a default, so an unwritten one is absent), which is why the answer follows the installed
+// nette/application line without a version switch.
 //
 // THE VENDOR CONTRACT, and every condition it puts on a variable being there at all:
 //   foreach ($params as $key => $value) {
 //       if ($value !== null && property_exists($template, $key)) { $template->$key = $value; }
 //   }
+// 3.2 wraps the write in try/catch (TypeError), so a value the declared type cannot hold is skipped
+// rather than fatal - see writtenValueFits().
 //   1. property_exists - only a property the RESOLVED template class declares is ever written, and
 //      the property's own declared type is the type the template body sees. Gated below against the
 //      full SP1/SP2 resolution ladder, including its factory-default rung.
@@ -129,6 +142,9 @@ final class FactoryProvidedVars
 
 	private const NEVER_NULL_FROM_FACTORY = ['flashes'];
 
+	// The factory's non-object values, for the type clause of the write.
+	private const WRITTEN_VALUE_TYPES = ['baseUrl' => 'string', 'basePath' => 'string', 'flashes' => 'array'];
+
 	// The keys whose factory-side value is exactly one wired TemplateFactory dependency, or derived
 	// from one: $user IS the wired user, while $baseUrl (and the $baseUrl-derived $basePath) is a
 	// non-empty string whenever an httpRequest is wired and null when it is not. The flag says
@@ -159,6 +175,9 @@ final class FactoryProvidedVars
 	// renderer, but the control-argument keys are not.
 	/** @var array<string, array<string, array{certainty: Certainty::*, type: string, class: string}>> */
 	private array $byRenderer = [];
+
+	/** @var array<string, array<string, array{certainty: Certainty::*, type: string, class: string}>> */
+	private array $templateVariables = [];
 
 	public function __construct(
 		Container $container,
@@ -277,7 +296,12 @@ final class FactoryProvidedVars
 			}
 
 			$templateClasses[$templateClass] = true;
-			$vars = $this->varsOfRenderer($templateClass, $className);
+			$templateVariables = $this->templateVariablesOf($className);
+			foreach ($templateVariables as $entry) {
+				$templateClasses[$entry['class']] = true;
+			}
+
+			$vars = $this->varsOfRenderer($templateClass, $className) + $templateVariables;
 			$resolved = $resolved === null ? $vars : self::intersect($resolved, $vars);
 		}
 
@@ -392,16 +416,22 @@ final class FactoryProvidedVars
 			}
 
 			// getParameters() exports a public property only when it isInitialized(), and a TYPED
-			// property with no default never is until something writes it. The vendor spells these
-			// untyped today - implicitly null, therefore always exported, which is what makes the
-			// nullable-when-unwired encoding above the runtime's own answer - but newer versions
-			// type them, and then an unwired dependency (or a factory call that passes no control)
-			// means the variable is not merely null, it is ABSENT. Provide nothing rather than a
-			// nullable something. Native getDefaultProperties() is exactly the isInitialized()
-			// predicate: it omits a typed property that has no default and lists every other one,
-			// untyped ones included. The certainty IS the "something writes it" half on both axes -
-			// definitely-present is exactly the case where the factory's own write happens.
-			if (!array_key_exists($name, $defaults) && $certainty !== Certainty::HAPPENS) {
+			// property with no default never is until something writes it. 3.1 spells these
+			// untyped - implicitly null, therefore always exported, which is what makes the
+			// nullable-when-unwired encoding above the runtime's own answer - while 3.2 types them,
+			// and then an unwired dependency (or a factory call that passes no control) means the
+			// variable is not merely null, it is ABSENT. Native getDefaultProperties() is exactly
+			// the isInitialized() predicate: it omits a typed property that has no default and
+			// lists every other one, untyped ones included. The certainty IS the "something writes
+			// it" half on both axes - definitely-present is exactly the case where the factory's
+			// own write happens, and the write only initializes the property when its value fits.
+			if (
+				!array_key_exists($name, $defaults)
+				&& (
+					$certainty !== Certainty::HAPPENS
+					|| !$this->writtenValueFits($templateClass, $name, $rendererClass)
+				)
+			) {
 				continue;
 			}
 
@@ -424,10 +454,10 @@ final class FactoryProvidedVars
 	//     $presenter follows only where getPresenterIfExists() cannot answer null, which on the
 	//     vendor source is exactly Presenter's own final override returning $this; for a plain
 	//     Control it is the runtime attachment state, which no static fact here can prove.
-	//   NONE - nothing is written, which is NOT the same as nothing being there: the vendor spells
-	//     both properties untyped, so they keep their implicit null and getParameters() exports
-	//     them. MAYBE is that exact answer (the variable exists and is null); the isInitialized
-	//     gate above turns it into absence for a typed property, where the runtime agrees.
+	//   NONE - nothing is written, which is NOT the same as nothing being there: 3.1 spells both
+	//     properties untyped, so they keep their implicit null and getParameters() exports them.
+	//     MAYBE is that exact answer (the variable exists and is null); the isInitialized gate
+	//     above turns it into absence for a typed property (3.2), where the runtime agrees.
 	//   OTHER / no observation - claim nothing.
 
 	/**
@@ -466,9 +496,7 @@ final class FactoryProvidedVars
 			return $declaredType;
 		}
 
-		$declaredClass = ltrim($declaredType, '\\');
-
-		return class_exists($declaredClass) && is_a($rendererClass, $declaredClass, true)
+		return self::admits($declaredType, $rendererClass)
 			? '\\' . $rendererClass
 			: $declaredType;
 	}
@@ -517,11 +545,109 @@ final class FactoryProvidedVars
 			return $declaredType;
 		}
 
-		$declaredClass = ltrim($declaredType, '\\');
-
-		return class_exists($declaredClass) && is_a($wired, $declaredClass, true)
+		return self::admits($declaredType, $wired)
 			? '\\' . $wired
 			: $declaredType;
+	}
+
+	// An interface counts: 3.2 declares $presenter as Nette\Application\IPresenter.
+	private static function admits(string $declaredType, string $class): bool
+	{
+		$declaredClass = ltrim($declaredType, '\\');
+
+		return (class_exists($declaredClass) || interface_exists($declaredClass))
+			&& is_a($class, $declaredClass, true);
+	}
+
+	// The 3.2 TypeError catch, for the one case it decides presence: a typed property with no default
+	// stays uninitialized when the factory's value does not fit it. On 3.1 the same write is fatal, so
+	// the template never renders and claiming nothing is equally right. An unknown value (no wiring
+	// read, or a class native reflection cannot load) or a type shape not modelled here counts as
+	// fitting.
+
+	/**
+	 * @param class-string $templateClass
+	 */
+	private function writtenValueFits(string $templateClass, string $name, string $rendererClass): bool
+	{
+		$valueType = in_array($name, self::FROM_CONTROL_ARGUMENT, true)
+			? $rendererClass
+			: self::WRITTEN_VALUE_TYPES[$name] ?? $this->wiredClassOf(TemplateFactoryDefaultResolver::KEY_USER);
+
+		if (
+			$valueType === null
+			|| (!in_array($valueType, self::WRITTEN_VALUE_TYPES, true) && !class_exists($valueType))
+		) {
+			return true;
+		}
+
+		return self::nativeTypeAccepts((new ReflectionProperty($templateClass, $name))->getType(), $valueType);
+	}
+
+	private static function nativeTypeAccepts(?ReflectionType $type, string $valueType): bool
+	{
+		if ($type === null) {
+			return true;
+		}
+
+		$members = $type instanceof ReflectionUnionType ? $type->getTypes() : [$type];
+		$isObject = $valueType !== 'string' && $valueType !== 'array';
+		foreach ($members as $member) {
+			if (!$member instanceof ReflectionNamedType) {
+				return true;
+			}
+
+			$typeName = $member->getName();
+			if (
+				$typeName === 'mixed'
+				|| $typeName === $valueType
+				|| ($valueType === 'array' && $typeName === 'iterable')
+				|| ($isObject && $typeName === 'object')
+				|| ($isObject && !$member->isBuiltin() && is_a($valueType, $typeName, true))
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// Nette\Application\UI\Presenter::sendTemplate() (3.2+) copies onto the template every property
+	// ComponentReflection::getTemplateVariables() lists: the renderer's own and inherited properties
+	// carrying #[TemplateVariable] (a non-public one throws there, a static one is not readable off
+	// $this) - presenters only, a plain Control never sends its template that way. The vendor also
+	// requires the property to be initialized; that is runtime state, so it is claimed as present.
+
+	/**
+	 * @return array<string, array{certainty: Certainty::*, type: string, class: string}>
+	 */
+	private function templateVariablesOf(string $rendererClass): array
+	{
+		if (array_key_exists($rendererClass, $this->templateVariables)) {
+			return $this->templateVariables[$rendererClass];
+		}
+
+		$vars = [];
+		if (class_exists(TemplateVariable::class) && is_a($rendererClass, Presenter::class, true)) {
+			foreach ((new ReflectionClass($rendererClass))->getProperties() as $property) {
+				if (
+					!$property->isPublic()
+					|| $property->isStatic()
+					|| !method_exists($property, 'getAttributes')
+					|| $property->getAttributes(TemplateVariable::class) === []
+				) {
+					continue;
+				}
+
+				$vars[$property->getName()] = [
+					'certainty' => Certainty::HAPPENS,
+					'type' => PropertyTypeResolver::resolve($property),
+					'class' => $property->getDeclaringClass()->getName(),
+				];
+			}
+		}
+
+		return $this->templateVariables[$rendererClass] = $vars;
 	}
 
 	private function wiredClassOf(string $key): ?string

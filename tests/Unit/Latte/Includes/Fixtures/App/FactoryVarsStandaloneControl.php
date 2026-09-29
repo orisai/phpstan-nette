@@ -23,7 +23,7 @@ final class FactoryVarsStandaloneControl extends Control
 		$this->templateFactory = $templateFactory;
 	}
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return $this->templateFactory->createTemplate();
 	}
