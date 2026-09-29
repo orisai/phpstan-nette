@@ -48,7 +48,10 @@ final class Latte2AdapterTest extends BaseTestCase
 		self::assertSame($expected->getPhpSource(), $compiled->getResult()->getPhpSource());
 		self::assertSame($expected->getClassName(), $compiled->getResult()->getClassName());
 		self::assertEquals($expected->getDiagnostics(), $compiled->getResult()->getDiagnostics());
-		self::assertEquals($adapter->extractFacts($source, $relativePath), $compiled->getFacts());
+		$facts = $adapter->extractFacts($source, $relativePath);
+		self::assertEquals($facts->getDeclarations(), $compiled->getFacts()->getDeclarations());
+		self::assertEquals($facts->getTemplateFacts(), $compiled->getFacts()->getTemplateFacts());
+		self::assertEquals($facts->getFormSites(), $compiled->getFacts()->getFormSites());
 	}
 
 	public function testCompileCacheKeyCarriesTheFamilyAndTheAdapterClass(): void

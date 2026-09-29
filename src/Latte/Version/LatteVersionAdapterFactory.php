@@ -5,7 +5,6 @@ namespace OriPhpstan\Nette\Latte\Version;
 use Latte\Engine;
 use LogicException;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Version\Latte2\FormSiteScanner;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
@@ -14,8 +13,9 @@ use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use ReflectionMethod;
 use function class_exists;
 
-// The one version switch. It holds nothing but the installed versions, so the engine reader it
-// creates can feed CustomsHarvester without a harvester -> compiler -> harvester cycle.
+// The one version switch. It holds nothing but the installed versions and is only ever asked at
+// first use (LatteVersionAdapterAccessor::get(), CustomsHarvester::harvest()), never at container
+// build, so an unsupported install is the ConfigurationGuard's message rather than a crash.
 final class LatteVersionAdapterFactory
 {
 
@@ -52,7 +52,7 @@ final class LatteVersionAdapterFactory
 					$collaborators->getDiscoveryStore(),
 					$collaborators->isDiscoveryStoreEnabled(),
 				),
-				new DeclarationScanner(),
+				$collaborators->getDeclarationScanner(),
 				new TemplateFactExtractor(),
 				new FormSiteScanner(),
 			);

@@ -28,9 +28,13 @@ same parse — `extractFacts()` is the facts-only path, plus the line-marker pat
 `ShapeFamily` (Latte line + forms bridge, e.g. `2/macros`). The engine harvest is the sibling
 `LatteEngineReader`, which `CustomsHarvester` calls inside its own error containment.
 `LatteVersionAdapterFactory` is the one version switch (installed `latte/latte` and `nette/forms`
-versions); it creates the reader directly and the adapter through `LatteVersionAdapterAccessor`,
-which resolves on the first `.latte` parse so that an unsupported install with Latte analysis off
-stays a `ConfigurationGuard` message instead of a container-build error. `Latte2Adapter` wraps the
+versions). Nothing asks it while the container is built: the adapter is resolved by
+`LatteVersionAdapterAccessor::get()` on the first `.latte` parse and the reader inside
+`CustomsHarvester::harvest()` (first harvest, inside its containment window, so a missing reader
+degrades to the empty harvest). With `orisaiNette.latte.enabled` off no template is parsed and no
+salt harvested, so an unsupported install is inert; with it on, `ConfigurationGuard` rejects the
+install with its own message before any parse. `ExtractedFacts` resolves each fact on first
+access, so the routing parser's `compile()` pays only for the declarations it reads. `Latte2Adapter` wraps the
 classes described below (`FormSiteScanner` holds the Latte 2 form-macro token scan). The compile
 cache key carries the family id and the adapter class, so a different adapter never serves
 another's compiled output.

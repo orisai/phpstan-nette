@@ -3,8 +3,11 @@
 namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
+use OriPhpstan\Nette\Latte\Declarations\Declarations;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
+use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
@@ -49,10 +52,11 @@ final class Latte2Adapter implements LatteVersionAdapter
 
 	public function extractFacts(string $source, string $relativePath): ExtractedFacts
 	{
-		return new ExtractedFacts(
-			$this->scanner->scan($source),
-			$this->factExtractor->extract($source, $relativePath),
-			$this->formSiteScanner->scan($source),
+		return ExtractedFacts::lazy(
+			fn (): Declarations => $this->scanner->scan($source),
+			fn (): TemplateFacts => $this->factExtractor->extract($source, $relativePath),
+			/** @return list<FormSite> */
+			fn (): array => $this->formSiteScanner->scan($source),
 		);
 	}
 

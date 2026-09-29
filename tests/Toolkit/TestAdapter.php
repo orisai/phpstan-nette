@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Toolkit;
 
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
+use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
@@ -30,7 +31,7 @@ final class TestAdapter
 	{
 		return new LatteVersionAdapterAccessor(
 			self::factory(),
-			new AdapterCollaborators(null, $harvester),
+			new AdapterCollaborators(new DeclarationScanner(), null, $harvester),
 		);
 	}
 
@@ -41,7 +42,7 @@ final class TestAdapter
 
 	public static function harvester(EngineSource $engineSource): CustomsHarvester
 	{
-		return new CustomsHarvester($engineSource, self::engineReader());
+		return new CustomsHarvester($engineSource, self::factory());
 	}
 
 }

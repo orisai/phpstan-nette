@@ -3,7 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Customs;
 
 use OriPhpstan\Nette\Latte\Compile\VendorErrorContainment;
-use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory;
 use Throwable;
 
 final class CustomsHarvester
@@ -11,14 +11,14 @@ final class CustomsHarvester
 
 	private EngineSource $engineSource;
 
-	private LatteEngineReader $reader;
+	private LatteVersionAdapterFactory $adapterFactory;
 
 	private ?HarvestedCustoms $harvested = null;
 
-	public function __construct(EngineSource $engineSource, LatteEngineReader $reader)
+	public function __construct(EngineSource $engineSource, LatteVersionAdapterFactory $adapterFactory)
 	{
 		$this->engineSource = $engineSource;
-		$this->reader = $reader;
+		$this->adapterFactory = $adapterFactory;
 	}
 
 	public function harvest(): HarvestedCustoms
@@ -46,7 +46,7 @@ final class CustomsHarvester
 						return HarvestedCustoms::empty();
 					}
 
-					return $this->reader->read($engine);
+					return $this->adapterFactory->createEngineReader()->read($engine);
 				},
 				// No per-template line exists here - harvest runs once per analysis, not once per
 				// compiled template - so every severity is contained and dropped, same

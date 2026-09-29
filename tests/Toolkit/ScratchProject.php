@@ -69,9 +69,10 @@ final class ScratchProject
 	/**
 	 * @param array<string, mixed> $neonParameters
 	 * @param list<string> $paths
+	 * @param array<string, mixed> $neonServices
 	 * @return array{exitCode: int, messages: list<array{file: string, line: int, message: string, identifier: string|null}>, errors: list<string>, stderr: string}
 	 */
-	public function analyse(array $neonParameters, array $paths): array
+	public function analyse(array $neonParameters, array $paths, array $neonServices = []): array
 	{
 		$parameters = array_replace(
 			[
@@ -83,10 +84,15 @@ final class ScratchProject
 			$neonParameters,
 		);
 		$config = $this->path('phpstan.neon');
-		$this->write('phpstan.neon', Neon::encode([
+		$neon = [
 			'includes' => [$this->libraryRoot . '/extension.neon'],
 			'parameters' => $parameters,
-		], true));
+		];
+		if ($neonServices !== []) {
+			$neon['services'] = $neonServices;
+		}
+
+		$this->write('phpstan.neon', Neon::encode($neon, true));
 
 		$process = new Process(
 			[

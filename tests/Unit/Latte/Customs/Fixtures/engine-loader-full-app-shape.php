@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../../../../tests/autoload.php';
 // h4kuna\Gettext\DI\GettextLatteExtension): CoreMacros/BlockMacros install eagerly the moment
 // $engine->getCompiler() is first touched (Latte\Engine::getCompiler()), then this onCompile
 // handler adds UIMacros/FormMacros/the vendor (nondeterministic) CacheMacro/Gettext - the exact
-// shape CustomsHarvester::enumerate() sees when harvesting the real app container, where
+// shape the Latte 2 engine reader sees when harvesting the real app container, where
 // getMacroSets() legitimately includes Latte's own built-ins alongside the app's customs.
 $engine = new Engine();
 $engine->onCompile[] = static function (Engine $engine): void {

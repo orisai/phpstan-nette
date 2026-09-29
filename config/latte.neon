@@ -134,11 +134,13 @@ services:
 			latteEngineLoaderFile: %orisaiNette.latte.engineLoader%
 		autowired: false
 
+	# The engine reader is version-selected inside harvest() (first use, inside the containment
+	# window) - never at container build.
 	latteCustomsHarvester:
 		class: OriPhpstan\Nette\Latte\Customs\CustomsHarvester
 		arguments:
 			engineSource: @latteCustomsEngineSource
-			reader: @latteEngineReader
+			adapterFactory: @latteVersionAdapterFactory
 		autowired: false
 
 	# Per-{templateType} filter/function entries - modelled off the
@@ -156,22 +158,20 @@ services:
 		autowired: false
 
 	# The one place that knows which Latte is installed: compile, token facts, engine harvest, line
-	# markers and the generated-code family are all reached through what it creates. The adapter
-	# itself is resolved lazily (LatteVersionAdapterAccessor) on the first .latte parse, so with
-	# orisaiNette.latte.enabled off an unsupported install stays a ConfigurationGuard message.
+	# markers and the generated-code family are all reached through what it creates. Nothing asks it
+	# at container build: the adapter is resolved on the first .latte parse
+	# (LatteVersionAdapterAccessor) and the engine reader on the first harvest, so an unsupported
+	# install is the ConfigurationGuard's message with orisaiNette.latte.enabled on and inert with it off.
 	latteVersionAdapterFactory:
 		class: OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory
 		arguments:
 			installedVersions: @orisaiNette.installedVersions
 		autowired: false
 
-	latteEngineReader:
-		factory: @latteVersionAdapterFactory::createEngineReader
-		autowired: false
-
 	latteAdapterCollaborators:
 		class: OriPhpstan\Nette\Latte\Version\AdapterCollaborators
 		arguments:
+			declarationScanner: @latteDeclarationScanner
 			cache: @latteAnalysisCache
 			harvester: @latteCustomsHarvester
 			discoveryStore: @latteDiscoveryStore
