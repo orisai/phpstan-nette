@@ -200,19 +200,19 @@ jobs:
           - operating-system: "ubuntu-latest"
             profile: "latte30"
             php-version: "8.2"
-            experimental: true
+            experimental: false
           - operating-system: "ubuntu-latest"
             profile: "latte30"
             php-version: "8.3"
-            experimental: true
+            experimental: false
           - operating-system: "ubuntu-latest"
             profile: "latte31"
             php-version: "8.3"
-            experimental: true
+            experimental: false
           - operating-system: "ubuntu-latest"
             profile: "latte31"
             php-version: "8.4"
-            experimental: true
+            experimental: false
 
     steps:
       - name: "Checkout"
