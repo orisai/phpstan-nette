@@ -7,7 +7,6 @@ use OriPhpstan\Nette\Forms\Shape\Certainty;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\CandidatePath;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\IncludeContractChecker;
@@ -15,9 +14,9 @@ use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_keys;
 use function array_map;
@@ -482,7 +481,7 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 
 		return new TemplateEdgeIndex(
 			$this->universe($dir),
-			new TemplateFactExtractor(),
+			TestAdapter::accessor(),
 			null,
 			$store,
 			$enabled,
@@ -506,7 +505,6 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 		$resolver = $this->resolver($dir, $index);
 		$checker = new IncludeContractChecker(
 			$index,
-			new DeclarationScanner(),
 			$this->universe($dir),
 			$resolver,
 			self::getContainer()->getByType(TypeStringResolver::class),
@@ -523,7 +521,6 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 	{
 		return new ContextResolver(
 			$index,
-			new DeclarationScanner(),
 			$this->universe($dir),
 			$this->capturedOverlay($dir),
 		);

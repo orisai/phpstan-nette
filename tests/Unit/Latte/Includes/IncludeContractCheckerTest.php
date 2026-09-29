@@ -5,7 +5,6 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\IncludeContractChecker;
@@ -13,9 +12,9 @@ use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_filter;
 use function array_map;
@@ -104,17 +103,15 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 		try {
 			$universe = new LatteUniverse([$dir], $dir);
-			$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+			$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 			$capturedOverlay = new CapturedOverlay(new SiteScopeStore($dir . '/__absent_sitescope_store__'), true);
 			$resolver = new ContextResolver(
 				$index,
-				new DeclarationScanner(),
 				$universe,
 				$capturedOverlay,
 			);
 			$checker = new IncludeContractChecker(
 				$index,
-				new DeclarationScanner(),
 				$universe,
 				$resolver,
 				self::getContainer()->getByType(TypeStringResolver::class),
@@ -340,13 +337,11 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 			$capturedOverlay = new CapturedOverlay($store, true);
 			$resolver = new ContextResolver(
 				$this->index(),
-				new DeclarationScanner(),
 				$this->universe(),
 				$capturedOverlay,
 			);
 			$checker = new IncludeContractChecker(
 				$this->index(),
-				new DeclarationScanner(),
 				$this->universe(),
 				$resolver,
 				self::getContainer()->getByType(TypeStringResolver::class),
@@ -826,17 +821,11 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	private function isolatedDiagnosticsFor(string $dir, string $basename): array
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$capturedOverlay = new CapturedOverlay(new SiteScopeStore($dir . '/__absent_sitescope_store__'), true);
-		$resolver = new ContextResolver(
-			$index,
-			new DeclarationScanner(),
-			$universe,
-			$capturedOverlay,
-		);
+		$resolver = new ContextResolver($index, $universe, $capturedOverlay);
 		$checker = new IncludeContractChecker(
 			$index,
-			new DeclarationScanner(),
 			$universe,
 			$resolver,
 			self::getContainer()->getByType(TypeStringResolver::class),
@@ -859,7 +848,6 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		if ($this->checker === null) {
 			$this->checker = new IncludeContractChecker(
 				$this->index(),
-				new DeclarationScanner(),
 				$this->universe(),
 				$this->resolver(),
 				self::getContainer()->getByType(TypeStringResolver::class),
@@ -875,7 +863,6 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		if ($this->contextResolver === null) {
 			$this->contextResolver = new ContextResolver(
 				$this->index(),
-				new DeclarationScanner(),
 				$this->universe(),
 				$this->capturedOverlay(),
 			);
@@ -899,7 +886,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	private function index(): TemplateEdgeIndex
 	{
 		if ($this->index === null) {
-			$this->index = new TemplateEdgeIndex($this->universe(), new TemplateFactExtractor());
+			$this->index = new TemplateEdgeIndex($this->universe(), TestAdapter::accessor());
 		}
 
 		return $this->index;

@@ -2,11 +2,9 @@
 
 namespace OriPhpstan\Nette\Latte\Rule;
 
-use Nette\IOException;
-use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
+use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
@@ -32,7 +30,7 @@ use function substr_compare;
 final class LatteTemplateTypeDeclarationCollector implements Collector
 {
 
-	private DeclarationScanner $scanner;
+	private TemplateEdgeIndex $edgeIndex;
 
 	private LatteUniverse $universe;
 
@@ -40,9 +38,9 @@ final class LatteTemplateTypeDeclarationCollector implements Collector
 
 	private bool $discoveryStoreEnabled;
 
-	public function __construct(ConfigurationGuard $guard, DeclarationScanner $scanner, LatteUniverse $universe)
+	public function __construct(ConfigurationGuard $guard, TemplateEdgeIndex $edgeIndex, LatteUniverse $universe)
 	{
-		$this->scanner = $scanner;
+		$this->edgeIndex = $edgeIndex;
 		$this->universe = $universe;
 		$this->enabled = $guard->isLatteEnabled();
 		$this->discoveryStoreEnabled = $guard->isLatteDiscoveryEnabled();
@@ -68,15 +66,7 @@ final class LatteTemplateTypeDeclarationCollector implements Collector
 			return null;
 		}
 
-		try {
-			$source = FileSystem::read($file);
-		} catch (IOException $e) {
-			// A file that vanished mid-run must not take the analysis down - LatteRoutingParser's
-			// own precedent for the identical read.
-			return null;
-		}
-
-		$declarations = $this->scanner->scan($source);
+		$declarations = $this->edgeIndex->declarationsFor($file);
 
 		return [
 			'path' => $this->universe->relativePath($file),

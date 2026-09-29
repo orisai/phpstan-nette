@@ -8,9 +8,9 @@ use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\DeclarationConsistencyChecker;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_filter;
 use function array_map;
@@ -343,7 +343,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 	{
 		$absoluteFile = $dir . '/' . $basename;
 		$universe = new LatteUniverse([$dir], $dir);
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$declarations = (new DeclarationScanner())->scan(FileSystem::read($absoluteFile));
 		$checker = new DeclarationConsistencyChecker(
 			$index,

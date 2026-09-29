@@ -8,7 +8,6 @@ use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
@@ -65,7 +64,6 @@ final class AnalysisPipeline
 		Parser $phpParser,
 		LatteVersionAdapterAccessor $adapterAccessor,
 		TemplateEdgeIndex $edgeIndex,
-		DeclarationScanner $scanner,
 		LatteUniverse $universe,
 		CapturedOverlay $capturedOverlay,
 		bool $narrowingEnabled,
@@ -82,7 +80,6 @@ final class AnalysisPipeline
 
 		$this->edgeAnchorInjector = new EdgeAnchorInjector(
 			$edgeIndex,
-			$scanner,
 			$universe,
 			$phpParser,
 			$includeIsolation,
@@ -92,7 +89,6 @@ final class AnalysisPipeline
 			$edgeIndex,
 			$universe,
 			$capturedOverlay,
-			$scanner,
 		);
 		$this->providerMacroScanner = new ProviderMacroScanner();
 		$this->narrowingEnabled = $narrowingEnabled;

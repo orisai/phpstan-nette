@@ -14,10 +14,10 @@ use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_map;
 use function array_unique;
@@ -141,8 +141,7 @@ final class ContextResolverTest extends BaseTestCase
 
 		$universe = new LatteUniverse([$dir], $dir);
 		$resolver = new ContextResolver(
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor()),
-			new DeclarationScanner(),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor()),
 			$universe,
 			new CapturedOverlay(new SiteScopeStore($dir . '/__absent_sitescope_store__'), true),
 		);
@@ -667,9 +666,9 @@ final class ContextResolverTest extends BaseTestCase
 	private function isolatedResolver(string $dir, SiteScopeStore $store): ContextResolver
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 
-		return new ContextResolver($index, new DeclarationScanner(), $universe, new CapturedOverlay($store, true));
+		return new ContextResolver($index, $universe, new CapturedOverlay($store, true));
 	}
 
 	/**
@@ -687,7 +686,7 @@ final class ContextResolverTest extends BaseTestCase
 	): void
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$sites = $index->outgoingSites($includerBasename);
 		self::assertNotSame([], $sites, 'fixture must declare at least one outgoing site');
 		$site = $sites[0];
@@ -730,9 +729,9 @@ final class ContextResolverTest extends BaseTestCase
 	private function resolverWithStore(SiteScopeStore $store): ContextResolver
 	{
 		$universe = new LatteUniverse([$this->treeDir()], dirname(__DIR__, 3));
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 
-		return new ContextResolver($index, new DeclarationScanner(), $universe, new CapturedOverlay($store, true));
+		return new ContextResolver($index, $universe, new CapturedOverlay($store, true));
 	}
 
 	private function emptyStore(string $dir): SiteScopeStore

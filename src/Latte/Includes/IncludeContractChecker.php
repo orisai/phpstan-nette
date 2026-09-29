@@ -2,10 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Includes;
 
-use Nette\IOException;
-use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use PHPStan\PhpDoc\TypeStringResolver;
 use Throwable;
 use function array_key_exists;
@@ -30,8 +27,6 @@ final class IncludeContractChecker
 
 	private TemplateEdgeIndex $index;
 
-	private DeclarationScanner $scanner;
-
 	private LatteUniverse $universe;
 
 	private ContextResolver $contextResolver;
@@ -51,7 +46,6 @@ final class IncludeContractChecker
 
 	public function __construct(
 		TemplateEdgeIndex $index,
-		DeclarationScanner $scanner,
 		LatteUniverse $universe,
 		ContextResolver $contextResolver,
 		TypeStringResolver $typeStringResolver,
@@ -60,12 +54,11 @@ final class IncludeContractChecker
 	)
 	{
 		$this->index = $index;
-		$this->scanner = $scanner;
 		$this->universe = $universe;
 		$this->contextResolver = $contextResolver;
 		$this->typeStringResolver = $typeStringResolver;
 		$this->argTyper = new ArgTyper();
-		$this->declaredVarsResolver = new DeclaredVarsResolver($scanner, $index);
+		$this->declaredVarsResolver = new DeclaredVarsResolver($index);
 		$this->capturedOverlay = $capturedOverlay;
 		$this->includeIsolation = $includeIsolation;
 	}
@@ -276,13 +269,7 @@ final class IncludeContractChecker
 	 */
 	private function blockContract(string $absoluteFile, string $blockName, IncludeTarget $site, bool $sameFile): array
 	{
-		try {
-			$source = FileSystem::read($absoluteFile);
-		} catch (IOException $e) {
-			return ['contract' => [], 'missingExempt' => [], 'ownParamNames' => []];
-		}
-
-		$declarations = $this->scanner->scan($source);
+		$declarations = $this->index->declarationsFor($absoluteFile);
 		$ownParams = $declarations->getDefineParams()[$blockName] ?? [];
 		$paramDefaults = $declarations->getDefineParamDefaults()[$blockName] ?? [];
 

@@ -209,7 +209,6 @@ services:
 			phpParser: @currentPhpVersionSimpleDirectParser
 			adapterAccessor: @latteVersionAdapterAccessor
 			edgeIndex: @latteTemplateEdgeIndex
-			scanner: @latteDeclarationScanner
 			universe: @latteUniverse
 			capturedOverlay: @latteCapturedOverlay
 			narrowingEnabled: %orisaiNette.latte.narrowing.enabled%
@@ -304,7 +303,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Rule\LatteVarTypeExpressionRule
 		arguments:
 			guard: @orisaiNette.configurationGuard
-			scanner: @latteDeclarationScanner
+			edgeIndex: @latteTemplateEdgeIndex
 			checker: @latteVarTypeExpressionChecker
 		tags: [phpstan.rules.rule]
 
@@ -326,7 +325,6 @@ services:
 			contextResolver: @latteContextResolver
 			edgeIndex: @latteTemplateEdgeIndex
 			universe: @latteUniverse
-			scanner: @latteDeclarationScanner
 			harvester: @latteCustomsHarvester
 			templateTypeCustoms: @latteTemplateTypeCustoms
 			renderWalk: @lattePhpRenderWalk
@@ -555,15 +553,11 @@ services:
 			discoveryStoreDirPath: %orisaiNette.latte.discovery.storePath%
 		autowired: false
 
-	latteTemplateFactExtractor:
-		class: OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor
-		autowired: false
-
 	latteTemplateEdgeIndex:
 		class: OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex
 		arguments:
 			universe: @latteUniverse
-			extractor: @latteTemplateFactExtractor
+			adapterAccessor: @latteVersionAdapterAccessor
 			cache: @latteAnalysisCache
 			discoveryStore: @latteDiscoveryStore
 			discoveryStoreEnabled: %orisaiNette.latte.discovery.enabled%
@@ -626,7 +620,6 @@ services:
 		class: OriPhpstan\Nette\Latte\Includes\ContextResolver
 		arguments:
 			index: @latteTemplateEdgeIndex
-			scanner: @latteDeclarationScanner
 			universe: @latteUniverse
 			capturedOverlay: @latteCapturedOverlay
 			includeIsolation: %orisaiNette.latte.includeIsolation%
@@ -640,7 +633,6 @@ services:
 		class: OriPhpstan\Nette\Latte\Includes\IncludeContractChecker
 		arguments:
 			index: @latteTemplateEdgeIndex
-			scanner: @latteDeclarationScanner
 			universe: @latteUniverse
 			contextResolver: @latteContextResolver
 			capturedOverlay: @latteCapturedOverlay
@@ -701,7 +693,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Rule\LatteTemplateTypeDeclarationCollector
 		arguments:
 			guard: @orisaiNette.configurationGuard
-			scanner: @latteDeclarationScanner
+			edgeIndex: @latteTemplateEdgeIndex
 			universe: @latteUniverse
 		tags: [phpstan.collector]
 

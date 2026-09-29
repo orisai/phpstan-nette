@@ -4,7 +4,6 @@ namespace OriPhpstan\Nette\Latte\Postprocess;
 
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use OriPhpstan\Nette\Latte\Includes\ArgTyper;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
@@ -92,8 +91,7 @@ final class DeclarationInjector
 		Parser $phpParser,
 		TemplateEdgeIndex $edgeIndex,
 		LatteUniverse $universe,
-		CapturedOverlay $capturedOverlay,
-		DeclarationScanner $scanner
+		CapturedOverlay $capturedOverlay
 	)
 	{
 		$this->phpParser = $phpParser;
@@ -101,7 +99,7 @@ final class DeclarationInjector
 		$this->universe = $universe;
 		$this->argTyper = new ArgTyper();
 		$this->capturedOverlay = $capturedOverlay;
-		$this->declaredVarsResolver = new DeclaredVarsResolver($scanner, $edgeIndex);
+		$this->declaredVarsResolver = new DeclaredVarsResolver($edgeIndex);
 	}
 
 	/**

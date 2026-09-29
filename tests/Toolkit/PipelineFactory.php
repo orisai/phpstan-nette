@@ -3,7 +3,6 @@
 namespace Tests\OriPhpstan\Nette\Toolkit;
 
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\DeclarationConsistencyChecker;
@@ -11,7 +10,6 @@ use OriPhpstan\Nette\Latte\Includes\IncludeContractChecker;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
 use OriPhpstan\Nette\Latte\Postprocess\RichAttributeDecorator;
 use PHPStan\Parser\Parser;
@@ -56,8 +54,7 @@ final class PipelineFactory
 		return new AnalysisPipeline(
 			$parser,
 			TestAdapter::accessor($harvester),
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor()),
-			new DeclarationScanner(),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor()),
 			$universe,
 			$capturedOverlay,
 			$narrowingEnabled,
@@ -83,8 +80,7 @@ final class PipelineFactory
 		$universe = new LatteUniverse([$projectRoot], $projectRoot);
 
 		return new ContextResolver(
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor()),
-			new DeclarationScanner(),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor()),
 			$universe,
 			new CapturedOverlay(
 				$store ?? new SiteScopeStore($projectRoot . '/__absent_sitescope_store__'),
@@ -107,8 +103,7 @@ final class PipelineFactory
 		$universe = new LatteUniverse([$projectRoot], $projectRoot);
 
 		return new IncludeContractChecker(
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor()),
-			new DeclarationScanner(),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor()),
 			$universe,
 			$contextResolver,
 			PHPStanTestCase::getContainer()->getByType(TypeStringResolver::class),
@@ -129,7 +124,7 @@ final class PipelineFactory
 		$universe = new LatteUniverse([$projectRoot], $projectRoot);
 
 		return new DeclarationConsistencyChecker(
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor()),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor()),
 			PHPStanTestCase::getContainer()->getByType(TypeStringResolver::class),
 			$allowNarrowingOverride,
 		);
@@ -143,7 +138,7 @@ final class PipelineFactory
 	// createContextResolver() above; scoped to the caller's own project root, uncached.
 	public static function createTemplateEdgeIndex(string $projectRoot): TemplateEdgeIndex
 	{
-		return new TemplateEdgeIndex(new LatteUniverse([$projectRoot], $projectRoot), new TemplateFactExtractor());
+		return new TemplateEdgeIndex(new LatteUniverse([$projectRoot], $projectRoot), TestAdapter::accessor());
 	}
 
 	// Not the container's shared `latteSiteScopeStore`, for the same reason as

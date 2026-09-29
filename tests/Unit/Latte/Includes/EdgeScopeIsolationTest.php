@@ -4,7 +4,6 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\ArgTyper;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
@@ -15,9 +14,9 @@ use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_map;
 use function getmypid;
@@ -158,18 +157,16 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 	private function identifiersFor(string $dir, bool $includeIsolation): array
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$capturedOverlay = new CapturedOverlay(new SiteScopeStore($dir . '/__absent_sitescope_store__'), false);
 		$resolver = new ContextResolver(
 			$index,
-			new DeclarationScanner(),
 			$universe,
 			$capturedOverlay,
 			$includeIsolation,
 		);
 		$checker = new IncludeContractChecker(
 			$index,
-			new DeclarationScanner(),
 			$universe,
 			$resolver,
 			self::getContainer()->getByType(TypeStringResolver::class),

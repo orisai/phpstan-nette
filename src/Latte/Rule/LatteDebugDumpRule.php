@@ -2,8 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Rule;
 
-use Nette\IOException;
-use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\CandidatePath;
 use OriPhpstan\Nette\Latte\Bridge\MutationFact;
@@ -16,7 +14,6 @@ use OriPhpstan\Nette\Latte\Bridge\Qualification;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
@@ -93,8 +90,6 @@ final class LatteDebugDumpRule implements Rule
 
 	private LatteUniverse $universe;
 
-	private DeclarationScanner $scanner;
-
 	private ?CustomsHarvester $harvester;
 
 	private ?TemplateTypeCustoms $templateTypeCustoms;
@@ -112,7 +107,6 @@ final class LatteDebugDumpRule implements Rule
 		ContextResolver $contextResolver,
 		TemplateEdgeIndex $edgeIndex,
 		LatteUniverse $universe,
-		DeclarationScanner $scanner,
 		?CustomsHarvester $harvester = null,
 		?TemplateTypeCustoms $templateTypeCustoms = null,
 		?PhpRenderWalk $renderWalk = null,
@@ -125,7 +119,6 @@ final class LatteDebugDumpRule implements Rule
 		$this->contextResolver = $contextResolver;
 		$this->edgeIndex = $edgeIndex;
 		$this->universe = $universe;
-		$this->scanner = $scanner;
 		$this->harvester = $harvester;
 		$this->templateTypeCustoms = $templateTypeCustoms;
 		$this->renderWalk = $renderWalk;
@@ -680,13 +673,7 @@ final class LatteDebugDumpRule implements Rule
 
 	private function templateTypeClassFor(string $file): ?string
 	{
-		try {
-			$source = FileSystem::read($file);
-		} catch (IOException $e) {
-			return null;
-		}
-
-		return $this->scanner->scan($source)->getTemplateTypeClass();
+		return $this->edgeIndex->declarationsFor($file)->getTemplateTypeClass();
 	}
 
 	/**

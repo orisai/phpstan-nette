@@ -14,7 +14,6 @@ use OriPhpstan\Nette\Latte\Bridge\PhpFactsCache;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\FactoryProvidedVars;
@@ -22,7 +21,6 @@ use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Parser\LatteRoutingParser;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use PhpParser\Node\Arg;
@@ -762,7 +760,6 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 				$this->resolver($dir, $index, null)->contextsFor(self::TemplateRel),
 				(new ContextResolver(
 					$index,
-					new DeclarationScanner(),
 					$this->universe($dir),
 					$this->capturedOverlay($dir),
 				))->contextsFor(self::TemplateRel),
@@ -889,7 +886,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	{
 		return new TemplateEdgeIndex(
 			$this->universe($dir),
-			new TemplateFactExtractor(),
+			TestAdapter::accessor(),
 			null,
 			$this->store($dir, $rendererClasses),
 			true,
@@ -900,7 +897,6 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	{
 		return new ContextResolver(
 			$index,
-			new DeclarationScanner(),
 			$this->universe($dir),
 			$this->capturedOverlay($dir),
 			false,

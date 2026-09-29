@@ -3,9 +3,6 @@
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
 use Latte\MacroTokens;
-use Nette\IOException;
-use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\ArgTyper;
 use OriPhpstan\Nette\Latte\Includes\DeclaredVarsResolver;
 use OriPhpstan\Nette\Latte\Includes\EdgeScope;
@@ -62,8 +59,6 @@ final class EdgeAnchorInjector
 
 	private DeclaredVarsResolver $declaredVarsResolver;
 
-	private DeclarationScanner $scanner;
-
 	private LatteUniverse $universe;
 
 	private ArgTyper $argTyper;
@@ -74,15 +69,13 @@ final class EdgeAnchorInjector
 
 	public function __construct(
 		TemplateEdgeIndex $edgeIndex,
-		DeclarationScanner $scanner,
 		LatteUniverse $universe,
 		Parser $phpParser,
 		bool $includeIsolation = false
 	)
 	{
 		$this->edgeIndex = $edgeIndex;
-		$this->declaredVarsResolver = new DeclaredVarsResolver($scanner, $edgeIndex);
-		$this->scanner = $scanner;
+		$this->declaredVarsResolver = new DeclaredVarsResolver($edgeIndex);
 		$this->universe = $universe;
 		$this->argTyper = new ArgTyper();
 		$this->phpParser = $phpParser;
@@ -428,13 +421,7 @@ final class EdgeAnchorInjector
 	 */
 	private function ownDefineParamsFor(string $absoluteFile, string $blockName): array
 	{
-		try {
-			$source = FileSystem::read($absoluteFile);
-		} catch (IOException $e) {
-			return [];
-		}
-
-		return $this->scanner->scan($source)->getDefineParams()[$blockName] ?? [];
+		return $this->edgeIndex->declarationsFor($absoluteFile)->getDefineParams()[$blockName] ?? [];
 	}
 
 	// Positional, not named: {include #b, expr1, expr2} threads args by DECLARATION ORDER of the

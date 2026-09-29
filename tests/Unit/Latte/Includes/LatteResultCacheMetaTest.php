@@ -11,7 +11,6 @@ use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
 use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
@@ -632,7 +631,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		// A FRESH LatteUniverse/TemplateEdgeIndex per call - not a shared/cached instance - so this
 		// proves the contract from disk, not merely from a memoized in-process value.
 		$universe = new LatteUniverse($paths, sys_get_temp_dir());
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 
 		return new LatteResultCacheMeta(
 			TestGuard::latte($enabled, false, $enabled && $discoveryStoreEnabled),

@@ -2,7 +2,8 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Rule;
 
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
+use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Rule\LatteVarTypeExpressionRule;
 use OriPhpstan\Nette\Latte\Rule\VarTypeExpressionChecker;
 use PHPStan\Analyser\Error;
@@ -11,6 +12,7 @@ use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\FileTypeMapper;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_map;
@@ -59,7 +61,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 	{
 		return new LatteVarTypeExpressionRule(
 			TestGuard::latte(),
-			new DeclarationScanner(),
+			new TemplateEdgeIndex(new LatteUniverse([], ''), TestAdapter::accessor()),
 			self::getContainer()->getByType(TypeStringResolver::class),
 			new VarTypeExpressionChecker(
 				self::getContainer()->getByType(TypeNodeResolver::class),

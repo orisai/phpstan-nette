@@ -18,10 +18,10 @@ use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Includes\TemplateTypeChecker;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryAbstractViewPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryLegacyPathControl;
@@ -906,7 +906,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		$universe = new LatteUniverse([$dir], $dir);
 		$index = new TemplateEdgeIndex(
 			$universe,
-			new TemplateFactExtractor(),
+			TestAdapter::accessor(),
 			null,
 			$store,
 			$discoveryStoreEnabled,

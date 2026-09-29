@@ -16,14 +16,12 @@ use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Rule\LatteDebugDumpRule;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
@@ -206,10 +204,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 
 		try {
 			$universe = new LatteUniverse([$dir], $dir);
-			$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+			$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 			$resolver = new ContextResolver(
 				$edgeIndex,
-				new DeclarationScanner(),
 				$universe,
 				new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 			);
@@ -218,7 +215,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				$resolver,
 				$edgeIndex,
 				$universe,
-				new DeclarationScanner(),
 			);
 
 			$sorted = TemplateContext::sortByHash($resolver->contextsFor('target.latte'));
@@ -440,10 +436,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				__DIR__ . '/../Customs/Fixtures/engine-loader-throwing.php',
 			));
 			$universe = new LatteUniverse([$dir], $dir);
-			$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+			$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 			$resolver = new ContextResolver(
 				$edgeIndex,
-				new DeclarationScanner(),
 				$universe,
 				new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 			);
@@ -452,7 +447,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				$resolver,
 				$edgeIndex,
 				$universe,
-				new DeclarationScanner(),
 				$harvester,
 			);
 
@@ -483,10 +477,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 
 		try {
 			$universe = new LatteUniverse([$dir], $dir);
-			$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+			$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 			$resolver = new ContextResolver(
 				$edgeIndex,
-				new DeclarationScanner(),
 				$universe,
 				new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 			);
@@ -495,7 +488,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				$resolver,
 				$edgeIndex,
 				$universe,
-				new DeclarationScanner(),
 				null,
 				$this->templateTypeCustoms(),
 			);
@@ -1862,24 +1854,22 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	private function rule(string $dir): LatteDebugDumpRule
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$resolver = new ContextResolver(
 			$edgeIndex,
-			new DeclarationScanner(),
 			$universe,
 			new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 		);
 
-		return new LatteDebugDumpRule(TestGuard::latte(), $resolver, $edgeIndex, $universe, new DeclarationScanner());
+		return new LatteDebugDumpRule(TestGuard::latte(), $resolver, $edgeIndex, $universe);
 	}
 
 	private function ruleWithRenderWalk(string $dir): LatteDebugDumpRule
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$resolver = new ContextResolver(
 			$edgeIndex,
-			new DeclarationScanner(),
 			$universe,
 			new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 		);
@@ -1889,7 +1879,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			$resolver,
 			$edgeIndex,
 			$universe,
-			new DeclarationScanner(),
 			null,
 			null,
 			$this->renderWalk(),
@@ -1903,10 +1892,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	{
 		$dir = $this->isolatedDir('pairing');
 		$universe = new LatteUniverse([$dir], $dir);
-		$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$resolver = new ContextResolver(
 			$edgeIndex,
-			new DeclarationScanner(),
 			$universe,
 			new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 		);
@@ -1919,7 +1907,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			$resolver,
 			$edgeIndex,
 			$universe,
-			new DeclarationScanner(),
 			null,
 			null,
 			$this->renderWalk($appRoot),
@@ -1936,10 +1923,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	{
 		$dir = $this->isolatedDir('discovery');
 		$universe = new LatteUniverse([$dir], $dir);
-		$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$resolver = new ContextResolver(
 			$edgeIndex,
-			new DeclarationScanner(),
 			$universe,
 			new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
 		);
@@ -1957,7 +1943,6 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			$resolver,
 			$edgeIndex,
 			$universe,
-			new DeclarationScanner(),
 			null,
 			null,
 			new PhpRenderWalk(

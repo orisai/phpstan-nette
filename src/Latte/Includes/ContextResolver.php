@@ -2,7 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Includes;
 
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -50,7 +49,6 @@ final class ContextResolver
 
 	public function __construct(
 		TemplateEdgeIndex $index,
-		DeclarationScanner $scanner,
 		LatteUniverse $universe,
 		CapturedOverlay $capturedOverlay,
 		bool $includeIsolation = false,
@@ -60,7 +58,7 @@ final class ContextResolver
 		$this->index = $index;
 		$this->universe = $universe;
 		$this->argTyper = new ArgTyper();
-		$this->declaredVarsResolver = new DeclaredVarsResolver($scanner, $index);
+		$this->declaredVarsResolver = new DeclaredVarsResolver($index);
 		$this->capturedOverlay = $capturedOverlay;
 		$this->includeIsolation = $includeIsolation;
 		$this->factoryProvidedVars = $factoryProvidedVars;

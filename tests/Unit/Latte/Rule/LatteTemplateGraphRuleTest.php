@@ -15,7 +15,6 @@ use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Includes\TemplateTypeChecker;
 use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
 use OriPhpstan\Nette\Latte\Rule\LatteTemplateGraphRule;
@@ -31,6 +30,7 @@ use PHPStan\Rules\LineRuleError;
 use PHPStan\Rules\TipRuleError;
 use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\MockObject\Stub;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryVendorPresenter;
@@ -299,7 +299,7 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 				$reflectionProvider,
 			),
 			$store,
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor(), null, $store, $discoveryStoreEnabled),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor(), null, $store, $discoveryStoreEnabled),
 			$universe,
 			[$dir . '/app'],
 			$enabled,
@@ -349,7 +349,7 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 				$reflectionProvider,
 			),
 			$store,
-			new TemplateEdgeIndex($universe, new TemplateFactExtractor(), null, $store, true),
+			new TemplateEdgeIndex($universe, TestAdapter::accessor(), null, $store, true),
 			$universe,
 			// No template lives under this path, so the orphan half contributes nothing here.
 			[$dir . '/__no_app_scope__'],

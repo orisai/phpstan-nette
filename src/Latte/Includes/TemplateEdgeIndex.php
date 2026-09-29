@@ -7,6 +7,8 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\CandidatePath;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
+use OriPhpstan\Nette\Latte\Declarations\Declarations;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -29,7 +31,7 @@ final class TemplateEdgeIndex
 
 	private LatteUniverse $universe;
 
-	private TemplateFactExtractor $extractor;
+	private LatteVersionAdapterAccessor $adapterAccessor;
 
 	private ?LatteAnalysisCache $cache;
 
@@ -55,16 +57,19 @@ final class TemplateEdgeIndex
 
 	private ?string $pathPrefix = null;
 
+	/** @var array<string, Declarations> */
+	private array $declarationsByHash = [];
+
 	public function __construct(
 		LatteUniverse $universe,
-		TemplateFactExtractor $extractor,
+		LatteVersionAdapterAccessor $adapterAccessor,
 		?LatteAnalysisCache $cache = null,
 		?DiscoveryStore $discoveryStore = null,
 		bool $discoveryStoreEnabled = false
 	)
 	{
 		$this->universe = $universe;
-		$this->extractor = $extractor;
+		$this->adapterAccessor = $adapterAccessor;
 		$this->cache = $cache;
 		$this->discoveryStore = $discoveryStore;
 		$this->discoveryStoreEnabled = $discoveryStoreEnabled;
@@ -78,12 +83,30 @@ final class TemplateEdgeIndex
 
 		$data = $this->cache->rememberContentAddressed(
 			$this->contentHashFor($absoluteFile),
-			'latte-facts',
+			'latte-facts|' . $this->adapterAccessor->get()->family()->id(),
 			fn (): array => $this->readAndExtract($absoluteFile)->toArray(),
 		);
 
 		/** @var array{includeSites: list<array{tag: string, kind: string, rawTarget: string, resolvedPath: string|null, argsSource: string, latteLine: int}>, blockNames: list<string>, defineNames: list<string>, topLevelVars: array<string, string>, topLevelDefaults: list<string>, blockDeclaredVars: array<string, array<string, string>>, blockDeclaredVarLines: array<string, array<string, int>>, lineMacros: array<int, list<array{name: string, column: int}>>, layoutMode: TemplateFacts::LAYOUT_MODE_*|null} $data */
 		return TemplateFacts::fromArray($data);
+	}
+
+	// The template's own declarations, read through the installed Latte's adapter like factsFor():
+	// every consumer that used to scan the file itself (contract checks, declared-vars resolution,
+	// placement checks, the templateType collector and the debug dump) asks here instead.
+	public function declarationsFor(string $absoluteFile): Declarations
+	{
+		try {
+			$source = FileSystem::read($absoluteFile);
+		} catch (IOException $e) {
+			return new Declarations(null, null, [], [], [], [], [], null, [], [], []);
+		}
+
+		$hash = sha1($source);
+
+		return $this->declarationsByHash[$hash] ??= $this->adapterAccessor->get()
+			->extractFacts($source, $this->universe->relativePath($absoluteFile))
+			->getDeclarations();
 	}
 
 	/**
@@ -556,7 +579,9 @@ final class TemplateEdgeIndex
 			return new TemplateFacts([], [], [], [], [], [], [], []);
 		}
 
-		return $this->extractor->extract($source, $this->universe->relativePath($absoluteFile));
+		return $this->adapterAccessor->get()
+			->extractFacts($source, $this->universe->relativePath($absoluteFile))
+			->getTemplateFacts();
 	}
 
 	private function contentHashFor(string $absoluteFile): string

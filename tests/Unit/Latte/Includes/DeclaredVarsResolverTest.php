@@ -3,12 +3,11 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 
 use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\DeclaredVarsResolver;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function getmypid;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -91,9 +90,9 @@ final class DeclaredVarsResolverTest extends BaseTestCase
 	private function resolverFor(string $dir): DeclaredVarsResolver
 	{
 		$universe = new LatteUniverse([$dir], $dir);
-		$edgeIndex = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 
-		return new DeclaredVarsResolver(new DeclarationScanner(), $edgeIndex);
+		return new DeclaredVarsResolver($edgeIndex);
 	}
 
 	private function isolatedDir(string $prefix): string

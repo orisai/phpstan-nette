@@ -8,8 +8,8 @@ use OriPhpstan\Nette\Latte\Includes\EdgeFingerprint;
 use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function array_map;
 use function dirname;
 use function uniqid;
@@ -235,7 +235,7 @@ final class EdgeFingerprintTest extends BaseTestCase
 		// A FRESH LatteUniverse/TemplateEdgeIndex per call - not a shared/cached instance - so this
 		// proves the contract from disk, not merely from a memoized in-process value.
 		$universe = new LatteUniverse([$dir], $projectRoot);
-		$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+		$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 		$rel = ProjectRelativePath::relativize($projectRoot, $dir . '/' . $basename);
 		$absolute = $dir . '/' . $basename;
 		$sites = $index->outgoingSites($rel);

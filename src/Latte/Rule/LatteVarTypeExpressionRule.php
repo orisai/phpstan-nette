@@ -2,11 +2,9 @@
 
 namespace OriPhpstan\Nette\Latte\Rule;
 
-use Nette\IOException;
-use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Declarations\VarTypePlacement;
+use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
@@ -49,7 +47,7 @@ final class LatteVarTypeExpressionRule implements Rule
 	// injection itself, never a template author's expression.
 	private const INJECTED_CARRIER_PATTERN = '~^prop_\d+_~';
 
-	private DeclarationScanner $scanner;
+	private TemplateEdgeIndex $edgeIndex;
 
 	private TypeStringResolver $typeStringResolver;
 
@@ -67,13 +65,13 @@ final class LatteVarTypeExpressionRule implements Rule
 
 	public function __construct(
 		ConfigurationGuard $guard,
-		DeclarationScanner $scanner,
+		TemplateEdgeIndex $edgeIndex,
 		TypeStringResolver $typeStringResolver,
 		VarTypeExpressionChecker $checker
 	)
 	{
 		$guard->validate();
-		$this->scanner = $scanner;
+		$this->edgeIndex = $edgeIndex;
 		$this->typeStringResolver = $typeStringResolver;
 		$this->checker = $checker;
 	}
@@ -315,15 +313,7 @@ final class LatteVarTypeExpressionRule implements Rule
 			return $this->placementsByFile[$file];
 		}
 
-		try {
-			$source = FileSystem::read($file);
-		} catch (IOException $e) {
-			// A file that vanished mid-run must not take the analysis down - LatteRoutingParser's
-			// own precedent for the identical read.
-			return $this->placementsByFile[$file] = [];
-		}
-
-		return $this->placementsByFile[$file] = $this->scanner->scan($source)->getVarTypePlacements();
+		return $this->placementsByFile[$file] = $this->edgeIndex->declarationsFor($file)->getVarTypePlacements();
 	}
 
 }

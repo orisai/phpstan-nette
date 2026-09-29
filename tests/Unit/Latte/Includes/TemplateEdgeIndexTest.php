@@ -8,8 +8,8 @@ use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
 use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function array_keys;
 use function dirname;
 use function getmypid;
@@ -169,7 +169,7 @@ final class TemplateEdgeIndexTest extends BaseTestCase
 
 		try {
 			$universe = new LatteUniverse([$tempDir], $tempDir);
-			$index = new TemplateEdgeIndex($universe, new TemplateFactExtractor());
+			$index = new TemplateEdgeIndex($universe, TestAdapter::accessor());
 
 			self::assertSame(['shared'], $index->reachableBlockNames('includer.latte'));
 		} finally {
@@ -294,14 +294,14 @@ final class TemplateEdgeIndexTest extends BaseTestCase
 
 	private function isolatedIndex(string $dir): TemplateEdgeIndex
 	{
-		return new TemplateEdgeIndex(new LatteUniverse([$dir], $dir), new TemplateFactExtractor());
+		return new TemplateEdgeIndex(new LatteUniverse([$dir], $dir), TestAdapter::accessor());
 	}
 
 	private function indexForTree(?LatteAnalysisCache $cache = null): TemplateEdgeIndex
 	{
 		$universe = new LatteUniverse([$this->treeDir()], dirname(__DIR__, 3));
 
-		return new TemplateEdgeIndex($universe, new TemplateFactExtractor(), $cache);
+		return new TemplateEdgeIndex($universe, TestAdapter::accessor(), $cache);
 	}
 
 	private function treeDir(): string

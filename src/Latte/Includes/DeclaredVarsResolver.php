@@ -2,17 +2,12 @@
 
 namespace OriPhpstan\Nette\Latte\Includes;
 
-use Nette\IOException;
-use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use ReflectionException;
 use function class_exists;
 
 final class DeclaredVarsResolver
 {
-
-	private DeclarationScanner $scanner;
 
 	private TemplateEdgeIndex $edgeIndex;
 
@@ -22,9 +17,8 @@ final class DeclaredVarsResolver
 	/** @var array<string, array<string, array<string, string>>> */
 	private array $blockCache = [];
 
-	public function __construct(DeclarationScanner $scanner, TemplateEdgeIndex $edgeIndex)
+	public function __construct(TemplateEdgeIndex $edgeIndex)
 	{
-		$this->scanner = $scanner;
 		$this->edgeIndex = $edgeIndex;
 	}
 
@@ -76,13 +70,7 @@ final class DeclaredVarsResolver
 			return $this->cache[$absoluteFile];
 		}
 
-		try {
-			$source = FileSystem::read($absoluteFile);
-		} catch (IOException $e) {
-			return $this->cache[$absoluteFile] = ['vars' => [], 'provenance' => []];
-		}
-
-		$declarations = $this->scanner->scan($source);
+		$declarations = $this->edgeIndex->declarationsFor($absoluteFile);
 		$vars = [];
 		$provenance = [];
 

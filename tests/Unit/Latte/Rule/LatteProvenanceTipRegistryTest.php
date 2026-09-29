@@ -4,12 +4,12 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Rule;
 
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Rule\LatteProvenanceTipRegistry;
 use PhpParser\Node\Expr\BinaryOp;
 use PHPStan\Rules\Registry;
 use PHPStan\Rules\Rule;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 
 final class LatteProvenanceTipRegistryTest extends BaseTestCase
 {
@@ -27,7 +27,7 @@ final class LatteProvenanceTipRegistryTest extends BaseTestCase
 
 		$registry = new LatteProvenanceTipRegistry(
 			$mockDelegate,
-			new TemplateEdgeIndex(new LatteUniverse([], ''), new TemplateFactExtractor()),
+			new TemplateEdgeIndex(new LatteUniverse([], ''), TestAdapter::accessor()),
 		);
 
 		$rules1 = $registry->getRules(BinaryOp::class);
