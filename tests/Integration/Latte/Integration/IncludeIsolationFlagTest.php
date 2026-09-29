@@ -22,6 +22,9 @@ use const SORT_STRING;
 // union semantics the includer's own $shared satisfies the target's declaration, under Latte 3's
 // isolated params it does not - and that difference IS the migration worklist the flag exists to
 // produce.
+/**
+ * @group latte2
+ */
 final class IncludeIsolationFlagTest extends BaseTestCase
 {
 

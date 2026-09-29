@@ -112,6 +112,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		FixtureTemplatesPathControlBase::class => 'dirname-templates-lcfirst',
 	];
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpIncludersReportsExactZeroEdgeTextForAFileWithNoIncomingEdges(): void
 	{
 		$dir = $this->isolatedDir('zero-edge');
@@ -134,6 +137,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Bare {do dumpLatteIncluders()} is the documented usage
 	// syntax. The compiled Latte class carries no `namespace` statement, so that bare call resolves
 	// at the AST level to the plain unqualified name, never the OriPhpstan\Nette\Latte\Testing\...
@@ -160,6 +166,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpIncludersListsEachIncomingEdgeWithItsIncluderContextCount(): void
 	{
 		$dir = $this->isolatedDir('one-edge');
@@ -179,6 +188,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpVarOriginReportsChainTypeProvenanceAndUnionPerContext(): void
 	{
 		$dir = $this->isolatedDir('var-origin');
@@ -246,6 +258,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Same bare-form requirement as testDumpIncludersMatchesTheBareUnqualifiedFunctionName above,
 	// for {do dumpLatteVarOrigin($x)}.
 	public function testDumpVarOriginMatchesTheBareUnqualifiedFunctionName(): void
@@ -269,6 +284,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpVarOriginDegradesToUnknownWhenScopeIsNotAContextClone(): void
 	{
 		$dir = $this->isolatedDir('var-origin-no-clone');
@@ -292,6 +310,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpVarOriginNonVariableExpressionUsesAGenericLabel(): void
 	{
 		$dir = $this->isolatedDir('var-origin-non-variable');
@@ -349,6 +370,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpCustomsReportsNoHarvestSourceConfiguredAndNoTemplateWhenNeitherIsWired(): void
 	{
 		$dir = $this->isolatedDir('customs-none');
@@ -372,6 +396,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Same bare-form requirement as the includers/varOrigin variants above, for {do
 	// dumpLatteCustoms()}.
 	public function testDumpCustomsMatchesTheBareUnqualifiedFunctionName(): void
@@ -396,6 +423,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// A configured-but-failing engine loader is a materially different state from "nothing wired
 	// at all" above (EngineSource::isConfigured() is true - the harvest genuinely ran and came back
 	// empty), so the global section reports per-kind "(none)" rather than the no-source line.
@@ -442,6 +472,9 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDumpCustomsListsPerTemplateEntriesFromTheCurrentTemplatesTemplateTypeWithTheDeclaringClassNamed(): void
 	{
 		$dir = $this->isolatedDir('customs-per-template');

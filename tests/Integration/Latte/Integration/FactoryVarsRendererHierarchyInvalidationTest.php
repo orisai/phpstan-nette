@@ -30,6 +30,9 @@ use const SORT_STRING;
 // class. This mirrors DiscoveryLayoutLinkInvalidationTest's spawn/store harness (its own header
 // comment explains the two-hop mechanism in full), reusing the same mapping-loader trick that stands
 // in for the missing container.
+/**
+ * @group latte2
+ */
 final class FactoryVarsRendererHierarchyInvalidationTest extends BaseTestCase
 {
 

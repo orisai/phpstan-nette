@@ -21,6 +21,9 @@ use const PHP_BINARY;
 // wiring.neon's orisaiNette.latte.narrowing.storePath comment), so LatteUniverse's own project-root containment
 // guard rejects every fixture path before EdgeAnchorInjector ever runs. Only a spawn from the real
 // repo root exercises the collector against genuinely narrowed PHPStan types.
+/**
+ * @group latte2
+ */
 final class LatteSiteScopeCaptureIntegrationTest extends BaseTestCase
 {
 

@@ -29,6 +29,9 @@ use const SORT_STRING;
 // then re-run the actual scenario under test against that genuinely-populated store - the same
 // "empirically verified before writing assertions" discipline the sibling ResultCacheInvalidationTest
 // payoff test uses.
+/**
+ * @group latte2
+ */
 final class NarrowingFlagTest extends BaseTestCase
 {
 

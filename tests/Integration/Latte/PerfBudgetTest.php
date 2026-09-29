@@ -24,6 +24,9 @@ use const PHP_BINARY;
 // Regression tripwire, not a benchmark: loose thresholds guard against the result cache
 // silently stopping doing its work (e.g. a manifest/cache-key regression that forces every
 // spawn to re-fold the whole graph from scratch), not against absolute wall-clock speed.
+/**
+ * @group latte2
+ */
 final class PerfBudgetTest extends BaseTestCase
 {
 

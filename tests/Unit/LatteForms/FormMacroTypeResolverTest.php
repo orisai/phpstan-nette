@@ -110,6 +110,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testControlTakesTheBuilderClass(): void
 	{
 		$resolver = $this->resolver([self::TYPING => [TypedRenderer::class]]);
@@ -119,6 +122,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		self::assertSame(CheckboxList::class, $resolver->controlClassAt(self::TYPING, 5, 'years', $this->scope()));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDynamicReferenceStaysUntyped(): void
 	{
 		self::assertNull(
@@ -127,6 +133,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testLineWithoutAReferenceStaysUntyped(): void
 	{
 		self::assertNull(
@@ -135,6 +144,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDisagreeingRenderersLeaveTheControlUntyped(): void
 	{
 		$resolver = $this->resolver([self::TYPING => [TypedRenderer::class, TypedOtherRenderer::class]]);
@@ -143,6 +155,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		self::assertSame(TextInput::class, $resolver->controlClassAt(self::TYPING, 3, 'name', $this->scope()));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testUnresolvedRendererLeavesEverythingUntyped(): void
 	{
 		$resolver = $this->resolver([self::TYPING => [TypedRenderer::class, TypedNoFormRenderer::class]]);
@@ -151,6 +166,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		self::assertNull($resolver->controlClassAt(self::TYPING, 2, 'years', $this->scope()));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testContainerPathIsHonouredForBothSpellings(): void
 	{
 		$resolver = $this->resolver([self::CONTAINERS => [ClosedRenderer::class]]);
@@ -163,6 +181,9 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		self::assertNull($resolver->controlClassAt(self::CONTAINERS, 4, 'street', $this->scope()));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testExternallyMutatedFormIsHandedOutAsAPlainObject(): void
 	{
 		$resolver = $this->resolver([self::MUTATED => [TypeMutatedRenderer::class]]);

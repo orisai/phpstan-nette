@@ -118,22 +118,18 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		);
 	}
 
-	/**
-	 * @group nette32
-	 */
 	public function testUnwiredUserOfADetachedControlIsUndefinedOnTypedDefaultTemplate(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '>=3.2');
 		self::assertArrayNotHasKey(
 			'user',
 			$this->typesFor([FactoryVarsControlRenderer::class], self::FactoryDefaultLoaderFile),
 		);
 	}
 
-	/**
-	 * @group nette32
-	 */
 	public function testWiredUserOfADetachedControlIsNonNullOnTypedDefaultTemplate(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '>=3.2');
 		$vars = $this->resolveFor([FactoryVarsControlRenderer::class], self::WiredLoaderFile);
 
 		self::assertSame(Certainty::HAPPENS, $vars['user']['certainty']);
@@ -608,6 +604,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// THE SCOPE SEAM: the root context of a store-linked template carries the factory variables,
 	// labelled with the class that declared them.
 	public function testContextResolverCarriesTheFactoryVariables(): void
@@ -638,6 +637,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The template's own declaration is stronger than the ambient factory type - the factory layer
 	// is the weakest one in the context.
 	public function testOwnDeclarationWinsOverTheFactoryType(): void
@@ -660,6 +662,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Latte 2 hands an included file the includer's whole param set, and the edge machinery already
 	// models that - so the partial inherits the factory variables from its includer's context.
 	public function testIncludedPartialInheritsTheFactoryVariables(): void
@@ -682,6 +687,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// EDGE-LOCAL, and the one place the control axis parts company with the ambient variables:
 	// $control and $presenter name the RENDERER'S OWN IDENTITY, so an includer's value describes the
 	// includer. Both are dropped when a context crosses an include edge while $user rides it as
@@ -714,6 +722,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// THE INVALIDATION CHANNEL. The template class the scope is derived from is not a dependency of
 	// the template by anything PHPStan can see on its own - the link runs through the discovery
 	// store, not through any symbol the .latte file mentions. The routing parser therefore emits it
@@ -736,6 +747,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The library default (no source wired at all) leaves every context byte-identical.
 	public function testResolverWithoutTheSourceIsUnchanged(): void
 	{

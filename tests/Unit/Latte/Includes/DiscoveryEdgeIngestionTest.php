@@ -33,6 +33,9 @@ use const SORT_STRING;
 // through a presenter/control formula has no .latte tag naming it, so before ingestion it looked
 // unreached and every reachability check stayed OPEN. These pins cover the ingested edge shape, the
 // owner-ratified auto-layout suppression, and the checker valves the edges flip.
+/**
+ * @group latte2
+ */
 final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 {
 

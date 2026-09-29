@@ -148,11 +148,9 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 	// that are initialized - an uninitialized typed one is left out, which FactoryProvidedVars does not
 	// model (initialization is runtime state) and claims as present with its declared type.
 
-	/**
-	 * @group nette32
-	 */
 	public function testTemplateVariablesAreThePublicInitializedAttributedProperties(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '>=3.2');
 		$presenter = new ParityTemplateVariablePresenter();
 
 		$names = ParityTemplateVariablePresenter::getReflection()->getTemplateVariables( // @phpstan-ignore method.notFound (nette/application 3.2+ API)

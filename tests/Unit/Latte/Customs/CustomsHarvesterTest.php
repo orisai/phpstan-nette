@@ -35,6 +35,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 
 	private const MissingFile = __DIR__ . '/Fixtures/does-not-exist.php';
 
+	/**
+	 * @group latte2
+	 */
 	public function testEnumeratesFiltersFunctionsMacrosViaContainerLoader(): void
 	{
 		$harvested = $this->harvest(self::ContainerLoaderFile, null);
@@ -52,6 +55,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertSame('fixtureFunction', $harvested->getFunctionOriginalNames()['fixturefunction'] ?? null);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testEnumeratesFiltersFunctionsMacrosViaEngineLoaderFile(): void
 	{
 		$harvested = $this->harvest(null, self::EngineLoaderFile);
@@ -65,6 +71,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertSame('fixtureFunction', $harvested->getFunctionOriginalNames()['fixturefunction'] ?? null);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testContainerLoaderTakesPrecedenceOverEngineLoaderFile(): void
 	{
 		InvocationCounter::$count = 0;
@@ -98,6 +107,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertSame($first->getSaltHash(), $second->getSaltHash());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testSaltHashDiffersFromEmptyHarvest(): void
 	{
 		$harvested = $this->harvest(null, self::EngineLoaderFile);
@@ -105,6 +117,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertNotSame(HarvestedCustoms::empty()->getSaltHash(), $harvested->getSaltHash());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testSaltHashDiffersWhenTheSameMacroNameIsProvidedByADifferentClass(): void
 	{
 		// Both loaders register the identical filter/function (same shared callable class) and the
@@ -166,6 +181,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertEmptyHarvest($harvested);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testOnCompileTriggerErrorDuringHarvestIsContainedAndHarvestStillSucceeds(): void
 	{
 		// If VendorErrorContainment ever stopped wrapping CustomsHarvester::doHarvest(), PHPUnit's
@@ -183,6 +201,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertContains('fixtureMacro', $harvested->getMacroNames());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testHarvestTriggerErrorNeverBecomesALatteDeprecatedDiagnosticDuringCompile(): void
 	{
 		// orisaiNette.latte.deprecated is compile-scoped: it only exists inside LatteCompiler::doCompile()'s
@@ -200,6 +221,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertSame([], $result->getDiagnostics());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testContainerLoaderReturningABareContainerIsHarvested(): void
 	{
 		$harvested = $this->harvest(__DIR__ . '/Fixtures/container-loader-bare.php', null);

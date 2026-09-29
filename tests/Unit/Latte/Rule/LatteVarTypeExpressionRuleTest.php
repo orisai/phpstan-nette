@@ -25,6 +25,8 @@ use function sprintf;
 // IntegrationSnapshotTest's real spawn instead.
 /**
  * @extends RuleTestCase<LatteVarTypeExpressionRule>
+ *
+ * @group latte2
  */
 final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 {

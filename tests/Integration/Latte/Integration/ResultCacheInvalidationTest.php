@@ -32,6 +32,9 @@ use const PHP_VERSION_ID;
 // alone never trips for it - closed by DependencyEdgeEmitter::emitFingerprint()'s exported
 // LATTE_EDGE_FINGERPRINT class constant, whose VALUE (not just presence) changes with the argument
 // list, which IS a signature-level difference ExportedClassConstantNode::equals() catches.
+/**
+ * @group latte2
+ */
 final class ResultCacheInvalidationTest extends BaseTestCase
 {
 

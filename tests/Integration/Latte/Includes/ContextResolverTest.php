@@ -30,6 +30,9 @@ use function trim;
 use function uniqid;
 use const PHP_BINARY;
 
+/**
+ * @group latte2
+ */
 final class ContextResolverTest extends BaseTestCase
 {
 

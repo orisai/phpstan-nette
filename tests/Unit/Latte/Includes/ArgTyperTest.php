@@ -6,6 +6,9 @@ use OriPhpstan\Nette\Latte\Includes\ArgTyper;
 use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
+/**
+ * @group latte2
+ */
 final class ArgTyperTest extends BaseTestCase
 {
 

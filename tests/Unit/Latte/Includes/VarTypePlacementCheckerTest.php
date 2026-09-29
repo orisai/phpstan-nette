@@ -8,6 +8,9 @@ use OriPhpstan\Nette\Latte\Includes\VarTypePlacementChecker;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_map;
 
+/**
+ * @group latte2
+ */
 final class VarTypePlacementCheckerTest extends BaseTestCase
 {
 

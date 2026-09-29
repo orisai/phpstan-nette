@@ -16,6 +16,8 @@ use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 // FunctionTable entry, compiles through FilterRewriter's $this->global->fn->clamp(...) shape).
 /**
  * @extends RuleTestCase<LatteProvenanceTipRule<Node>>
+ *
+ * @group latte2
  */
 final class LatteProvenanceTipFunctionVsMacroLineIntegrationTest extends RuleTestCase
 {

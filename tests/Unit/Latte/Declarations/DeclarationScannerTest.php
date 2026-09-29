@@ -5,6 +5,9 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Declarations;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
+/**
+ * @group latte2
+ */
 final class DeclarationScannerTest extends BaseTestCase
 {
 

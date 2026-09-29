@@ -50,6 +50,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('NULL', $this->render('default-null-param.latte', ['p' => null]));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testForeachIteratorIsCachingIteratorWithOneIndexedCounter(): void
 	{
 		// Runtime proof for the pipeline's typed local ($iterator: CachingIterator, via
@@ -85,6 +88,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('int|5', $this->render('do-defines-variable.latte', []));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testPhpDefinesRuntimeVariable(): void
 	{
 		self::assertSame('int|7', $this->render('php-defines-variable.latte', []));
@@ -140,6 +146,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('yes', $this->render('truthiness.latte', ['arr' => [1]]));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDateFilterMatchesVendorNullableStringSignature(): void
 	{
 		// @phpstan-ignore classConstant.internalClass (Filters is @internal, same exemption as Postprocess/FilterTable.php)
@@ -159,6 +168,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('string|2.1.2020', $this->render('filter-date.latte', ['d' => $date]));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNumberFilterReturnsString(): void
 	{
 		// |number resolves to native number_format(); PHP 7.4's ReflectionFunction exposes no
@@ -167,6 +179,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('string|1,235', $this->render('filter-number.latte', ['n' => 1234.5]));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testBatchFilterMatchesVendorGeneratorSignature(): void
 	{
 		// @phpstan-ignore classConstant.internalClass (Filters is @internal, same exemption as Postprocess/FilterTable.php)

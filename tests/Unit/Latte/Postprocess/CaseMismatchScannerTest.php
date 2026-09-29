@@ -8,6 +8,9 @@ use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\CaseMismatchScanner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
+/**
+ * @group latte2
+ */
 final class CaseMismatchScannerTest extends BaseTestCase
 {
 

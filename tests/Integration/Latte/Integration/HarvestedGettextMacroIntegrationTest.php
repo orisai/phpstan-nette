@@ -18,6 +18,9 @@ use const PHP_BINARY;
 // and the spawned analysis run must compile {_}/{g_}/{ng_}/{dg_}/{dng_} through that real macro
 // code (no orisaiNette.latte.unknownMacro) while an unrelated, genuinely unregistered macro name keeps
 // reporting exactly what it reports today (passthrough stays the fallback).
+/**
+ * @group latte2
+ */
 final class HarvestedGettextMacroIntegrationTest extends BaseTestCase
 {
 

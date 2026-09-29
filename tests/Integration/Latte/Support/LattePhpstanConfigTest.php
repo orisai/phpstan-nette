@@ -16,6 +16,9 @@ use const PHP_BINARY;
 // never thinks about orisaiNette.latte.narrowing.storePath at all (no extraParameters entry) must still be
 // impossible to point at the default phpstan-latte-store/ store - the exact
 // pollution bug 4 call sites had to be individually patched for before this default existed.
+/**
+ * @group latte2
+ */
 final class LattePhpstanConfigTest extends BaseTestCase
 {
 

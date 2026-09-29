@@ -27,6 +27,9 @@ use function sha1_file;
 use function sys_get_temp_dir;
 use function uniqid;
 
+/**
+ * @group latte2
+ */
 final class IncludeContractCheckerTest extends PHPStanTestCase
 {
 

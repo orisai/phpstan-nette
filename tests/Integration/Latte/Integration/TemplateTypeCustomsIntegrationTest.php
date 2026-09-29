@@ -19,6 +19,9 @@ use const PHP_BINARY;
 // this global harvest). The scoping pin (a deliberate divergence from the runtime's
 // shared-engine leak): a template DECLARING the {templateType} sees its filter/function; an
 // unrelated template using the identical name never does, even in the SAME spawn/analysed set.
+/**
+ * @group latte2
+ */
 final class TemplateTypeCustomsIntegrationTest extends BaseTestCase
 {
 

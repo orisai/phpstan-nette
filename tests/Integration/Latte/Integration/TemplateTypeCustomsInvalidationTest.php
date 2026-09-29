@@ -10,6 +10,7 @@ use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_pop;
 use function dirname;
 use function explode;
+use function glob;
 use function implode;
 use function str_replace;
 use function uniqid;
@@ -26,6 +27,9 @@ use const PHP_BINARY;
 // PropertyTypeResolver/TemplateTypeCustoms - neither goes through PHPStan's own BetterReflection),
 // so this test creates a BRAND NEW fixture file there for the duration of the test and deletes it
 // in `finally`, never touching an existing committed fixture.
+/**
+ * @group latte2
+ */
 final class TemplateTypeCustomsInvalidationTest extends BaseTestCase
 {
 
@@ -33,10 +37,21 @@ final class TemplateTypeCustomsInvalidationTest extends BaseTestCase
 
 	private const FIXTURES_DIR = __DIR__ . '/../../../Unit/Latte/Customs/Fixtures';
 
+	private const PROBE_PREFIX = 'InvalidationProbe';
+
+	// A fatal in an earlier run skips the `finally` below and leaves its probe behind.
+	protected function setUp(): void
+	{
+		parent::setUp();
+		foreach ((array) glob(self::FIXTURES_DIR . '/' . self::PROBE_PREFIX . '*.php') as $stale) {
+			FileSystem::delete((string) $stale);
+		}
+	}
+
 	public function testAddingAFilterDocblockTagToAnAlreadyTypedMethodInvalidatesTheUneditedConsumingTemplate(): void
 	{
 		$projectRoot = dirname(__DIR__, 4);
-		$className = 'InvalidationProbe' . str_replace('.', '', uniqid('', true));
+		$className = self::PROBE_PREFIX . str_replace('.', '', uniqid('', true));
 		$fqcn = 'Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\\' . $className;
 		$classFile = self::FIXTURES_DIR . '/' . $className . '.php';
 		$scratch = $projectRoot . '/var/tmp/latte-template-type-invalidation-test-' . uniqid('', true);

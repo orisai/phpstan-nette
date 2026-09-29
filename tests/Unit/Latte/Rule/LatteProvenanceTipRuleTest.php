@@ -49,6 +49,9 @@ final class LatteProvenanceTipRuleTest extends RuleTestCase
 		return [__DIR__ . '/phpstan-test.neon'];
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// true (line 5): filter-attribute tip appended, no existing tip - also carries a fixNode()
 	// payload (LatteFixStrippingRule strips it before this decorator ever sees the error; a
 	// crash-free analyse() run here is itself proof the .latte-scope stripping still fires
@@ -83,6 +86,9 @@ final class LatteProvenanceTipRuleTest extends RuleTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// PHPStan\Analyser\Error (unlike the raw RuleError returned from processNode()) exposes
 	// concrete getters for every property regardless of which optional interfaces the original
 	// RuleError implemented - the precedent LatteFixStrippingRule::stripFix() itself guards

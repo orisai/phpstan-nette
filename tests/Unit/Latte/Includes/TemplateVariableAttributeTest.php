@@ -16,6 +16,7 @@ use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Includes\FactoryProvidedVars;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsPresenterRenderer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsTemplateVariableBasePresenter;
@@ -28,9 +29,6 @@ use function realpath;
 use function sys_get_temp_dir;
 use function uniqid;
 
-/**
- * @group nette32
- */
 final class TemplateVariableAttributeTest extends PHPStanTestCase
 {
 
@@ -39,6 +37,12 @@ final class TemplateVariableAttributeTest extends PHPStanTestCase
 	private const AppFixtureDir = __DIR__ . '/Fixtures/App';
 
 	private const TemplateRel = 'page.latte';
+
+	protected function setUp(): void
+	{
+		parent::setUp();
+		InstalledVersionsGuard::requireNetteLine('nette/application', '>=3.2');
+	}
 
 	public function testPresenterTemplateVariablesAreDefinitelyPresentWithTheirDeclaredTypes(): void
 	{

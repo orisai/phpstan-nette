@@ -10,6 +10,8 @@ use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @extends RuleTestCase<LatteInternalAccessRule>
+ *
+ * @group latte2
  */
 final class LatteInternalAccessRuleTest extends RuleTestCase
 {

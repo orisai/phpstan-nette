@@ -24,6 +24,9 @@ use const PHP_BINARY;
 // unboundedly, until the C stack overflows and PHP 7.4 (which has no zend.max_allowed_stack_size)
 // SIGSEGVs the process with no catchable error at all. Hence assertions on the child's signal and
 // exit code - a segfaulted child writes no output to assert on.
+/**
+ * @group latte2
+ */
 final class SingleFileReentrancySpawnTest extends BaseTestCase
 {
 

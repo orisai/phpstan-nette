@@ -25,6 +25,9 @@ use const PHP_BINARY;
 // findings, which is the only measurement that settles it. Everything else in this feature's test
 // suite pins the source's own answers; these rows pin that those answers reach the analyser and
 // change its verdict, in both directions.
+/**
+ * @group latte2
+ */
 final class FactoryProvidedVarsIntegrationTest extends BaseTestCase
 {
 

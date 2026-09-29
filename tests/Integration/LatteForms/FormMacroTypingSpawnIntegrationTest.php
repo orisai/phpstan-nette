@@ -17,6 +17,9 @@ use function uniqid;
 use function usort;
 use const PHP_BINARY;
 
+/**
+ * @group latte2
+ */
 final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 {
 

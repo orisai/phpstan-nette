@@ -16,6 +16,9 @@ use function sort;
 use function str_replace;
 use const PHP_BINARY;
 
+/**
+ * @group latte2
+ */
 final class IntegrationSnapshotTest extends BaseTestCase
 {
 

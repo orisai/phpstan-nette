@@ -63,6 +63,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 
 	private const MappingLoaderFile = __DIR__ . '/../Bridge/Fixtures/presenter-mapping-container-loader.php';
 
+	/**
+	 * @group latte2
+	 */
 	public function testExactDeclarationIsSilent(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -72,6 +75,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The owner's standing ruling: a declaration may WIDEN - a renderer pairing a subtype of the
 	// declared class still satisfies every member the template body reads.
 	public function testWiderDeclarationIsSilent(): void
@@ -83,6 +89,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNarrowerDeclarationIsReported(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -99,6 +108,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testUnrelatedDeclarationIsReported(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -115,6 +127,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// All-renderers discipline: every linked renderer is judged separately, so a template shared by
 	// a satisfying and a violating renderer reports exactly the violating one.
 	public function testMultiRendererReportsOnlyTheViolatingRenderer(): void
@@ -133,6 +148,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The *dynamic* marker is never a class name: an opaque verdict says nothing about the pairing,
 	// so the check stays OPEN rather than reporting against a marker string.
 	public function testOpaqueVerdictIsSkipped(): void
@@ -144,6 +162,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNonQualifyingRendererIsSkipped(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -153,6 +174,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// orisaiNette.latte.unknownType already reports a bad {templateType} once, at its declaring file - comparing
 	// against a class reflection cannot resolve would only duplicate it with a guessed verdict.
 	public function testUnresolvableTemplateTypeClassIsSkipped(): void
@@ -164,6 +188,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testTemplateWithoutAnyLinkedRendererIsSilent(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -173,13 +200,18 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// === orisaiNette.latte.templateTypeRequired ===
-
 	public function testFloorRendererWithoutTemplateTypeIsDormantWhileTheFlagIsOff(): void
 	{
 		$this->assertPairingDiagnostics("body\n", [PairingDefaultsSilentPresenter::class], []);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testFloorRendererWithoutTemplateTypeIsReportedWhenTheFlagIsOn(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -197,6 +229,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The strict flag requires a {templateType} only where a PHP renderer's pairing verdict resolves
 	// to the default/bare floor. An include-only template has no renderer, so it has no verdict, so
 	// there is nothing for the requirement to key on. Skipped BY CONSTRUCTION - the check only ever
@@ -207,11 +242,17 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		$this->assertPairingDiagnostics("body\n", [], [], true);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNonFloorRendererWithoutTemplateTypeIsSilentWhenTheFlagIsOn(): void
 	{
 		$this->assertPairingDiagnostics("body\n", [PairingAgreeExactPresenter::class], [], true);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDeclaredTemplateTypeSatisfiesTheStrictFlag(): void
 	{
 		$this->assertPairingDiagnostics(
@@ -314,6 +355,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The SETTER half of the same convention channel: $this->file is written from the presenter's
 	// component factory, so no per-class walk can see it, and the receiver's own convention
 	// directory is where the named template lands. The last assertion is what keeps this pin
@@ -361,8 +405,10 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		$this->assertDiscoveryDiagnostics(['page.latte' => [DynamicViewPresenter::class]], 'page.latte', []);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// === orisaiNette.latte.orphanTemplate ===
-
 	public function testTemplateCarryingADiscoveryRecordIsLive(): void
 	{
 		$this->assertOrphans(
@@ -373,6 +419,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testTemplateIncludedFromALiveTemplateIsLive(): void
 	{
 		$this->assertOrphans(
@@ -383,6 +432,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testTransitivelyIncludedTemplateIsLive(): void
 	{
 		$this->assertOrphans(
@@ -397,6 +449,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// An auto-layout ancestor is named by no tag in the extending template - liveness must flow
 	// through the discovery-derived edge exactly as it flows through a written {include}.
 	public function testAutoLayoutReachedLayoutIsLive(): void
@@ -412,6 +467,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testUnreachableTemplateIsReportedWithoutATip(): void
 	{
 		$diagnostics = $this->orphanDiagnostics(
@@ -430,6 +488,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		self::assertNull($diagnostics[0]->getTip());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The transitive half: a partial with real incoming edges is still orphaned when every includer
 	// is orphaned itself. The tip names them (dead-code-detector's transitive-tip precedent); the
 	// message alone stays sufficient, because tips never participate in baseline matching.
@@ -453,6 +514,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Layout cycles exist in the real corpus; the visited set is what makes the fixpoint terminate.
 	public function testMutuallyIncludingOrphansTerminateAndAreBothReported(): void
 	{
@@ -467,6 +531,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		self::assertCount(1, $this->orphanDiagnostics($templates, $records, 'app/cycleTwo.latte'));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The same cycle reached FROM a live root must stay silent - termination must not cost liveness.
 	public function testLiveCycleIsNotReported(): void
 	{
@@ -481,6 +548,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		self::assertSame([], $this->orphanDiagnostics($templates, $records, 'app/cycleTwo.latte'));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Structural scoping, never a name list: a template outside the configured app root is out of
 	// the diagnostic's domain whatever it is called or wherever the universe found it.
 	public function testTemplateOutsideTheAppRootIsNeverReported(): void
@@ -493,6 +563,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The store canonicalizes its records on write AND on read, so permuting THEM can never reach
 	// the fixpoint - the one input order nothing upstream flattens is the analysed-file list, which
 	// arrives from PHPStan's merged collected data in whatever order the workers finished in. Both
@@ -539,8 +612,10 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// === dormancy ===
-
 	public function testAnalysisFlagOffIsFullyDormant(): void
 	{
 		$dir = $this->corpus(['app/page.latte' => "body\n", 'app/dead.latte' => "body\n"]);
@@ -566,6 +641,9 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Without the store there are no live roots at all, so an orphan check would flag every single
 	// app template - all four identifiers depend on store links and stay dormant with it off.
 	public function testDiscoveryStoreFlagOffIsFullyDormant(): void

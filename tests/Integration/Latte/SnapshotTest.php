@@ -23,6 +23,9 @@ use function glob;
 use function sys_get_temp_dir;
 use function uniqid;
 
+/**
+ * @group latte2
+ */
 final class SnapshotTest extends BaseTestCase
 {
 

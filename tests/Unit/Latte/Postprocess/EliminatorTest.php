@@ -24,6 +24,9 @@ use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use function substr_count;
 
+/**
+ * @group latte2
+ */
 final class EliminatorTest extends BaseTestCase
 {
 

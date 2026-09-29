@@ -63,6 +63,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testTopologyChangeChangesHash(): void
 	{
 		$dir = $this->scratchDir();
@@ -87,6 +90,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testContentOnlyChangeKeepsHashStable(): void
 	{
 		$dir = $this->scratchDir();
@@ -111,6 +117,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The harvest salt: a real harvest changes the meta hash even with the edge topology
 	// held fixed, while "no harvester wired at all" and "a harvester with nothing configured" must
 	// be BYTE-IDENTICAL - both degrade to HarvestedCustoms::empty(), mirroring
@@ -156,6 +165,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The discovery salt: which templates HAVE a store file is the meta input - a template whose
 	// cached parse predates its store file's existence never baked in the self-ref, so the file
 	// set changing is exactly the window only a whole-cache invalidation can close. Record CONTENT
@@ -183,6 +195,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// THE LIVE-CONTAINER SALT. FactoryProvidedVars decides whether a factory-provided template
 	// variable is DEFINITELY present by reading the compiled container's wired TemplateFactory
 	// dependencies - an input no analysed file's hash reflects, no config parameter carries (so
@@ -218,6 +233,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// No resolver wired at all must stay byte-identical to a resolver with no loader file, the same
 	// absent-vs-unconfigured discipline the harvest salt above already holds to: a spawn that never
 	// configures orisaiNette.latte.templateFactoryContainerLoader must never see its cache churn.
@@ -239,6 +257,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDiscoveryRecordContentChangeKeepsTheHashStable(): void
 	{
 		$dir = $this->scratchDir();
@@ -261,6 +282,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The other regime: with the store directory outside the analysed paths there is no per-template
 	// propagation channel at all (PHPStan tracks no dependency on a file it never analysed), so
 	// record CONTENT has to move the whole-cache salt or the per-file consumers serve a verdict
@@ -288,6 +312,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Boundary-anchored containment: a sibling directory sharing a prefix with an analysed path is
 	// NOT inside it, so it must fall into the content regime rather than silently claim the
 	// granular one.
@@ -314,6 +341,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The store directory named as an analysed path itself is inside it - the trailing-separator
 	// anchoring must not exclude the equal case.
 	public function testStoreDirectoryThatIsItselfAnAnalysedPathKeepsTheGranularRegime(): void
@@ -409,6 +439,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// A coarse regime the consumer CAN escape by moving the store says nothing: that one is the
 	// parameter documentation's job, and a per-run notice about a fixable layout would be noise.
 	public function testTheCoarseRegimeUnderDeclaredPathsAnnouncesNothing(): void
@@ -534,6 +567,9 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDiscoveryDisabledNeverTouchesTheStoreAndStaysConstant(): void
 	{
 		$dir = $this->scratchDir();

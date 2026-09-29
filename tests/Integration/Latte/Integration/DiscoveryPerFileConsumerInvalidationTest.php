@@ -32,6 +32,9 @@ use const PHP_BINARY;
 // existed the outside layout settled at "0 files will be reanalysed" with the mismatch never
 // reported, while a cold run at the same state reported it - the cold != warm this test exists to
 // keep closed.
+/**
+ * @group latte2
+ */
 final class DiscoveryPerFileConsumerInvalidationTest extends BaseTestCase
 {
 

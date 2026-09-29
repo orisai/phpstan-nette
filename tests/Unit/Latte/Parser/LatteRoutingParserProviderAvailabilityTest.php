@@ -41,6 +41,9 @@ use function uniqid;
 // Diag::report(), the same channel LatteDiagnosticRule turns into a reported RuleError).
 // ProviderAvailabilityCheckerTest already pins the guard's own four silent cases directly against
 // the checker; this file only proves the wiring actually carries a finding through to that point.
+/**
+ * @group latte2
+ */
 final class LatteRoutingParserProviderAvailabilityTest extends PHPStanTestCase
 {
 

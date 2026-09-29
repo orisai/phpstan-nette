@@ -25,6 +25,9 @@ use const PHP_BINARY;
 // this test. --error-format=json (not raw): dumpLatteVarOrigin's message is multi-line, and raw's
 // per-physical-line rendering would fight IntegrationSnapshotTest-style line-based normalization -
 // json preserves the embedded "\n" as one string, so the exact text can be asserted directly.
+/**
+ * @group latte2
+ */
 final class LatteDebugDumpIntegrationTest extends BaseTestCase
 {
 

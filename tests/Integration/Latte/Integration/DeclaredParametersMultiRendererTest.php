@@ -26,6 +26,9 @@ use const SORT_STRING;
 // prove the declared-parameter channel never consults it. Both declared properties stay defined for
 // every renderer, including the one that writes neither. See docs/phpstan-latte.md's
 // "A declared property is a parameter even when nothing ever writes it" limitation.
+/**
+ * @group latte2
+ */
 final class DeclaredParametersMultiRendererTest extends BaseTestCase
 {
 

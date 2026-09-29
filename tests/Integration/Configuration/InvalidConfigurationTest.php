@@ -32,6 +32,9 @@ final class InvalidConfigurationTest extends BaseTestCase
 		parent::tearDown();
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testValidConfigurationIsAccepted(): void
 	{
 		$result = $this->project->analyse([

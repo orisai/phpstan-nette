@@ -28,6 +28,9 @@ use const SORT_STRING;
 // LatteAnalyzedFileMarkerCollector firing on every analyzed .latte file whenever
 // orisaiNette.latte.narrowing.enabled is on (true on this test's own config, same as the real gate), already
 // produces the full universe once the store directory exists before the run starts.
+/**
+ * @group latte2
+ */
 final class NarrowingInitTest extends BaseTestCase
 {
 

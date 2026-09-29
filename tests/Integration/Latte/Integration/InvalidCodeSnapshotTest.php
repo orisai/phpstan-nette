@@ -12,6 +12,9 @@ use const PHP_BINARY;
 
 // Independent of IntegrationSnapshotTest's committed text: a broken/invalid template must always
 // flag through spawned phpstan, never crash, never silently produce zero errors.
+/**
+ * @group latte2
+ */
 final class InvalidCodeSnapshotTest extends BaseTestCase
 {
 

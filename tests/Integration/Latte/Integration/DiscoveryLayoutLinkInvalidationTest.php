@@ -27,6 +27,9 @@ use const PHP_BINARY;
 // mechanism in full) with LatteDiscoveryDiagnosticsIntegrationTest's mapping-loader trick standing in
 // for the missing container, which is what makes formatLayoutTemplateFiles() produce a layout
 // candidate at all.
+/**
+ * @group latte2
+ */
 final class DiscoveryLayoutLinkInvalidationTest extends BaseTestCase
 {
 

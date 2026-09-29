@@ -25,6 +25,9 @@ use function dirname;
 // builder - the three conditions the bridge's certainty gate needs before it will call any name
 // absent. A corpus failing any of them would answer "unresolved" to every question and could never
 // tell a stale verdict from a fresh one.
+/**
+ * @group latte2
+ */
 final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 {
 

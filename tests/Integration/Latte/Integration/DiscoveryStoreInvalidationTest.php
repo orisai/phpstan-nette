@@ -29,6 +29,9 @@ use const PHP_BINARY;
 // closes the second hop on the next plain warm run, reanalyzing exactly the templates that
 // self-reference their store class - granular by construction, never a whole-cache invalidation
 // (the meta salt tracks only the template-file SET, pinned in LatteResultCacheMetaTest).
+/**
+ * @group latte2
+ */
 final class DiscoveryStoreInvalidationTest extends BaseTestCase
 {
 

@@ -14,6 +14,9 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 use function strtolower;
 
+/**
+ * @group latte2
+ */
 final class FilterTableTest extends BaseTestCase
 {
 

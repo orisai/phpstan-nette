@@ -30,6 +30,9 @@ use function uniqid;
 use const PHP_BINARY;
 use const SORT_STRING;
 
+/**
+ * @group latte2
+ */
 final class DeterminismTest extends BaseTestCase
 {
 

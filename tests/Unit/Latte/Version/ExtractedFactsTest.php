@@ -9,6 +9,9 @@ use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
+/**
+ * @group latte2
+ */
 final class ExtractedFactsTest extends BaseTestCase
 {
 

@@ -28,6 +28,9 @@ use const SORT_STRING;
 // traversal paired the very same statement with the SECOND declaration and a
 // orisaiNette.latte.varTypeNativeType finding appeared - a template's own findings changing because an unrelated
 // file started including it.
+/**
+ * @group latte2
+ */
 final class VarTypeMatchStabilityTest extends BaseTestCase
 {
 

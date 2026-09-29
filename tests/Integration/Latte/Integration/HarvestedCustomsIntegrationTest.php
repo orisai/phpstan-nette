@@ -18,6 +18,9 @@ use const PHP_BINARY;
 // must resolve them to the REAL signature (a wrong-arg-type call reports the underlying method's
 // own argument.type error, not orisaiNette.latte.unknownFilter/a bare "function not found") while an unrelated,
 // genuinely unregistered name keeps reporting exactly what it reports today.
+/**
+ * @group latte2
+ */
 final class HarvestedCustomsIntegrationTest extends BaseTestCase
 {
 

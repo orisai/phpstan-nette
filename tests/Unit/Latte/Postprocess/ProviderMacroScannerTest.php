@@ -13,6 +13,9 @@ use function array_column;
 // Pins WHICH compiled shapes ProviderMacroScanner recognizes, independently of
 // ProviderAvailabilityCheckerTest's own all-renderers guard - this file is only about detection,
 // never about whether a finding is actually reported for a given renderer set.
+/**
+ * @group latte2
+ */
 final class ProviderMacroScannerTest extends BaseTestCase
 {
 

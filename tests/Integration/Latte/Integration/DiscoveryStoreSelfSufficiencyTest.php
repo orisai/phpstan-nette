@@ -33,6 +33,9 @@ use const PHP_BINARY;
 // The corpus is FactoryProvidedVarsIntegrationTest's: the factory-provided scope is the store
 // consumer whose verdict a missing link actually moves, and $undefinedVar rides along so that
 // "identical" can never be satisfied by a run that reported nothing at all.
+/**
+ * @group latte2
+ */
 final class DiscoveryStoreSelfSufficiencyTest extends BaseTestCase
 {
 

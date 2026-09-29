@@ -21,6 +21,9 @@ use const PHP_BINARY;
 // entries - plus the bare unqualified {do dumpLatteCustoms()} form a real compiled template
 // actually emits (compiled Latte classes carry no `namespace`, so the FQN
 // form the other three spawns use here essentially never occurs in practice).
+/**
+ * @group latte2
+ */
 final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 {
 

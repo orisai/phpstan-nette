@@ -16,6 +16,8 @@ use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 // into the exact node the rule dispatch (and therefore this decorator) sees.
 /**
  * @extends RuleTestCase<LatteProvenanceTipRule<Node>>
+ *
+ * @group latte2
  */
 final class LatteProvenanceTipFilterIntegrationTest extends RuleTestCase
 {

@@ -13,6 +13,9 @@ use const PHP_BINARY;
 // BEFORE FileAnalyser's own collectErrors() handler is installed, on every cold/invalidated result
 // cache - LattePhpstanConfig::create() mints a fresh tmpDir (and therefore a fresh result cache) by
 // default, so every spawn here is that cold path, the empirically-leaking one.
+/**
+ * @group latte2
+ */
 final class VendorErrorContainmentSpawnTest extends BaseTestCase
 {
 

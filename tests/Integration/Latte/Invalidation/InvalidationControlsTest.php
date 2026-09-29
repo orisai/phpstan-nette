@@ -15,6 +15,9 @@ use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 // whole-cache salt makes the run report "Result cache not used because the metadata do not match"
 // (no count at all, caught by the isCacheRestored() assertion), and a coarse dependency edge makes
 // the count jump to the corpus size.
+/**
+ * @group latte2
+ */
 final class InvalidationControlsTest extends LatteInvalidationMatrixCase
 {
 

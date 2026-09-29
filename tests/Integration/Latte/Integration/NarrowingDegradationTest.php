@@ -25,6 +25,9 @@ use const SORT_STRING;
 // scenarios below reuse ResultCacheInvalidationTest's narrow-includer/narrow-target fixture pair
 // (an {if $x !== null} guard around an {include} into an undeclared-var target) so "empty-store
 // behavior" has a known, already-pinned baseline: the wide nullability error.
+/**
+ * @group latte2
+ */
 final class NarrowingDegradationTest extends BaseTestCase
 {
 

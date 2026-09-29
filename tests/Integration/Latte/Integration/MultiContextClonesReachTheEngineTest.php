@@ -20,6 +20,9 @@ use const PHP_BINARY;
 // function.impossibleType "always false" hit with the TYPE embedded in the message, so the
 // message itself is proof the engine actually resolved that specific clone's own type - not just
 // that codegen printed the right PHPDoc text.
+/**
+ * @group latte2
+ */
 final class MultiContextClonesReachTheEngineTest extends BaseTestCase
 {
 

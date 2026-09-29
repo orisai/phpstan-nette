@@ -22,6 +22,9 @@ use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 
+/**
+ * @group latte2
+ */
 final class FilterRewriterTest extends BaseTestCase
 {
 

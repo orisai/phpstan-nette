@@ -55,6 +55,9 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 
 	private const MappingLoaderFile = __DIR__ . '/../Bridge/Fixtures/presenter-mapping-container-loader.php';
 
+	/**
+	 * @group latte2
+	 */
 	public function testOrphanIsAttributedToTheTemplateFileItself(): void
 	{
 		$dir = $this->corpus();
@@ -91,6 +94,9 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 		}
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// NO FIXER, EVER (see TemplateTypeChecker's own constraint note): this check under-detects
 	// usage, so an auto-fix would delete files that are genuinely rendered.
 	public function testReportedErrorsCarryNoFixPayload(): void

@@ -25,6 +25,9 @@ use function sha1;
 use function sys_get_temp_dir;
 use function uniqid;
 
+/**
+ * @group latte2
+ */
 final class LatteCompilerTest extends BaseTestCase
 {
 

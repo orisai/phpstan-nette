@@ -108,6 +108,9 @@ final class DependencyEdgeEmitterTest extends BaseTestCase
 		self::assertCount(0, $resultCtx1->stmts, 'edges land once, never duplicated into other clones');
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testProcessedOutputForTreeFixtureContainsSortedNeighborClassRefs(): void
 	{
 		$latte = "{varType string \$s}\n<p>{\$s}</p>\n";
@@ -160,6 +163,9 @@ final class DependencyEdgeEmitterTest extends BaseTestCase
 		self::assertSame("public const LATTE_EDGE_FINGERPRINT = 'deadbeef';", $printed);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testEmitFingerprintProcessedOutputForTreeFixtureContainsConst(): void
 	{
 		$latte = "{varType string \$s}\n<p>{\$s}</p>\n";

@@ -10,6 +10,9 @@ use const PHP_VERSION_ID;
 // ResultCacheManager reaches its dependent-files loop. They are CONTROLS - they worked before the
 // aggregate move and their job is to prove the move did not cost them - plus the line-attribution
 // pin, which a per-file-to-aggregate move is exactly the kind of change that can silently regress.
+/**
+ * @group latte2
+ */
 final class SignatureLevelInvalidationTest extends LatteInvalidationMatrixCase
 {
 

@@ -116,6 +116,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		self::assertSame([], $parser->parseFile(self::ProjectRoot . '/templates/does-not-exist.latte'));
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testLatteFileRoutesThroughCompilerScannerAndPipelineWhenEnabled(): void
 	{
 		$this->withTempLatteFile("{* comment *}\n", function (string $projectRoot, string $latteFile): void {
@@ -131,6 +134,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testParseFileMemoizesRepeatCallsForSamePath(): void
 	{
 		$this->withTempLatteFile("{* comment *}\n", function (string $projectRoot, string $latteFile): void {
@@ -148,6 +154,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testLatteFileMaterializesDiagnosticsWhenEnabled(): void
 	{
 		$latte = "{varType string \$greeting}\n{\$greeting|notARealLatteFilterRouterTest}\n";
@@ -165,6 +174,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// The includer's own SiteScopeStore slice must fold into its exported
 	// LATTE_EDGE_FINGERPRINT - proven here at the REAL parser (not just EdgeFingerprint::compute()
 	// in isolation, see EdgeFingerprintTest): the same source, routed through two parsers that
@@ -206,6 +218,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Routing-parser ref emission: a TARGET's compiled class references its
 	// includer's slice class only when that slice already exists on disk - proven here against the
 	// real parser (not just DependencyEdgeEmitter::emitSliceRefs() in isolation), using a real
@@ -227,6 +242,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testTargetEmitsNoSliceRefWhenIncludersSliceIsAbsent(): void
 	{
 		$this->withTempIncluderAndTarget(function (string $projectRoot) {
@@ -242,6 +260,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Opt-in gate: disabled narrowing must never reference an includer's slice
 	// class, even when that slice genuinely exists on disk - "no slice refs" holds regardless of
 	// store state when the flag is off.
@@ -262,6 +283,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Opt-in gate: no anchor is ever materialized when narrowing is disabled, even at a real
 	// outgoing include site guarded by a narrowing-eligible {if} check.
 	public function testNoEdgeScopeAnchorEmittedWhenNarrowingDisabled(): void
@@ -277,6 +301,9 @@ final class LatteRoutingParserTest extends BaseTestCase
 		});
 	}
 
+	/**
+	 * @group latte2
+	 */
 	// Opt-in gate: the fingerprint's own store-derived component must equal the value a real,
 	// permanently-empty store would produce - proven against a store that is genuinely POPULATED
 	// (so this cannot pass merely because nothing was ever captured).

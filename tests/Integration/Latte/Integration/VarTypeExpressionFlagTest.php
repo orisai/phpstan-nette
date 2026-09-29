@@ -22,6 +22,9 @@ use const SORT_STRING;
 // behaviour by constructing it directly, which cannot catch a parameter wired to the wrong argument.
 // Each fixture is analysed twice, its own flag off then on; the OTHER flag stays on both times, so a
 // swapped pair of constructor arguments changes the answer.
+/**
+ * @group latte2
+ */
 final class VarTypeExpressionFlagTest extends BaseTestCase
 {
 

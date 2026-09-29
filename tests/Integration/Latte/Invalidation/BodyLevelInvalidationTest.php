@@ -8,6 +8,9 @@ use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 // PHPStan's exportedNodesChanged() returns null and nothing propagates to the linked template
 // through its dependency edge. This is the group the probe reproduced as holed, and the group that
 // is RED against a per-file templateTypeMismatch consumer and GREEN against an aggregate-stage one.
+/**
+ * @group latte2
+ */
 final class BodyLevelInvalidationTest extends LatteInvalidationMatrixCase
 {
 

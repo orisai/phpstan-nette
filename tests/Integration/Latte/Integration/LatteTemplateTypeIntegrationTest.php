@@ -23,6 +23,9 @@ use const PHP_BINARY;
 // resolved through the lazy container seam that exists precisely because eager injection would be a
 // DI cycle. Two spawns per assertion: the writer links the templates on the first, the checker
 // consumes those links on the second, exactly like the committed-store workflow in this repo.
+/**
+ * @group latte2
+ */
 final class LatteTemplateTypeIntegrationTest extends BaseTestCase
 {
 

@@ -189,6 +189,9 @@ final class EdgeFingerprintTest extends BaseTestCase
 
 	// Exercises the determinism contract through the real TemplateEdgeIndex/LatteUniverse pipeline
 	// (not just EdgeFingerprint::compute() in isolation): a fresh index rebuilt from disk after an
+	/**
+	 * @group latte2
+	 */
 	// UNRELATED neighbor file's edit must still yield byte-identical outgoingSites()+fingerprint for
 	// a file that never references that neighbor - this must keep holding with the widened
 	// (topLevelVars/topLevelDefaults) input too, since those are this file's OWN facts only.

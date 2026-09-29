@@ -29,6 +29,9 @@ use function uniqid;
 // Latte 3's isolated params (explicit args only). Every probe here fixes both what the flag DOES
 // change (file-form include/embed) and what it must NOT (block dispatch, layout/extends, import,
 // sandbox, namedKeys/open).
+/**
+ * @group latte2
+ */
 final class EdgeScopeIsolationTest extends PHPStanTestCase
 {
 

@@ -14,6 +14,9 @@ use function strpos;
 // change does not reach them. The facts envelope therefore carries the normalised value and a flip
 // between two spawns over a byte-identical corpus has to recompute - the stale envelope would keep
 // answering "qualifies" for a class the new boundary excludes.
+/**
+ * @group latte2
+ */
 final class FirstPartyPathsInvalidationTest extends BaseTestCase
 {
 

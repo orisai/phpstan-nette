@@ -29,6 +29,9 @@ use function strpos;
 use function sys_get_temp_dir;
 use function uniqid;
 
+/**
+ * @group latte2
+ */
 final class EdgeAnchorInjectorTest extends BaseTestCase
 {
 

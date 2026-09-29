@@ -113,6 +113,10 @@ final class ScratchProject
 		$exitCode = $process->run();
 
 		[$messages, $errors] = $this->parseOutput($process->getOutput());
+		// A crashed PHPStan prints nothing decodable, which must not read as a clean run.
+		if ($exitCode !== 0 && $messages === [] && $errors === []) {
+			$errors[] = trim($process->getErrorOutput());
+		}
 
 		return [
 			'exitCode' => $exitCode,

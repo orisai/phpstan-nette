@@ -31,6 +31,9 @@ use const SORT_STRING;
 // narrow together) does NOT need a hand-derived expectation: the test itself repeats plain warm
 // runs and stops at the first pair of byte-identical slice-directory snapshots - convergence
 // defined operationally, as the fixpoint of the store itself.
+/**
+ * @group latte2
+ */
 final class NarrowingConvergenceTest extends BaseTestCase
 {
 

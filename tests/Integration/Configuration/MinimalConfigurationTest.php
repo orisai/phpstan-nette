@@ -5,6 +5,9 @@ namespace Tests\OriPhpstan\Nette\Integration\Configuration;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
 
+/**
+ * @group latte2
+ */
 final class MinimalConfigurationTest extends BaseTestCase
 {
 

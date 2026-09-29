@@ -13,6 +13,9 @@ use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 // Supersedes DiscoveryPerFileConsumerInvalidationTest's single ADDED-RENDERER case, which is
 // scenario 1 here; that test kept its own two store LAYOUTS (store inside vs outside the analysed
 // paths), which this matrix does not vary, so it stays where it is rather than being folded away.
+/**
+ * @group latte2
+ */
 final class FileLevelInvalidationTest extends LatteInvalidationMatrixCase
 {
 

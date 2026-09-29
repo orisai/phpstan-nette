@@ -20,6 +20,8 @@ use function sys_get_temp_dir;
 // generated code, so the tip is the only thing naming its origin.
 /**
  * @extends RuleTestCase<LatteProvenanceTipRule<Node>>
+ *
+ * @group latte2
  */
 final class LatteProvenanceTipGettextIntegrationTest extends RuleTestCase
 {

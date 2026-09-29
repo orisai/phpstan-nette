@@ -20,6 +20,9 @@ use const PHP_VERSION_ID;
 // registers off ProcessParamsQualificationFixture, immediately followed by what
 // TemplateTypeCustoms - the analysis-side model - decides for the identical fixture. A mismatch
 // here means the MODEL is wrong, never the probe.
+/**
+ * @group latte2
+ */
 final class ProcessParamsQualificationParityTest extends BaseTestCase
 {
 
