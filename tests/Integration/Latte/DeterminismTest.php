@@ -14,6 +14,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
@@ -375,6 +376,13 @@ final class DeterminismTest extends BaseTestCase
 	public function provideFixtures(): iterable
 	{
 		foreach ((array) glob(dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/*.latte') as $path) {
+			if (
+				basename((string) $path) === 'ifcurrent.latte'
+				&& !InstalledVersionsGuard::satisfies('nette/application', '<3.3')
+			) {
+				continue;
+			}
+
 			yield basename((string) $path) => [(string) $path];
 		}
 	}

@@ -13,6 +13,7 @@ use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use ReflectionMethod;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use function getmypid;
 use function glob;
 use function ob_get_clean;
@@ -205,6 +206,8 @@ final class LatteCompilerTest extends BaseTestCase
 
 	private function fullAppShapeHarvester(): CustomsHarvester
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
+		InstalledVersionsGuard::requireNetteLine('nette/forms', '<3.3');
 		$engineLoaderFile = __DIR__ . '/../Customs/Fixtures/engine-loader-full-app-shape.php';
 
 		return new CustomsHarvester(new EngineSource(null, $engineLoaderFile));

@@ -14,6 +14,7 @@ use PhpParser\NodeFinder;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Parser\Parser;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use function basename;
 use function dirname;
@@ -66,6 +67,13 @@ final class SnapshotTest extends BaseTestCase
 	public function provideFixtures(): iterable
 	{
 		foreach ((array) glob(dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/*.latte') as $path) {
+			if (
+				basename((string) $path) === 'ifcurrent.latte'
+				&& !InstalledVersionsGuard::satisfies('nette/application', '<3.3')
+			) {
+				continue;
+			}
+
 			yield basename((string) $path) => [(string) $path];
 		}
 	}

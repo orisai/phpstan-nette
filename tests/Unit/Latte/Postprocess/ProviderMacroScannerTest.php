@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Postprocess\ProviderMacroScanner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use function array_column;
 
@@ -59,6 +60,7 @@ final class ProviderMacroScannerTest extends BaseTestCase
 
 	public function testIfCurrentWithDestinationIsDetected(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
 		$sites = $this->sitesFor("{ifCurrent Homepage:default}yes{/ifCurrent}\n");
 
 		self::assertSame([ProviderMacroScanner::MACRO_IF_CURRENT], array_column($sites, 'macro'));
@@ -67,6 +69,7 @@ final class ProviderMacroScannerTest extends BaseTestCase
 
 	public function testBareIfCurrentIsDetected(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
 		$sites = $this->sitesFor("{ifCurrent}yes{/ifCurrent}\n");
 
 		self::assertSame([ProviderMacroScanner::MACRO_IF_CURRENT], array_column($sites, 'macro'));

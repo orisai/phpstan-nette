@@ -20,6 +20,7 @@ use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use function substr_count;
 
@@ -459,6 +460,7 @@ final class EliminatorTest extends BaseTestCase
 
 	public function testIfCurrentWithDestinationRoutesThroughHelperAndKeepsArgsAnalyzed(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
 		$php = $this->process(
 			"{varType string \$dest}\n{varType string \$label}\n{varType string \$extra}\n"
 			. "{ifCurrent \$dest, mode => \$extra}\n\t{\$label}\n{/ifCurrent}\n",
@@ -472,6 +474,7 @@ final class EliminatorTest extends BaseTestCase
 
 	public function testIfCurrentWithoutDestinationRoutesThroughHelperWithNull(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
 		$php = $this->process("{varType string \$label}\n{ifCurrent}\n\t{\$label}\n{/ifCurrent}\n");
 
 		self::assertStringContainsString('Helpers::uiIsLinkCurrent(null)', $php);
@@ -511,6 +514,7 @@ final class EliminatorTest extends BaseTestCase
 
 	public function testNoLatteInternalsRemainInIfCurrentFixture(): void
 	{
+		InstalledVersionsGuard::requireNetteLine('nette/application', '<3.3');
 		$php = $this->processFixture('ifcurrent.latte');
 
 		self::assertStringNotContainsString('ʟ_', $php);
