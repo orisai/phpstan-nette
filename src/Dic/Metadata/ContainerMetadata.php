@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Dic\Metadata;
 
 use Nette\DI\Container;
+use function array_key_exists;
 use function array_values;
 
 final class ContainerMetadata
@@ -14,7 +15,7 @@ final class ContainerMetadata
 
 	private string $filePath;
 
-	/** @var array<string, string> */
+	/** @var array<string, string|null> */
 	private array $typesByMethodName;
 
 	/** @var list<string> */
@@ -33,7 +34,7 @@ final class ContainerMetadata
 	private array $parameters;
 
 	/**
-	 * @param array<string, string> $typesByMethodName
+	 * @param array<string, string|null> $typesByMethodName
 	 * @param list<string> $serviceNames
 	 * @param array<string, string> $aliases
 	 * @param array<string, array<string, mixed>> $tags
@@ -82,7 +83,7 @@ final class ContainerMetadata
 	{
 		$resolved = $this->aliases[$name] ?? $name;
 
-		return isset($this->typesByMethodName[Container::getMethodName($resolved)]);
+		return array_key_exists(Container::getMethodName($resolved), $this->typesByMethodName);
 	}
 
 	public function resolveName(string $name): string
@@ -106,7 +107,7 @@ final class ContainerMetadata
 	{
 		$resolved = $this->resolveAliasChain($name);
 
-		return $resolved !== null && isset($this->typesByMethodName[Container::getMethodName($resolved)]);
+		return $resolved !== null && array_key_exists(Container::getMethodName($resolved), $this->typesByMethodName);
 	}
 
 	public function getServiceTypeNameRecursive(string $name): ?string

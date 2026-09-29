@@ -67,6 +67,22 @@ final class ContainerMetadataFactoryTest extends BaseTestCase
 		self::assertNull($meta->getServiceTypeName('runtimeFactory'));
 	}
 
+	public function testUnexportedImportedServiceIsKnownButNotTypeIndexed(): void
+	{
+		$container = (new FixtureContainerFactory())->create('restricted');
+		$meta = (new ContainerMetadataFactory())->fromContainer('restricted', $container);
+
+		self::assertTrue($meta->hasService('imported'));
+		self::assertTrue($meta->hasServiceRecursive('imported'));
+		self::assertContains('imported', $meta->getServiceNames());
+		self::assertSame(['imported' => true], $meta->getTags()['restricted.tag']);
+		self::assertSame(FooService::class, $meta->getServiceTypeName('foo'));
+		self::assertSame(
+			property_exists(Container::class, 'types') ? null : ImportedService::class,
+			$meta->getServiceTypeName('imported'),
+		);
+	}
+
 	/**
 	 * @group nette32
 	 */

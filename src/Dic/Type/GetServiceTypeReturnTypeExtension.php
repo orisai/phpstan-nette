@@ -69,7 +69,12 @@ final class GetServiceTypeReturnTypeExtension implements DynamicMethodReturnType
 		$types = [];
 
 		foreach ($constantStrings as $constantString) {
-			foreach ($this->registry->getServiceTypeNames($constantString->getValue(), true, $profiles) as $typeName) {
+			$typeNames = $this->registry->getServiceTypeNames($constantString->getValue(), true, $profiles);
+			if ($typeNames === null) {
+				return null;
+			}
+
+			foreach ($typeNames as $typeName) {
 				$types[] = new ConstantStringType($typeName);
 			}
 		}

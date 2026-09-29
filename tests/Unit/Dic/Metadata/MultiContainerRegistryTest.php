@@ -24,9 +24,11 @@ use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\CustomContainer;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\DuplicateService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooServiceBeta;
+use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ImportedService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\NotAutowiredService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\FixtureContainerFactory;
 use function array_keys;
+use function property_exists;
 use function sprintf;
 
 final class MultiContainerRegistryTest extends PHPStanTestCase
@@ -206,6 +208,26 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 		self::assertSame(
 			['alpha' => AlphaOnlyService::class],
 			self::registry()->getServiceTypeNames('alphaOnly', false, self::All),
+		);
+	}
+
+	public function testUnexportedImportedServiceWidensToObject(): void
+	{
+		$registry = new MultiContainerRegistry(__DIR__ . '/../Fixtures/fixture-container-loader-restricted.php');
+		$untyped = property_exists(Container::class, 'types');
+
+		self::assertSame(['restricted' => true], $registry->getServiceExistence('imported', false, ['restricted']));
+		self::assertSame(['restricted' => true], $registry->getTagExistence('restricted.tag', ['restricted']));
+
+		$type = $registry->getServiceType('imported', true, ['restricted']);
+		self::assertNotNull($type);
+		self::assertSame(
+			$untyped ? 'object' : ImportedService::class,
+			$type->describe(VerbosityLevel::precise()),
+		);
+		self::assertSame(
+			$untyped ? null : ['restricted' => ImportedService::class],
+			$registry->getServiceTypeNames('imported', true, ['restricted']),
 		);
 	}
 

@@ -1,0 +1,11 @@
+di:
+	export:
+		types: false
+
+services:
+	foo: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooService
+	imported:
+		type: Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ImportedService
+		imported: true
+		tags:
+			restricted.tag: true

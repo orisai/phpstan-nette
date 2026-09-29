@@ -15,6 +15,8 @@ use function sprintf;
 final class FixtureContainerFactory
 {
 
+	public const ClassNamePattern = '~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~';
+
 	public static function className(string $profile): string
 	{
 		return get_class((new self())->create($profile));
@@ -40,7 +42,7 @@ final class FixtureContainerFactory
 			throw new LogicException(sprintf('Class %s is not a container.', $className));
 		}
 
-		if (preg_match('~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~', get_class($container)) !== 1) {
+		if (preg_match(self::ClassNamePattern, get_class($container)) !== 1) {
 			throw new LogicException(sprintf('Unexpected container class %s for profile %s.', $className, $profile));
 		}
 

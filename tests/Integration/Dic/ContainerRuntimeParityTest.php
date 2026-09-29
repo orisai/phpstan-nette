@@ -40,11 +40,11 @@ final class ContainerRuntimeParityTest extends BaseTestCase
 		self::assertSame(['alpha', 'beta'], array_keys(self::$containers));
 		self::assertNotSame(get_class(self::$containers['alpha']), get_class(self::$containers['beta']));
 		self::assertMatchesRegularExpression(
-			'~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~',
+			FixtureContainerFactory::ClassNamePattern,
 			get_class(self::$containers['alpha']),
 		);
 		self::assertMatchesRegularExpression(
-			'~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~',
+			FixtureContainerFactory::ClassNamePattern,
 			get_class(self::$containers['beta']),
 		);
 	}

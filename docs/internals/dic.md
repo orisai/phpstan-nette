@@ -67,8 +67,12 @@ stale-cache incident (a freshly registered service reported as `orisaiNette.dic.
   buckets, and `getParameters()`. A service's type is its `createService*()` method's return type;
   where nette/di < 3.2 compiles no usable one (the `container` service returns the compiled
   subclass, imported services return `void`), it is the most specific class listing the service in
-  any `$wiring` bucket. `$types` (removed in nette/di 3.2) is never read, so services added at
-  runtime via `Container::addService()` are not indexed.
+  any `$wiring` bucket. `$types` (removed in nette/di 3.2) is never read. Names were only ever
+  taken from compiled methods, so services added at runtime via `Container::addService()` were
+  never indexed; the loss is the type of a compiled service overridden at runtime by a factory
+  closure (nette/di < 3.2 recorded the closure type), which is now its compiled type. Imported
+  services whose types are not exported (`di › export › types`) on nette/di < 3.2 stay known by
+  name but are not type-indexed; their `getService()` type widens to `object`.
 - `Metadata/MultiContainerRegistry` — loads all profiles once (lazily, memoized), classifies
   receiver types into profile subsets (`resolveProfiles()`, see *Receiver classes*) and answers
   profile-subset queries: service/type/tag existence per profile, merged service/tag/parameter

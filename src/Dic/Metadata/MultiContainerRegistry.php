@@ -10,6 +10,7 @@ use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\ObjectWithoutClassType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use function array_key_exists;
@@ -180,11 +181,11 @@ final class MultiContainerRegistry
 				? $metadata->getServiceTypeNameRecursive($name)
 				: $metadata->getServiceTypeName($name);
 
-			if ($typeName === null) {
-				continue;
+			if ($typeName !== null) {
+				$types[] = new ObjectType($typeName);
+			} elseif ($recursiveAliases ? $metadata->hasServiceRecursive($name) : $metadata->hasService($name)) {
+				$types[] = new ObjectWithoutClassType();
 			}
-
-			$types[] = new ObjectType($typeName);
 		}
 
 		if ($types === []) {
@@ -196,9 +197,9 @@ final class MultiContainerRegistry
 
 	/**
 	 * @param list<string> $profiles
-	 * @return array<string, string>
+	 * @return array<string, string>|null
 	 */
-	public function getServiceTypeNames(string $name, bool $recursiveAliases, array $profiles): array
+	public function getServiceTypeNames(string $name, bool $recursiveAliases, array $profiles): ?array
 	{
 		$names = [];
 
@@ -207,11 +208,11 @@ final class MultiContainerRegistry
 				? $metadata->getServiceTypeNameRecursive($name)
 				: $metadata->getServiceTypeName($name);
 
-			if ($typeName === null) {
-				continue;
+			if ($typeName !== null) {
+				$names[$profile] = $typeName;
+			} elseif ($recursiveAliases ? $metadata->hasServiceRecursive($name) : $metadata->hasService($name)) {
+				return null;
 			}
-
-			$names[$profile] = $typeName;
 		}
 
 		return $names;

@@ -9,6 +9,7 @@ use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionProperty;
 use function get_class;
+use function in_array;
 use function is_a;
 use function lcfirst;
 use function preg_match;
@@ -29,7 +30,6 @@ final class ContainerMetadataFactory
 		/** @var array<string, array<int, array<int, string>>> $wiring */
 		$wiring = $this->readProperty($container, 'wiring');
 
-		$wiredTypes = $this->resolveWiredTypes($wiring);
 		$containerClass = $reflection->getName();
 
 		$typesByMethodName = [];
@@ -54,13 +54,7 @@ final class ContainerMetadataFactory
 			// services as returning void; the declared type then survives only in the wiring.
 			$typeName = $this->resolveReturnTypeName($method);
 			if ($typeName === null || $typeName === $containerClass) {
-				$typeName = $wiredTypes[$serviceName] ?? $typeName;
-			}
-
-			if ($typeName === null) {
-				throw new LogicException(
-					sprintf('Service %s of container %s has no resolvable type.', $serviceName, get_class($container)),
-				);
+				$typeName = $this->resolveWiredType($wiring, $serviceName) ?? $typeName;
 			}
 
 			$typesByMethodName[$methodName] = $typeName;
@@ -88,35 +82,31 @@ final class ContainerMetadataFactory
 
 	/**
 	 * @param array<string, array<int, array<int, string>>> $wiring
-	 * @return array<string, string>
 	 */
-	private function resolveWiredTypes(array $wiring): array
+	private function resolveWiredType(array $wiring, string $serviceName): ?string
 	{
-		$typesByService = [];
+		$candidates = [];
 		foreach ($wiring as $type => $buckets) {
 			foreach ($buckets as $names) {
-				foreach ($names as $name) {
-					$typesByService[$name][$type] = true;
+				if (in_array($serviceName, $names, true)) {
+					$candidates[] = $type;
+
+					break;
 				}
 			}
 		}
 
-		$resolved = [];
-		foreach ($typesByService as $name => $types) {
-			foreach ($types as $candidate => $_) {
-				foreach ($types as $other => $__) {
-					if (!is_a($candidate, $other, true)) {
-						continue 2;
-					}
+		foreach ($candidates as $candidate) {
+			foreach ($candidates as $other) {
+				if (!is_a($candidate, $other, true)) {
+					continue 2;
 				}
-
-				$resolved[$name] = $candidate;
-
-				break;
 			}
+
+			return $candidate;
 		}
 
-		return $resolved;
+		return null;
 	}
 
 	private function resolveReturnTypeName(ReflectionMethod $method): ?string
