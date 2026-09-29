@@ -16,7 +16,7 @@ abstract class GenericBaseControlReplica extends Control
 	/**
 	 * @return T_Template
 	 */
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return parent::createTemplate();
 	}

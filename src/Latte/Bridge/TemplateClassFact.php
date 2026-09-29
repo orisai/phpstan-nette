@@ -7,11 +7,12 @@ use OriPhpstan\Nette\Forms\Shape\Certainty;
 // Channels are provenance labels for where the resolved class came from, not competing
 // resolution mechanisms. Class-level (conflict-judged): phpdoc is the entry class's own
 // @property override, genericBinding is the reflection-resolved surface (inherited and generic
-// members included), new is the creation inside the entry class's resolved createTemplate()
-// override (return new and trusted factory calls alike), convention is the entry class's
-// resolved getTemplateClass()/formatTemplateClass() hook return. Per-site (never conflict):
-// createTemplate/factoryStatic are walked call sites outside the override. factoryDefault and
-// templateFloor are the fallback rungs of the resolution ladder, never walked observations.
+// members included, vendor-declared ones left to the floor), new is the creation inside the
+// entry class's resolved createTemplate() override (return new and trusted factory calls alike),
+// convention is the entry class's resolved getTemplateClass()/formatTemplateClass() hook return.
+// Per-site (never conflict): createTemplate/factoryStatic are walked call sites outside the
+// override. factoryDefault and templateFloor are the fallback rungs of the resolution ladder,
+// never walked observations.
 final class TemplateClassFact
 {
 

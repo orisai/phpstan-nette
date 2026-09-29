@@ -12,7 +12,7 @@ use function assert;
 class LegacyBaseControlReplica extends Control
 {
 
-	public function createTemplate(): Template
+	public function createTemplate(?string $class = null): Template
 	{
 		$template = parent::createTemplate();
 		assert($template instanceof Template);

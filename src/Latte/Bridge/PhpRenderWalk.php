@@ -185,6 +185,8 @@ final class PhpRenderWalk
 
 	private FirstPartyPaths $firstPartyPaths;
 
+	private VendorPaths $vendorPaths;
+
 	private TemplateFactoryDefaultResolver $templateFactoryDefault;
 
 	private DiscoveryResolver $discoveryResolver;
@@ -208,6 +210,7 @@ final class PhpRenderWalk
 		$this->templateFactoryDefault = $templateFactoryDefault;
 		$this->discoveryResolver = $discoveryResolver;
 		$this->firstPartyPaths = new FirstPartyPaths($firstPartyPaths);
+		$this->vendorPaths = new VendorPaths();
 	}
 
 	public function factsFor(string $className): PhpRenderFacts
@@ -511,6 +514,16 @@ final class PhpRenderWalk
 
 	private function templatePropertyType(ClassReflection $classReflection): ?Type
 	{
+		$surface = $this->templatePropertySurface($classReflection);
+
+		return $surface === null ? null : $surface['type'];
+	}
+
+	/**
+	 * @return array{type: Type, declaringClass: ClassReflection}|null
+	 */
+	private function templatePropertySurface(ClassReflection $classReflection): ?array
+	{
 		$class = $classReflection;
 		while ($class !== null) {
 			$resolvedPhpDoc = $class->getResolvedPhpDoc();
@@ -519,19 +532,38 @@ final class PhpRenderWalk
 				if ($tag !== null) {
 					$type = $tag->getReadableType() ?? $tag->getWritableType();
 					if ($type !== null) {
-						return $type;
+						return ['type' => $type, 'declaringClass' => $class];
 					}
 				}
 			}
 
 			if ($class->hasNativeProperty(self::TEMPLATE_PROPERTY)) {
-				return $class->getNativeProperty(self::TEMPLATE_PROPERTY)->getReadableType();
+				$property = $class->getNativeProperty(self::TEMPLATE_PROPERTY);
+
+				return ['type' => $property->getReadableType(), 'declaringClass' => $property->getDeclaringClass()];
 			}
 
 			$class = $class->getParentClass();
 		}
 
 		return null;
+	}
+
+	/**
+	 * @return array{type: Type, declaringClass: ClassReflection}|null
+	 */
+	private function methodReturnSurface(ClassReflection $owner, string $method): ?array
+	{
+		if (!$owner->hasNativeMethod($method)) {
+			return null;
+		}
+
+		$reflection = $owner->getNativeMethod($method);
+
+		return [
+			'type' => $reflection->getVariants()[0]->getReturnType(),
+			'declaringClass' => $reflection->getDeclaringClass(),
+		];
 	}
 
 	private function isTemplateIshType(?Type $type): bool
@@ -1739,14 +1771,18 @@ final class PhpRenderWalk
 	 */
 	private function resolvedSurfaceTemplateClassCandidate(ClassReflection $classReflection): ?array
 	{
-		$surfaceTypes = [
-			$this->templatePropertyType($classReflection),
-			$this->methodReturnType($classReflection, self::CREATE_TEMPLATE_METHOD),
-			$this->methodReturnType($classReflection, self::GET_TEMPLATE_METHOD),
+		$surfaces = [
+			$this->templatePropertySurface($classReflection),
+			$this->methodReturnSurface($classReflection, self::CREATE_TEMPLATE_METHOD),
+			$this->methodReturnSurface($classReflection, self::GET_TEMPLATE_METHOD),
 		];
 
-		foreach ($surfaceTypes as $type) {
-			$owner = $this->informativeTemplateClassOf($type);
+		foreach ($surfaces as $surface) {
+			if ($surface === null || $this->isVendorDeclared($surface['declaringClass'])) {
+				continue;
+			}
+
+			$owner = $this->informativeTemplateClassOf($surface['type']);
 			if ($owner !== null) {
 				return ['className' => $owner->getName(), 'certainty' => Certainty::HAPPENS];
 			}
@@ -1755,12 +1791,17 @@ final class PhpRenderWalk
 		return null;
 	}
 
-	private function informativeTemplateClassOf(?Type $type): ?ClassReflection
+	// A surface type a vendor class declares is the template floor every control inherits, never a
+	// user binding - nette/application documents Control::$template differently per release.
+	private function isVendorDeclared(ClassReflection $declaringClass): bool
 	{
-		if ($type === null) {
-			return null;
-		}
+		$file = $declaringClass->getFileName();
 
+		return $file === null || $this->vendorPaths->contains($file);
+	}
+
+	private function informativeTemplateClassOf(Type $type): ?ClassReflection
+	{
 		$owner = $this->classReflectionOfType($type);
 		if ($owner === null || $owner->getName() === UiTemplate::class) {
 			return null;
