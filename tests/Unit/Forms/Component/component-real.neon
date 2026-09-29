@@ -4,7 +4,6 @@ includes:
 
 parameters:
 	level: 8
-	phpVersion: 70400
 	bootstrapFiles:
 		- ../../../../tests/autoload.php
 	scanFiles:

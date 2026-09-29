@@ -37,14 +37,15 @@ use function sys_get_temp_dir;
 use function uniqid;
 use const GLOB_ONLYDIR;
 use const PHP_BINARY;
+use const PHP_VERSION_ID;
 
 /**
  * IndexCacheTest (InferenceCacheTest idiom): FileFactIndex caches each file's registration facts
  * under FormShapeCache::remember($contentHash, 'registration-facts|' . configIdentity, ...) — the
  * same shared, content-addressed cache directory IndexShapeResolver's own shape walk uses. This test
  * targets that fact-level entry specifically, computing its on-disk path directly
- * (sha1(sha1_file($file) . '|registration-facts|phpVersion:70400').ser — the identity resolved from
- * this harness config's phpVersion — under the tmpDir's form-shape-cache version
+ * (sha1(sha1_file($file) . '|registration-facts|phpVersion:<PHP_VERSION_ID>').ser — the identity resolved from
+ * this harness config's phpVersion, the running PHP's — under the tmpDir's form-shape-cache version
  * directory) rather than introspecting the whole directory — the interprocedural shape entries share
  * the same directory but are recomputed every run by design (the index memo is in-memory, never
  * persisted), so a whole-directory mtime comparison would misreport them as "not reused".
@@ -595,7 +596,7 @@ PHP;
 			return null;
 		}
 
-		$key = sha1(sha1_file($file) . '|registration-facts|phpVersion:70400');
+		$key = sha1(sha1_file($file) . '|registration-facts|phpVersion:' . PHP_VERSION_ID);
 
 		return $versions[0] . '/' . $key . '.ser';
 	}

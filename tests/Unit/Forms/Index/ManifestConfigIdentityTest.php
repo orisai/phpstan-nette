@@ -60,8 +60,8 @@ final class ManifestConfigIdentityTest extends BaseTestCase
 		$universe = __DIR__ . '/Fixtures/ManifestIdentity';
 		$sharedTmpDir = $this->makeDir();
 
-		$php74 = $this->wrap(__DIR__ . '/shadow-compare.neon', $sharedTmpDir, $universe);
-		$php84 = $this->wrap(__DIR__ . '/shadow-compare-php84.neon', $sharedTmpDir, $universe);
+		$php74 = $this->wrap(__DIR__ . '/shadow-compare.neon', $sharedTmpDir, $universe, 70_400);
+		$php84 = $this->wrap(__DIR__ . '/shadow-compare-php84.neon', $sharedTmpDir, $universe, 80_400);
 
 		$this->spawnAnalysis($php74, $universe . '/Registrant.php');
 		$afterFirst = $this->regidxBlobs($sharedTmpDir);
@@ -114,7 +114,7 @@ final class ManifestConfigIdentityTest extends BaseTestCase
 		);
 	}
 
-	private function wrap(string $realConfigPath, string $tmpDir, string $paths): string
+	private function wrap(string $realConfigPath, string $tmpDir, string $paths, int $phpVersion): string
 	{
 		$dir = $this->makeDir();
 		$configPath = $dir . '/wrapper.neon';
@@ -126,6 +126,7 @@ final class ManifestConfigIdentityTest extends BaseTestCase
 					'parameters' => [
 						'tmpDir' => $tmpDir,
 						'paths!' => [$paths],
+						'phpVersion' => $phpVersion,
 					],
 				],
 				true,

@@ -18,6 +18,7 @@ use function sort;
 use function str_replace;
 use function uniqid;
 use const PHP_BINARY;
+use const PHP_VERSION_ID;
 
 // PHPStan's own result cache only propagates a changed file's edges to its dependents when
 // ResultCacheManager::exportedNodesChanged() sees a SIGNATURE-level difference (a method's own
@@ -65,7 +66,8 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 
 			$spawn3 = $this->spawn($projectRoot, $srcDir, $scratch . '/pstmp');
 			self::assertSame(
-				"$relSrc/inc-partial.latte:1:Parameter #2 \$multiplier of function str_repeat expects int, "
+				"$relSrc/inc-partial.latte:1:Parameter #2 \$" . (PHP_VERSION_ID >= 80000 ? 'times' : 'multiplier')
+				. ' of function str_repeat expects int, '
 				. "string given.\n",
 				$spawn3,
 				"the un-edited target must be reanalysed once its includer's declared type changes",

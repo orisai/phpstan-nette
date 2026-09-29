@@ -1,7 +1,6 @@
 parameters:
 	customRulesetUsed: true
 	level: 8
-	phpVersion: 70400
 	# phpstan-nette's own ServiceLocator extension answers Container::getService() with a bare object
 	# and wins the first-non-null race, which would erase the very channel this matrix reads.
 	netteServiceLocatorDynamicReturnType: false

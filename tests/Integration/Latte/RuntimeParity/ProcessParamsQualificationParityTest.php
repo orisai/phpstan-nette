@@ -13,6 +13,7 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 use function array_keys;
 use function get_object_vars;
+use const PHP_VERSION_ID;
 
 // Qualification-parity tier: each assertion below is a PAIR - what the
 // REAL vendor Engine::processParams() (invoked via reflection, since it's private) actually
@@ -27,7 +28,10 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 		[$filters] = $this->realRegistrations();
 		self::assertContains('docfilter', $filters);
 
-		self::assertArrayHasKey('docfilter', $this->model(70400)->filtersFor(ProcessParamsQualificationFixture::class));
+		self::assertArrayHasKey(
+			'docfilter',
+			$this->model(PHP_VERSION_ID)->filtersFor(ProcessParamsQualificationFixture::class),
+		);
 	}
 
 	public function testPublicInstanceMethodWithFunctionDocTagQualifiesOnBothSides(): void
@@ -37,7 +41,7 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 
 		self::assertArrayHasKey(
 			'docfunction',
-			$this->model(70400)->functionsFor(ProcessParamsQualificationFixture::class),
+			$this->model(PHP_VERSION_ID)->functionsFor(ProcessParamsQualificationFixture::class),
 		);
 	}
 
@@ -51,7 +55,7 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 
 		self::assertArrayHasKey(
 			'docstaticfilter',
-			$this->model(70400)->filtersFor(ProcessParamsQualificationFixture::class),
+			$this->model(PHP_VERSION_ID)->filtersFor(ProcessParamsQualificationFixture::class),
 		);
 	}
 
@@ -66,7 +70,7 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 
 		self::assertArrayNotHasKey(
 			'docprivatefilter',
-			$this->model(70400)->filtersFor(ProcessParamsQualificationFixture::class),
+			$this->model(PHP_VERSION_ID)->filtersFor(ProcessParamsQualificationFixture::class),
 		);
 	}
 
@@ -76,7 +80,7 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 		self::assertNotContains('untaggedpublic', $filters);
 		self::assertNotContains('untaggedPublic', $functions);
 
-		$model = $this->model(70400);
+		$model = $this->model(PHP_VERSION_ID);
 		self::assertArrayNotHasKey('untaggedpublic', $model->filtersFor(ProcessParamsQualificationFixture::class));
 		self::assertArrayNotHasKey('untaggedpublic', $model->functionsFor(ProcessParamsQualificationFixture::class));
 	}
@@ -92,7 +96,7 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 
 		self::assertArrayHasKey(
 			'substringbug',
-			$this->model(70400)->filtersFor(ProcessParamsQualificationFixture::class),
+			$this->model(PHP_VERSION_ID)->filtersFor(ProcessParamsQualificationFixture::class),
 		);
 	}
 
@@ -104,25 +108,26 @@ final class ProcessParamsQualificationParityTest extends BaseTestCase
 		self::assertContains('bothtags', $filters);
 		self::assertContains('bothTags', $functions);
 
-		$model = $this->model(70400);
+		$model = $this->model(PHP_VERSION_ID);
 		self::assertArrayHasKey('bothtags', $model->filtersFor(ProcessParamsQualificationFixture::class));
 		self::assertArrayHasKey('bothtags', $model->functionsFor(ProcessParamsQualificationFixture::class));
 	}
 
 	// #[TemplateFilter] alone (no docblock tag): PHP_VERSION_ID >= 80000 gates vendor's own
-	// getAttributes() call, AND on THIS project's actual PHP 7.4 interpreter the '#[...]' syntax
-	// parses as a single-line comment in the first place - either reason alone makes the method
-	// invisible here, and both apply simultaneously. The model must independently reach the SAME
-	// verdict when its OWN gate (a PhpVersion object constructed at 70400) is closed.
-	public function testAttributeOnlyMethodNeverQualifiesOnTheRealPhp74RuntimeNorInTheModelAt70400(): void
+	// getAttributes() call, and on PHP 7.4 the '#[...]' line parses as a comment. The model's own gate
+	// is the PhpVersion it is constructed with, here the running one, so both sides must agree.
+	public function testAttributeOnlyMethodQualifiesOnBothSidesExactlyWhenTheRuntimeReadsAttributes(): void
 	{
 		[$filters] = $this->realRegistrations();
-		self::assertNotContains('attronlyfilter', $filters);
+		$modelFilters = $this->model(PHP_VERSION_ID)->filtersFor(ProcessParamsQualificationFixture::class);
 
-		self::assertArrayNotHasKey(
-			'attronlyfilter',
-			$this->model(70400)->filtersFor(ProcessParamsQualificationFixture::class),
-		);
+		if (PHP_VERSION_ID >= 80000) {
+			self::assertContains('attronlyfilter', $filters);
+			self::assertArrayHasKey('attronlyfilter', $modelFilters);
+		} else {
+			self::assertNotContains('attronlyfilter', $filters);
+			self::assertArrayNotHasKey('attronlyfilter', $modelFilters);
+		}
 	}
 
 	/**

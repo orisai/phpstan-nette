@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Integration\Latte\Invalidation;
 
 use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
+use const PHP_VERSION_ID;
 
 // Matrix group B - IN-FILE, SIGNATURE-CHANGING edits. These are the ones PHPStan's own result cache
 // already propagates: each moves an exported node, so exportedNodesChanged() is non-null and
@@ -190,8 +191,14 @@ final class SignatureLevelInvalidationTest extends LatteInvalidationMatrixCase
 
 	private function strRepeatError(): string
 	{
-		return 'shared.latte:2 :: argument.type :: Parameter #2 $multiplier of function str_repeat expects int, '
-			. 'string given.';
+		return 'shared.latte:2 :: argument.type :: Parameter #2 $' . self::strRepeatCountParameter()
+			. ' of function str_repeat expects int, string given.';
+	}
+
+	// PHPStan's function map names it, not the runtime's reflection (7.4 reflects `$mult`).
+	private static function strRepeatCountParameter(): string
+	{
+		return PHP_VERSION_ID >= 80000 ? 'times' : 'multiplier';
 	}
 
 }

@@ -14,6 +14,8 @@ use const E_ALL;
 use const E_DEPRECATED;
 use const E_NOTICE;
 use const E_STRICT;
+use const E_WARNING;
+use const PHP_VERSION_ID;
 
 // Grounds the "declaration consistency" design: paired execute-and-compare probes for how
 // {import}/{include file}/{include block} propagate `{var}` locals, template params and
@@ -250,14 +252,16 @@ final class CrossFileScopeParityTest extends BaseTestCase
 		// Dedicated capture of the risky bare-`{$x}` case the other probes deliberately avoid via
 		// `?? 'UNDEF'`: an undefined $x inside a block reached only through {import} compiles to a
 		// bare PHP variable read (LR\Filters::escapeHtmlText($x), no isset()/?? guard emitted for a
-		// plain `{$x}`). PHP's own undefined-variable diagnostic is E_NOTICE, which a common
-		// production `error_reporting` (E_ALL minus E_NOTICE/E_STRICT/E_DEPRECATED, set here
-		// explicitly) excludes, so PHP never even invokes a registered error handler for it. The read
+		// plain `{$x}`). PHP's own undefined-variable diagnostic is E_NOTICE (E_WARNING since PHP 8),
+		// which a common production `error_reporting` (E_ALL minus that level and E_STRICT/E_DEPRECATED,
+		// set here explicitly) excludes, so PHP never even invokes a registered error handler for it. The read
 		// just yields NULL, which escapeHtmlText()/(string) coerces to ''. This IS the runtime-parity
 		// data point: a missing binding degrades completely silently, not even a notice - so a
 		// runtime error signal can never be relied on to catch this class of mistake; only a static
 		// (PHPStan) check can.
-		$previous = error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
+		$previous = error_reporting(
+			E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED & (PHP_VERSION_ID >= 80000 ? ~E_WARNING : E_ALL),
+		);
 		try {
 			$rendered = $this->renderSet(
 				['lib' => 'cfs-bare-lib.latte', 'main' => 'cfs-bare-main.latte'],

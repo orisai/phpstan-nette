@@ -7,6 +7,7 @@ use Nette\Utils\FileSystem;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 use function dirname;
+use const PHP_VERSION_ID;
 
 /**
  * The permanent regression pin for the reusable invalidation harness.
@@ -39,7 +40,7 @@ final class InvalidationScenarioTest extends BaseTestCase
 						'parameters' => [
 							'customRulesetUsed' => true,
 							'level' => 8,
-							'phpVersion' => 70_400,
+							'phpVersion' => PHP_VERSION_ID,
 							'tmpDir' => $tmpDir,
 							// Plain `paths`, not the `paths!` override every other scenario uses: this
 							// config includes nothing, and the override marker has no key to override.

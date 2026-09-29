@@ -1,7 +1,6 @@
 parameters:
 	customRulesetUsed: true
 	level: 8
-	phpVersion: 70400
 	bootstrapFiles:
 		- ../../../../tests/autoload.php
 	# The scratch corpus builds real Nette forms, which the app's own phpat rules forbid in favour of
