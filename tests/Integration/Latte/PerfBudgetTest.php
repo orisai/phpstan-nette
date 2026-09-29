@@ -5,6 +5,7 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte;
 use Nette\Utils\FileSystem;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
@@ -24,15 +25,17 @@ use const PHP_BINARY;
 // Regression tripwire, not a benchmark: loose thresholds guard against the result cache
 // silently stopping doing its work (e.g. a manifest/cache-key regression that forces every
 // spawn to re-fold the whole graph from scratch), not against absolute wall-clock speed.
-/**
- * @group latte2
- */
 final class PerfBudgetTest extends BaseTestCase
 {
 
 	private const REAL_CONFIG_PATH = __DIR__ . '/Integration/Fixtures/integration.neon';
 
-	private const CEILING_SECONDS = 120.0;
+	// Per Latte line: the Latte 2 spawn runs on PHP 7.4, the Latte 3 ones on PHP 8.
+	private const CEILING_SECONDS = [
+		'2' => 120.0,
+		'3.0' => 60.0,
+		'3.1' => 60.0,
+	];
 
 	public function testWarmSpawnIsFasterThanColdSpawnAndBothSucceed(): void
 	{
@@ -72,10 +75,12 @@ final class PerfBudgetTest extends BaseTestCase
 				"warm spawn ({$warmDuration}s) must be faster than cold spawn ({$coldDuration}s) - "
 				. 'the result cache must be doing work',
 			);
+			$ceiling = self::CEILING_SECONDS[InstalledVersionsGuard::latteLine()] ?? null;
+			self::assertNotNull($ceiling);
 			self::assertLessThan(
-				self::CEILING_SECONDS,
+				$ceiling,
 				$coldDuration,
-				"cold spawn ({$coldDuration}s) exceeded the perf budget ceiling of " . self::CEILING_SECONDS . 's',
+				"cold spawn ({$coldDuration}s) exceeded the perf budget ceiling of {$ceiling}s",
 			);
 		} finally {
 			FileSystem::delete($tmpDir);

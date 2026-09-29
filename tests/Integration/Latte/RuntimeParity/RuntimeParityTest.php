@@ -11,6 +11,7 @@ use Nette\Utils\FileSystem;
 use ReflectionMethod;
 use ReflectionNamedType;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use function rtrim;
 
 // {translate}/{_} are not probed: they need a registered translator and Presenter/Control
@@ -50,17 +51,18 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('NULL', $this->render('default-null-param.latte', ['p' => null]));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testForeachIteratorIsCachingIteratorWithOneIndexedCounter(): void
 	{
 		// Runtime proof for the pipeline's typed local ($iterator: CachingIterator, via
 		// IteratorEliminator + the latte-runtime.stub @property-read declarations): the real
-		// $iterator inside {foreach} is Latte\Runtime\CachingIterator, ->counter is 1-indexed,
-		// ->counter0 is 0-indexed.
+		// $iterator inside {foreach} is the line's CachingIterator (Latte\Runtime on 2,
+		// Latte\Essential on 3), ->counter is 1-indexed, ->counter0 is 0-indexed.
+		$class = InstalledVersionsGuard::latteMajor() === 2
+			? 'Latte\Runtime\CachingIterator'
+			: 'Latte\Essential\CachingIterator';
+
 		self::assertSame(
-			'Latte\Runtime\CachingIterator|1|0|Latte\Runtime\CachingIterator|2|1|Latte\Runtime\CachingIterator|3|2|',
+			"$class|1|0|$class|2|1|$class|3|2|",
 			$this->render('iterator.latte', ['items' => [7, 8, 9]]),
 		);
 	}
@@ -88,9 +90,6 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('int|5', $this->render('do-defines-variable.latte', []));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testPhpDefinesRuntimeVariable(): void
 	{
 		self::assertSame('int|7', $this->render('php-defines-variable.latte', []));
@@ -146,13 +145,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('yes', $this->render('truthiness.latte', ['arr' => [1]]));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testDateFilterMatchesVendorNullableStringSignature(): void
 	{
-		// @phpstan-ignore classConstant.internalClass (Filters is @internal, same exemption as Postprocess/FilterTable.php)
-		$returnType = (new ReflectionMethod(Filters::class, 'date'))->getReturnType();
+		$returnType = (new ReflectionMethod(self::filtersClass(), 'date'))->getReturnType();
 		self::assertInstanceOf(ReflectionNamedType::class, $returnType);
 		self::assertSame('string', $returnType->getName());
 		self::assertTrue(
@@ -168,9 +163,6 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('string|2.1.2020', $this->render('filter-date.latte', ['d' => $date]));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testNumberFilterReturnsString(): void
 	{
 		// |number resolves to native number_format(); PHP 7.4's ReflectionFunction exposes no
@@ -179,13 +171,9 @@ final class RuntimeParityTest extends BaseTestCase
 		self::assertSame('string|1,235', $this->render('filter-number.latte', ['n' => 1234.5]));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testBatchFilterMatchesVendorGeneratorSignature(): void
 	{
-		// @phpstan-ignore classConstant.internalClass (Filters is @internal, same exemption as Postprocess/FilterTable.php)
-		$returnType = (new ReflectionMethod(Filters::class, 'batch'))->getReturnType();
+		$returnType = (new ReflectionMethod(self::filtersClass(), 'batch'))->getReturnType();
 		self::assertInstanceOf(ReflectionNamedType::class, $returnType);
 		self::assertSame('Generator', $returnType->getName());
 		self::assertFalse($returnType->allowsNull());
@@ -291,6 +279,15 @@ final class RuntimeParityTest extends BaseTestCase
 				['fromImporter' => 'param-value'],
 			),
 		);
+	}
+
+	// The class the line's FilterTable resolves |date and |batch to (FilterTableTest pins it); the
+	// Latte 3 class does not exist on the Latte 2 vendor this file is analysed against.
+
+	private static function filtersClass(): string
+	{
+		// @phpstan-ignore classConstant.internalClass (Filters is @internal, same exemption as Postprocess/FilterTable.php)
+		return InstalledVersionsGuard::latteMajor() === 2 ? Filters::class : 'Latte\Essential\Filters';
 	}
 
 	/**
