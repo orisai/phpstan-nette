@@ -2,18 +2,29 @@ _: list
 
 ## Config
 
-PHPCS_CONFIG=tools/phpcs.xml
-PHPSTAN_CONFIG=tools/phpstan.neon
-PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
 PHPUNIT_CONFIG=tools/phpunit.xml
 
 PROFILE ?=
 ifeq ($(PROFILE),)
 VENDOR_DIR=vendor
 PROFILE_ENV=
+PHPCS_CONFIG=tools/phpcs.xml
+PHPCS_PREPARE=true
 else
 VENDOR_DIR=vendor-$(PROFILE)
 PROFILE_ENV=COMPOSER=composer.$(PROFILE).json COMPOSER_VENDOR_DIR=$(VENDOR_DIR)
+PHPCS_CONFIG=var/tools/PHP_CodeSniffer/phpcs.$(PROFILE).xml
+PHPCS_PREPARE=sed -e 's\#\./\.\./vendor/\#$(CURDIR)/$(VENDOR_DIR)/\#g' -e 's\#\./\.\.\#$(CURDIR)\#g' tools/phpcs.xml > $(PHPCS_CONFIG)
+endif
+
+ifneq ($(filter latte3%,$(PROFILE)),)
+PHPSTAN_CONFIG=tools/phpstan.latte3.neon
+PHPSTAN_BASELINE_CONFIG=tools/phpstan.latte3.baseline.neon
+PHPSTAN_PATHS=
+else
+PHPSTAN_CONFIG=tools/phpstan.neon
+PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
+PHPSTAN_PATHS=src tests
 endif
 
 ## Install
@@ -33,15 +44,17 @@ profile: ## Install a dependency profile into vendor-<name>: make profile PROFIL
 
 cs: ## Check PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
+	$(PHPCS_PREPARE)
 	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcs" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 csf: ## Fix PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
+	$(PHPCS_PREPARE)
 	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 phpstan: ## Analyse code with PHPStan
 	mkdir -p var/tools
-	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpstan" analyse src tests -c $(PHPSTAN_CONFIG) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpstan" analyse $(PHPSTAN_PATHS) -c $(PHPSTAN_CONFIG) $(ARGS)
 
 phpstan-baseline: ## Add PHPStan errors to baseline
 	make phpstan ARGS="-b $(PHPSTAN_BASELINE_CONFIG)"

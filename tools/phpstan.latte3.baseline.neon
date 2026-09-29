@@ -1,0 +1,10 @@
+parameters:
+	ignoreErrors:
+		-
+			rawMessage: '''
+				Fetching deprecated class constant VERSION of class Latte\Engine:
+				use Engine::Version
+			'''
+			identifier: classConstant.deprecated
+			count: 1
+			path: ../src/Latte/Version/LatteVersionAdapterFactory.php

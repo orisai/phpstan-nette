@@ -89,6 +89,42 @@ jobs:
           command: "make phpstan"
           cache-path: "var/tools/PHPStan"
 
+  static-analysis-profile:
+    name: "Static analysis - ${{ matrix.profile }}"
+    runs-on: "${{ matrix.operating-system }}"
+
+    if: |
+      github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    strategy:
+      matrix:
+        include:
+          - operating-system: "ubuntu-latest"
+            profile: "latte31"
+            php-version: "8.4"
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "PHP"
+        uses: "orisai/github-workflows/.github/actions/setup-php@v1"
+        with:
+          version: "${{ matrix.php-version }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: "Composer"
+        uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
+        with:
+          command: "make profile PROFILE=${{ matrix.profile }} PRE_PHP=php"
+
+      - name: "PHPStan"
+        uses: "orisai/github-workflows/.github/actions/phpstan@v1"
+        with:
+          command: "make phpstan PROFILE=${{ matrix.profile }}"
+          cache-path: "var/tools/PHPStan"
+
   tests:
     name: "Tests"
     runs-on: "${{ matrix.operating-system }}"
@@ -148,7 +184,7 @@ jobs:
   tests-profile:
     name: "Tests - ${{ matrix.profile }}"
     runs-on: "${{ matrix.operating-system }}"
-    continue-on-error: true
+    continue-on-error: "${{ matrix.experimental }}"
 
     if: |
       github.event_name != 'pull_request'
@@ -160,6 +196,23 @@ jobs:
           - operating-system: "ubuntu-latest"
             profile: "latte2-nette32"
             php-version: "8.3"
+            experimental: false
+          - operating-system: "ubuntu-latest"
+            profile: "latte30"
+            php-version: "8.2"
+            experimental: true
+          - operating-system: "ubuntu-latest"
+            profile: "latte30"
+            php-version: "8.3"
+            experimental: true
+          - operating-system: "ubuntu-latest"
+            profile: "latte31"
+            php-version: "8.3"
+            experimental: true
+          - operating-system: "ubuntu-latest"
+            profile: "latte31"
+            php-version: "8.4"
+            experimental: true
 
     steps:
       - name: "Checkout"
@@ -213,7 +266,7 @@ jobs:
   status-check:
     name: "Status check - ${{ github.workflow }}"
     runs-on: "ubuntu-latest"
-    needs: [ "coding-standard", "static-analysis", "tests" ]
+    needs: [ "coding-standard", "static-analysis", "static-analysis-profile", "tests", "tests-profile" ]
 
     if: "${{ always() }}"
 

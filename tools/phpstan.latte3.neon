@@ -1,0 +1,29 @@
+includes:
+	- phpstan.neon
+	- phpstan.latte3.baseline.neon
+
+parameters:
+	phpVersion:
+		min: 80000
+		max: 80400
+	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.latte3.php
+
+	# Only the version seam is analysed against Latte 3; the Latte 2 adapter and everything built on
+	# Latte 2 internals is covered by phpstan.neon.
+	paths:
+		- ../src/Latte/Version
+	excludePaths!:
+		analyse:
+			- ../src/Latte/Version/Latte2
+		analyseAndScan: []
+
+	# Partial analysis: usages and ignored errors outside the seam are not visible here.
+	reportUnmatchedIgnoredErrors: false
+	shipmonkDeadCode:
+		detect:
+			deadMethods: false
+			deadConstants: false
+			deadEnumCases: false
+			deadProperties:
+				neverRead: false
+				neverWritten: false

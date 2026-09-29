@@ -1,5 +1,5 @@
 includes:
-	- ../vendor/phpstan/phpstan/conf/bleedingEdge.neon
+	- phar://phpstan.phar/conf/bleedingEdge.neon
 	- phpstan.baseline.neon
 	- ../extension.neon
 	- ../config/dic-dead-code.neon
@@ -13,6 +13,8 @@ parameters:
 	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
 
 	excludePaths:
+		# Analysed against Latte 3 by phpstan.latte3.neon.
+		- ../src/Latte/Version/Latte3 (?)
 		- ../tests/Fixtures
 		- ../tests/Doubles
 		- ../tests/Unit/Forms/Support
