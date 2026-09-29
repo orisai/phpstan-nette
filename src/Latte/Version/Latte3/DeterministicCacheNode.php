@@ -8,13 +8,15 @@ use Nette\Bridges\CacheLatte\Nodes\CacheNode;
 use function preg_replace;
 use function sprintf;
 
-// CacheNode::print() draws a random key per compile (base64 of ten random bytes); the analysis
-// keys a {cache} tag by its position instead, so the generated code is byte-identical across
-// compiles and cacheable. The bridge's own print shape is kept whatever the installed version.
+// CacheNode::print() draws a random key per compile; the analysis keys a {cache} tag by its
+// position instead, so the generated code is byte-identical across compiles and cacheable. The
+// bridge's own print shape is kept whatever the installed version: the key is the first quoted
+// argument of its createCache() call (nette/caching >= 3.3: `$this->global->cache->createCache(key,
+// ...)`; the 3.1 bridge: `CacheNode::createCache($this->global->cacheStorage, key, ...)`).
 final class DeterministicCacheNode extends CacheNode
 {
 
-	private const RANDOM_KEY_PATTERN = "~'[A-Za-z0-9+/]{14}=='~";
+	private const KEY_ARGUMENT_PATTERN = "~(createCache\\((?:\\\$this->global->cacheStorage,\\s*)?)'[^']*'~";
 
 	public static function of(CacheNode $node): self
 	{
@@ -29,17 +31,24 @@ final class DeterministicCacheNode extends CacheNode
 
 	public function print(PrintContext $context): string
 	{
-		$key = sprintf(
-			"'latte-analysis-cache-%d:%d'",
-			$this->position !== null ? $this->position->line : 0,
-			$this->position !== null ? $this->position->column : 0,
+		return self::replaceKey(
+			parent::print($context),
+			sprintf(
+				'latte-analysis-cache-%d:%d',
+				$this->position !== null ? $this->position->line : 0,
+				$this->position !== null ? $this->position->column : 0,
+			),
 		);
-		$code = preg_replace(self::RANDOM_KEY_PATTERN, $key, parent::print($context), 1, $count);
-		if ($code === null || $count !== 1) {
-			throw new LogicException('The cache bridge printed no random key to replace.');
+	}
+
+	public static function replaceKey(string $code, string $key): string
+	{
+		$replaced = preg_replace(self::KEY_ARGUMENT_PATTERN, "\$1'" . $key . "'", $code, 1, $count);
+		if ($replaced === null || $count !== 1) {
+			throw new LogicException('The cache bridge printed no createCache() key to replace.');
 		}
 
-		return $code;
+		return $replaced;
 	}
 
 }

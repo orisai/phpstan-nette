@@ -9,8 +9,9 @@ use Tests\OriPhpstan\Nette\Toolkit\EliminatorRun;
 
 // Inputs are the committed raw snapshots' block shapes: {embed} without Latte 2's dead if (false)
 // mirror, {include parent}, the dynamic {block $name} (3.0 callable array, 3.1 first-class
-// callable, the same wrapper on a dynamic include-file name) and the anonymous filtered block's IIFE. The block methods carry the parameter list
-// DeclarationInjector leaves them with, since the eliminators run after it.
+// callable, the same wrapper on a dynamic include-file name) and the anonymous filtered block's
+// IIFE. The block methods carry the parameter list DeclarationInjector leaves them with, since the
+// eliminators run after it.
 final class BlockDispatchEliminatorTest extends BaseTestCase
 {
 
