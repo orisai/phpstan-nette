@@ -42,12 +42,13 @@ final class FormsOffSwitchTest extends BaseTestCase
 		$result = $this->project->analyse($this->parameters(false), self::PATHS);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
-		// The replicator row degrades with the component access it composes on: with Forms off,
-		// $this['form']['rows'] is untyped, so createOne() has nothing to type.
+		// Rows.php:21 degrades with the component access it composes on; Rows.php:29 narrows the
+		// receiver itself, so the replicator extension runs and must fall back to the declared return.
 		self::assertSame(
 			[
 				'src/Events.php:13 phpstan.dumpType Dumped type: *ERROR*',
 				'src/Rows.php:21 phpstan.dumpType Dumped type: mixed',
+				'src/Rows.php:29 phpstan.dumpType Dumped type: Nette\Forms\Container',
 			],
 			$this->findings($result['messages']),
 		);
@@ -62,6 +63,7 @@ final class FormsOffSwitchTest extends BaseTestCase
 			'src/Events.php:13 phpstan.dumpType Dumped type: array<int, callable(): mixed>',
 			'src/Fields.php:8 orisaiNette.forms.unannotatedRegistrar',
 			'src/Rows.php:21 phpstan.dumpType Dumped type: Nette\Forms\Container{name: string}',
+			'src/Rows.php:29 phpstan.dumpType Dumped type: Nette\Forms\Container{name: string}',
 			'src/Signup.php:17 orisaiNette.forms.shadowDivergence',
 		];
 	}
@@ -180,6 +182,14 @@ final class Rows extends \Nette\Application\UI\Control
 	public function probe(): void
 	{
 		// createOne() is typed by ReplicatorMethodReturnTypeExtension alone.
+		\PHPStan\dumpType($this['form']['rows']->createOne());
+	}
+
+	public function probeDeclared(): void
+	{
+		// The assert types the receiver without Forms component access, so with Forms off the
+		// replicator extension is still consulted and only its gate keeps the declared return.
+		assert($this['form']['rows'] instanceof \Kdyby\Replicator\Container);
 		\PHPStan\dumpType($this['form']['rows']->createOne());
 	}
 
