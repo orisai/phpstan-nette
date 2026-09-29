@@ -43,13 +43,13 @@ final class ScratchProject
 		$this->libraryRoot = dirname(__DIR__, 2);
 	}
 
-	public static function create(string $name): self
+	public static function create(string $name, ?string $root = null): self
 	{
-		$root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'orisai-phpstan-nette'
-			. DIRECTORY_SEPARATOR . $name . '-' . bin2hex(random_bytes(6));
-		self::makeDirectory($root);
+		$root ??= sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'orisai-phpstan-nette';
+		$leaf = $root . DIRECTORY_SEPARATOR . $name . '-' . bin2hex(random_bytes(6));
+		self::makeDirectory($leaf);
 
-		return new self($root);
+		return new self($leaf);
 	}
 
 	public function path(string $relative): string
