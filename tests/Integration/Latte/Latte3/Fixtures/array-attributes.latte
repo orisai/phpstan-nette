@@ -1,0 +1,9 @@
+{varType bool $cond}
+{varType array<string> $classes}
+{varType array<string, int> $data}
+{varType array<string, string> $style}
+{varType list<string> $labels}
+{varType \stdClass $json}
+
+<div n:class="$cond ? 'active', 'base'" data-x="{$data}" data-json="{$json}">n:class</div>
+<div class="{$classes}" style="{$style}" aria-label="{$labels}" aria-hidden="{$cond}" disabled="{$cond}">arrays</div>

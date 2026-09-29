@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess\Eliminator;
 
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
@@ -9,7 +10,10 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name\FullyQualified;
 use function count;
+use function strlen;
+use function substr;
 
 final class EscapingEliminator extends EliminatorVisitor
 {
@@ -17,15 +21,23 @@ final class EscapingEliminator extends EliminatorVisitor
 	// Escaping and URL-check calls whose first argument is the printed value.
 	public const ROLE_UNWRAP_VALUE = 'unwrapValue';
 
-	// Whole-attribute formatters whose second argument is the attribute value.
+	// Whole-attribute formatters of a string-like value: the second argument is the printed value.
 	public const ROLE_UNWRAP_ATTRIBUTE_VALUE = 'unwrapAttributeValue';
+
+	// Whole-attribute formatters accepting arrays and objects: the value goes through the typed
+	// Helpers::html*Attribute() stand-in named after the formatter, so an array-valued attribute is
+	// not an echo of an array.
+	public const ROLE_ATTRIBUTE_STAND_IN = 'attributeStandIn';
+
+	private const HELPERS_CLASS = Helpers::class;
 
 	// URL-check filters applied as ($this->filters->name)($url).
 	public const ROLE_UNWRAP_FILTER = 'unwrapFilter';
 
 	public function describePattern(): string
 	{
-		return 'unwrap escaping/URL-check calls to their argument, recursively; escapeJs kept (JSON-encodes any value): '
+		return 'unwrap escaping/URL-check calls to their argument, recursively; escapeJs kept (JSON-encodes any value); '
+			. 'array-accepting attribute formatters -> Helpers::html*Attribute(value): '
 			. $this->patterns()->describe();
 	}
 
@@ -61,6 +73,15 @@ final class EscapingEliminator extends EliminatorVisitor
 
 		if ($patterns->isStaticCall(self::ROLE_UNWRAP_ATTRIBUTE_VALUE, $class, $method) && count($node->args) >= 2) {
 			return $this->argValue($node, 1);
+		}
+
+		if ($patterns->isStaticCall(self::ROLE_ATTRIBUTE_STAND_IN, $class, $method) && count($node->args) >= 2) {
+			return new StaticCall(
+				new FullyQualified(self::HELPERS_CLASS),
+				new Identifier('html' . substr($method, strlen('format'))),
+				[$node->args[1]],
+				$node->getAttributes(),
+			);
 		}
 
 		return null;

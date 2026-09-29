@@ -143,15 +143,19 @@ final class FamilyPatterns
 				'escapeRawHtml',
 			]) + self::calls(self::LATTE_RUNTIME_XML_HELPERS, ['escapeText', 'escapeAttr', 'escapeTag'])
 				+ self::calls(self::LATTE_RUNTIME_HELPERS, ['escapeCss', 'escapeICal']),
-			EscapingEliminator::ROLE_UNWRAP_ATTRIBUTE_VALUE => self::calls(self::LATTE_RUNTIME_HTML_HELPERS, [
-				'formatAttribute',
+			EscapingEliminator::ROLE_UNWRAP_ATTRIBUTE_VALUE => self::calls(
+				self::LATTE_RUNTIME_HTML_HELPERS,
+				['formatAttribute'],
+			)
+				+ self::calls(self::LATTE_RUNTIME_XML_HELPERS, ['formatAttribute']),
+			EscapingEliminator::ROLE_ATTRIBUTE_STAND_IN => self::calls(self::LATTE_RUNTIME_HTML_HELPERS, [
 				'formatBoolAttribute',
 				'formatListAttribute',
 				'formatStyleAttribute',
 				'formatDataAttribute',
 				'formatJsonAttribute',
 				'formatAriaAttribute',
-			]) + self::calls(self::LATTE_RUNTIME_XML_HELPERS, ['formatAttribute']),
+			]),
 		], [
 			EscapingEliminator::ROLE_UNWRAP_FILTER => ['checkUrl'],
 		]);
@@ -187,9 +191,7 @@ final class FamilyPatterns
 
 		return new PatternSet([
 			DevTagEliminator::ROLE_DROPPED_CALL => ['Tracy\Debugger' => ['barDump']]
-				+ ($latte2
-					? self::calls(['Latte\Runtime\Tracer', 'LR\Tracer'], ['throw'])
-					: ['Latte\Essential\Tracer' => ['throw']]),
+				+ [($latte2 ? 'Latte\Runtime\Tracer' : 'Latte\Essential\Tracer') => ['throw']],
 			DevTagEliminator::ROLE_PRINT_CLASS => $latte2
 				? ['Nette\Bridges\ApplicationLatte\UIRuntime' => ['printClass']]
 				: ['Nette\Bridges\ApplicationLatte\Nodes\TemplatePrintNode' => ['printClass']],

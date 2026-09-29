@@ -34,7 +34,8 @@ final class PrologEliminator extends EliminatorVisitor
 		return 'return get_defined_vars() -> return []; '
 			. ($patterns->has(self::ROLE_EXTENDS_GUARD) ? 'drop getParentName() extends-guard; ' : '')
 			. 'drop prepare() overwrite-warning foreach'
-			. ($patterns->has(self::ROLE_EMPTY_PREPARE) ? '; drop prepare() when it becomes empty' : '');
+			. ($patterns->has(self::ROLE_EMPTY_PREPARE) ? '; drop prepare() when it becomes empty' : '')
+			. ': ' . $patterns->describe();
 	}
 
 	/**

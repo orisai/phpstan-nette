@@ -10,6 +10,8 @@ use Nette\Forms\Container;
 use Nette\Forms\Controls\BaseControl;
 use Nette\Forms\Form;
 use Nette\Utils\DateTime;
+use stdClass;
+use Stringable;
 
 final class Helpers
 {
@@ -126,6 +128,54 @@ final class Helpers
 	 * @return (TValue is string ? string : (TValue is array ? array<key-of<TValue>, value-of<TValue>> : iterable<mixed>))
 	 */
 	public static function limit($value, int $length)
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	public static function htmlBoolAttribute($value): string
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param array<mixed>|string|int|float|Stringable|null $value
+	 */
+	public static function htmlListAttribute($value): string
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param array<mixed>|string|int|float|Stringable|null $value
+	 */
+	public static function htmlStyleAttribute($value): string
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param bool|array<mixed>|stdClass|string|int|float|Stringable|null $value
+	 */
+	public static function htmlDataAttribute($value): string
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	public static function htmlJsonAttribute($value): string
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param bool|array<mixed>|string|int|float|Stringable|null $value
+	 */
+	public static function htmlAriaAttribute($value): string
 	{
 		throw new LogicException('never executed');
 	}

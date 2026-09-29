@@ -105,8 +105,10 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   analysable expressions underneath it, so strict-rule noise doesn't leak through. The shapes an
   eliminator matches are a `PatternSet` per `ShapeFamily`, kept in one table
   (`Eliminator/FamilyPatterns`): Latte 2 and 3.0 escape through `Latte\Runtime\Filters`, 3.1
-  through `HtmlHelpers`/`XmlHelpers`/`Helpers` and prints a plain attribute whole
-  (`formatAttribute(' title', $a)` reduces to `$a`); 3.x iterates with
+  through `HtmlHelpers`/`XmlHelpers`/`Helpers` and prints an attribute whole
+  (`formatAttribute(' title', $a)` reduces to `$a`; the list/style/data/json/aria/bool formatters
+  accept arrays, so their value goes through a typed `Helpers::html*Attribute()` stand-in instead of
+  a bare echo); 3.x iterates with
   `Latte\Essential\CachingIterator`, opens capturing shells with `ob_start(fn() => '')`, drops
   `{templatePrint}`'s `printClass(...); exit;`, and 3.1 minifies `{spaceless}` through
   `WhitespaceMinifier::start()/end()` and re-wraps a filtered `{capture}` in `Html` behind a

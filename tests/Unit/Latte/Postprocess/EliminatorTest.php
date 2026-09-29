@@ -120,6 +120,18 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('Tracer', $php);
 	}
 
+	// Latte 2 emits printClass(); exit; into prepare(), Latte 3 into the head the injector folds into
+	// latteMain: the body stays reachable and a prepare left empty by the drop goes with it.
+	public function testTemplatePrintDroppedKeepsTheBodyReachable(): void
+	{
+		$php = $this->process("{templatePrint}\n{varType string \$x}\n{\$x}\n");
+
+		self::assertStringNotContainsString('printClass', $php);
+		self::assertStringNotContainsString('exit', $php);
+		self::assertStringNotContainsString('function lattePrepare', $php);
+		self::assertStringContainsString('echo $x', $php);
+	}
+
 	public function testExtendsGuardAndBlockDispatchGetDefinedVars(): void
 	{
 		$php = $this->process("{block content}x{/block}\n");

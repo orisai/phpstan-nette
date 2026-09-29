@@ -62,8 +62,10 @@ final class FilterRewriter extends NodeVisitorAbstract
 	// The content-type conversion wrapping a filtered block/{translate} output.
 	public const ROLE_CONVERT_TO = 'convertTo';
 
-	// The variable a Latte 3 function call passes first (the template itself), dropped before
-	// the signature is matched.
+	// The variable a compiled Latte 3 function call passes first (the template itself); at runtime
+	// FunctionExecutor hands it only to a callable whose first parameter is typed
+	// Latte\Runtime\Template and wraps every other one to skip it, so the stock table entries (none
+	// Template-aware, the two lambdas standing in as Helpers) match their signature without it.
 	public const ROLE_FUNCTION_TEMPLATE_ARG = 'functionTemplateArg';
 
 	private const FILTER_INFO_CLASS_NAMES = ['Latte\Runtime\FilterInfo', 'LR\FilterInfo'];

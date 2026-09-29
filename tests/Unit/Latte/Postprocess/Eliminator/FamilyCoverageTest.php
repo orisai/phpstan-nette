@@ -139,10 +139,11 @@ final class FamilyCoverageTest extends BaseTestCase
 	private static function eliminatorClasses(): array
 	{
 		$classes = [];
-		foreach ((array) glob(dirname(__DIR__, 5) . '/src/Latte/Postprocess/Eliminator/*Eliminator.php') as $path) {
+		foreach ((array) glob(dirname(__DIR__, 5) . '/src/Latte/Postprocess/Eliminator/*.php') as $path) {
 			$class = 'OriPhpstan\Nette\Latte\Postprocess\Eliminator\\' . basename((string) $path, '.php');
-			self::assertTrue(is_subclass_of($class, EliminatorVisitor::class), $class);
-			$classes[] = $class;
+			if (is_subclass_of($class, EliminatorVisitor::class)) {
+				$classes[] = $class;
+			}
 		}
 
 		self::assertNotSame([], $classes);

@@ -14,6 +14,7 @@ parameters:
 	# Latte 3; the Latte 2 adapter and everything built on Latte 2 internals is covered by phpstan.neon.
 	paths:
 		- ../src/Latte/Version
+		- ../tests/Integration/Latte/Latte3
 		- ../tests/Toolkit/Latte3
 		- ../tests/Unit/Latte/Version/Latte3
 	excludePaths!:
