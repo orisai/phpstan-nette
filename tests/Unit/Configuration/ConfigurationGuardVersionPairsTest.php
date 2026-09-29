@@ -5,13 +5,10 @@ namespace Tests\OriPhpstan\Nette\Unit\Configuration;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Configuration\InvalidConfiguration;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
-use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use function preg_replace;
 
-/**
- * @phpstan-import-type OrisaiNetteConfig from ConfigurationGuard
- */
 final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 {
 
@@ -35,39 +32,49 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 	 */
 	public function provideRejected(): iterable
 	{
+		yield 'latte branch without a number' => [
+			['latte/latte' => 'dev-master', 'nette/forms' => '3.3.0.0', 'nette/application' => '3.3.0.0'],
+			'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed dev-master.',
+		];
+
+		yield 'latte 3.2' => [
+			['latte/latte' => '3.2.0.0', 'nette/forms' => '3.3.0.0', 'nette/application' => '3.3.0.0'],
+			'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed v3.2.0.',
+		];
+
 		yield 'latte 3.0 with forms before FormsExtension' => [
 			['latte/latte' => '3.0.26.0', 'nette/forms' => '3.1.6.0', 'nette/application' => '3.1.15.0'],
-			'Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed 3.1.6.0.',
+			'Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed v3.1.6.',
 		];
 
 		yield 'latte 3.0 with application before UIExtension' => [
 			['latte/latte' => '3.0.26.0', 'nette/forms' => '3.1.15.0', 'nette/application' => '3.1.5.0'],
-			'Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed 3.1.5.0.',
+			'Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed v3.1.5.',
 		];
 
 		yield 'forms row wins over the application row' => [
 			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.1.6.0', 'nette/application' => '3.1.5.0'],
-			'Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed 3.1.6.0.',
+			'Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed v3.1.6.',
 		];
 
 		yield 'latte 3.1 with the conflicting forms 3.2 line' => [
 			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.6.0', 'nette/application' => '3.2.12.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed 3.2.6.0/3.2.12.0.',
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed v3.2.6/v3.2.12.',
 		];
 
 		yield 'latte 3.1 with the conflicting application 3.2 line' => [
 			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.9.0', 'nette/application' => '3.2.9.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed 3.2.9.0/3.2.9.0.',
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed v3.2.9/v3.2.9.',
 		];
 
 		yield 'latte 3.1 with forms 3.1 (never allowed Latte 3.1)' => [
 			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.1.15.0', 'nette/application' => '3.3.0.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed 3.1.15.0/3.3.0.0.',
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed v3.1.15/v3.3.0.',
 		];
 
 		yield 'latte 3.1 without forms but old application' => [
 			['latte/latte' => '3.1.6.0', 'nette/application' => '3.2.9.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed none/3.2.9.0.',
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed none/v3.2.9.',
 		];
 	}
 
@@ -88,14 +95,19 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 	 */
 	public function provideAccepted(): iterable
 	{
-		yield 'latte 2 ignores the rows' => [
+		yield 'latte 2 ignores the pair rows' => [
 			true,
 			['latte/latte' => '2.11.7.0', 'nette/forms' => '3.1.6.0', 'nette/application' => '3.1.5.0'],
 		];
 
-		yield 'latte disabled ignores the rows' => [
+		yield 'latte disabled ignores every row' => [
 			false,
-			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.1.6.0', 'nette/application' => '3.1.5.0'],
+			['latte/latte' => 'dev-master', 'nette/forms' => '3.1.6.0', 'nette/application' => '3.1.5.0'],
+		];
+
+		yield 'latte 3.1 branch alias parses' => [
+			true,
+			['latte/latte' => '3.1.x-dev', 'nette/forms' => '3.3.0.0', 'nette/application' => '3.3.0.0'],
 		];
 
 		yield 'latte 3.0 with the first bridge releases' => [
@@ -120,7 +132,7 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 
 		yield 'latte 3 without the bridges installed' => [true, ['latte/latte' => '3.1.6.0']];
 
-		yield 'latte not installed' => [true, []];
+		yield 'latte not installed falls back to the loaded engine' => [true, []];
 	}
 
 	/**
@@ -128,53 +140,28 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 	 */
 	private function guard(bool $latteEnabled, array $versions): ConfigurationGuard
 	{
-		$installed = [ProjectInstalledVersions::PACKAGE => ['version' => '1.0.0.0']];
+		$installed = [ProjectInstalledVersions::PACKAGE => ['version' => '1.0.0.0', 'pretty_version' => '1.0.0']];
 		foreach ($versions as $package => $version) {
-			$installed[$package] = ['version' => $version];
+			$installed[$package] = ['version' => $version, 'pretty_version' => self::pretty($version)];
 		}
 
-		return new ConfigurationGuard(
-			self::config($latteEnabled),
-			['php', 'latte'],
-			PHPStanTestCase::getContainer()->getByType(ReflectionProvider::class),
+		return TestGuard::latte(
+			$latteEnabled,
+			false,
+			false,
+			null,
 			ProjectInstalledVersions::fromRawData([['root' => [], 'versions' => $installed]]),
 		);
 	}
 
-	/**
-	 * @return OrisaiNetteConfig
-	 */
-	private static function config(bool $latteEnabled): array
+	// Composer's own convention: a tagged release keeps its 'v' prefix, a branch alias its '-dev' form.
+	private static function pretty(string $normalized): string
 	{
-		return [
-			'forms' => [
-				'enabled' => true,
-				'defaultContainerClass' => 'Nette\\Forms\\Container',
-				'reportUnannotatedRegistrars' => true,
-				'catalogs' => [],
-				'internals' => ['indexShadowCompare' => false],
-			],
-			'component' => ['enabled' => true],
-			'latte' => [
-				'enabled' => $latteEnabled,
-				'narrowing' => ['enabled' => false, 'storePath' => 'phpstan-latte-store'],
-				'discovery' => [
-					'enabled' => false,
-					'storePath' => 'latte-discovery',
-					'coarseInvalidationAccepted' => false,
-					'formulas' => [],
-				],
-				'engineLoader' => null,
-				'templateFactoryContainerLoader' => null,
-				'firstPartyPaths' => [],
-				'templateTypeRequired' => false,
-				'includeIsolation' => false,
-				'allowNarrowingOverride' => false,
-				'reportWrongPhpDocTypeInVarType' => true,
-				'reportAnyTypeWideningInVarType' => true,
-			],
-			'dic' => ['containerLoader' => null],
-		];
+		if ($normalized === 'dev-master' || $normalized === '3.1.x-dev') {
+			return $normalized;
+		}
+
+		return 'v' . preg_replace('~\.0$~', '', $normalized);
 	}
 
 }

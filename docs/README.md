@@ -386,6 +386,7 @@ Checks beyond the schema run when the first file is analysed. Each rejection is 
 
 - `orisaiNette.latte.enabled requires "latte" in fileExtensions.`
 - `orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.`
+- `orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed <version>.`
 - `Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed <v>.` — the Latte 3 rows are checked only with
   `orisaiNette.latte.enabled` on and Latte 3 installed
 - `Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed <v>.`

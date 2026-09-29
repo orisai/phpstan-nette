@@ -2,10 +2,12 @@
 
 namespace OriPhpstan\Nette\Configuration;
 
+use Latte\Engine;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormModifierCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormReplicatorCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormRuleTypeCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormValueTypeCatalog;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use PHPStan\Reflection\ReflectionProvider;
 use function array_keys;
@@ -183,8 +185,15 @@ final class ConfigurationGuard
 	// application 3.2.0-3.2.9 and forms 3.2.0-3.2.6 declare a conflict with Latte 3.1.
 	private function validateLatteVersionPairs(): void
 	{
-		$latte = $this->installedVersions->getVersion('latte/latte');
-		if ($latte === null || self::isBelow($latte, '3.0.0')) {
+		$latte = $this->installedVersions->getVersion('latte/latte') ?? Engine::VERSION;
+		if (!ShapeFamily::supports($latte)) {
+			throw new InvalidConfiguration(sprintf(
+				'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed %s.',
+				$this->prettyVersion('latte/latte') ?? $latte,
+			));
+		}
+
+		if (self::isBelow($latte, '3.0.0')) {
 			return;
 		}
 
@@ -193,13 +202,19 @@ final class ConfigurationGuard
 
 		if ($forms !== null && self::isBelow($forms, '3.1.7')) {
 			throw new InvalidConfiguration(
-				sprintf('Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed %s.', $forms),
+				sprintf(
+					'Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed %s.',
+					$this->prettyVersion('nette/forms') ?? $forms,
+				),
 			);
 		}
 
 		if ($application !== null && self::isBelow($application, '3.1.6')) {
 			throw new InvalidConfiguration(
-				sprintf('Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed %s.', $application),
+				sprintf(
+					'Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed %s.',
+					$this->prettyVersion('nette/application') ?? $application,
+				),
 			);
 		}
 
@@ -212,10 +227,15 @@ final class ConfigurationGuard
 		) {
 			throw new InvalidConfiguration(sprintf(
 				'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed %s/%s.',
-				$forms ?? 'none',
-				$application ?? 'none',
+				$this->prettyVersion('nette/forms') ?? $forms ?? 'none',
+				$this->prettyVersion('nette/application') ?? $application ?? 'none',
 			));
 		}
+	}
+
+	private function prettyVersion(string $package): ?string
+	{
+		return $this->installedVersions->getPrettyVersion($package);
 	}
 
 	private static function isBelow(string $version, string $minimum): bool

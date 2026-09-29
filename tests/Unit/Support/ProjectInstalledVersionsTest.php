@@ -23,7 +23,7 @@ final class ProjectInstalledVersionsTest extends BaseTestCase
 			'acme/app' => ['version' => 'dev-main', 'install_path' => '/app'],
 			'orisai/phpstan-nette' => ['version' => '1.0.0.0', 'install_path' => '/app/vendor/orisai/phpstan-nette'],
 			'phpstan/phpstan' => ['version' => '2.2.16.0', 'install_path' => '/app/vendor/phpstan/phpstan'],
-			'nette/di' => ['version' => '3.2.7.0', 'install_path' => '/app/vendor/nette/di'],
+			'nette/di' => ['version' => '3.2.7.0', 'pretty_version' => 'v3.2.7', 'install_path' => '/app/vendor/nette/di'],
 		],
 	];
 
@@ -33,6 +33,8 @@ final class ProjectInstalledVersionsTest extends BaseTestCase
 			$versions = ProjectInstalledVersions::fromRawData($rawData);
 
 			self::assertSame('3.2.7.0', $versions->getVersion('nette/di'));
+			self::assertSame('v3.2.7', $versions->getPrettyVersion('nette/di'));
+			self::assertNull($versions->getPrettyVersion('phpstan/phpstan'));
 			self::assertSame('/app/vendor/nette/di', $versions->getInstallPath('nette/di'));
 			self::assertSame('2.2.16.0', $versions->getVersion('phpstan/phpstan'));
 			self::assertNull($versions->getVersion('phpstan/phpstan-src'));
@@ -45,6 +47,7 @@ final class ProjectInstalledVersionsTest extends BaseTestCase
 		$versions = ProjectInstalledVersions::fromRawData([self::PHAR_INSTALL]);
 
 		self::assertNull($versions->getVersion('nette/di'));
+		self::assertNull($versions->getPrettyVersion('nette/di'));
 		self::assertNull($versions->getInstallPath('nette/di'));
 	}
 

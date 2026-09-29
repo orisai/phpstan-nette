@@ -52,6 +52,13 @@ final class ProjectInstalledVersions
 		return is_string($version) ? $version : null;
 	}
 
+	public function getPrettyVersion(string $package): ?string
+	{
+		$version = $this->versions[$package]['pretty_version'] ?? null;
+
+		return is_string($version) ? $version : null;
+	}
+
 	public function getInstallPath(string $package): ?string
 	{
 		$path = $this->versions[$package]['install_path'] ?? null;

@@ -46,7 +46,8 @@ final class TestGuard
 		bool $enabled = true,
 		bool $narrowing = false,
 		bool $discovery = false,
-		?string $templateFactoryContainerLoader = null
+		?string $templateFactoryContainerLoader = null,
+		?ProjectInstalledVersions $installedVersions = null
 	): ConfigurationGuard
 	{
 		$config = self::defaults();
@@ -55,7 +56,7 @@ final class TestGuard
 		$config['latte']['discovery']['enabled'] = $discovery;
 		$config['latte']['templateFactoryContainerLoader'] = $templateFactoryContainerLoader;
 
-		return self::create($config);
+		return self::create($config, $installedVersions);
 	}
 
 	// The Latte-Forms bridge runs only with Forms, Latte and template discovery all on.
@@ -72,13 +73,16 @@ final class TestGuard
 	/**
 	 * @param OrisaiNetteConfig $config
 	 */
-	private static function create(array $config): ConfigurationGuard
+	private static function create(
+		array $config,
+		?ProjectInstalledVersions $installedVersions = null
+	): ConfigurationGuard
 	{
 		return new ConfigurationGuard(
 			$config,
 			['php', 'latte'],
 			PHPStanTestCase::getContainer()->getByType(ReflectionProvider::class),
-			ProjectInstalledVersions::get(),
+			$installedVersions ?? ProjectInstalledVersions::get(),
 		);
 	}
 
