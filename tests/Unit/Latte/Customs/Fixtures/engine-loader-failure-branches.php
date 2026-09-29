@@ -4,7 +4,7 @@ use Latte\Engine;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureNoInstallMacro;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureThrowingInstallMacroSet;
 
-require_once __DIR__ . '/../../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 $engine = new Engine();
 $engine->onCompile[] = static function (Engine $engine): void {

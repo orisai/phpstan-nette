@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function count;
 use function dirname;
 use function explode;
@@ -222,7 +223,7 @@ final class NarrowingConvergenceTest extends BaseTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$projectRoot . '/vendor/bin/phpstan',
+				$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',

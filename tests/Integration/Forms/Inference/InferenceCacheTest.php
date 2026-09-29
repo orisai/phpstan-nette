@@ -11,6 +11,7 @@ use ReflectionMethod;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\FormShapeTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function preg_match;
 use function sys_get_temp_dir;
@@ -119,7 +120,7 @@ final class InferenceCacheTest extends FormShapeTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$projectRoot . '/vendor/bin/phpstan',
+				$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',

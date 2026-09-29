@@ -71,7 +71,7 @@ final class LatteProvenanceTipGettextIntegrationTest extends RuleTestCase
 				[
 					'parameters' => [
 						'customRulesetUsed' => true,
-						'bootstrapFiles' => [__DIR__ . '/../../../../vendor/autoload.php'],
+						'bootstrapFiles' => [__DIR__ . '/../../../../tests/autoload.php'],
 						'fileExtensions' => ['php', 'latte'],
 						'orisaiNette' => [
 							'latte' => [

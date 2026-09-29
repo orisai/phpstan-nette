@@ -2,7 +2,7 @@
 
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureContainer;
 
-require_once __DIR__ . '/../../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 return [
 	'fixture' => new FixtureContainer(),

@@ -3,7 +3,7 @@
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureGettextMacros;
 use Latte\Engine;
 
-require_once __DIR__ . '/../../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 // The gettext macro set (FixtureGettextMacros, a replica of h4kuna\Gettext\Macros\Gettext): its
 // install() takes only a Latte\Compiler, same as CoreMacros/BlockMacros/UIMacros/FormMacros - no

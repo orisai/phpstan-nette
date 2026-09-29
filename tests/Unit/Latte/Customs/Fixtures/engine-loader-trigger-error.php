@@ -3,7 +3,7 @@
 use Latte\Engine;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureMacroSet;
 
-require_once __DIR__ . '/../../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 $engine = new Engine();
 $engine->addFilter('fixtureFilter', static fn (string $s): string => $s);

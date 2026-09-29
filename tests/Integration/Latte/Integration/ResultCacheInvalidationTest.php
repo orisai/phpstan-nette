@@ -8,6 +8,7 @@ use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function explode;
 use function implode;
@@ -283,7 +284,7 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$projectRoot . '/vendor/bin/phpstan',
+				$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',
@@ -318,7 +319,7 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$projectRoot . '/vendor/bin/phpstan',
+				$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',

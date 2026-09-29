@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_map;
 use function basename;
 use function dirname;
@@ -71,7 +72,7 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 		$isolated = IsolatedPhpstanConfig::create(static::configFile());
 
 		try {
-			$args = [PHP_BINARY, $root . '/vendor/bin/phpstan', 'analyse'];
+			$args = [PHP_BINARY, $root . '/' . VendorDirectory::name() . '/bin/phpstan', 'analyse'];
 			foreach (static::fixtureFiles() as $file) {
 				$args[] = $file;
 			}

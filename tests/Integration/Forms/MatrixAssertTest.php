@@ -6,6 +6,7 @@ use Nette\Utils\Json;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function glob;
 use function implode;
@@ -34,7 +35,7 @@ final class MatrixAssertTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$root . '/vendor/bin/phpstan',
+					$root . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					...$files,
 					'-c',

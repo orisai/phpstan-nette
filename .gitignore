@@ -5,5 +5,10 @@
 /vendor
 /composer.lock
 
+# Dependency profiles (make profile PROFILE=<name>)
+/vendor-*/
+/composer.*.json
+/composer.*.lock
+
 # Generated
 /var

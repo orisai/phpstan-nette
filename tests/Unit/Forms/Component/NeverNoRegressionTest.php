@@ -5,6 +5,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Forms\Component;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function substr_count;
 use const PHP_BINARY;
@@ -107,7 +108,7 @@ final class NeverNoRegressionTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$root . '/vendor/bin/phpstan',
+					$root . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					$fixture,
 					'-c',

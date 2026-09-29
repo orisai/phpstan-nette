@@ -8,7 +8,7 @@ parameters:
 	# silently vacuous here while the same code reported correctly in production.
 	netteFormContainerValuesDynamicReturnType: false
 	bootstrapFiles:
-		- ../../../../vendor/autoload.php
+		- ../../../../tests/autoload.php
 	orisaiNette:
 		forms:
 			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer

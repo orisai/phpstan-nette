@@ -228,6 +228,14 @@ parameters:
 		-
 			identifier: phpstanApi.classConstant
 			path: ../tests/Toolkit/TestFileFinder.php
+		# Version-gated groups: a test's @group set is exposed only by PHPUnit internals, and the guard's
+		# own test runs a nested suite and catches the skip to prove it reaches the result.
+		-
+			identifier: method.internal
+			path: ../tests/Toolkit/BaseTestCase.php
+		-
+			identifiers: [new.internalClass, method.internalClass, catch.internalInterface]
+			path: ../tests/Unit/Toolkit/InstalledVersionsGuardTest.php
 		# DirectoryWalker is passed only where the installed PHPStan has it.
 		-
 			identifier: arguments.count

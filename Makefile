@@ -7,6 +7,15 @@ PHPSTAN_CONFIG=tools/phpstan.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
 PHPUNIT_CONFIG=tools/phpunit.xml
 
+PROFILE ?=
+ifeq ($(PROFILE),)
+VENDOR_DIR=vendor
+PROFILE_ENV=
+else
+VENDOR_DIR=vendor-$(PROFILE)
+PROFILE_ENV=COMPOSER=composer.$(PROFILE).json COMPOSER_VENDOR_DIR=$(VENDOR_DIR)
+endif
+
 ## Install
 
 update: ## Update all dependencies
@@ -15,19 +24,24 @@ update: ## Update all dependencies
 update-php: ## Update PHP dependencies
 	composer update
 
+profile: ## Install a dependency profile into vendor-<name>: make profile PROFILE=latte31 PRE_PHP="php8.4"
+	test -n "$(PROFILE)" || { echo "PROFILE is required, one of: $(basename $(notdir $(wildcard tools/profiles/*.json)))"; exit 1; }
+	$(PRE_PHP) tools/profile.php $(PROFILE)
+	$(PROFILE_ENV) $(PRE_PHP) "$(shell command -v composer)" update --no-interaction --no-progress --prefer-dist $$($(PRE_PHP) tools/profile.php $(PROFILE) --flags) $(ARGS)
+
 ## QA
 
 cs: ## Check PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
-	$(PRE_PHP) "vendor/bin/phpcs" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcs" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 csf: ## Fix PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
-	$(PRE_PHP) "vendor/bin/phpcbf" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 phpstan: ## Analyse code with PHPStan
 	mkdir -p var/tools
-	$(PRE_PHP) "vendor/bin/phpstan" analyse src tests -c $(PHPSTAN_CONFIG) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpstan" analyse src tests -c $(PHPSTAN_CONFIG) $(ARGS)
 
 phpstan-baseline: ## Add PHPStan errors to baseline
 	make phpstan ARGS="-b $(PHPSTAN_BASELINE_CONFIG)"
@@ -36,13 +50,13 @@ phpstan-baseline: ## Add PHPStan errors to baseline
 
 .PHONY: tests
 tests: ## Run all tests
-	$(PRE_PHP) $(PHPUNIT_COMMAND) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) $(PHPUNIT_COMMAND) $(ARGS)
 
 coverage-clover: ## Generate code coverage in XML format
-	$(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-clover=var/coverage/clover.xml $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-clover=var/coverage/clover.xml $(ARGS)
 
 coverage-html: ## Generate code coverage in HTML format
-	$(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-html=var/coverage/html $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-html=var/coverage/html $(ARGS)
 
 ## Utilities
 
@@ -63,7 +77,7 @@ list:
 
 PRE_PHP=XDEBUG_MODE=off
 
-PHPUNIT_COMMAND="vendor/bin/paratest" -c $(PHPUNIT_CONFIG) --runner=WrapperRunner -p$(LOGICAL_CORES)
+PHPUNIT_COMMAND="$(VENDOR_DIR)/bin/paratest" -c $(PHPUNIT_CONFIG) --runner=WrapperRunner -p$(LOGICAL_CORES)
 PHPUNIT_COVERAGE=php -d pcov.enabled=1 -d pcov.directory=./src $(PHPUNIT_COMMAND)
 
 LOGICAL_CORES=$(shell nproc || sysctl -n hw.logicalcpu || wmic cpu get NumberOfLogicalProcessors || echo 4)

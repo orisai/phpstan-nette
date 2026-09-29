@@ -9,6 +9,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateTypeChecker;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_column;
 use function dirname;
 use function sort;
@@ -190,7 +191,7 @@ PHP);
 		FileSystem::write(
 			$path,
 			"<?php declare(strict_types = 1);\n\n"
-			. "require '" . dirname($srcDir, 4) . "/vendor/autoload.php';\n"
+			. "require '" . dirname($srcDir, 4) . "/tests/autoload.php';\n"
 			. "require '$srcDir/SpawnDeclaredTemplate.php';\n"
 			. "require '$srcDir/SpawnWritingControl.php';\n"
 			. "require '$srcDir/SpawnSilentControl.php';\n",
@@ -244,7 +245,7 @@ PHP);
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$projectRoot . '/vendor/bin/phpstan',
+					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
 					'--level=8',

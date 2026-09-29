@@ -3,7 +3,7 @@
 use Latte\Engine;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureTypedCustoms;
 
-require_once __DIR__ . '/../../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 $engine = new Engine();
 $engine->addFilter('myFilter', [FixtureTypedCustoms::class, 'myFilter']);

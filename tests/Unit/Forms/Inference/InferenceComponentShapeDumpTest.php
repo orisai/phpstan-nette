@@ -6,6 +6,7 @@ use Nette\Utils\Json;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use const PHP_BINARY;
 
@@ -254,7 +255,7 @@ final class InferenceComponentShapeDumpTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$root . '/vendor/bin/phpstan',
+					$root . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					__DIR__ . '/Fixtures/Rule/ComponentShape.php',
 					__DIR__ . '/Fixtures/Rule/MyNonFormComponent.php',

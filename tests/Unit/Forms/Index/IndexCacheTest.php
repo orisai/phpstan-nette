@@ -20,6 +20,7 @@ use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\TestFileFinder;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_merge;
 use function basename;
 use function dirname;
@@ -632,7 +633,7 @@ PHP;
 		$root = dirname(__DIR__, 4);
 		$process = new Process(
 			array_merge(
-				[PHP_BINARY, $root . '/vendor/bin/phpstan', 'analyse'],
+				[PHP_BINARY, $root . '/' . VendorDirectory::name() . '/bin/phpstan', 'analyse'],
 				$files,
 				[
 					'-c',

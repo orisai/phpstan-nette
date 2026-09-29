@@ -2,7 +2,7 @@ parameters:
 	customRulesetUsed: true
 	netteFormContainerValuesDynamicReturnType: false
 	bootstrapFiles:
-		- ../../../../../vendor/autoload.php
+		- ../../../../../tests/autoload.php
 	scanFiles:
 		- ../../../../Doubles/Forms/functions.php
 	orisaiNette:

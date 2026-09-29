@@ -72,7 +72,7 @@ final class FirstPartyPathsInvalidationTest extends BaseTestCase
 
 	private function seed(InvalidationScenario $scenario): void
 	{
-		$autoloader = dirname(__DIR__, 4) . '/vendor/autoload.php';
+		$autoloader = dirname(__DIR__, 4) . '/tests/autoload.php';
 		FileSystem::write(
 			$scenario->getScratchDir() . '/corpus-autoload.php',
 			<<<PHP

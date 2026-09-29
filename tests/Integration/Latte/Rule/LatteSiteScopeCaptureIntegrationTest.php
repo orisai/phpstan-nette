@@ -8,6 +8,7 @@ use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use ReflectionMethod;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function getmypid;
 use function strpos;
@@ -42,7 +43,7 @@ final class LatteSiteScopeCaptureIntegrationTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$projectRoot . '/vendor/bin/phpstan',
+					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
 					'--level=8',

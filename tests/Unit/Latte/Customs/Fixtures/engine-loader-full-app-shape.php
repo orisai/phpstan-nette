@@ -6,7 +6,7 @@ use Nette\Bridges\ApplicationLatte\UIMacros;
 use Nette\Bridges\CacheLatte\CacheMacro;
 use Nette\Bridges\FormsLatte\FormMacros;
 
-require_once __DIR__ . '/../../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 // Mirrors production's real registration shape (Nette\Bridges\ApplicationLatte\TemplateFactory +
 // h4kuna\Gettext\DI\GettextLatteExtension): CoreMacros/BlockMacros install eagerly the moment

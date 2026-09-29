@@ -246,7 +246,7 @@ PHP;
 	// file named after another class).
 	private function writeCorpusAutoloader(InvalidationScenario $scenario): void
 	{
-		$autoloader = dirname(__DIR__, 4) . '/vendor/autoload.php';
+		$autoloader = dirname(__DIR__, 4) . '/tests/autoload.php';
 
 		FileSystem::write(
 			$scenario->getScratchDir() . '/corpus-autoload.php',

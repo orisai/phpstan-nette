@@ -8,6 +8,7 @@ use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_map;
 use function dirname;
 use function glob;
@@ -58,7 +59,7 @@ final class NarrowingInitTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$projectRoot . '/vendor/bin/phpstan',
+					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
 					'--level=8',

@@ -1,7 +1,7 @@
 parameters:
 	customRulesetUsed: true
 	bootstrapFiles:
-		- ../../../../vendor/autoload.php
+		- ../../../../tests/autoload.php
 	orisaiNette:
 		forms:
 			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer

@@ -6,6 +6,7 @@ use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_diff_key;
 use function array_key_first;
 use function array_merge;
@@ -177,7 +178,7 @@ final class ManifestConfigIdentityTest extends BaseTestCase
 		$root = dirname(__DIR__, 4);
 		$process = new Process(
 			array_merge(
-				[PHP_BINARY, $root . '/vendor/bin/phpstan', 'analyse', $file],
+				[PHP_BINARY, $root . '/' . VendorDirectory::name() . '/bin/phpstan', 'analyse', $file],
 				[
 					'-c',
 					$config,

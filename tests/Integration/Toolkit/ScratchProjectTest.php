@@ -113,7 +113,7 @@ PHP;
 			'-r',
 			self::RACE_WORKER,
 			'--',
-			dirname(__DIR__, 3) . '/vendor/autoload.php',
+			dirname(__DIR__, 3) . '/tests/autoload.php',
 			$this->base . '/race',
 			$barrier,
 			(string) $iterations,

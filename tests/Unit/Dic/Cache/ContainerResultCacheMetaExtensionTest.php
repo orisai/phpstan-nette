@@ -160,7 +160,7 @@ final class ContainerResultCacheMetaExtensionTest extends PHPStanTestCase
 		FileSystem::write($loaderFile, str_replace('{{ROOT}}', __DIR__ . '/../../../..', <<<'PHP'
 <?php declare(strict_types = 1);
 
-require_once '{{ROOT}}/vendor/autoload.php';
+require_once '{{ROOT}}/tests/autoload.php';
 
 $dir = __DIR__;
 

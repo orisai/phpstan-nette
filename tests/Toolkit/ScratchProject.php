@@ -78,7 +78,7 @@ final class ScratchProject
 				'level' => 8,
 				'paths' => array_map(fn (string $path): string => $this->path($path), $paths),
 				'tmpDir' => $this->path('tmp'),
-				'bootstrapFiles' => [$this->libraryRoot . '/vendor/autoload.php'],
+				'bootstrapFiles' => [$this->libraryRoot . '/tests/autoload.php'],
 			],
 			$neonParameters,
 		);
@@ -91,7 +91,7 @@ final class ScratchProject
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$this->libraryRoot . '/vendor/bin/phpstan',
+				$this->libraryRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--error-format=json',
 				'--no-progress',

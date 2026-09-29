@@ -10,7 +10,7 @@ parameters:
 			narrowing:
 				enabled: true
 	bootstrapFiles:
-		- ../../../../../vendor/autoload.php
+		- ../../../../../tests/autoload.php
 	# Support/ classes (e.g. TypedFixtureTemplate, a {templateType} target) exist to be reflected,
 	# not analysed: a directory-mode spawn that also analysed them would flag their properties as
 	# shipmonk.deadProperty findings (never read/written from visible PHP - the whole point of a

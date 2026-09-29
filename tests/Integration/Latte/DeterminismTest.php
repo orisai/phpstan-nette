@@ -16,6 +16,7 @@ use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function basename;
 use function dirname;
 use function explode;
@@ -334,7 +335,7 @@ final class DeterminismTest extends BaseTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$projectRoot . '/vendor/bin/phpstan',
+				$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',

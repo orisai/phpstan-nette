@@ -1,7 +1,7 @@
 parameters:
 	customRulesetUsed: true
 	bootstrapFiles:
-		- ../../../vendor/autoload.php
+		- ../../../tests/autoload.php
 	stubFiles:
 		- ../../../stubs/forms-control-value-types.stub
 

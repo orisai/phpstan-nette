@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\FormShapeTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function hrtime;
 use function max;
@@ -73,7 +74,7 @@ final class InferencePerfBudgetTest extends FormShapeTestCase
 	private function clearResultCache(string $projectRoot, string $config): void
 	{
 		$process = new Process(
-			[PHP_BINARY, $projectRoot . '/vendor/bin/phpstan', 'clear-result-cache', '-c', $config],
+			[PHP_BINARY, $projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan', 'clear-result-cache', '-c', $config],
 			$projectRoot,
 		);
 		$process->setTimeout(600.0);
@@ -85,7 +86,7 @@ final class InferencePerfBudgetTest extends FormShapeTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$projectRoot . '/vendor/bin/phpstan',
+				$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',

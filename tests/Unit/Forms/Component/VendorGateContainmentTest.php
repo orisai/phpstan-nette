@@ -5,6 +5,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Forms\Component;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
 use function preg_match;
 use function trim;
@@ -59,7 +60,7 @@ final class VendorGateContainmentTest extends BaseTestCase
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$root . '/vendor/bin/phpstan',
+				$root . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				$file,
 				'-c',

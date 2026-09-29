@@ -6,7 +6,7 @@ parameters:
 	level: 8
 	phpVersion: 70400
 	bootstrapFiles:
-		- ../../../../vendor/autoload.php
+		- ../../../../tests/autoload.php
 	scanFiles:
 		- ../../../Doubles/Forms/functions.php
 	# The extension's own replacements for these phpstan-nette return-type extensions project the

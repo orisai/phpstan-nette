@@ -7,6 +7,7 @@ use Nette\Utils\Json;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\ConditionalCertaintyPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryVendorPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingBaseTemplateReplica;
@@ -325,7 +326,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$projectRoot . '/vendor/bin/phpstan',
+					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
 					'--level=8',
@@ -364,7 +365,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					$projectRoot . '/vendor/bin/phpstan',
+					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
 					'--level=8',

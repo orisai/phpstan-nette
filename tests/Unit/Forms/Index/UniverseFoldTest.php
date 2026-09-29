@@ -6,6 +6,7 @@ use Nette\Utils\Json;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_merge;
 use function dirname;
 use function preg_match;
@@ -59,7 +60,7 @@ final class UniverseFoldTest extends BaseTestCase
 		$root = dirname(__DIR__, 4);
 		$process = new Process(
 			array_merge(
-				[PHP_BINARY, $root . '/vendor/bin/phpstan', 'analyse', $file],
+				[PHP_BINARY, $root . '/' . VendorDirectory::name() . '/bin/phpstan', 'analyse', $file],
 				[
 					'-c',
 					$configFile,

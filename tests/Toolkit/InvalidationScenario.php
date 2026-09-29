@@ -176,7 +176,7 @@ final class InvalidationScenario
 		$process = new Process(
 			[
 				PHP_BINARY,
-				$this->projectRoot . '/vendor/bin/phpstan',
+				$this->projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',
 				'--level=8',
