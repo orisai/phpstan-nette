@@ -23,6 +23,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FormsMacroEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
@@ -33,6 +34,8 @@ final class AnalysisPipeline
 {
 
 	private Parser $phpParser;
+
+	private LatteVersionAdapter $adapter;
 
 	private ?CustomsHarvester $harvester;
 
@@ -60,6 +63,7 @@ final class AnalysisPipeline
 
 	public function __construct(
 		Parser $phpParser,
+		LatteVersionAdapter $adapter,
 		TemplateEdgeIndex $edgeIndex,
 		DeclarationScanner $scanner,
 		LatteUniverse $universe,
@@ -72,6 +76,7 @@ final class AnalysisPipeline
 	)
 	{
 		$this->phpParser = $phpParser;
+		$this->adapter = $adapter;
 		$this->templateTypeCustoms = $templateTypeCustoms;
 		$this->harvester = $harvester;
 
@@ -224,7 +229,7 @@ final class AnalysisPipeline
 	): array
 	{
 		$stmts = $this->phpParser->parseString($phpSource);
-		$lineMapper = new LineMapper();
+		$lineMapper = new LineMapper($this->adapter->lineMarkerPattern());
 		$lineMapper->remap($stmts, $lineMapper->buildMap($phpSource));
 
 		$injectorDiagnostics = $this->declarationInjector->inject($stmts, $declarations, $contexts, $relativePath);

@@ -5,7 +5,6 @@ namespace OriPhpstan\Nette\Latte\Parser;
 use Nette\IOException;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryRefResolver;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
@@ -25,6 +24,7 @@ use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
 use OriPhpstan\Nette\Latte\Postprocess\DependencyEdgeEmitter;
 use OriPhpstan\Nette\Latte\Postprocess\DiagnosticMaterializer;
 use OriPhpstan\Nette\Latte\Postprocess\RichAttributeDecorator;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
 use PhpParser\Node\Stmt;
 use PHPStan\Parser\Parser;
 use ReflectionException;
@@ -42,7 +42,7 @@ final class LatteRoutingParser implements Parser
 
 	private Parser $delegate;
 
-	private LatteCompiler $compiler;
+	private LatteVersionAdapter $adapter;
 
 	private DeclarationScanner $scanner;
 
@@ -112,7 +112,7 @@ final class LatteRoutingParser implements Parser
 
 	public function __construct(
 		Parser $delegate,
-		LatteCompiler $compiler,
+		LatteVersionAdapter $adapter,
 		DeclarationScanner $scanner,
 		AnalysisPipeline $pipeline,
 		ContextResolver $contextResolver,
@@ -131,7 +131,7 @@ final class LatteRoutingParser implements Parser
 	)
 	{
 		$this->delegate = $delegate;
-		$this->compiler = $compiler;
+		$this->adapter = $adapter;
 		$this->scanner = $scanner;
 		$this->pipeline = $pipeline;
 		$this->contextResolver = $contextResolver;
@@ -212,7 +212,7 @@ final class LatteRoutingParser implements Parser
 		$relativePath = ProjectRelativePath::relativize($this->projectRoot, $file);
 		$className = TemplateClassName::forPath($relativePath);
 
-		$compiled = $this->compiler->compile($source, $className);
+		$compiled = $this->adapter->compile($source, $className);
 		// Arms the re-entrancy guard's answer as early as there is one to give: everything below this
 		// line can reach the ReflectionProvider and so can be re-entered for this same file.
 		$this->parsingFiles[$file] = $compiled->getPhpSource();

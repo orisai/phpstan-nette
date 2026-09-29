@@ -55,6 +55,7 @@ final class PipelineFactory
 
 		return new AnalysisPipeline(
 			$parser,
+			TestAdapter::create(),
 			new TemplateEdgeIndex($universe, new TemplateFactExtractor()),
 			new DeclarationScanner(),
 			$universe,

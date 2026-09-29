@@ -23,6 +23,7 @@ use Throwable;
 use function array_keys;
 use function array_merge;
 use function get_class;
+use function implode;
 use function in_array;
 use function is_callable;
 use function preg_match;
@@ -83,7 +84,7 @@ final class LatteCompiler
 		return $this->caseMismatchScanner;
 	}
 
-	public function compile(string $latteSource, string $className): CompileResult
+	public function compile(string $latteSource, string $className, string $cacheIdentity = ''): CompileResult
 	{
 		if ($this->cache === null) {
 			return $this->doCompile($latteSource, $className);
@@ -103,7 +104,7 @@ final class LatteCompiler
 		$discoverySalt = $this->discoveryStoreEnabled && $this->discoveryStore !== null
 			? $this->discoveryStore->recordsSaltForTemplateClass($className)
 			: 'disabled';
-		$contentHash = sha1($latteSource) . '|' . $className . '|' . $harvestSalt . '|' . $discoverySalt;
+		$contentHash = implode('|', [sha1($latteSource), $className, $harvestSalt, $discoverySalt, $cacheIdentity]);
 
 		/** @var array{result: CompileResult}|null $cached */
 		$cached = $this->cache->readContentAddressed($contentHash, self::CACHE_NODE_ID);

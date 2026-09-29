@@ -16,6 +16,7 @@ use PHPStan\Parser\Parser;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function basename;
 use function dirname;
 use function getenv;
@@ -225,7 +226,7 @@ final class SnapshotTest extends BaseTestCase
 
 		return new LatteRoutingParser(
 			$delegate,
-			new LatteCompiler(),
+			TestAdapter::create(),
 			new DeclarationScanner(),
 			PipelineFactory::create(),
 			$contextResolver,

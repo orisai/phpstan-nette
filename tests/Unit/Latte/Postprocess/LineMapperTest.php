@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use OriPhpstan\Nette\Latte\Postprocess\LineMapper;
+use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
 final class LineMapperTest extends BaseTestCase
@@ -11,7 +12,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testBuildsForwardFilledMap(): void
 	{
 		$php = "<?php\nclass X {\npublic function main(): array\n{\nif (\$a) /* line 4 */ {\necho \$b /* line 5 */;\n}\nreturn [];\n}\n}\n";
-		$map = (new LineMapper())->buildMap($php);
+		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
 
 		self::assertSame(4, $map[5]);
 		self::assertSame(5, $map[6]);
@@ -21,7 +22,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testFirstMarkerOnLineWins(): void
 	{
 		$php = "<?php\necho \$a /* line 2 */ . \$b /* line 3 */;\n";
-		$map = (new LineMapper())->buildMap($php);
+		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
 
 		self::assertSame(2, $map[2]);
 	}
@@ -29,7 +30,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testUnmarkedStatementBeforeAMarkerTakesThatMarker(): void
 	{
 		$php = "<?php\nforeach (\$a as \$b) /* line 2 */ {\necho '<label';\n\$x = f();\necho \$x->y() /* line 3 */;\n}\n";
-		$map = (new LineMapper())->buildMap($php);
+		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
 
 		self::assertSame(2, $map[3]);
 		self::assertSame(3, $map[4]);
@@ -40,7 +41,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testClosingBraceKeepsThePreviousMarker(): void
 	{
 		$php = "<?php\nif (\$a) /* line 4 */ {\necho \$b /* line 5 */;\n}\necho \$c /* line 9 */;\n";
-		$map = (new LineMapper())->buildMap($php);
+		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
 
 		self::assertSame(5, $map[4]);
 		self::assertSame(9, $map[5]);
@@ -49,7 +50,7 @@ final class LineMapperTest extends BaseTestCase
 	public function testNextMarkerBelowThePreviousIsNotTakenBackwards(): void
 	{
 		$php = "<?php\necho \$a /* line 9 */;\n\$tmp = 1;\necho \$b /* line 2 */;\n";
-		$map = (new LineMapper())->buildMap($php);
+		$map = (new LineMapper(Latte2Adapter::LINE_MARKER_PATTERN))->buildMap($php);
 
 		self::assertSame(9, $map[3]);
 	}

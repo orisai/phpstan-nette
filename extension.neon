@@ -46,6 +46,10 @@ parametersSchema:
 	])
 
 services:
+	orisaiNette.installedVersions:
+		factory: OriPhpstan\Nette\Support\ProjectInstalledVersions::get()
+		autowired: false
+
 	orisaiNette.configurationGuard:
 		class: OriPhpstan\Nette\Configuration\ConfigurationGuard
 		arguments:

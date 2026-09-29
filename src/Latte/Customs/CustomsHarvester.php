@@ -54,7 +54,7 @@ final class CustomsHarvester
 						return HarvestedCustoms::empty();
 					}
 
-					return $this->enumerate($engine);
+					return self::enumerate($engine);
 				},
 				// No per-template line exists here - harvest runs once per analysis, not once per
 				// compiled template - so every severity is contained and dropped, same
@@ -72,10 +72,10 @@ final class CustomsHarvester
 		}
 	}
 
-	private function enumerate(Engine $engine): HarvestedCustoms
+	public static function enumerate(Engine $engine): HarvestedCustoms
 	{
-		[$filters, $filterOriginalNames] = $this->readFilters($engine);
-		[$functions, $functionOriginalNames] = $this->readFunctions($engine);
+		[$filters, $filterOriginalNames] = self::readFilters($engine);
+		[$functions, $functionOriginalNames] = self::readFunctions($engine);
 
 		// addFilterLoader() dynamic loaders (name === null, resolved lazily per unresolved name)
 		// are opaque to Engine::getFilters() and unused by this app - not modeled here.
@@ -88,8 +88,8 @@ final class CustomsHarvester
 		return new HarvestedCustoms(
 			$filters,
 			$functions,
-			$this->macroSets($macrosByName),
-			$this->macroClassesByName($macrosByName),
+			self::macroSets($macrosByName),
+			self::macroClassesByName($macrosByName),
 			$filterOriginalNames,
 			$functionOriginalNames,
 		);
@@ -103,7 +103,7 @@ final class CustomsHarvester
 	 * @param array<string, array<Macro>> $macrosByName
 	 * @return array<string, class-string>
 	 */
-	private function macroClassesByName(array $macrosByName): array
+	private static function macroClassesByName(array $macrosByName): array
 	{
 		$classesByName = [];
 		foreach ($macrosByName as $name => $macros) {
@@ -121,7 +121,7 @@ final class CustomsHarvester
 	/**
 	 * @return array{array<string, callable(mixed...): mixed>, array<string, string>}
 	 */
-	private function readFilters(Engine $engine): array
+	private static function readFilters(Engine $engine): array
 	{
 		// Engine::getFilters() (@return string[]) returns lowercase-name => same-name pairs, not
 		// callables - FilterExecutor::__get() (public, magic) is the only way to resolve a real,
@@ -148,7 +148,7 @@ final class CustomsHarvester
 	/**
 	 * @return array{array<string, callable(mixed...): mixed>, array<string, string>}
 	 */
-	private function readFunctions(Engine $engine): array
+	private static function readFunctions(Engine $engine): array
 	{
 		$property = new ReflectionProperty(Engine::class, 'functions');
 		$property->setAccessible(true);
@@ -174,7 +174,7 @@ final class CustomsHarvester
 	 * @param array<array<Macro>> $macrosByName
 	 * @return list<object>
 	 */
-	private function macroSets(array $macrosByName): array
+	private static function macroSets(array $macrosByName): array
 	{
 		$seen = [];
 		$sets = [];

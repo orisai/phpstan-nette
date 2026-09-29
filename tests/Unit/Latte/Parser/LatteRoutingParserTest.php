@@ -4,7 +4,6 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Parser;
 
 use LogicException;
 use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
@@ -29,6 +28,7 @@ use PhpParser\NodeFinder;
 use PHPStan\Parser\Parser;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\InvocationCounter;
 use function count;
 use function in_array;
@@ -402,7 +402,7 @@ final class LatteRoutingParserTest extends BaseTestCase
 
 		return new LatteRoutingParser(
 			$delegate,
-			new LatteCompiler(),
+			TestAdapter::create(),
 			new DeclarationScanner(),
 			PipelineFactory::create(null, null, $narrowingEnabled, $harvester),
 			$contextResolver,

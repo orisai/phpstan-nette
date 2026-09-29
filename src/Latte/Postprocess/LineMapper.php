@@ -14,6 +14,13 @@ use function trim;
 final class LineMapper
 {
 
+	private string $markerPattern;
+
+	public function __construct(string $markerPattern)
+	{
+		$this->markerPattern = $markerPattern;
+	}
+
 	/**
 	 * @return array<int, int>
 	 */
@@ -25,8 +32,8 @@ final class LineMapper
 		$current = 1;
 		foreach ($lines as $index => $lineText) {
 			$generatedLine = $index + 1;
-			if (preg_match('~/\* line (\d+) \*/~', $lineText, $m) === 1) {
-				$current = (int) $m[1];
+			if (preg_match($this->markerPattern, $lineText, $m) === 1) {
+				$current = (int) $m['line'];
 				$marked[$generatedLine] = true;
 			}
 

@@ -485,7 +485,7 @@ final class LatteCompilerTest extends BaseTestCase
 		// discovery store either, so the discovery salt is the constant 'disabled'.
 		$poisoned = CompileResult::success('<?php /* POISONED CACHE HIT MARKER */', $className, []);
 		(new LatteAnalysisCache($dir, 'testv1'))->writeContentAddressed(
-			sha1($source) . '|' . $className . '|' . HarvestedCustoms::empty()->getSaltHash() . '|disabled',
+			sha1($source) . '|' . $className . '|' . HarvestedCustoms::empty()->getSaltHash() . '|disabled|',
 			'latte-compile',
 			['result' => $poisoned],
 		);
@@ -590,7 +590,7 @@ final class LatteCompilerTest extends BaseTestCase
 		$poisoned = CompileResult::success('<?php /* POISONED CACHE HIT MARKER */', $className, []);
 		(new LatteAnalysisCache($dir, 'testv1'))->writeContentAddressed(
 			sha1($source) . '|' . $className . '|' . HarvestedCustoms::empty()->getSaltHash()
-			. '|' . (new DiscoveryStore($storeDirA))->recordsSaltForTemplateClass($className),
+			. '|' . (new DiscoveryStore($storeDirA))->recordsSaltForTemplateClass($className) . '|',
 			'latte-compile',
 			['result' => $poisoned],
 		);
@@ -636,7 +636,7 @@ final class LatteCompilerTest extends BaseTestCase
 		foreach ([$classA, $classB] as $className) {
 			$cache->writeContentAddressed(
 				sha1($source) . '|' . $className . '|' . HarvestedCustoms::empty()->getSaltHash()
-				. '|' . $before->recordsSaltForTemplateClass($className),
+				. '|' . $before->recordsSaltForTemplateClass($className) . '|',
 				'latte-compile',
 				['result' => CompileResult::success('<?php /* POISONED ' . $className . ' */', $className, [])],
 			);
@@ -678,7 +678,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		$poisoned = CompileResult::success('<?php /* POISONED CACHE HIT MARKER */', $className, []);
 		(new LatteAnalysisCache($dir, 'testv1'))->writeContentAddressed(
-			sha1($source) . '|' . $className . '|' . HarvestedCustoms::empty()->getSaltHash() . '|disabled',
+			sha1($source) . '|' . $className . '|' . HarvestedCustoms::empty()->getSaltHash() . '|disabled|',
 			'latte-compile',
 			['result' => $poisoned],
 		);

@@ -21,6 +21,14 @@ parallelism, the result cache, and the baseline all apply uniformly. The library
 
 Every parameter this extension declares is namespaced under `orisaiNette.latte`.
 
+Everything that reads Latte's own API or depends on the shape of its generated code sits behind
+`LatteVersionAdapter` (`src/Latte/Version/`): compilation, the token-based fact extraction
+(declarations, include edges, form-macro sites), the engine harvest, the line-marker pattern and
+the `ShapeFamily` (Latte line + forms bridge, e.g. `2/macros`). `LatteVersionAdapterFactory` picks
+the adapter from the project's installed `latte/latte` and `nette/forms` versions; `Latte2Adapter`
+wraps the classes described below. The compile cache key carries the family id and the adapter
+class, so a different adapter never serves another's compiled output.
+
 For each `.latte` file, `LatteCompiler` (`src/Latte/Compile/`) runs the real
 `Latte\Parser`/`Latte\Compiler` (Latte 2.11 — no `Engine::compile`, no engine cache, no
 application boot) with the five built-in macro sets (`CoreMacros`,

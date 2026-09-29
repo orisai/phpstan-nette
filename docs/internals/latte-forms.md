@@ -20,7 +20,9 @@ Nothing about it is new machinery: the template side reads the Latte extension's
 to a `.latte` file, and the form side reads the Forms extension's shape resolver
 ([forms.md](forms.md)) for what those classes build. The bridge is
 the join, and it is a separate area: it depends on both extensions, neither depends on it, and
-both stay independently extractable.
+both stay independently extractable. The one exception is the Latte version adapter's fact
+extraction (`ExtractedFacts`), which produces the bridge's `FormSite` list alongside the template
+facts because the form-macro scan is written against a Latte version's own tokens.
 
 The check is **one-sided by construction**. It reports a name only when it can prove the name is
 absent; every situation it cannot resolve is silent. Read *Silence, and what it does not mean*

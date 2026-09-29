@@ -14,7 +14,6 @@ use OriPhpstan\Nette\Latte\Bridge\PhpFactsCache;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
@@ -37,6 +36,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsAncestorBasePresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsAncestorLeftPresenter;
@@ -784,7 +784,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 
 		return (new LatteRoutingParser(
 			$this->createMock(Parser::class),
-			new LatteCompiler(),
+			TestAdapter::create(),
 			new DeclarationScanner(),
 			PipelineFactory::create($root, null, false),
 			$contextResolver,
