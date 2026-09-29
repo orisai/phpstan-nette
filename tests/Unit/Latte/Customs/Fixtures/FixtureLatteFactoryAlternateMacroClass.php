@@ -3,12 +3,13 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures;
 
 use Latte\Engine;
+use Nette\Application\UI\Control;
 use Nette\Bridges\ApplicationLatte\LatteFactory;
 
 final class FixtureLatteFactoryAlternateMacroClass implements LatteFactory
 {
 
-	public function create(): Engine
+	public function create(?Control $control = null): Engine
 	{
 		$engine = new Engine();
 

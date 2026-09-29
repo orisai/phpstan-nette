@@ -2,10 +2,10 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures;
 
-use Nette\Bridges\ApplicationLatte\TemplateFactory;
 use Nette\DI\Container;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\FixtureBridgeLatteFactory;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsTemplateReplica;
+use Tests\OriPhpstan\Nette\Toolkit\TemplateFactories;
 
 // A compiled container whose TemplateFactory carries a configured default template class - the
 // factory-default rung of the template-class resolution ladder, which is what a renderer naming no
@@ -15,9 +15,8 @@ final class FixtureFactoryVarsContainer extends Container
 
 	public function getByType(string $type, bool $throw = true): ?object
 	{
-		$factory = new TemplateFactory(
+		$factory = TemplateFactories::create(
 			new FixtureBridgeLatteFactory(),
-			null,
 			null,
 			null,
 			FactoryVarsTemplateReplica::class,

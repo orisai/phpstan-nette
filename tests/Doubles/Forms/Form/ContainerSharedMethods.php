@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Doubles\Forms\Form;
 
+use Closure;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Control\ReCaptchaField;
 use Nette\Forms\Container;
 use Nette\Forms\Controls\BaseControl;
@@ -62,9 +63,14 @@ trait ContainerSharedMethods
 		return $this[$name] = $control;
 	}
 
-	public function addSubmit(string $name, $caption = null): CustomSubmitButton
+	public function addSubmit(string $name, $caption = null, ?Closure $onSubmit = null): CustomSubmitButton
 	{
-		return $this[$name] = new CustomSubmitButton($caption);
+		$control = $this[$name] = new CustomSubmitButton($caption);
+		if ($onSubmit !== null) {
+			$control->onClick[] = $onSubmit;
+		}
+
+		return $control;
 	}
 
 	/**

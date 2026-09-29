@@ -6,12 +6,15 @@ use Latte\Engine;
 use Nette\Application\Request;
 use Nette\Application\Response;
 use Nette\Application\Responses\TextResponse;
+use Nette\Application\UI\Control;
 use Nette\Application\UI\Template;
 use Nette\Bridges\ApplicationLatte\LatteFactory;
 use Nette\Bridges\ApplicationLatte\TemplateFactory;
 use Nette\Http;
 use Tests\OriPhpstan\Nette\Integration\Latte\Parity\Lifecycle\Fixtures\LifecycleProbePresenter;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
+use Tests\OriPhpstan\Nette\Toolkit\Latte3\UiLatteFactory;
 use Tests\OriPhpstan\Nette\Toolkit\PresenterFactory;
 use function in_array;
 use function strncmp;
@@ -32,14 +35,7 @@ abstract class LifecycleParityTestCase extends BaseTestCase
 				[],
 				['_nss' => '1'],
 			),
-			new TemplateFactory(new class implements LatteFactory {
-
-				public function create(): Engine
-				{
-					return new Engine();
-				}
-
-			}),
+			new TemplateFactory(self::latteFactory()),
 		);
 	}
 
@@ -87,6 +83,22 @@ abstract class LifecycleParityTestCase extends BaseTestCase
 	protected function renderMethodDispatched(LifecycleProbePresenter $presenter, string $renderMethod): bool
 	{
 		return in_array($renderMethod, $presenter->log, true);
+	}
+
+	private static function latteFactory(): LatteFactory
+	{
+		if (InstalledVersionsGuard::latteMajor() >= 3) {
+			return new UiLatteFactory();
+		}
+
+		return new class implements LatteFactory {
+
+			public function create(?Control $control = null): Engine
+			{
+				return new Engine();
+			}
+
+		};
 	}
 
 }

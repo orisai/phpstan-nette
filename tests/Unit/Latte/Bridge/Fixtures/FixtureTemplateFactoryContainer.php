@@ -2,8 +2,8 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures;
 
-use Nette\Bridges\ApplicationLatte\TemplateFactory;
 use Nette\DI\Container;
+use Tests\OriPhpstan\Nette\Toolkit\TemplateFactories;
 
 final class FixtureTemplateFactoryContainer extends Container
 {
@@ -22,9 +22,8 @@ final class FixtureTemplateFactoryContainer extends Container
 			return null;
 		}
 
-		$factory = new TemplateFactory(
+		$factory = TemplateFactories::create(
 			new FixtureBridgeLatteFactory(),
-			null,
 			null,
 			null,
 			FixtureFactoryDefaultTemplate::class,

@@ -52,6 +52,10 @@ breaks that fixture, not users.
   `Latte` or `LatteForms`.
 - Fixtures are colocated in a `Fixtures/` directory next to the tests using them, and every such directory is listed in
   `excludePaths` of `tools/phpstan.neon`.
+- Test code that needs Latte 3 (or nette/application 3.3) at class-load time lives in a `Latte3/` directory
+  (`tests/**/Latte3/`, e.g. `tests/Toolkit/Latte3/`): `tools/phpstan.neon` scans but does not analyse it, and
+  `tools/phpstan.latte3.neon` lists each such directory in `paths`; callers reach it only behind an
+  `InstalledVersionsGuard` check. Tests exercising the Latte 2 path carry `@group latte2` (see `VersionGroupGate`).
 - `tests/Doubles/` holds only doubles shared across areas (e.g. the `ApplicationForm`/`FormContainer` family the Forms
   and bridge tests both build on); `tests/Fixtures/<Area>/` holds shared fixture configs.
 - `tests/Toolkit/` is the shared harness: `AnalysisRun`, `InvalidationScenario`, `ScratchProject`,

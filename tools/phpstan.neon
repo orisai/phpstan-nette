@@ -13,33 +13,38 @@ parameters:
 	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
 
 	excludePaths:
-		# Analysed against Latte 3 by phpstan.latte3.neon.
-		- ../src/Latte/Version/Latte3 (?)
-		- ../tests/Fixtures
-		- ../tests/Doubles
-		- ../tests/Unit/Forms/Support
-		- ../tests/Unit/Forms/Component/Fixtures
-		- ../tests/Unit/Forms/Component/Unit/Support
-		- ../tests/Unit/Forms/Index/Fixtures
-		- ../tests/Unit/Forms/Inference/Fixtures
-		- ../tests/Unit/Forms/Inference/Unit/Support
-		- ../tests/Unit/Dic/Fixtures
-		- ../tests/Unit/Dic/Metadata/Fixtures
-		- ../tests/Unit/Dic/Rule/Fixtures
-		- ../tests/Unit/Dic/Type/Fixtures
-		- ../tests/Unit/Latte/Fixtures
-		- ../tests/Unit/Latte/Bridge/Fixtures
-		- ../tests/Unit/Latte/Bridge/Discovery/Fixtures
-		- ../tests/Unit/Latte/Bridge/Pairing/Fixtures
-		- ../tests/Unit/Latte/Customs/Fixtures
-		- ../tests/Unit/Latte/Declarations/Fixtures
-		- ../tests/Unit/Latte/Includes/Fixtures
-		- ../tests/Integration/Latte/Integration/Fixtures
-		- ../tests/Integration/Latte/Parity/Factory/Fixtures
-		- ../tests/Integration/Latte/Parity/Includes/Fixtures
-		- ../tests/Integration/Latte/Parity/Lifecycle/Fixtures
-		- ../tests/Integration/Latte/RuntimeParity/Fixtures
-		- ../tests/Unit/LatteForms/Fixtures
+		# Latte-3-only test code (tests/**/Latte3/) is analysed against Latte 3 by phpstan.latte3.neon; it
+		# stays scanned here so the version-neutral tests calling into it resolve.
+		analyse:
+			- ../tests/*/Latte3/*
+		analyseAndScan:
+			# Analysed against Latte 3 by phpstan.latte3.neon.
+			- ../src/Latte/Version/Latte3 (?)
+			- ../tests/Fixtures
+			- ../tests/Doubles
+			- ../tests/Unit/Forms/Support
+			- ../tests/Unit/Forms/Component/Fixtures
+			- ../tests/Unit/Forms/Component/Unit/Support
+			- ../tests/Unit/Forms/Index/Fixtures
+			- ../tests/Unit/Forms/Inference/Fixtures
+			- ../tests/Unit/Forms/Inference/Unit/Support
+			- ../tests/Unit/Dic/Fixtures
+			- ../tests/Unit/Dic/Metadata/Fixtures
+			- ../tests/Unit/Dic/Rule/Fixtures
+			- ../tests/Unit/Dic/Type/Fixtures
+			- ../tests/Unit/Latte/Fixtures
+			- ../tests/Unit/Latte/Bridge/Fixtures
+			- ../tests/Unit/Latte/Bridge/Discovery/Fixtures
+			- ../tests/Unit/Latte/Bridge/Pairing/Fixtures
+			- ../tests/Unit/Latte/Customs/Fixtures
+			- ../tests/Unit/Latte/Declarations/Fixtures
+			- ../tests/Unit/Latte/Includes/Fixtures
+			- ../tests/Integration/Latte/Integration/Fixtures
+			- ../tests/Integration/Latte/Parity/Factory/Fixtures
+			- ../tests/Integration/Latte/Parity/Includes/Fixtures
+			- ../tests/Integration/Latte/Parity/Lifecycle/Fixtures
+			- ../tests/Integration/Latte/RuntimeParity/Fixtures
+			- ../tests/Unit/LatteForms/Fixtures
 
 	checkBenevolentUnionTypes: true
 	checkMissingCallableSignature: true
@@ -242,3 +247,7 @@ parameters:
 		-
 			identifier: arguments.count
 			path: ../tests/Toolkit/TestFileFinder.php
+		# Called from the fixture containers, which are excluded from analysis.
+		-
+			identifier: shipmonk.deadMethod
+			path: ../tests/Toolkit/TemplateFactories.php

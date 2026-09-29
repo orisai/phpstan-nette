@@ -3,15 +3,18 @@ includes:
 	- phpstan.latte3.baseline.neon
 
 parameters:
+	# nette/application 3.2+ (the floor of every Latte 3 profile) uses readonly properties; a lower
+	# minimum makes PHPStan's parser reject those vendor files, which then read as missing classes.
 	phpVersion:
-		min: 80000
+		min: 80100
 		max: 80400
 	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.latte3.php
 
-	# Only the version seam is analysed against Latte 3; the Latte 2 adapter and everything built on
-	# Latte 2 internals is covered by phpstan.neon.
+	# Only the version seam and the Latte-3-only test code (tests/**/Latte3/) are analysed against
+	# Latte 3; the Latte 2 adapter and everything built on Latte 2 internals is covered by phpstan.neon.
 	paths:
 		- ../src/Latte/Version
+		- ../tests/Toolkit/Latte3
 	excludePaths!:
 		analyse:
 			- ../src/Latte/Version/Latte2
