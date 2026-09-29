@@ -2,8 +2,8 @@
 
 namespace OriPhpstan\Nette\Latte\Cache;
 
-use Composer\InstalledVersions;
 use FilesystemIterator;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -33,10 +33,10 @@ final class LatteCodeVersion
 
 		return self::$version = self::combine(
 			self::filesDigest(),
-			InstalledVersions::getVersion('phpstan/phpstan') ?? '',
-			InstalledVersions::getVersion('latte/latte') ?? '',
-			InstalledVersions::getVersion('nette/application') ?? '',
-			InstalledVersions::getVersion('nette/forms') ?? '',
+			ProjectInstalledVersions::get()->getVersion('phpstan/phpstan') ?? '',
+			ProjectInstalledVersions::get()->getVersion('latte/latte') ?? '',
+			ProjectInstalledVersions::get()->getVersion('nette/application') ?? '',
+			ProjectInstalledVersions::get()->getVersion('nette/forms') ?? '',
 		);
 	}
 

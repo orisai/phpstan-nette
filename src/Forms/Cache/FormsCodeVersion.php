@@ -2,8 +2,8 @@
 
 namespace OriPhpstan\Nette\Forms\Cache;
 
-use Composer\InstalledVersions;
 use FilesystemIterator;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -136,7 +136,7 @@ final class FormsCodeVersion
 			return self::$phpstanVersion;
 		}
 
-		return self::$phpstanVersion = InstalledVersions::getVersion('phpstan/phpstan') ?? '';
+		return self::$phpstanVersion = ProjectInstalledVersions::get()->getVersion('phpstan/phpstan') ?? '';
 	}
 
 }

@@ -2,9 +2,9 @@
 
 namespace Tests\OriPhpstan\Nette\Toolkit;
 
-use Composer\InstalledVersions;
 use Composer\Semver\Semver;
 use LogicException;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use PHPUnit\Framework\Assert;
 use function explode;
 use function in_array;
@@ -14,8 +14,6 @@ use function sprintf;
 
 final class InstalledVersionsGuard
 {
-
-	private const ROOT_PACKAGE = 'orisai/phpstan-nette';
 
 	private const GROUPS = [
 		'latte2' => ['latte/latte', '^2.0', 'Latte 2'],
@@ -37,22 +35,13 @@ final class InstalledVersionsGuard
 		self::$versions = $versions;
 	}
 
-	// This project's own installed set, never the merged one: a PHPStan container booted in-process
-	// registers the phar's Composer loader too, whose installed.php lists PHPStan's bundled
-	// dependencies (nette/di among them) and would win InstalledVersions::getVersion().
 	public static function version(string $package): ?string
 	{
 		if (self::$versions !== null) {
 			return self::$versions[$package] ?? null;
 		}
 
-		foreach (InstalledVersions::getAllRawData() as $installed) {
-			if ($installed['root']['name'] === self::ROOT_PACKAGE) {
-				return $installed['versions'][$package]['version'] ?? null;
-			}
-		}
-
-		throw new LogicException(sprintf('Installed data of %s not found.', self::ROOT_PACKAGE));
+		return ProjectInstalledVersions::get()->getVersion($package);
 	}
 
 	public static function satisfies(string $package, string $constraint): bool

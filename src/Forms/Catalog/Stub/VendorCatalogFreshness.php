@@ -2,8 +2,8 @@
 
 namespace OriPhpstan\Nette\Forms\Catalog\Stub;
 
-use Composer\InstalledVersions;
 use Nette\Utils\FileSystem;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use ReflectionClass;
 use ReflectionException;
 use function array_key_exists;
@@ -105,7 +105,7 @@ final class VendorCatalogFreshness
 
 	private static function installedPackageRoot(): ?string
 	{
-		return InstalledVersions::isInstalled(self::PACKAGE) ? InstalledVersions::getInstallPath(self::PACKAGE) : null;
+		return ProjectInstalledVersions::get()->getInstallPath(self::PACKAGE);
 	}
 
 	/**
