@@ -1,0 +1,15 @@
+{import 'blocks-snippets.latte'}
+{varType string $name}
+{varType string $mode}
+
+{block $name}dynamic {$name}{/block}
+
+{block wrapper}
+	{include parent}
+{/block}
+
+{block |upper}anonymous filtered {$mode}{/block}
+
+{sandbox 'declarations.latte', flag => true}
+
+{formPrint myForm}

@@ -177,6 +177,18 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertSame([], $result->getDiagnostics());
 	}
 
+	public function testLinkBaseRewritesDestinationsAtCompileTime(): void
+	{
+		$php = (string) $this->compile(
+			"{linkBase Admin:}\n<a n:href=\"Foo:bar 1\">x</a>\n{link Foo:bar}\n{plink this}\n",
+		)->getPhpSource();
+
+		self::assertStringContainsString("\$this->global->uiControl->link(':Admin::Foo:bar', [1])", $php);
+		self::assertStringContainsString("\$this->global->uiControl->link(':Admin::Foo:bar')", $php);
+		self::assertStringContainsString("\$this->global->uiPresenter->link('this')", $php);
+		self::assertStringNotContainsString('linkBase', $php);
+	}
+
 	public function testCacheTagKeyIsDeterministic(): void
 	{
 		$source = "{varType string \$k}\n{cache \$k, expire => '1 hour'}c{\$k}{/cache}\n{cache 'x'}d{/cache}\n";

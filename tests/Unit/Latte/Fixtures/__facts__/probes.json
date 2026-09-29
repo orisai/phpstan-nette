@@ -1,0 +1,121 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "name": "string",
+            "mode": "string"
+        },
+        "headerVarTypeLines": {
+            "name": 2,
+            "mode": 3
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "$name": [],
+            "wrapper": []
+        },
+        "defineParamDefaults": {
+            "$name": [],
+            "wrapper": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "import",
+                "kind": "file",
+                "rawTarget": "blocks-snippets.latte",
+                "resolvedPath": "fixtures/blocks-snippets.latte",
+                "argsSource": "",
+                "latteLine": 1
+            },
+            {
+                "tag": "include",
+                "kind": "block",
+                "rawTarget": "parent",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 8
+            },
+            {
+                "tag": "sandbox",
+                "kind": "file",
+                "rawTarget": "declarations.latte",
+                "resolvedPath": "fixtures/declarations.latte",
+                "argsSource": "flag => true",
+                "latteLine": 13
+            }
+        ],
+        "blockNames": [
+            "wrapper"
+        ],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "import",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "7": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "include",
+                    "column": 2
+                }
+            ],
+            "11": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "13": [
+                {
+                    "name": "sandbox",
+                    "column": 1
+                }
+            ],
+            "15": [
+                {
+                    "name": "formPrint",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

@@ -298,7 +298,7 @@ final class FamilyPatterns
 		}
 
 		return new PatternSet([
-			BlockDispatchEliminator::ROLE_DYNAMIC_BLOCK_NAME => self::calls(
+			BlockDispatchEliminator::ROLE_DYNAMIC_NAME => self::calls(
 				self::LATTE_RUNTIME_HELPERS,
 				['stringOrNull'],
 			),

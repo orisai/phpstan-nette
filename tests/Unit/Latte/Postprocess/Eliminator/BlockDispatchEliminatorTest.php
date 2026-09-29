@@ -9,7 +9,7 @@ use Tests\OriPhpstan\Nette\Toolkit\EliminatorRun;
 
 // Inputs are the committed raw snapshots' block shapes: {embed} without Latte 2's dead if (false)
 // mirror, {include parent}, the dynamic {block $name} (3.0 callable array, 3.1 first-class
-// callable) and the anonymous filtered block's IIFE. The block methods carry the parameter list
+// callable, the same wrapper on a dynamic include-file name) and the anonymous filtered block's IIFE. The block methods carry the parameter list
 // DeclarationInjector leaves them with, since the eliminators run after it.
 final class BlockDispatchEliminatorTest extends BaseTestCase
 {
@@ -33,6 +33,7 @@ final class BlockDispatchEliminatorTest extends BaseTestCase
 		$this->renderParentBlock('content', get_defined_vars()) /* pos 2:16 */;
 		$this->addBlock($ʟ_nm = (LR\Helpers::stringOrNull($ʟ_tmp = $name) ?? throw new InvalidArgumentException(sprintf('Block name must be a string, %s given.', get_debug_type($ʟ_tmp)))), 'html', [$this->blockName(...)], 0);
 		$this->renderBlock($ʟ_nm, get_defined_vars());
+		$this->createTemplate(LR\Helpers::stringOrNull($ʟ_tmp = $file) ?? throw new InvalidArgumentException(sprintf('Template name must be a string, %s given.', get_debug_type($ʟ_tmp))), [] + $this->params, 'include')->renderToContentType('html');
 		ob_start(fn() => '') /* pos 6:1 */;
 		try {
 			(function () {
@@ -62,6 +63,7 @@ PHP);
         $this->renderParentBlock('content', []);
         $this->addBlock($ʟ_nm = $name, 'html', [$this->blockName(...)], 0);
         $this->renderBlock($ʟ_nm, []);
+        $this->createTemplate($file, [] + $this->params, 'include')->renderToContentType('html');
         \ob_start(fn() => '');
         try {
             $this->renderBlock('title', [], 'html');

@@ -47,9 +47,9 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 	// The dead if (false) {} mirror Latte 2 emits between enterBlockLayer() and the try.
 	public const ROLE_EMBED_DEAD_IF = 'embedDeadIf';
 
-	// Latte 3's {block $name}: addBlock($ʟ_nm = (<stringOrNull>($ʟ_tmp = <expr>) ?? throw ...), ...)
-	// -> addBlock($ʟ_nm = <expr>, ...), the Latte 2 shape.
-	public const ROLE_DYNAMIC_BLOCK_NAME = 'dynamicBlockName';
+	// Latte 3's dynamic block or include-file name: <stringOrNull>($ʟ_tmp = <expr>) ?? throw ...
+	// -> <expr>, the Latte 2 shape (addBlock($ʟ_nm = <expr>, ...), createTemplate(<expr>, ...)).
+	public const ROLE_DYNAMIC_NAME = 'dynamicName';
 
 	// Latte 3's anonymous filtered {block |f}: (function () { extract(func_get_arg(0)); <body> })
 	// (get_defined_vars()) -> <body>, the Latte 2 shape inside the capture shell.
@@ -78,7 +78,7 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 			. '(already-resolved direct block calls kept as-is by the renderBlock handling above), layer calls dropped; '
 			. 'file-form createTemplate(<target>, <args>, "embed")->renderToContentType(...) -> Helpers::embedTemplate('
 			. '<target>), <args> kept analyzed via a preceding Helpers::analyzed(<args>) statement; {include parent} '
-			. '<parentBlock>(name, get_defined_vars()) argument flattened to []; <dynamicBlockName> unwrapped to the '
+			. '<parentBlock>(name, get_defined_vars()) argument flattened to []; <dynamicName> unwrapped to the '
 			. 'assigned expression; <inlineBlockClosure> IIFE -> its body: ' . $this->patterns()->describe();
 	}
 
@@ -157,7 +157,7 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 		}
 
 		if ($node instanceof Coalesce) {
-			$unwrapped = $this->unwrapDynamicBlockName($node);
+			$unwrapped = $this->unwrapDynamicName($node);
 			if ($unwrapped !== null) {
 				return $unwrapped;
 			}
@@ -491,7 +491,7 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 		return array_slice($closure->stmts, 1);
 	}
 
-	private function unwrapDynamicBlockName(Coalesce $node): ?Expr
+	private function unwrapDynamicName(Coalesce $node): ?Expr
 	{
 		$call = $node->left;
 		if (
@@ -506,7 +506,7 @@ final class BlockDispatchEliminator extends EliminatorVisitor
 
 		if (
 			!$this->patterns()->isStaticCall(
-				self::ROLE_DYNAMIC_BLOCK_NAME,
+				self::ROLE_DYNAMIC_NAME,
 				$call->class->toString(),
 				$call->name->toString(),
 			)
