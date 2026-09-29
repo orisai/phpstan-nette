@@ -1,0 +1,83 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "riskyDependency": "object"
+        },
+        "headerVarTypeLines": {
+            "riskyDependency": 1
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "content": []
+        },
+        "defineParamDefaults": {
+            "content": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "include",
+                "kind": "block",
+                "rawTarget": "content",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 7
+            }
+        ],
+        "blockNames": [
+            "content"
+        ],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "7": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ],
+            "11": [
+                {
+                    "name": "snippet",
+                    "column": 1
+                }
+            ],
+            "15": [
+                {
+                    "name": "try",
+                    "column": 1
+                }
+            ],
+            "17": [
+                {
+                    "name": "else",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

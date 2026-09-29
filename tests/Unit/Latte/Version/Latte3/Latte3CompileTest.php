@@ -112,17 +112,17 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertNull($parsed->getFailure());
 		self::assertSame(
 			[
-				['templateType', 'App\Foo\Bar', null, null, 1, true],
-				['parameter', 'array<int, string>', 'a', "['x' => 1, 'y' => [2, 3]]", 2, true],
-				['parameter', '?int', 'b', null, 2, true],
-				['parameter', null, 'c', 'null', 2, true],
-				['parameter', null, 'd', null, 2, true],
-				['varType', 'array<int, string>', 'x', null, 3, true],
-				['varType', '?int', 'late', null, 5, true],
-				['varType', 'string|null', 'mid', null, 7, false],
+				['templateType', 'App\Foo\Bar', null, null, 1],
+				['parameter', 'array<int, string>', 'a', "['x' => 1, 'y' => [2, 3]]", 2],
+				['parameter', '?int', 'b', null, 2],
+				['parameter', null, 'c', 'null', 2],
+				['parameter', null, 'd', null, 2],
+				['varType', 'array<int, string>', 'x', null, 3],
+				['varType', '?int', 'late', null, 5],
+				['varType', 'string|null', 'mid', null, 7],
 			],
 			array_map(
-				static fn ($d): array => [$d->getKind(), $d->getType(), $d->getVariable(), $d->getDefault(), $d->getLine(), $d->isInHead()],
+				static fn ($d): array => [$d->getKind(), $d->getType(), $d->getVariable(), $d->getDefault(), $d->getLine()],
 				$parsed->getDeclarations(),
 			),
 		);

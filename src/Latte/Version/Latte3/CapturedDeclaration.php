@@ -24,8 +24,6 @@ final class CapturedDeclaration
 
 	private int $line;
 
-	private bool $inHead;
-
 	/**
 	 * @param self::* $kind
 	 */
@@ -34,8 +32,7 @@ final class CapturedDeclaration
 		?string $type,
 		?string $variable,
 		?string $default,
-		int $line,
-		bool $inHead
+		int $line
 	)
 	{
 		$this->kind = $kind;
@@ -43,7 +40,6 @@ final class CapturedDeclaration
 		$this->variable = $variable;
 		$this->default = $default;
 		$this->line = $line;
-		$this->inHead = $inHead;
 	}
 
 	/**
@@ -72,11 +68,6 @@ final class CapturedDeclaration
 	public function getLine(): int
 	{
 		return $this->line;
-	}
-
-	public function isInHead(): bool
-	{
-		return $this->inHead;
 	}
 
 }

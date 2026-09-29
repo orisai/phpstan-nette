@@ -1,0 +1,54 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "lostForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

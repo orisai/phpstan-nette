@@ -1,0 +1,53 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "x": "string"
+        },
+        "headerVarTypeLines": {
+            "x": 4
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "sandbox",
+                "kind": "file",
+                "rawTarget": "sandbox-drift-target.latte",
+                "resolvedPath": "tree/sandbox-drift-target.latte",
+                "argsSource": "",
+                "latteLine": 5
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "4": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "sandbox",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

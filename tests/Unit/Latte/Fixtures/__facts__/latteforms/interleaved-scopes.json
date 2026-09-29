@@ -1,0 +1,94 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "interleavedForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "afterDiv",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                }
+            ]
+        },
+        {
+            "formName": "containerInterleave",
+            "line": 4,
+            "references": [
+                {
+                    "kind": "container",
+                    "name": "box",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "inBox",
+                    "containerPath": [
+                        "box"
+                    ],
+                    "line": 6,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 6
+                }
+            ],
+            "2": [
+                {
+                    "name": "input",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "formContainer",
+                    "column": 18
+                }
+            ],
+            "6": [
+                {
+                    "name": "input",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

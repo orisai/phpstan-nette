@@ -1,0 +1,138 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "errorForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "inputError",
+                    "name": "email",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "inputError",
+                    "name": "street",
+                    "containerPath": [
+                        "address"
+                    ],
+                    "line": 4,
+                    "guarded": false
+                },
+                {
+                    "kind": "inputError",
+                    "name": "nested-city",
+                    "containerPath": [],
+                    "line": 6,
+                    "guarded": false
+                },
+                {
+                    "kind": "inputError",
+                    "name": null,
+                    "containerPath": [],
+                    "line": 7,
+                    "guarded": false
+                },
+                {
+                    "kind": "inputError",
+                    "name": null,
+                    "containerPath": [],
+                    "line": 8,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "email",
+                    "containerPath": [],
+                    "line": 9,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "inputError",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "formContainer",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "inputError",
+                    "column": 1
+                }
+            ],
+            "6": [
+                {
+                    "name": "inputError",
+                    "column": 1
+                }
+            ],
+            "7": [
+                {
+                    "name": "inputError",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "inputError",
+                    "column": 1
+                }
+            ],
+            "9": [
+                {
+                    "name": "input",
+                    "column": 1
+                },
+                {
+                    "name": "inputError",
+                    "column": 14
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

@@ -8,3 +8,19 @@ parameters:
 			identifier: classConstant.deprecated
 			count: 1
 			path: ../src/Latte/Version/LatteVersionAdapterFactory.php
+
+		# Latte\Compiler\Block is @internal for its construction, yet it is the public payload of
+		# BlockNode::$block, DefineNode::$block, SnippetNode::$block and SnippetAreaNode::$block; the
+		# node facts read its name, dynamic-ness and parameters exactly as Latte's own passes do.
+		-
+			message: '#Latte\\Compiler\\Block#'
+			identifier: parameter.internalClass
+			path: ../src/Latte/Version/Latte3/*
+		-
+			message: '#internal class Latte\\Compiler\\Block#'
+			identifier: property.internalClass
+			path: ../src/Latte/Version/Latte3/*
+		-
+			message: '#internal class Latte\\Compiler\\Block#'
+			identifier: method.internalClass
+			path: ../src/Latte/Version/Latte3/*

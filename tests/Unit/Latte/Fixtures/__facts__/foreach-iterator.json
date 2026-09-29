@@ -1,0 +1,108 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "items": "array",
+            "groups": "array"
+        },
+        "headerVarTypeLines": {
+            "items": 1,
+            "groups": 2
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "foreach",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "foreach",
+                    "column": 1
+                }
+            ],
+            "9": [
+                {
+                    "name": "if",
+                    "column": 2
+                },
+                {
+                    "name": "if",
+                    "column": 45
+                }
+            ],
+            "12": [
+                {
+                    "name": "foreach",
+                    "column": 1
+                }
+            ],
+            "13": [
+                {
+                    "name": "foreach",
+                    "column": 2
+                }
+            ],
+            "14": [
+                {
+                    "name": "first",
+                    "column": 3
+                },
+                {
+                    "name": "last",
+                    "column": 30
+                }
+            ],
+            "18": [
+                {
+                    "name": "foreach",
+                    "column": 1
+                }
+            ],
+            "19": [
+                {
+                    "name": "iterateWhile",
+                    "column": 2
+                }
+            ],
+            "22": [
+                {
+                    "name": "sep",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

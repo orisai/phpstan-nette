@@ -1,0 +1,134 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "guardedForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "nameAttr",
+                    "name": "before",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": true
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "after",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": true
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "block",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": true
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "sibling",
+                    "containerPath": [],
+                    "line": 6,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "wrapped",
+                    "containerPath": [],
+                    "line": 9,
+                    "guarded": true
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "notAComponentGuard",
+                    "containerPath": [],
+                    "line": 12,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "opaque",
+                    "containerPath": [],
+                    "line": 14,
+                    "guarded": true
+                },
+                {
+                    "kind": "container",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 15,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "street",
+                    "containerPath": [
+                        "address"
+                    ],
+                    "line": 17,
+                    "guarded": true
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "city",
+                    "containerPath": [
+                        "address"
+                    ],
+                    "line": 18,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "plain",
+                    "containerPath": [],
+                    "line": 21,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "ifset",
+                    "column": 2
+                }
+            ],
+            "15": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

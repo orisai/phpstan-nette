@@ -1,0 +1,79 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "bareForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "insideIf",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "afterIf",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "if",
+                    "column": 2
+                }
+            ],
+            "3": [
+                {
+                    "name": "input",
+                    "column": 3
+                }
+            ],
+            "5": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "7": [
+                {
+                    "name": "input",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

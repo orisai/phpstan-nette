@@ -2,7 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Includes;
 
-use Latte\Token;
 use function array_key_last;
 use function array_pop;
 use function strpos;
@@ -23,10 +22,11 @@ final class BlockBodyTracker
 	/** @var list<array{name: string, bodyDepth: int}> */
 	private array $stack = [];
 
-	// Call for every CLOSING macro tag, before any other handling of it.
-	public function closing(Token $token): void
+	// Call for every CLOSING macro tag, before any other handling of it, with whether it closes a
+	// body (MacroPairing::closesBody() for a Latte 2 token).
+	public function closing(bool $closesBody): void
 	{
-		if ($this->depth > 0 && MacroPairing::closesBody($token)) {
+		if ($this->depth > 0 && $closesBody) {
 			$this->depth--;
 		}
 

@@ -1,0 +1,88 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "mode": "string"
+        },
+        "headerVarTypeLines": {
+            "mode": 1
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "sub": [],
+            "content": []
+        },
+        "defineParamDefaults": {
+            "sub": [],
+            "content": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "embed",
+                "kind": "file",
+                "rawTarget": "blocks-snippets.latte",
+                "resolvedPath": "fixtures/blocks-snippets.latte",
+                "argsSource": "mode => $mode",
+                "latteLine": 5
+            },
+            {
+                "tag": "embed",
+                "kind": "block",
+                "rawTarget": "sub",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 11
+            }
+        ],
+        "blockNames": [
+            "sub",
+            "content"
+        ],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "embed",
+                    "column": 1
+                }
+            ],
+            "6": [
+                {
+                    "name": "block",
+                    "column": 2
+                }
+            ],
+            "11": [
+                {
+                    "name": "embed",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

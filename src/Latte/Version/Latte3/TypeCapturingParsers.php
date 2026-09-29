@@ -21,10 +21,10 @@ use function strlen;
 use function substr;
 use function trim;
 
-// Re-implements the three CoreExtension type tags so their arguments are recorded: Latte's own
-// VarTypeNode/TemplateTypeNode discard them at parse time, and ParametersNode keeps only the
-// whitespace-free printed form. The returned nodes are Latte's own, so the generated code is
-// unchanged.
+// Re-implements the CoreExtension declaration tags so their arguments are recorded: Latte's own
+// VarTypeNode/TemplateTypeNode discard them at parse time, VarNode drops the assignment types and
+// ParametersNode keeps only the whitespace-free printed form. The returned nodes are Latte's own
+// (or print-identical subclasses), so the generated code is unchanged.
 final class TypeCapturingParsers
 {
 
@@ -40,6 +40,8 @@ final class TypeCapturingParsers
 			'varType' => fn (Tag $tag): Node => $this->varType($tag),
 			'templateType' => fn (Tag $tag): Node => $this->templateType($tag),
 			'parameters' => fn (Tag $tag): Node => $this->parameters($tag),
+			'var' => fn (Tag $tag): Node => $this->var($tag),
+			'default' => fn (Tag $tag): Node => $this->var($tag),
 		];
 	}
 
@@ -61,18 +63,48 @@ final class TypeCapturingParsers
 		$variable = $stream->consume(Token::Php_Variable);
 
 		$type = $this->slice($tag, $base, $start, $variable);
-		if ($type !== '') {
-			$this->captured[] = new CapturedDeclaration(
-				CapturedDeclaration::VAR_TYPE,
-				$type,
-				ltrim($variable->text, '$'),
-				null,
-				$tag->position->line,
-				$tag->isInHead(),
-			);
+		if ($type === '') {
+			return new VarTypeNode();
 		}
 
-		return new VarTypeNode();
+		$declaration = new CapturedDeclaration(
+			CapturedDeclaration::VAR_TYPE,
+			$type,
+			ltrim($variable->text, '$'),
+			null,
+			$tag->position->line,
+		);
+		$this->captured[] = $declaration;
+
+		return new VarTypeDeclarationNode($declaration);
+	}
+
+	// Mirrors VarNode::create() (Latte 3.0.26 and 3.1.6 parse identically), keeping the type each
+	// assignment was declared with.
+	private function var(Tag $tag): VarDeclarationNode
+	{
+		$tag->expectArguments();
+		$stream = $tag->parser->stream;
+		$node = new VarDeclarationNode();
+		$node->default = $tag->name === 'default';
+
+		do {
+			$type = $tag->parser->parseType();
+			$save = $stream->getIndex();
+			$expr = $stream->is(Token::Php_Variable) ? $tag->parser->parseExpression() : null;
+			if ($expr instanceof VariableNode) {
+				$node->assignments[] = new AssignNode($expr, new NullNode());
+			} elseif ($expr instanceof AssignNode && (!$node->default || $expr->var instanceof VariableNode)) {
+				$node->assignments[] = $expr;
+			} else {
+				$stream->seek($save);
+				$stream->throwUnexpectedException([], ' in ' . $tag->getNotation());
+			}
+
+			$node->types[] = $type === null ? null : $type->type;
+		} while ($stream->tryConsume(',') !== null && !$stream->peek()->isEnd());
+
+		return $node;
 	}
 
 	private function templateType(Tag $tag): TemplateTypeNode
@@ -86,7 +118,6 @@ final class TypeCapturingParsers
 			null,
 			null,
 			$tag->position->line,
-			true,
 		);
 
 		return $node;
@@ -145,7 +176,6 @@ final class TypeCapturingParsers
 			$variable,
 			$default,
 			$tag->position->line,
-			true,
 		);
 	}
 

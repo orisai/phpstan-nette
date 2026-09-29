@@ -1,0 +1,69 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "attrForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "nameAttr",
+                    "name": "email",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "email",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "country",
+                    "containerPath": [],
+                    "line": 4,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "note",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "send",
+                    "containerPath": [],
+                    "line": 6,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": [],
+        "layoutMode": null
+    }
+}

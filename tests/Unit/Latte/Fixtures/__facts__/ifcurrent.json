@@ -1,0 +1,58 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "dest": "string",
+            "label": "string"
+        },
+        "headerVarTypeLines": {
+            "dest": 1,
+            "label": 2
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "ifCurrent",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "ifCurrent",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

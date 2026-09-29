@@ -1,0 +1,53 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "x": "int|string"
+        },
+        "headerVarTypeLines": {
+            "x": 3
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "include",
+                "kind": "file",
+                "rawTarget": "maybe-mismatch-target.latte",
+                "resolvedPath": "tree/maybe-mismatch-target.latte",
+                "argsSource": "v => $x",
+                "latteLine": 4
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "3": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

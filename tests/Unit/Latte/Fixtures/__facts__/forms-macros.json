@@ -1,0 +1,121 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "f",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "nameAttr",
+                    "name": "x",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "label",
+                    "name": "x",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "inputError",
+                    "name": "x",
+                    "containerPath": [],
+                    "line": 4,
+                    "guarded": false
+                }
+            ]
+        },
+        {
+            "formName": "f2",
+            "line": 7,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "y",
+                    "containerPath": [],
+                    "line": 8,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "c",
+                    "containerPath": [],
+                    "line": 9,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "z",
+                    "containerPath": [
+                        "c"
+                    ],
+                    "line": 10,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "3": [
+                {
+                    "name": "label",
+                    "column": 2
+                }
+            ],
+            "4": [
+                {
+                    "name": "inputError",
+                    "column": 2
+                }
+            ],
+            "7": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "9": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                }
+            ],
+            "10": [
+                {
+                    "name": "input",
+                    "column": 3
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

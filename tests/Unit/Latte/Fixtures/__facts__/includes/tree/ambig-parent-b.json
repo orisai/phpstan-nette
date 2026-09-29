@@ -1,0 +1,57 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "include",
+                "kind": "file",
+                "rawTarget": "ambig-mid.latte",
+                "resolvedPath": "tree/ambig-mid.latte",
+                "argsSource": "",
+                "latteLine": 3
+            },
+            {
+                "tag": "include",
+                "kind": "file",
+                "rawTarget": "ambig-mid-solo.latte",
+                "resolvedPath": "tree/ambig-mid-solo.latte",
+                "argsSource": "",
+                "latteLine": 4
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "3": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

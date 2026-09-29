@@ -2,8 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
-use OriPhpstan\Nette\Latte\Declarations\Declarations;
-use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
@@ -38,14 +36,14 @@ final class Latte3Adapter implements LatteVersionAdapter
 	public function compile(string $source, string $className, string $relativePath): CompiledTemplate
 	{
 		$parsed = $this->compiler->parse($source);
-		$facts = $this->factsOf($parsed);
+		$facts = $this->factsOf($parsed, $source, $relativePath);
 
 		return new CompiledTemplate($this->compiler->generate($parsed, $className, $relativePath), $facts);
 	}
 
 	public function extractFacts(string $source, string $relativePath): ExtractedFacts
 	{
-		return $this->factsOf($this->compiler->parse($source));
+		return $this->factsOf($this->compiler->parse($source), $source, $relativePath);
 	}
 
 	public function lineMarkerPattern(): string
@@ -61,76 +59,9 @@ final class Latte3Adapter implements LatteVersionAdapter
 	}
 
 	// Read before generate(): the passes mutate the parsed tree in place.
-	private function factsOf(ParsedTemplate $parsed): ExtractedFacts
+	private function factsOf(ParsedTemplate $parsed, string $source, string $relativePath): ExtractedFacts
 	{
-		return ExtractedFacts::eager(
-			$this->declarationsOf($parsed->getDeclarations()),
-			new TemplateFacts([], [], [], [], [], [], [], []),
-			[],
-		);
-	}
-
-	/**
-	 * @param list<CapturedDeclaration> $captured
-	 */
-	private function declarationsOf(array $captured): Declarations
-	{
-		$templateTypeClass = null;
-		$templateTypeLine = null;
-		$headerVarTypes = [];
-		$headerVarTypeLines = [];
-		$midFileVarTypes = [];
-		$parameters = null;
-
-		foreach ($captured as $declaration) {
-			$type = $declaration->getType();
-			$variable = $declaration->getVariable();
-
-			switch ($declaration->getKind()) {
-				case CapturedDeclaration::TEMPLATE_TYPE:
-					if ($templateTypeClass === null && $type !== null) {
-						$templateTypeClass = $type;
-						$templateTypeLine = $declaration->getLine();
-					}
-
-					break;
-				case CapturedDeclaration::VAR_TYPE:
-					if ($type === null || $variable === null) {
-						break;
-					}
-
-					if ($declaration->isInHead()) {
-						$headerVarTypes[$variable] = $type;
-						$headerVarTypeLines[$variable] = $declaration->getLine();
-					} else {
-						$midFileVarTypes[] = [$variable, $type, $declaration->getLine()];
-					}
-
-					break;
-				case CapturedDeclaration::PARAMETER:
-					if ($variable === null) {
-						break;
-					}
-
-					$parameters[] = [$type, $variable, $declaration->getDefault(), $declaration->getLine()];
-
-					break;
-			}
-		}
-
-		return new Declarations(
-			$templateTypeClass,
-			$templateTypeLine,
-			$headerVarTypes,
-			$headerVarTypeLines,
-			$midFileVarTypes,
-			[],
-			[],
-			$parameters,
-			[],
-			[],
-			[],
-		);
+		return (new NodeFactsExtractor())->extract($parsed, $source, $relativePath);
 	}
 
 }

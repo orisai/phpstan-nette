@@ -1,0 +1,141 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [
+            [
+                "x",
+                "int",
+                2
+            ],
+            [
+                "x",
+                "string",
+                2
+            ],
+            [
+                "z",
+                "string",
+                3
+            ]
+        ],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "foo": [],
+            "bar": []
+        },
+        "defineParamDefaults": {
+            "foo": [],
+            "bar": []
+        },
+        "varTypePlacements": [
+            {
+                "name": "x",
+                "type": "int",
+                "line": 2,
+                "anchorKind": "assign",
+                "anchorLine": 2,
+                "anchorLabel": "{var}",
+                "boundVariables": [
+                    "x"
+                ],
+                "runSize": 1,
+                "neverAssigned": false,
+                "knownBeforeTag": false,
+                "insideBlockBody": false
+            },
+            {
+                "name": "z",
+                "type": "string",
+                "line": 3,
+                "anchorKind": "assign",
+                "anchorLine": 3,
+                "anchorLabel": "{var}",
+                "boundVariables": [
+                    "z"
+                ],
+                "runSize": 1,
+                "neverAssigned": false,
+                "knownBeforeTag": false,
+                "insideBlockBody": true
+            }
+        ]
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [
+            "foo",
+            "bar"
+        ],
+        "defineNames": [],
+        "topLevelVars": {
+            "q": "int",
+            "x": "int"
+        },
+        "topLevelDefaults": [],
+        "blockDeclaredVars": {
+            "foo": {
+                "x": "string"
+            }
+        },
+        "blockDeclaredVarLines": {
+            "foo": {
+                "x": 2
+            }
+        },
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                },
+                {
+                    "name": "var",
+                    "column": 17
+                },
+                {
+                    "name": "block",
+                    "column": 29
+                },
+                {
+                    "name": "varType",
+                    "column": 40
+                },
+                {
+                    "name": "var",
+                    "column": 59
+                }
+            ],
+            "3": [
+                {
+                    "name": "block",
+                    "column": 1
+                },
+                {
+                    "name": "ifset",
+                    "column": 12
+                },
+                {
+                    "name": "varType",
+                    "column": 22
+                },
+                {
+                    "name": "var",
+                    "column": 41
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

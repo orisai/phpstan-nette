@@ -1,0 +1,129 @@
+{
+    "declarations": {
+        "templateTypeClass": "Tests\\OriPhpstan\\Nette\\Unit\\Latte\\Fixtures\\Support\\FixtureTemplate",
+        "templateTypeLine": 1,
+        "headerVarTypes": {
+            "label": "string"
+        },
+        "headerVarTypeLines": {
+            "label": 2
+        },
+        "midFileVarTypes": [
+            [
+                "late",
+                "string",
+                12
+            ]
+        ],
+        "typedVars": [
+            [
+                "y",
+                "int",
+                5
+            ]
+        ],
+        "typedDefaults": [
+            [
+                "flag",
+                "bool",
+                10
+            ]
+        ],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": [
+            {
+                "name": "late",
+                "type": "string",
+                "line": 12,
+                "anchorKind": null,
+                "anchorLine": null,
+                "anchorLabel": "an output tag",
+                "boundVariables": null,
+                "runSize": 1,
+                "neverAssigned": true,
+                "knownBeforeTag": false,
+                "insideBlockBody": false
+            }
+        ]
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": {
+            "x": "int"
+        },
+        "topLevelDefaults": [
+            "z",
+            "flag"
+        ],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "templateType",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "6": [
+                {
+                    "name": "default",
+                    "column": 1
+                }
+            ],
+            "7": [
+                {
+                    "name": "php",
+                    "column": 1
+                }
+            ],
+            "8": [
+                {
+                    "name": "do",
+                    "column": 1
+                }
+            ],
+            "10": [
+                {
+                    "name": "default",
+                    "column": 1
+                }
+            ],
+            "11": [
+                {
+                    "name": "if",
+                    "column": 1
+                }
+            ],
+            "12": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

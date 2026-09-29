@@ -1,0 +1,61 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "title": "string"
+        },
+        "headerVarTypeLines": {
+            "title": 4
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "layout",
+                "kind": "file",
+                "rawTarget": "layout-drift-lay.latte",
+                "resolvedPath": "tree/layout-drift-lay.latte",
+                "argsSource": "",
+                "latteLine": 6
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": {
+            "childVar": "int"
+        },
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "4": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "6": [
+                {
+                    "name": "layout",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": "declared"
+    }
+}

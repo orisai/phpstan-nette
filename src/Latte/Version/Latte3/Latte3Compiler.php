@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Version\Latte3;
 use Latte\CompileException;
 use Latte\Engine;
 use Latte\Essential\TranslatorExtension;
+use Latte\Feature;
 use LogicException;
 use Nette\Bridges\ApplicationLatte\UIExtension;
 use Nette\Bridges\CacheLatte\CacheExtension;
@@ -49,9 +50,8 @@ final class Latte3Compiler
 
 		for ($attempt = 0; $attempt <= self::MAX_UNKNOWN_TAG_RETRIES; $attempt++) {
 			$typeCapture = new TypeCapturingParsers();
-			$engine = $this->createEngine(
-				new AnalysisExtension($typeCapture, $passthroughTags, $passthroughAttributes),
-			);
+			$recorder = new TagRecorder();
+			$engine = $this->createEngine($typeCapture, $recorder, $passthroughTags, $passthroughAttributes);
 			$deprecations = [];
 
 			try {
@@ -72,6 +72,7 @@ final class Latte3Compiler
 					$engine,
 					$node,
 					$typeCapture->getCaptured(),
+					$recorder,
 					array_merge($diagnostics, $deprecations),
 				);
 			} catch (CompileException $e) {
@@ -174,12 +175,25 @@ final class Latte3Compiler
 		);
 	}
 
-	// Engine's own defaults (CoreExtension, SandboxExtension, the installed line's feature flags) plus
-	// the nette bridges the DI extension would add and the translator tags Latte 2 had in its core;
-	// the harvested set replaces this fixed list later.
-	private function createEngine(AnalysisExtension $analysis): Engine
+	// Engine's own defaults (CoreExtension, SandboxExtension) plus the nette bridges the DI extension
+	// would add and the translator tags Latte 2 had in its core; the harvested set replaces this
+	// fixed list later. Strict types stay off on every line until a harvested engine says otherwise.
+	// The analysis extension is added last with the effective tag map of everything before it, so
+	// TagRecorder wraps the parser Latte itself would have dispatched to.
+
+	/**
+	 * @param array<string, bool> $passthroughTags
+	 * @param array<string, true> $passthroughAttributes
+	 */
+	private function createEngine(
+		TypeCapturingParsers $typeCapture,
+		TagRecorder $recorder,
+		array $passthroughTags,
+		array $passthroughAttributes
+	): Engine
 	{
 		$engine = new Engine();
+		$engine->setFeature(Feature::StrictTypes, false);
 		$engine->addExtension(new UIExtension(null));
 		$engine->addExtension(new FormsExtension());
 		if (class_exists(CacheExtension::class)) {
@@ -187,7 +201,17 @@ final class Latte3Compiler
 		}
 
 		$engine->addExtension(new TranslatorExtension(null));
-		$engine->addExtension($analysis);
+
+		$baseTags = [];
+		foreach ($engine->getExtensions() as $extension) {
+			foreach ($extension->getTags() as $name => $parser) {
+				$baseTags[$name] = $parser;
+			}
+		}
+
+		$engine->addExtension(
+			new AnalysisExtension($typeCapture, $passthroughTags, $passthroughAttributes, $baseTags, $recorder),
+		);
 
 		return $engine;
 	}
@@ -202,7 +226,7 @@ final class Latte3Compiler
 		}
 
 		if (preg_match('~^Unexpected attribute n:(?:inner-|tag-)?([\w:.-]+)~', $message, $m) === 1) {
-			return [$m[1], true];
+			return isset(self::LATTE2_ONLY_TAGS[$m[1]]) ? null : [$m[1], true];
 		}
 
 		return null;
@@ -210,7 +234,9 @@ final class Latte3Compiler
 
 	// Latte 2's PassthroughMacro was AUTO_CLOSE: paired when a closing tag exists, void otherwise.
 	// A Latte 3 parser is one or the other (a generator expects its closing tag), so the source
-	// decides.
+	// decides - textually, so a {/foo} inside a {* comment *} or a string also pairs the name, the
+	// same way a name used both paired and unpaired in one template falls back to Latte's own
+	// parse error.
 	private function hasClosingTag(string $source, string $name): bool
 	{
 		return preg_match('~\{/' . preg_quote($name, '~') . '\s*\}~', $source) === 1;

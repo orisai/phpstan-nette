@@ -1,0 +1,43 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "include",
+                "kind": "file",
+                "rawTarget": "partial.latte",
+                "resolvedPath": "tree/partial.latte",
+                "argsSource": "extra => 'txt'",
+                "latteLine": 2
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "2": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

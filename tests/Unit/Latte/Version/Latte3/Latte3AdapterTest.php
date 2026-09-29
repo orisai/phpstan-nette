@@ -45,11 +45,27 @@ final class Latte3AdapterTest extends BaseTestCase
 		self::assertSame([['string', 'name', null, 2], ['int', 'age', '18', 2]], $declarations->getParameters());
 		self::assertSame([], $declarations->getTypedVars());
 		self::assertSame([], $declarations->getDefineParams());
-		self::assertSame([], $declarations->getVarTypePlacements());
-		self::assertSame([], $compiled->getFacts()->getTemplateFacts()->getIncludeSites());
+		[$placement] = $declarations->getVarTypePlacements();
+		self::assertSame('mid', $placement->getName());
+		self::assertNull($placement->getAnchorKind());
+		self::assertSame('the end of the template', $placement->getAnchorLabel());
+		self::assertTrue($placement->isNeverAssigned());
+		$templateFacts = $compiled->getFacts()->getTemplateFacts();
+		self::assertSame([], $templateFacts->getIncludeSites());
+		self::assertSame(
+			[
+				1 => [['name' => 'templateType', 'column' => 1]],
+				2 => [['name' => 'parameters', 'column' => 1]],
+				3 => [['name' => 'varType', 'column' => 1]],
+				4 => [['name' => 'if', 'column' => 1]],
+				5 => [['name' => 'varType', 'column' => 1]],
+			],
+			$templateFacts->getLineMacros(),
+		);
 		self::assertSame([], $compiled->getFacts()->getFormSites());
 
 		self::assertEquals($declarations, $adapter->extractFacts($source, 'a.latte')->getDeclarations());
+		self::assertEquals($templateFacts, $adapter->extractFacts($source, 'a.latte')->getTemplateFacts());
 	}
 
 	public function testFailedParseStillYieldsEmptyFacts(): void

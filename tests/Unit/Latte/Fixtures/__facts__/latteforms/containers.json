@@ -1,0 +1,126 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "orderForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "note",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "street",
+                    "containerPath": [
+                        "address"
+                    ],
+                    "line": 4,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "geo",
+                    "containerPath": [
+                        "address"
+                    ],
+                    "line": 5,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "lat",
+                    "containerPath": [
+                        "address",
+                        "geo"
+                    ],
+                    "line": 6,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "total",
+                    "containerPath": [],
+                    "line": 9,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "3": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                }
+            ],
+            "4": [
+                {
+                    "name": "input",
+                    "column": 3
+                }
+            ],
+            "5": [
+                {
+                    "name": "formContainer",
+                    "column": 3
+                }
+            ],
+            "6": [
+                {
+                    "name": "input",
+                    "column": 4
+                }
+            ],
+            "9": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

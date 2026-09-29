@@ -1,0 +1,72 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "x": "string",
+            "name": "string",
+            "created": "\\DateTimeImmutable"
+        },
+        "headerVarTypeLines": {
+            "x": 1,
+            "name": 2,
+            "created": 3
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "12": [
+                {
+                    "name": "capture",
+                    "column": 1
+                }
+            ],
+            "15": [
+                {
+                    "name": "_",
+                    "column": 1
+                }
+            ],
+            "16": [
+                {
+                    "name": "translate",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

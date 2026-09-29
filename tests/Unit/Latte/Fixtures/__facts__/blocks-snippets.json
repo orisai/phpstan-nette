@@ -1,0 +1,112 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "x": "string"
+        },
+        "headerVarTypeLines": {
+            "x": 1
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "content": [],
+            "typed": [
+                [
+                    "string",
+                    "p"
+                ]
+            ]
+        },
+        "defineParamDefaults": {
+            "content": [],
+            "typed": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "include",
+                "kind": "block",
+                "rawTarget": "content",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 11
+            },
+            {
+                "tag": "include",
+                "kind": "block",
+                "rawTarget": "typed",
+                "resolvedPath": null,
+                "argsSource": "'value'",
+                "latteLine": 13
+            }
+        ],
+        "blockNames": [
+            "content"
+        ],
+        "defineNames": [
+            "typed"
+        ],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "7": [
+                {
+                    "name": "define",
+                    "column": 1
+                }
+            ],
+            "11": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ],
+            "13": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ],
+            "17": [
+                {
+                    "name": "snippet",
+                    "column": 1
+                }
+            ],
+            "21": [
+                {
+                    "name": "snippetArea",
+                    "column": 1
+                }
+            ],
+            "22": [
+                {
+                    "name": "snippet",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

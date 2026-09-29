@@ -1,0 +1,69 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "localBlock": []
+        },
+        "defineParamDefaults": {
+            "localBlock": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "embed",
+                "kind": "block",
+                "rawTarget": "localBlock",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 4
+            },
+            {
+                "tag": "embed",
+                "kind": "block",
+                "rawTarget": "missingBlock",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 5
+            }
+        ],
+        "blockNames": [
+            "localBlock"
+        ],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "3": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "embed",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "embed",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

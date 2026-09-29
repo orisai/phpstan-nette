@@ -8,24 +8,20 @@ use Latte\MacroTokens;
 use Latte\Parser;
 use Latte\RegexpException;
 use Latte\Token;
-use OriPhpstan\Nette\Forms\Shape\ComponentPath;
+use OriPhpstan\Nette\Latte\Forms\ComponentNameSyntax;
 use OriPhpstan\Nette\Latte\Forms\ControlReference;
+use OriPhpstan\Nette\Latte\Forms\ExistenceGuard;
 use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\MacroPairing;
 use function array_pop;
 use function array_reverse;
-use function array_slice;
 use function array_splice;
 use function array_values;
 use function count;
 use function explode;
 use function is_string;
-use function preg_match;
-use function preg_replace;
-use function strlen;
 use function strpos;
 use function strtolower;
-use function substr;
 use function trim;
 
 // Purely syntactic form-macro extraction over Latte 2 tokens: every {form}/{formContext}/<form n:name>
@@ -74,13 +70,6 @@ final class FormSiteScanner
 	private const CLOSER_MACRO = 'macro';
 
 	private const CLOSER_HTML = 'html';
-
-	// $form[...] / $container[...] - a variable with an offset is the only spelling that can be a
-	// component existence check. The variable's own name is not compared: {form X} binds $form, but
-	// a nested {formContainer} body may legitimately check through a differently named local.
-	private const GUARD_RECEIVER_PATTERN = '~^\\$[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\[)~';
-
-	private const GUARD_OFFSET_PATTERN = '~^\\s*\\[\\s*(?:\'([^\']*)\'|"([^"]*)")\\s*\\]~';
 
 	// vendor/latte/latte/src/Latte/Helpers.php::$emptyElements, mirrored rather than referenced
 	// because Latte\Helpers is @internal (same treatment TemplateFactExtractor gives Parser::N_PREFIX).
@@ -393,7 +382,7 @@ final class FormSiteScanner
 			if ($frame['kind'] === self::FRAME_FORM) {
 				$containerPath = array_reverse($path);
 				$reference = new ControlReference($kind, $name, $containerPath, $line);
-				$references[$frame['siteIndex']][] = self::isGuardedBy($guards, $containerPath, $name)
+				$references[$frame['siteIndex']][] = ExistenceGuard::covers($guards, $containerPath, $name)
 					? $reference->asGuarded()
 					: $reference;
 
@@ -441,15 +430,11 @@ final class FormSiteScanner
 		array $elementRefs
 	): void
 	{
-		$expression = trim($args);
-
-		// {ifset $var} / {ifset #block} / n:ifset="$item->x" check something that is not a component
-		// of the enclosing form, so they guard nothing this collector records.
-		if (preg_match(self::GUARD_RECEIVER_PATTERN, $expression) !== 1) {
+		if (!ExistenceGuard::isComponentCheck($args)) {
 			return;
 		}
 
-		$guard = $this->guardPath($expression);
+		$guard = ExistenceGuard::pathOf($args);
 
 		$frames[] = [
 			'kind' => self::FRAME_GUARD,
@@ -464,78 +449,13 @@ final class FormSiteScanner
 		foreach ($elementRefs as $location) {
 			$siteRefs = $references[$location['site']];
 			$reference = $siteRefs[$location['index']];
-			if (!self::isGuardedBy([$guard], $reference->getContainerPath(), $reference->getName())) {
+			if (!ExistenceGuard::covers([$guard], $reference->getContainerPath(), $reference->getName())) {
 				continue;
 			}
 
 			$siteRefs[$location['index']] = $reference->asGuarded();
 			$references[$location['site']] = array_values($siteRefs);
 		}
-	}
-
-	// The literal component path an existence check names, relative to the form: $form['a']['b'] and
-	// $form['a-b'] both read ['a', 'b'], because Container::getComponent() explodes the offset the same
-	// way. Null when the expression is a component check whose path cannot be read (a computed offset,
-	// a compound condition) - the conservative reading, which suppresses everything the guard encloses
-	// rather than guessing which name it protects.
-
-	/**
-	 * @return list<string>|null
-	 */
-	private function guardPath(string $expression): ?array
-	{
-		$rest = trim((string) preg_replace(self::GUARD_RECEIVER_PATTERN, '', $expression, 1));
-
-		$path = [];
-		while ($rest !== '') {
-			if (preg_match(self::GUARD_OFFSET_PATTERN, $rest, $matches) !== 1) {
-				return null;
-			}
-
-			$literal = ($matches[2] ?? '') !== '' ? $matches[2] : $matches[1];
-			$name = $this->literalName($literal);
-			if ($name === null) {
-				return null;
-			}
-
-			foreach (ComponentPath::split($name) as $segment) {
-				$path[] = $segment;
-			}
-
-			$rest = trim((string) substr($rest, strlen($matches[0])));
-		}
-
-		return $path === [] ? null : $path;
-	}
-
-	// A guard covers a reference when it names the same component: the guard's path must be a suffix of
-	// the reference's own full path, so {ifset $form['x']} covers {input x} and, inside
-	// {formContainer c}, an $x['street'] check covers c-street. A guard naming a DIFFERENT component
-	// covers nothing - that is the whole scope of the suppression.
-
-	/**
-	 * @param list<list<string>|null> $guards
-	 * @param list<string> $containerPath
-	 */
-	private static function isGuardedBy(array $guards, array $containerPath, ?string $name): bool
-	{
-		$reference = $name === null ? null : [...$containerPath, ...ComponentPath::split($name)];
-
-		foreach ($guards as $guard) {
-			if ($guard === null) {
-				return true;
-			}
-
-			if ($reference === null || count($guard) > count($reference)) {
-				continue;
-			}
-
-			if (array_slice($reference, -count($guard)) === $guard) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	// <!--, <!DOCTYPE and <? share Token::HTML_TAG_BEGIN with real tags but are not elements:
@@ -593,46 +513,14 @@ final class FormSiteScanner
 	{
 		$word = (new MacroTokens($args))->fetchWord();
 
-		return $this->literalName($word === null ? null : explode(':', $word)[0]);
+		return ComponentNameSyntax::literalName($word === null ? null : explode(':', $word)[0]);
 	}
 
 	// {form}/{formContext}/{formContainer}/n:formContainer read a single fetchWord(), with no
 	// ':'-part vocabulary at all.
 	private function singleWord(string $args): ?string
 	{
-		return $this->literalName((new MacroTokens($args))->fetchWord());
-	}
-
-	// A macro argument is a component NAME only if every NameSeparator segment of it is one:
-	// getComponent() explodes on '-' and applies Container::NameRegexp per part, so 'a-b' is a legal
-	// (nested) reference while 'a|b', 'foo()' and '$x' are not names at all. Asked of ComponentPath
-	// rather than spelled as a regex of its own - that spelling was a seventh copy of the alphabet,
-	// and a relaxed NameRegexp upstream would have moved the PHP channel while leaving this one
-	// rejecting.
-	private function literalName(?string $word): ?string
-	{
-		if ($word === null) {
-			return null;
-		}
-
-		$word = $this->dequote(trim($word));
-		foreach (ComponentPath::split($word) as $segment) {
-			if (!ComponentPath::isValidSegment($segment)) {
-				return null;
-			}
-		}
-
-		return $word;
-	}
-
-	private function dequote(string $value): string
-	{
-		$length = strlen($value);
-		if ($length >= 2 && ($value[0] === "'" || $value[0] === '"') && $value[$length - 1] === $value[0]) {
-			return (string) substr($value, 1, -1);
-		}
-
-		return $value;
+		return ComponentNameSyntax::literalName((new MacroTokens($args))->fetchWord());
 	}
 
 }

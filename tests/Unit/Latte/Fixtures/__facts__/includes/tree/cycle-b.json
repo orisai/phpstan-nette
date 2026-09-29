@@ -1,0 +1,55 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "bBlock": []
+        },
+        "defineParamDefaults": {
+            "bBlock": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "import",
+                "kind": "file",
+                "rawTarget": "cycle-a.latte",
+                "resolvedPath": "tree/cycle-a.latte",
+                "argsSource": "",
+                "latteLine": 3
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [
+            "bBlock"
+        ],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "2": [
+                {
+                    "name": "define",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "import",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

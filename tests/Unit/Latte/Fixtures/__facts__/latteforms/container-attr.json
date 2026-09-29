@@ -1,0 +1,57 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "attrContainerForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "container",
+                    "name": "question",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "text",
+                    "containerPath": [
+                        "question"
+                    ],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "afterFieldset",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": [],
+        "layoutMode": null
+    }
+}

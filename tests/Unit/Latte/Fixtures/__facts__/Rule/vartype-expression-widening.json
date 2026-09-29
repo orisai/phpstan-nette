@@ -1,0 +1,71 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [
+            [
+                "widened",
+                "int",
+                2
+            ]
+        ],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": [
+            {
+                "name": "widened",
+                "type": "int",
+                "line": 2,
+                "anchorKind": "assign",
+                "anchorLine": 3,
+                "anchorLabel": "{var}",
+                "boundVariables": [
+                    "widened"
+                ],
+                "runSize": 1,
+                "neverAssigned": false,
+                "knownBeforeTag": false,
+                "insideBlockBody": false
+            }
+        ]
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": {
+            "q": "int",
+            "widened": "mixed"
+        },
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

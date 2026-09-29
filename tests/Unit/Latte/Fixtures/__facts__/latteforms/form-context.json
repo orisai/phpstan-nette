@@ -1,0 +1,92 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "outerCtxForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "outerCtxControl",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "backOnOuter",
+                    "containerPath": [],
+                    "line": 6,
+                    "guarded": false
+                }
+            ]
+        },
+        {
+            "formName": "otherForm",
+            "line": 3,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "otherControl",
+                    "containerPath": [],
+                    "line": 4,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "3": [
+                {
+                    "name": "formContext",
+                    "column": 2
+                }
+            ],
+            "4": [
+                {
+                    "name": "input",
+                    "column": 3
+                }
+            ],
+            "6": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

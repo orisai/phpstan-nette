@@ -1,0 +1,67 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": null,
+            "line": 1,
+            "references": [
+                {
+                    "kind": "nameAttr",
+                    "name": "ghost",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                }
+            ]
+        },
+        {
+            "formName": "simpleForm",
+            "line": 4,
+            "references": [
+                {
+                    "kind": "nameAttr",
+                    "name": "nope",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": false
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

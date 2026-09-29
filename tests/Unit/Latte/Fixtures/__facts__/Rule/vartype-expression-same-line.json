@@ -1,0 +1,69 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [
+            [
+                "x",
+                "string",
+                2
+            ]
+        ],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": [
+            {
+                "name": "x",
+                "type": "string",
+                "line": 2,
+                "anchorKind": "assign",
+                "anchorLine": 2,
+                "anchorLabel": "{var}",
+                "boundVariables": [
+                    "x"
+                ],
+                "runSize": 1,
+                "neverAssigned": false,
+                "knownBeforeTag": false,
+                "insideBlockBody": false
+            }
+        ]
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": {
+            "q": "int",
+            "x": "int"
+        },
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                },
+                {
+                    "name": "var",
+                    "column": 20
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

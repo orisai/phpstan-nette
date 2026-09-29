@@ -1,0 +1,212 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [
+        {
+            "formName": "simpleForm",
+            "line": 1,
+            "references": [
+                {
+                    "kind": "input",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 2,
+                    "guarded": false
+                },
+                {
+                    "kind": "inputError",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 3,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 4,
+                    "guarded": false
+                },
+                {
+                    "kind": "label",
+                    "name": "send",
+                    "containerPath": [],
+                    "line": 5,
+                    "guarded": false
+                },
+                {
+                    "kind": "label",
+                    "name": "send",
+                    "containerPath": [],
+                    "line": 6,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "email",
+                    "containerPath": [],
+                    "line": 7,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "email",
+                    "containerPath": [],
+                    "line": 8,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "send",
+                    "containerPath": [],
+                    "line": 9,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "name",
+                    "containerPath": [],
+                    "line": 10,
+                    "guarded": false
+                },
+                {
+                    "kind": "label",
+                    "name": "name",
+                    "containerPath": [],
+                    "line": 11,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "send",
+                    "containerPath": [],
+                    "line": 12,
+                    "guarded": false
+                },
+                {
+                    "kind": "input",
+                    "name": "address-street",
+                    "containerPath": [],
+                    "line": 13,
+                    "guarded": false
+                },
+                {
+                    "kind": "container",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 14,
+                    "guarded": false
+                },
+                {
+                    "kind": "label",
+                    "name": "street",
+                    "containerPath": [
+                        "address"
+                    ],
+                    "line": 14,
+                    "guarded": false
+                },
+                {
+                    "kind": "nameAttr",
+                    "name": "address",
+                    "containerPath": [],
+                    "line": 15,
+                    "guarded": true
+                }
+            ]
+        }
+    ],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "form",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "3": [
+                {
+                    "name": "inputError",
+                    "column": 2
+                }
+            ],
+            "5": [
+                {
+                    "name": "label",
+                    "column": 2
+                }
+            ],
+            "7": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                }
+            ],
+            "9": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                }
+            ],
+            "10": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "11": [
+                {
+                    "name": "label",
+                    "column": 2
+                }
+            ],
+            "12": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "13": [
+                {
+                    "name": "input",
+                    "column": 2
+                }
+            ],
+            "14": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                },
+                {
+                    "name": "label",
+                    "column": 25
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

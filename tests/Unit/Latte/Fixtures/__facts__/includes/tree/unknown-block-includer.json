@@ -1,0 +1,57 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "import",
+                "kind": "file",
+                "rawTarget": "blocks.latte",
+                "resolvedPath": "tree/blocks.latte",
+                "argsSource": "",
+                "latteLine": 3
+            },
+            {
+                "tag": "include",
+                "kind": "block",
+                "rawTarget": "missingBlock",
+                "resolvedPath": null,
+                "argsSource": "",
+                "latteLine": 4
+            }
+        ],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "3": [
+                {
+                    "name": "import",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "include",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}

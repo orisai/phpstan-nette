@@ -16,6 +16,7 @@ use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
+use function explode;
 use function in_array;
 use function ltrim;
 use function sha1;
@@ -105,7 +106,7 @@ final class DeclarationScanner
 
 			// A closing tag carries no arguments, so none of the cases below can match one.
 			if ($token->closing) {
-				$blocks->closing($token);
+				$blocks->closing(MacroPairing::closesBody($token));
 				$ownMethodBodyDepths = $this->popClosedBodies($ownMethodBodyDepths, $blocks->depth());
 
 				continue;
@@ -624,7 +625,7 @@ final class DeclarationScanner
 		}
 
 		$variable = (string) $tokens->nextValue(MacroTokens::T_VARIABLE);
-		if ($tokens->nextToken() === null || !$tokens->isCurrent('=')) {
+		if ($tokens->nextToken('=') === null) {
 			return null;
 		}
 
@@ -718,7 +719,7 @@ final class DeclarationScanner
 	{
 		$tokens = new MacroTokens($value);
 		$fetched = $tokens->fetchWordWithModifier('local');
-		$name = $fetched === null ? '' : ltrim(trim($fetched[0]), '#');
+		$name = $fetched === null ? '' : self::blockNameWord($fetched[0]);
 
 		$params = [];
 		$defaults = [];
@@ -754,6 +755,13 @@ final class DeclarationScanner
 		}
 
 		return $bodyDepths;
+	}
+
+	// The name stops at a filter: {block foo|upper} names foo, {block |striptags|trim} is anonymous.
+	// The '|' arrives here because the caller reconcatenates the tag's modifiers for union types.
+	public static function blockNameWord(string $word): string
+	{
+		return ltrim(trim(explode('|', $word, 2)[0]), '#');
 	}
 
 	// BlockMacros::isDynamic() verbatim - a name Latte cannot resolve at compile time.

@@ -8,10 +8,7 @@ use Latte\MacroTokens;
 use Latte\Parser;
 use Latte\RegexpException;
 use Latte\Token;
-use function array_pop;
-use function dirname;
-use function explode;
-use function implode;
+use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use function in_array;
 use function ltrim;
 use function preg_match;
@@ -83,7 +80,7 @@ final class TemplateFactExtractor
 			}
 
 			if ($token->closing) {
-				$blocks->closing($token);
+				$blocks->closing(MacroPairing::closesBody($token));
 
 				continue;
 			}
@@ -232,7 +229,7 @@ final class TemplateFactExtractor
 		}
 
 		$literal = $this->dequote(trim($name));
-		$resolvedPath = $this->normalizePath($projectRelativePath, $literal);
+		$resolvedPath = IncludePath::normalize($projectRelativePath, $literal);
 
 		return new IncludeTarget(
 			$tag,
@@ -249,7 +246,7 @@ final class TemplateFactExtractor
 		$tokens = new MacroTokens($value);
 		$fetched = $tokens->fetchWordWithModifier('local');
 
-		return $fetched === null ? '' : ltrim(trim($fetched[0]), '#');
+		return $fetched === null ? '' : DeclarationScanner::blockNameWord($fetched[0]);
 	}
 
 	/**
@@ -403,33 +400,6 @@ final class TemplateFactExtractor
 		}
 
 		return $value;
-	}
-
-	private function normalizePath(string $referringPath, string $target): string
-	{
-		$dir = dirname($referringPath);
-		$combined = $dir === '.' ? $target : $dir . '/' . $target;
-
-		$segments = [];
-		foreach (explode('/', $combined) as $segment) {
-			if ($segment === '' || $segment === '.') {
-				continue;
-			}
-
-			if ($segment === '..') {
-				// Deviates from vendor FileLoader::normalizePath: that keeps an unresolvable
-				// leading '..'; here it is dropped, clamping the result to the project root.
-				if ($segments !== []) {
-					array_pop($segments);
-				}
-
-				continue;
-			}
-
-			$segments[] = $segment;
-		}
-
-		return implode('/', $segments);
 	}
 
 	private function empty(): TemplateFacts

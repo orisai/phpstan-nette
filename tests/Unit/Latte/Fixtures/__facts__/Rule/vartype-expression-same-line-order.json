@@ -1,0 +1,104 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": [],
+        "headerVarTypeLines": [],
+        "midFileVarTypes": [
+            [
+                "x",
+                "string|null",
+                3
+            ],
+            [
+                "x",
+                "int",
+                3
+            ]
+        ],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": [],
+        "defineParamDefaults": [],
+        "varTypePlacements": [
+            {
+                "name": "x",
+                "type": "string|null",
+                "line": 3,
+                "anchorKind": "assign",
+                "anchorLine": 3,
+                "anchorLabel": "{var}",
+                "boundVariables": [
+                    "x"
+                ],
+                "runSize": 1,
+                "neverAssigned": false,
+                "knownBeforeTag": false,
+                "insideBlockBody": false
+            },
+            {
+                "name": "x",
+                "type": "int",
+                "line": 3,
+                "anchorKind": "assign",
+                "anchorLine": 3,
+                "anchorLabel": "{var}",
+                "boundVariables": [
+                    "x"
+                ],
+                "runSize": 1,
+                "neverAssigned": false,
+                "knownBeforeTag": false,
+                "insideBlockBody": false
+            }
+        ]
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [],
+        "blockNames": [],
+        "defineNames": [],
+        "topLevelVars": {
+            "q": "mixed",
+            "s": "mixed",
+            "x": "mixed"
+        },
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "varType",
+                    "column": 1
+                },
+                {
+                    "name": "var",
+                    "column": 25
+                },
+                {
+                    "name": "varType",
+                    "column": 38
+                },
+                {
+                    "name": "var",
+                    "column": 54
+                }
+            ]
+        },
+        "layoutMode": null
+    }
+}
