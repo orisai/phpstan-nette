@@ -140,7 +140,16 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   `getScope()`, `renderFormBegin/End()`, `end()`); all three reduce to the same
   `Helpers::form('x')`/`formObject($var)`/`formContainer('c')`/`formField('x')` calls (a dynamic
   Latte 3 name goes through `formField($name)` too, the Latte 2 `is_object($ʟ_tmp = …) ? … :
-  end(…)[$ʟ_tmp]` ternary stays as it is), with `$ʟ_elem` renamed to `$latteElem`.
+  end(…)[$ʟ_tmp]` ternary stays as it is), with `$ʟ_elem` renamed to `$latteElem`; nette/forms
+  3.3's `{form scope x}` ternary (`isNested() ? forms->get($ʟ_tmp, Container::class) :
+  uiControl[$ʟ_tmp]`) types as the form named `x`, `{form detached x}` as a plain `{form x}`. A
+  paired `{label x}…{/label}` keeps its label in a temp on every bridge — Latte 2 guards it with
+  `if ($ʟ_label = …->getLabel()) echo $ʟ_label->startTag()`, Latte 3 with
+  `($ʟ_label = …->getLabel())?->startTag()` — and `BaseControl::getLabel()` returns
+  `Html|string|null`, so both become one `$latteLabel = Helpers::formLabel('x')` statement (an
+  analysis-only `Nette\Utils\Html` stand-in, what the vendor macro assumes at runtime) followed by
+  plain `startTag()`/`endTag()` echoes; a self-closing `{label x /}` keeps its
+  `formField('x')->getLabel()` read.
   `FamilyCoverageTest` fails when a family lacks a table or when a consumer's Latte 3 table is
   its Latte 2 one.
 - **Filter-call rewrite** — `($this->filters->truncate)(...)` becomes the real callable

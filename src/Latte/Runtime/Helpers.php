@@ -10,6 +10,7 @@ use Nette\Forms\Container;
 use Nette\Forms\Controls\BaseControl;
 use Nette\Forms\Form;
 use Nette\Utils\DateTime;
+use Nette\Utils\Html as NetteHtml;
 use stdClass;
 use Stringable;
 
@@ -91,6 +92,14 @@ final class Helpers
 	 * @param string|int|object $name
 	 */
 	public static function formField($name): BaseControl
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param string|int|object $name
+	 */
+	public static function formLabel($name): NetteHtml
 	{
 		throw new LogicException('never executed');
 	}

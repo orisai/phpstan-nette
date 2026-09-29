@@ -10,7 +10,6 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
-use function in_array;
 use function str_replace;
 use function strlen;
 use function substr_compare;
@@ -221,6 +220,7 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 			. "\t{input name}\n"
 			. "\t{foreach ['years', 'years2'] as \$n}{var \$items = \$form[\$n]->getItems()}{/foreach}\n"
 			. "\t{var \$token = \$form['_token_']->getControl()}\n"
+			. "\t{label name}L{/label}\n"
 			. "{/form}\n",
 		);
 		FileSystem::write(
@@ -279,10 +279,10 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 					continue;
 				}
 
-				// The typed-value findings only: nette/forms 3.3 deprecates CsrfProtection, which the
-				// typed $form['_token_'] read then reports as a vendor deprecation of its own.
+				// Everything but the one vendor deprecation: nette/forms 3.3 deprecates CsrfProtection,
+				// which the typed $form['_token_'] read then reports.
 				foreach ($fileMessages['messages'] as $message) {
-					if (!in_array($message['identifier'], ['method.notFound', 'arguments.count'], true)) {
+					if ($message['identifier'] === 'method.deprecatedClass') {
 						continue;
 					}
 

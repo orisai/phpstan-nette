@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
@@ -19,16 +20,22 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
+use function array_reverse;
 use function count;
+use function in_array;
 use function is_string;
 
 // The three generations of nette/forms' Latte bridge render a control reference three ways, and all
 // of them reduce to the same Helpers::form()/formObject()/formContainer()/formField() calls the
-// LatteForms bridge types. A dynamic reference on the stack-offset shape stays as it is: its
-// `is_object($ʟ_tmp = …) ? $ʟ_tmp : end(…)[$ʟ_tmp]` ternary is untyped either way.
+// LatteForms bridge types. A paired {label} keeps its label in a temp on every bridge (Latte 2 guards
+// it with `if`, Latte 3 with `?->`); both become one `$latteLabel = Helpers::formLabel('x')` statement
+// followed by the plain startTag()/endTag() echoes. A dynamic reference on the stack-offset shape
+// stays as it is: its `is_object($ʟ_tmp = …) ? $ʟ_tmp : end(…)[$ʟ_tmp]` ternary is untyped either way.
 final class FormsMacroEliminator extends EliminatorVisitor
 {
 
@@ -80,6 +87,12 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 	private const PROVIDER_SCOPE = 'getScope';
 
+	private const LABEL_GETTERS = ['getLabel', 'getLabelPart'];
+
+	private const LABEL_START = 'startTag';
+
+	private const LABEL_END = 'endTag';
+
 	private const CONTAINER_VAR = 'formContainer';
 
 	private const DYNAMIC_TEMP = "\u{29F}_tmp";
@@ -106,7 +119,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	}
 
 	/**
-	 * @return Node|int|null
+	 * @return array<Stmt>|Node|int|null
 	 */
 	public function leaveNode(Node $node)
 	{
@@ -119,10 +132,16 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return $this->isScopePlumbing($node->expr) ? NodeVisitor::REMOVE_NODE : null;
 		}
 
+		if ($node instanceof If_) {
+			return $this->rebuildLabelIf($node);
+		}
+
 		if ($node instanceof Echo_) {
-			return count($node->exprs) === 1 && $this->isRenderCall($node->exprs[0])
-				? NodeVisitor::REMOVE_NODE
-				: null;
+			if (count($node->exprs) !== 1) {
+				return null;
+			}
+
+			return $this->isRenderCall($node->exprs[0]) ? NodeVisitor::REMOVE_NODE : $this->rebuildLabelEcho($node);
 		}
 
 		if ($node instanceof Variable && is_string($node->name)) {
@@ -265,6 +284,124 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		}
 
 		return $tmpAssign->expr;
+	}
+
+	/**
+	 * @return array<Stmt>|Echo_|null
+	 */
+	private function rebuildLabelIf(If_ $node)
+	{
+		if ($node->elseifs !== [] || $node->else !== null || count($node->stmts) !== 1) {
+			return null;
+		}
+
+		$echo = $node->stmts[0];
+		if (!$echo instanceof Echo_ || count($echo->exprs) !== 1) {
+			return null;
+		}
+
+		$label = self::TEMP_RENAMES[self::ROLE_LABEL_TEMP];
+		if ($this->isVariableNamed($node->cond, $label)) {
+			$chain = $this->matchLabelChain($echo->exprs[0], self::LABEL_END, $label);
+
+			return $chain === null ? null : $echo;
+		}
+
+		$name = $this->matchLabelAssign($node->cond, $label);
+		if ($name === null || $this->matchLabelChain($echo->exprs[0], self::LABEL_START, $label) === null) {
+			return null;
+		}
+
+		return [$this->labelAssign($name, $node->cond, $node), $echo];
+	}
+
+	/**
+	 * @return array<Stmt>|Echo_|null
+	 */
+	private function rebuildLabelEcho(Echo_ $node)
+	{
+		$expr = $node->exprs[0];
+		if (!$expr instanceof NullsafeMethodCall) {
+			return null;
+		}
+
+		$label = self::TEMP_RENAMES[self::ROLE_LABEL_TEMP];
+		$end = $this->matchLabelChain($expr, self::LABEL_END, $label);
+		if ($end !== null && $this->isVariableNamed($end[0], $label)) {
+			return new Echo_([$end[1]], $node->getAttributes());
+		}
+
+		$start = $this->matchLabelChain($expr, self::LABEL_START, $label);
+		if ($start === null) {
+			return null;
+		}
+
+		$name = $this->matchLabelAssign($start[0], $label);
+		if ($name === null) {
+			return null;
+		}
+
+		return [$this->labelAssign($name, $start[0], $node), new Echo_([$start[1]], $node->getAttributes())];
+	}
+
+	// The call chain of a label echo down to the label temp or its assignment, rebuilt without the
+	// nullsafe operators over the temp.
+
+	/**
+	 * @return array{Expr, MethodCall}|null
+	 */
+	private function matchLabelChain(Expr $expr, string $outer, string $label): ?array
+	{
+		$calls = [];
+		$root = $expr;
+		while ($root instanceof MethodCall || $root instanceof NullsafeMethodCall) {
+			$calls[] = $root;
+			$root = $root->var;
+		}
+
+		if ($calls === [] || !$calls[0]->name instanceof Identifier || $calls[0]->name->toString() !== $outer) {
+			return null;
+		}
+
+		if (!$this->isVariableNamed($root, $label) && $this->matchLabelAssign($root, $label) === null) {
+			return null;
+		}
+
+		$rebuilt = new Variable($label);
+		foreach (array_reverse($calls) as $call) {
+			$rebuilt = new MethodCall($rebuilt, $call->name, $call->args, $call->getAttributes());
+		}
+
+		return [$root, $rebuilt];
+	}
+
+	private function matchLabelAssign(Node $node, string $label): ?Expr
+	{
+		if (!$node instanceof Assign || !$this->isVariableNamed($node->var, $label)) {
+			return null;
+		}
+
+		$getter = $node->expr;
+		if (
+			!$getter instanceof MethodCall
+			|| !$getter->name instanceof Identifier
+			|| !in_array($getter->name->toString(), self::LABEL_GETTERS, true)
+		) {
+			return null;
+		}
+
+		return $this->matchHelperCall($getter->var, 'formField');
+	}
+
+	private function labelAssign(Expr $name, Node $replaced, Stmt $stmt): Expression
+	{
+		return new Expression(
+			new Assign(
+				new Variable(self::TEMP_RENAMES[self::ROLE_LABEL_TEMP]),
+				$this->helperCall('formLabel', $name, $replaced),
+			),
+			$stmt->getAttributes(),
+		);
 	}
 
 	// {formContainer c} on a stack shape; the lookup inside was reduced to Helpers::formField('c')

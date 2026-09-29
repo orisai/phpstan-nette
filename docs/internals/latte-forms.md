@@ -204,7 +204,7 @@ reduces all three to the same `Helpers::formField(X)`:
 | Macro | compiles to | so it needs |
 |---|---|---|
 | `{input X}` | `<X>->getControl()` (`->getControlPart(…)` with a `:`-part) | a control |
-| `{label X}` / `n:label` | `if ($l = <X>->getLabel()) echo $l` (Latte 3: `($ʟ_label = <X>->getLabel())?->startTag()`) | a control **that renders a label** |
+| `{label X}` / `n:label` | `if ($l = <X>->getLabel()) echo $l` (Latte 3: `($ʟ_label = <X>->getLabel())?->startTag()`; a paired label reduces to `$latteLabel = Helpers::formLabel(X)`) | a control **that renders a label** |
 | `{inputError X}` | `<X>->getError()` | a control |
 | `<el n:name="X">` | `<X>->getControlPart()->attributes()` | a control |
 | `{formContainer X}` / `n:formContainer` | pushes X on `$formsStack` (3.3: `forms->begin(forms->get(X, Container::class))`); every reference under it offsets it | a container |

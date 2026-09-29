@@ -92,7 +92,7 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				[1, "form('myForm')"],
 				[2, "formField('name')"],
 				[3, "formField('name')"],
-				[self::labelLine(4, 7), "formField('name')"],
+				[self::labelLine(4, 7), "formLabel('name')"],
 				[self::labelLine(5, 7), "formField('name')"],
 				[self::labelLine(6, 7), "formField('name')"],
 				[7, "formField('name')"],
@@ -154,7 +154,11 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				!$call->class instanceof Name
 				|| $call->class->toString() !== Helpers::class
 				|| !$call->name instanceof Node\Identifier
-				|| !in_array($call->name->toString(), ['form', 'formObject', 'formContainer', 'formField'], true)
+				|| !in_array(
+					$call->name->toString(),
+					['form', 'formObject', 'formContainer', 'formField', 'formLabel'],
+					true,
+				)
 			) {
 				continue;
 			}
@@ -178,6 +182,7 @@ final class FormsShapeFamilyTest extends BaseTestCase
 		self::assertStringNotContainsString('FormsLatte', $php);
 		self::assertStringNotContainsString('->forms->', $php);
 		self::assertStringNotContainsString('ʟ_', $php);
+		self::assertStringNotContainsString('?->', $php);
 	}
 
 }

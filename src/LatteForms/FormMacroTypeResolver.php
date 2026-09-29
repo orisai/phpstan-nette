@@ -33,7 +33,8 @@ use function substr_compare;
 // The bridge's second consumer of the template -> renderer -> shape join, this one at analysis
 // time: the eliminator leaves {form x} as Helpers::form('x') (UiForm) and every control reference as
 // Helpers::formField('x') (BaseControl), and this resolver narrows both to the class the paired
-// builder really attached. Every rule below is one-sided like LatteFormsRule's: an unresolved
+// builder really attached. A paired {label x} is Helpers::formLabel('x') (Html), a typed alias of
+// formField('x')->getLabel() that needs no narrowing. Every rule below is one-sided like LatteFormsRule's: an unresolved
 // renderer, a second resolved form, a dynamic name or two renderers disagreeing on a class all keep
 // the eliminator's wide type. A wrong narrow type is the failure this ranks worst.
 final class FormMacroTypeResolver implements ExpressionTypeResolverExtension

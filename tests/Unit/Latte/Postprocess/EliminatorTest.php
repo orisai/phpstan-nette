@@ -431,6 +431,22 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('renderBlock(', $php);
 	}
 
+	public function testPairedLabelBindsTheHtmlStandIn(): void
+	{
+		$php = $this->process("{form f}{label x}L{/label}{label y /}{/form}\n");
+
+		self::assertMatchesRegularExpression(
+			'~\$latteLabel = \\\\OriPhpstan\\\\Nette\\\\Latte\\\\Runtime\\\\Helpers::formLabel\(([\'"])x\1\);~',
+			$php,
+		);
+		self::assertStringContainsString('echo $latteLabel->startTag();', $php);
+		self::assertStringContainsString('echo $latteLabel->endTag();', $php);
+		self::assertMatchesRegularExpression('~Helpers::formField\(([\'"])y\1\)->getLabel\(\)~', $php);
+		self::assertStringNotContainsString('?->', $php);
+		self::assertStringNotContainsString('formLabel(\'y\')', $php);
+		self::assertNoFormsBridgeResidue($php);
+	}
+
 	public function testFormContainerPushAndPopDropFormsStack(): void
 	{
 		$php = $this->process("{form f}{formContainer c}{input z}{/formContainer}{/form}\n");
