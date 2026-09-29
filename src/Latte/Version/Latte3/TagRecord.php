@@ -94,7 +94,7 @@ final class TagRecord
 	{
 		$stream = $this->tag->parser->stream;
 		$save = $stream->getIndex();
-		while (!$stream->peek()->isEnd()) {
+		while (!$stream->is(Token::End)) {
 			$stream->consume();
 		}
 
@@ -137,10 +137,10 @@ final class TagRecord
 	}
 
 	// Every token the lexer produces is positioned; only synthetic tokens are not, and none reach a
-	// tag's own stream.
-	private function offsetOf(Token $token): int
+	// tag's own stream (Latte 3.0's TokenStream::peek() is nullable past the end, 3.1's is not).
+	private function offsetOf(?Token $token): int
 	{
-		if ($token->position === null) {
+		if ($token === null || $token->position === null) {
 			throw new LogicException('A lexer token carries its position.');
 		}
 

@@ -101,6 +101,9 @@ jobs:
       matrix:
         include:
           - operating-system: "ubuntu-latest"
+            profile: "latte30"
+            php-version: "8.3"
+          - operating-system: "ubuntu-latest"
             profile: "latte31"
             php-version: "8.4"
 

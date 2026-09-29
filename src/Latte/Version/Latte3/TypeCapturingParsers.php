@@ -9,6 +9,7 @@ use Latte\Compiler\Nodes\Php\Expression\VariableNode;
 use Latte\Compiler\Nodes\Php\ExpressionNode;
 use Latte\Compiler\Nodes\Php\ParameterNode;
 use Latte\Compiler\Nodes\Php\Scalar\NullNode;
+use Latte\Compiler\Position;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
 use Latte\Compiler\Token;
@@ -102,7 +103,7 @@ final class TypeCapturingParsers
 			}
 
 			$node->types[] = $type === null ? null : $type->type;
-		} while ($stream->tryConsume(',') !== null && !$stream->peek()->isEnd());
+		} while ($stream->tryConsume(',') !== null && !$stream->is(Token::End));
 
 		return $node;
 	}
@@ -163,7 +164,7 @@ final class TypeCapturingParsers
 				$stream->seek($save);
 				$stream->throwUnexpectedException([], ' in ' . $tag->getNotation());
 			}
-		} while ($stream->tryConsume(',') !== null && !$stream->peek()->isEnd());
+		} while ($stream->tryConsume(',') !== null && !$stream->is(Token::End));
 
 		return $node;
 	}
@@ -181,8 +182,8 @@ final class TypeCapturingParsers
 
 	private function defaultText(Tag $tag, int $base, ExpressionNode $default): string
 	{
-		$next = $tag->parser->stream->peek();
-		if ($default->position === null || $next->position === null) {
+		$next = self::positionOf($tag->parser->stream->peek());
+		if ($default->position === null || $next === null) {
 			return $default->print(new PrintContext());
 		}
 
@@ -190,7 +191,7 @@ final class TypeCapturingParsers
 			substr(
 				$tag->parser->text,
 				$default->position->offset - $base,
-				$next->position->offset - $default->position->offset,
+				$next->offset - $default->position->offset,
 			),
 		);
 	}
@@ -200,27 +201,35 @@ final class TypeCapturingParsers
 	private function textBase(Tag $tag): int
 	{
 		$text = $tag->parser->text;
-		$first = $tag->parser->stream->peek();
-		if ($first->position === null) {
+		$first = self::positionOf($tag->parser->stream->peek());
+		if ($first === null) {
 			return 0;
 		}
 
-		return $first->position->offset - (strlen($text) - strlen(ltrim($text)));
+		return $first->offset - (strlen($text) - strlen(ltrim($text)));
 	}
 
-	private function slice(Tag $tag, int $base, Token $from, Token $to): string
+	private function slice(Tag $tag, int $base, ?Token $from, ?Token $to): string
 	{
-		if ($from->position === null || $to->position === null) {
+		$fromPosition = self::positionOf($from);
+		$toPosition = self::positionOf($to);
+		if ($fromPosition === null || $toPosition === null) {
 			return '';
 		}
 
 		return trim(
 			substr(
 				$tag->parser->text,
-				$from->position->offset - $base,
-				$to->position->offset - $from->position->offset,
+				$fromPosition->offset - $base,
+				$toPosition->offset - $fromPosition->offset,
 			),
 		);
+	}
+
+	// Latte 3.0's TokenStream::peek() is nullable past the end, 3.1's is not.
+	private static function positionOf(?Token $token): ?Position
+	{
+		return $token === null ? null : $token->position;
 	}
 
 }
