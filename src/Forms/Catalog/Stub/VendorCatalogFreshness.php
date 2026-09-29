@@ -75,8 +75,11 @@ final class VendorCatalogFreshness
 	public const CATALOG_FIX_HINT = 'Re-key the entry in ' . self::CATALOG
 		. ' to the factory Nette declares now, or drop it, then re-run this check.';
 
-	/** Member tags whose loss a redeclaring stub causes, and the group its NAME is captured in. */
-	private const MEMBER_TAGS = '~^@(property-read|property-write|property|method)\b[^$]*(?:\$(\w+)|\b(\w+)\s*\()~';
+	/**
+	 * Member tags whose loss a redeclaring stub causes, and the group its NAME is captured in.
+	 * Nette's own `@property-deprecated` is not a PHPStan tag, so a redeclaration drops nothing there.
+	 */
+	private const MEMBER_TAGS = '~^@(property-read|property-write|property|method)(?![\w-])[^$]*(?:\$(\w+)|\b(\w+)\s*\()~';
 
 	/**
 	 * Where the files being GATED are read from. Defaults to the project itself; a test points it at

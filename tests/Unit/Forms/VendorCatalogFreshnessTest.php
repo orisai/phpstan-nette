@@ -21,6 +21,8 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 
 	private const VENDOR_CONTAINER = self::PACKAGE_COPY . '/src/Forms/Container.php';
 
+	private const VENDOR_CHOICE_CONTROL_DESCRIPTION = ' * Choice control that allows single item selection.';
+
 	/** @var list<string> */
 	private array $throwawayRoots = [];
 
@@ -56,8 +58,8 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 	{
 		$root = $this->rootWithMutated(
 			self::VENDOR_CHOICE_CONTROL,
-			' * @property-read mixed $selectedItem',
-			" * @property-read mixed \$selectedItem\n * @property-read string \$prompt",
+			self::VENDOR_CHOICE_CONTROL_DESCRIPTION,
+			self::VENDOR_CHOICE_CONTROL_DESCRIPTION . "\n *\n * @property-read string \$prompt",
 		);
 
 		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
@@ -67,19 +69,34 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 		self::assertStringContainsString(VendorCatalogFreshness::STUB_FIX_HINT, $drifts[0]);
 	}
 
+	/**
+	 * nette/forms 3.3 demotes `@property-read $selectedItem` to Nette's own `@property-deprecated`, which
+	 * PHPStan does not read, so redeclaring the class drops nothing and the stub keeps its own tag.
+	 */
+	public function testANetteOnlyDeprecatedPropertyTagIsNotGated(): void
+	{
+		$root = $this->rootWithMutated(
+			self::VENDOR_CHOICE_CONTROL,
+			self::VENDOR_CHOICE_CONTROL_DESCRIPTION,
+			self::VENDOR_CHOICE_CONTROL_DESCRIPTION . "\n *\n * @property-deprecated string \$prompt",
+		);
+
+		self::assertSame([], (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts());
+	}
+
 	public function testDroppingARestatedPropertyTagFromOurStubIsReported(): void
 	{
 		$root = $this->rootWithMutated(
 			VendorCatalogFreshness::STUB,
 			' * @property array<int|string, mixed> $items
  * @property-read mixed $selectedItem',
-			' * @property array<int|string, mixed> $items',
+			' * @property-read mixed $selectedItem',
 		);
 
 		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
 
 		self::assertCount(1, $drifts);
-		self::assertStringContainsString('property-read $selectedItem', $drifts[0]);
+		self::assertStringContainsString('property $items', $drifts[0]);
 	}
 
 	public function testAVendorFactoryTheCatalogTypesAndVendorNoLongerDeclaresIsReported(): void
