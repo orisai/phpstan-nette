@@ -231,7 +231,7 @@ services:
 		autowired: false
 
 	latteBootstrapFilesLoader:
-		class: OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader
+		factory: OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader::create
 		arguments:
 			files: %bootstrapFiles%
 		autowired: false

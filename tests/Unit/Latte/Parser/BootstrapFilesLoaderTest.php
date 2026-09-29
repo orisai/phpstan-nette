@@ -4,7 +4,9 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Parser;
 
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
-use PHPStan\Command\BootstrapFilesRunner;
+use PHPStan\DependencyInjection\Container;
+use PHPStan\Testing\PHPStanTestCase;
+use RuntimeException;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_filter;
 use function array_values;
@@ -31,7 +33,7 @@ final class BootstrapFilesLoaderTest extends BaseTestCase
 		parent::tearDown();
 	}
 
-	public function testLoadsEachExistingFileOnceAndPublishesItsAutoloaders(): void
+	public function testLoadsEachExistingFileOnceWithTheContainerInScopeAndPublishesItsAutoloaders(): void
 	{
 		$class = 'LatteBootstrapProbe_' . uniqid();
 		$autoloaderClass = 'LatteBootstrapAutoloaded_' . uniqid();
@@ -40,6 +42,7 @@ final class BootstrapFilesLoaderTest extends BaseTestCase
 <?php declare(strict_types = 1);
 
 \$GLOBALS['$counter'] = (\$GLOBALS['$counter'] ?? 0) + 1;
+\$GLOBALS['{$counter}_tmpDir'] = \$container->getParameter('tmpDir');
 
 class $class
 {
@@ -54,7 +57,14 @@ spl_autoload_register(\$GLOBALS['{$counter}_autoloader']);
 
 PHP);
 
-		$loader = new BootstrapFilesLoader([$this->dir . '/bootstrap.php', $this->dir . '/missing.php']);
+		$published = [];
+		$loader = new BootstrapFilesLoader(
+			$this->container(),
+			[$this->dir . '/bootstrap.php', $this->dir . '/missing.php'],
+			static function ($autoloadFunctionsBefore) use (&$published): void {
+				$published[] = $autoloadFunctionsBefore;
+			},
+		);
 
 		try {
 			$loader->load();
@@ -62,21 +72,83 @@ PHP);
 
 			self::assertTrue(class_exists($class, false));
 			self::assertSame(1, $GLOBALS[$counter]);
+			self::assertSame($this->container()->getParameter('tmpDir'), $GLOBALS[$counter . '_tmpDir']);
 			self::assertTrue(class_exists($autoloaderClass));
-
-			if (class_exists(BootstrapFilesRunner::class)) { // @phpstan-ignore phpstanApi.classConstant
-				self::assertContains($GLOBALS[$counter . '_autoloader'], $GLOBALS['__phpstanAutoloadFunctions'] ?? []);
-			}
+			self::assertCount(1, $published);
+			self::assertIsArray($published[0]);
+			self::assertNotContains($GLOBALS[$counter . '_autoloader'], $published[0]);
 		} finally {
 			spl_autoload_unregister($GLOBALS[$counter . '_autoloader']);
-			/** @var list<callable> $published */
-			$published = $GLOBALS['__phpstanAutoloadFunctions'] ?? [];
-			$GLOBALS['__phpstanAutoloadFunctions'] = array_values(array_filter(
-				$published,
-				static fn ($function): bool => $function !== $GLOBALS[$counter . '_autoloader'],
-			));
-			unset($GLOBALS[$counter], $GLOBALS[$counter . '_autoloader']);
+			unset($GLOBALS[$counter], $GLOBALS[$counter . '_autoloader'], $GLOBALS[$counter . '_tmpDir']);
 		}
+	}
+
+	public function testCreatePublishesThroughPhpstansRunner(): void
+	{
+		$autoloaderClass = 'LatteBootstrapAutoloaded_' . uniqid();
+		$key = '__latteBootstrapLoaderAutoloader_' . uniqid();
+		FileSystem::write($this->dir . '/bootstrap.php', <<<PHP
+<?php declare(strict_types = 1);
+
+\$GLOBALS['$key'] = static function (string \$name): void {
+	if (\$name === '$autoloaderClass') {
+		eval('class $autoloaderClass {}');
+	}
+};
+spl_autoload_register(\$GLOBALS['$key']);
+
+PHP);
+
+		try {
+			BootstrapFilesLoader::create($this->container(), [$this->dir . '/bootstrap.php'])->load();
+
+			self::assertContains($GLOBALS[$key], $GLOBALS['__phpstanAutoloadFunctions'] ?? []);
+		} finally {
+			spl_autoload_unregister($GLOBALS[$key]);
+			/** @var list<callable> $functions */
+			$functions = $GLOBALS['__phpstanAutoloadFunctions'] ?? [];
+			$GLOBALS['__phpstanAutoloadFunctions'] = array_values(array_filter(
+				$functions,
+				static fn ($function): bool => $function !== $GLOBALS[$key],
+			));
+			unset($GLOBALS[$key]);
+		}
+	}
+
+	public function testWithoutAPublisherNothingIsLoaded(): void
+	{
+		$class = 'LatteBootstrapProbe_' . uniqid();
+		FileSystem::write($this->dir . '/bootstrap.php', "<?php declare(strict_types = 1);\n\nclass $class\n{\n}\n");
+
+		(new BootstrapFilesLoader($this->container(), [$this->dir . '/bootstrap.php'], null))->load();
+
+		self::assertFalse(class_exists($class, false));
+	}
+
+	public function testAThrowingBootstrapFileIsReportedWithItsPath(): void
+	{
+		FileSystem::write(
+			$this->dir . '/bootstrap.php',
+			"<?php declare(strict_types = 1);\n\nthrow new LogicException('boom');\n",
+		);
+
+		$loader = new BootstrapFilesLoader(
+			$this->container(),
+			[$this->dir . '/bootstrap.php'],
+			static function (): void {
+			},
+		);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage(
+			'LogicException thrown in ' . $this->dir . '/bootstrap.php on line 3 while loading bootstrap file ' . $this->dir . '/bootstrap.php: boom',
+		);
+		$loader->load();
+	}
+
+	private function container(): Container
+	{
+		return PHPStanTestCase::getContainer();
 	}
 
 }
