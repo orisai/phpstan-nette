@@ -12,6 +12,7 @@ use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Comment\Doc;
 use PhpParser\Modifiers;
 use PhpParser\Node\Arg;
@@ -21,7 +22,10 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignOp\Coalesce;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
+use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -31,6 +35,7 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\PropertyProperty;
 use PhpParser\Node\Stmt\Return_;
@@ -41,13 +46,18 @@ use PhpParser\NodeVisitor\CloningVisitor;
 use PHPStan\Parser\Parser;
 use ReflectionClass;
 use ReflectionProperty;
+use function array_filter;
 use function array_key_first;
 use function array_keys;
 use function array_map;
+use function array_merge;
+use function array_pop;
 use function array_shift;
 use function array_splice;
+use function array_values;
 use function class_exists;
 use function count;
+use function end;
 use function implode;
 use function is_string;
 use function ksort;
@@ -55,6 +65,7 @@ use function rtrim;
 use function sort;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 use function ucfirst;
 use function usort;
@@ -67,9 +78,9 @@ final class DeclarationInjector
 
 	private const THIS = 'this';
 
-	// Latte\Runtime\Template declares concrete, zero-parameter main()/prepare(); adding required
-	// params to either makes PHPStan flag it as parameter.notOptional, an identifier ignoreErrors
-	// cannot silence. Renamed unconditionally so no generated class ever overrides the parent.
+	// Latte\Runtime\Template declares concrete main()/prepare(); adding required params to either
+	// makes PHPStan flag it as parameter.notOptional, an identifier ignoreErrors cannot silence.
+	// Renamed unconditionally so no generated class ever overrides the parent.
 	private const METHOD_RENAMES = [
 		'main' => 'latteMain',
 		'prepare' => 'lattePrepare',
@@ -110,6 +121,7 @@ final class DeclarationInjector
 	public function inject(
 		array $stmts,
 		Declarations $declarations,
+		ShapeFamily $family,
 		array $contexts = [],
 		string $relativePath = ''
 	): array
@@ -118,6 +130,8 @@ final class DeclarationInjector
 		if ($class === null) {
 			return [];
 		}
+
+		$latte2Layout = $family->latteLine === ShapeFamily::LATTE_2;
 
 		if ($contexts !== []) {
 			// The resolver normally returns hash-ordered contexts already; sorting here too makes
@@ -133,16 +147,22 @@ final class DeclarationInjector
 		$unionParams = $contexts !== [] ? $this->buildUnionParams($contexts) : [];
 		$effectiveHeaderParams = $contexts !== [] ? $unionParams : $headerParams;
 
+		if (!$latte2Layout) {
+			$this->absorbPrepare($class, $parameters);
+		}
+
 		foreach (['main', 'prepare'] as $methodName) {
 			$method = $this->findMethod($class, $methodName);
 			if ($method === null) {
 				continue;
 			}
 
-			if ($parameters !== null) {
-				$this->dropParametersProlog($method, $parameters);
-			} else {
-				$this->dropParamsExtract($method);
+			if ($latte2Layout) {
+				if ($parameters !== null) {
+					$this->dropParametersProlog($method, $parameters);
+				} else {
+					$this->dropParamsExtract($method);
+				}
 			}
 
 			if ($contexts !== []) {
@@ -250,10 +270,98 @@ final class DeclarationInjector
 		}
 
 		[$params, $docLines] = $this->buildParamsAndDocs($headerParams);
-		$docLines[] = ' * @return array{}';
+		if ($this->returnsArray($method)) {
+			$docLines[] = ' * @return array{}';
+		}
 
 		$method->params = $params;
 		$this->setParamDoc($method, $docLines);
+	}
+
+	// Latte 3 compiles the template head into prepare(): array and hands its get_defined_vars() to
+	// main(array $ʟ_args); putting the head statements back in front of the body restores the Latte
+	// 2 layout, so head {var}/{default} typing and every later pass see one shape.
+
+	/**
+	 * @param array<int, array{string|null, string, string|null, int}>|null $parameters
+	 */
+	private function absorbPrepare(Class_ $class, ?array $parameters): void
+	{
+		$main = $this->findMethod($class, 'main');
+		if ($main === null || $main->stmts === null) {
+			return;
+		}
+
+		$main->params = [];
+		$this->dropParamsExtract($main);
+		$this->dropLArgsUnset($main);
+		if (isset($main->stmts[0]) && $this->isSnippetGuard($main->stmts[0])) {
+			array_shift($main->stmts);
+		}
+
+		$prepare = $this->findMethod($class, 'prepare');
+		if ($prepare === null) {
+			return;
+		}
+
+		if ($parameters !== null) {
+			$this->dropParametersProlog($prepare, $parameters);
+		} else {
+			$this->dropParamsExtract($prepare);
+		}
+
+		$this->dropLArgsUnset($prepare);
+		$head = $prepare->stmts ?? [];
+		$last = end($head);
+		if ($last instanceof Return_ && $this->isGetDefinedVarsCall($last->expr)) {
+			array_pop($head);
+		}
+
+		$main->stmts = array_merge($head, $main->stmts ?? []);
+		$class->stmts = array_values(array_filter(
+			$class->stmts,
+			static fn (Stmt $stmt): bool => $stmt !== $prepare,
+		));
+	}
+
+	private function dropLArgsUnset(ClassMethod $method): void
+	{
+		if (isset($method->stmts[0]) && $method->stmts[0] instanceof Unset_ && $this->targetsLArgs($method->stmts[0])) {
+			array_shift($method->stmts);
+		}
+	}
+
+	private function isSnippetGuard(Stmt $stmt): bool
+	{
+		if (
+			!$stmt instanceof If_
+			|| $stmt->else !== null
+			|| $stmt->elseifs !== []
+			|| count($stmt->stmts) !== 1
+			|| !$stmt->stmts[0] instanceof Return_
+			|| $stmt->stmts[0]->expr !== null
+		) {
+			return false;
+		}
+
+		$cond = $stmt->cond;
+
+		return ($cond instanceof MethodCall || $cond instanceof NullsafeMethodCall)
+			&& $cond->name instanceof Identifier
+			&& $cond->name->toString() === 'renderSnippets';
+	}
+
+	private function isGetDefinedVarsCall(?Expr $expr): bool
+	{
+		return $expr instanceof FuncCall
+			&& $expr->name instanceof Name
+			&& $expr->name->toString() === 'get_defined_vars'
+			&& $expr->args === [];
+	}
+
+	private function returnsArray(ClassMethod $method): bool
+	{
+		return $method->returnType instanceof Identifier && $method->returnType->toLowerString() === 'array';
 	}
 
 	/**
@@ -285,10 +393,12 @@ final class DeclarationInjector
 		$main = $this->findMethod($class, 'main');
 		if ($main !== null) {
 			$main->name = new Identifier(self::METHOD_RENAMES['main']);
-			// The rename drops the override that used to exempt main()'s native `: array` return
-			// type from missingType.iterableValue; PrologEliminator always reduces its body to a
-			// single `return [];`, so `array{}` is the exact type, not an approximation.
-			$this->appendDocLine($main, ' * @return array{}');
+			// The rename drops the override that used to exempt Latte 2 main()'s native `: array`
+			// return type from missingType.iterableValue; PrologEliminator always reduces its
+			// `return get_defined_vars()` to `return [];`, so `array{}` is the exact type.
+			if ($this->returnsArray($main)) {
+				$this->appendDocLine($main, ' * @return array{}');
+			}
 		}
 
 		$prepare = $this->findMethod($class, 'prepare');
@@ -414,7 +524,8 @@ final class DeclarationInjector
 
 	private function isBlockMethod(ClassMethod $method): bool
 	{
-		return count($method->params) === 1
+		return $method->name->toString() !== 'main'
+			&& count($method->params) === 1
 			&& $method->params[0]->var instanceof Variable
 			&& $method->params[0]->var->name === self::L_ARGS;
 	}
@@ -938,7 +1049,7 @@ final class DeclarationInjector
 				continue;
 			}
 
-			$pairs = $this->matchDefaultExtract($stmt);
+			$pairs = $this->matchDefaultExtract($stmt) ?? $this->matchDefaultCoalesce($stmt);
 			if ($pairs !== null) {
 				$replacement = [];
 				foreach ($pairs as [$name, $exprNode]) {
@@ -1013,6 +1124,37 @@ final class DeclarationInjector
 		}
 
 		return $pairs;
+	}
+
+	// Latte 3 {default}: `$x ??= array_key_exists('x', get_defined_vars()) ? null : <expr>;`
+
+	/**
+	 * @return array<int, array{string, Expr}>|null
+	 */
+	private function matchDefaultCoalesce(Stmt $stmt): ?array
+	{
+		if (
+			!$stmt instanceof Expression
+			|| !$stmt->expr instanceof Coalesce
+			|| !$stmt->expr->var instanceof Variable
+			|| !is_string($stmt->expr->var->name)
+		) {
+			return null;
+		}
+
+		$value = $stmt->expr->expr;
+		if (
+			!$value instanceof Ternary
+			|| !$value->if instanceof ConstFetch
+			|| strtolower($value->if->name->toString()) !== 'null'
+			|| !$value->cond instanceof FuncCall
+			|| !$value->cond->name instanceof Name
+			|| $value->cond->name->toString() !== 'array_key_exists'
+		) {
+			return null;
+		}
+
+		return [[$stmt->expr->var->name, $value->else]];
 	}
 
 	/**

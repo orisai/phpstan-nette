@@ -14,6 +14,11 @@ use function trim;
 final class LineMapper
 {
 
+	// Every Latte line documents a block method as `/** {block name} on line N */`: the method and a
+	// body without markers of its own start at the tag's line, and nothing above the comment
+	// borrows it.
+	private const BLOCK_DOC_PATTERN = '~^\s*/\*\* \S.* on line (?<line>\d+) \*/$~';
+
 	private string $markerPattern;
 
 	public function __construct(string $markerPattern)
@@ -28,6 +33,7 @@ final class LineMapper
 	{
 		$map = [];
 		$marked = [];
+		$blockDocs = [];
 		$lines = explode("\n", $phpSource);
 		$current = 1;
 		foreach ($lines as $index => $lineText) {
@@ -35,6 +41,10 @@ final class LineMapper
 			if (preg_match($this->markerPattern, $lineText, $m) === 1) {
 				$current = (int) $m['line'];
 				$marked[$generatedLine] = true;
+			} elseif (preg_match(self::BLOCK_DOC_PATTERN, $lineText, $m) === 1) {
+				$current = (int) $m['line'];
+				$marked[$generatedLine] = true;
+				$blockDocs[$generatedLine] = true;
 			}
 
 			$map[$generatedLine] = $current;
@@ -43,7 +53,7 @@ final class LineMapper
 		$next = null;
 		for ($generatedLine = count($lines); $generatedLine >= 1; $generatedLine--) {
 			if (isset($marked[$generatedLine])) {
-				$next = $map[$generatedLine];
+				$next = isset($blockDocs[$generatedLine]) ? null : $map[$generatedLine];
 
 				continue;
 			}

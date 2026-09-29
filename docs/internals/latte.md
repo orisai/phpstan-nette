@@ -52,6 +52,31 @@ rules — including the Latte 2 head rule — to that stream, which is what keep
 (`Latte3FactsParityTest`); the divergences Latte 3's own parsing forces are pinned in
 `Latte3FactsDivergenceTest`.
 
+The generated code itself differs by line, and `DeclarationInjector` normalises the layout before
+anything else looks at it. Latte 2 emits `main(): array` with the whole template (the head `{var}`/
+`{default}` statements included) and `prepare(): void` with the UI initialisation. Latte 3 emits
+`main(array $ʟ_args): void` — prologue `extract($ʟ_args); unset($ʟ_args);` plus, under
+`UIExtension`, an `if ($this->global->snippetDriver?->renderSnippets(...)) { return; }` guard — and,
+only when the head has content or `{parameters}`, `prepare(): array` holding the head statements
+and returning `get_defined_vars()`, which the runtime feeds back into `main()`. The injector keys on
+`ShapeFamily::latteLine`: for a Latte 3 family it drops main's prologue, drops prepare's own prolog
+(`extract($this->params)` or the `{parameters}` assignments and their `unset($ʟ_args)`) and its
+`return get_defined_vars()`, moves the remaining head statements in front of main's body and removes
+`prepare()` — the Latte 2 layout, so `latteMain`/`latteMain_ctx{i}` and the `block*` methods
+carry the same typed parameters and the head `{var}`/`{default}` statements are typed in place
+exactly as on Latte 2 (`{default}` is matched in both spellings: Latte 2's
+`extract([...], EXTR_SKIP)` and Latte 3's `$x ??= array_key_exists('x', get_defined_vars()) ? null :
+…`). The `@return array{}` doc follows the native `: array` return type, so Latte 3's `void` main
+gets none. `DeclarationInjectorLayoutTest` pins the injector's output on the committed raw
+snapshots of all three lines.
+
+Line markers differ too: Latte 2 and 3.0 emit `/* line N */`, Latte 3.1 only `/* pos L:C */`. Each
+adapter's `lineMarkerPattern()` names the `<line>` group `LineMapper` reads (the column is ignored),
+and the `/** {block x} on line N */` doc comment every line writes above a block method is a marker
+of its own: the method and a body without markers start at the tag's line, and the comment is a
+barrier the back-fill below never crosses, so a method's trailing statements never borrow the next
+block's line.
+
 For each `.latte` file, `LatteCompiler` (`src/Latte/Compile/`) runs the real
 `Latte\Parser`/`Latte\Compiler` (Latte 2.11 — no `Engine::compile`, no engine cache, no
 application boot) with the five built-in macro sets (`CoreMacros`,
@@ -71,7 +96,8 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   therefore takes the next marker's line too, as do a method's unmarked non-echo prologue lines and
   the continuation lines of a multi-line statement. Findings can only relocate: the line map never changes a typing verdict.
 - **Typed declaration injection** — the `extract($this->params)`/`extract($ʟ_args)` prologue Latte
-  emits is replaced with explicit, typed parameters/locals (see *Typing templates* below).
+  emits is replaced with explicit, typed parameters/locals (see *Typing templates* below), after the
+  Latte 3 `main`/`prepare` split has been folded back into the Latte 2 layout (see above).
 - **Plumbing elimination** — a registry of eliminators for Latte 2.11's finite set of emission
   patterns (escaping wrappers except `escapeJs()`, which JSON-encodes any value and therefore
   stays, `$ʟ_*` temporaries, snippet try/finally shells, `CachingIterator` wrapping,

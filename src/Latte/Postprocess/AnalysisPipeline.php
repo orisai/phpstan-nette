@@ -23,6 +23,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
@@ -225,10 +226,17 @@ final class AnalysisPipeline
 	): array
 	{
 		$stmts = $this->phpParser->parseString($phpSource);
-		$lineMapper = new LineMapper($this->adapterAccessor->get()->lineMarkerPattern());
+		$adapter = $this->adapterAccessor->get();
+		$lineMapper = new LineMapper($adapter->lineMarkerPattern());
 		$lineMapper->remap($stmts, $lineMapper->buildMap($phpSource));
 
-		$injectorDiagnostics = $this->declarationInjector->inject($stmts, $declarations, $contexts, $relativePath);
+		$injectorDiagnostics = $this->declarationInjector->inject(
+			$stmts,
+			$declarations,
+			$adapter->family(),
+			$contexts,
+			$relativePath,
+		);
 
 		// RAW pass, before the eliminator traverser below ever touches $stmts: BlockDispatchEliminator's
 		// own snippetDriver enter()/leave() shell is DROPPED entirely (only its try body survives), so
@@ -296,13 +304,17 @@ final class AnalysisPipeline
 		// $declarations is this FILE's own header declaration, so the per-template overlay it
 		// unlocks is strictly scoped to this compiled class and the context clones cloned from it
 		// below - never to an unrelated file that happens to declare the same {templateType}.
-		$filterDiagnostics = (new FilterRewriter())->rewrite(
-			$processed,
-			$this->filterTable(),
-			$this->functionTable(),
-			$declarations->getTemplateTypeClass(),
-			$this->templateTypeCustoms,
-		);
+		// FilterTable/FunctionTable are read from Latte 2's Latte\Runtime\Defaults; a Latte 3 family
+		// keeps its filter and function calls as compiled.
+		$filterDiagnostics = $adapter->family()->latteLine === ShapeFamily::LATTE_2
+			? (new FilterRewriter())->rewrite(
+				$processed,
+				$this->filterTable(),
+				$this->functionTable(),
+				$declarations->getTemplateTypeClass(),
+				$this->templateTypeCustoms,
+			)
+			: [];
 		$this->lastDiagnostics = array_merge($compileDiagnostics, $injectorDiagnostics, $filterDiagnostics);
 
 		// Last, after every eliminator/rewriter above has settled the AST shape: cloning already

@@ -22,9 +22,6 @@ use const PHP_BINARY;
 // travels out of a genuine analysis run attributed to the .latte file. The package shipped inert
 // through Tasks 1-2, so "the rule exists and its tests pass" and "the rule runs" are different
 // claims and only a spawn settles the second one.
-/**
- * @group latte2
- */
 final class LatteFormsSpawnIntegrationTest extends BaseTestCase
 {
 
