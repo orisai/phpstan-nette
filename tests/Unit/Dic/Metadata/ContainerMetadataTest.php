@@ -64,7 +64,7 @@ final class ContainerMetadataTest extends BaseTestCase
 		}
 	}
 
-	public function testImportedServiceTypeComesFromTypesProperty(): void
+	public function testImportedServiceTypeComesFromWiring(): void
 	{
 		self::assertSame(ImportedService::class, self::$metadata['alpha']->getServiceTypeName('imported'));
 	}

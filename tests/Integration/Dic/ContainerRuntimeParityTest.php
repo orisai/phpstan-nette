@@ -39,8 +39,14 @@ final class ContainerRuntimeParityTest extends BaseTestCase
 	{
 		self::assertSame(['alpha', 'beta'], array_keys(self::$containers));
 		self::assertNotSame(get_class(self::$containers['alpha']), get_class(self::$containers['beta']));
-		self::assertSame(FixtureContainerFactory::AlphaClassName, get_class(self::$containers['alpha']));
-		self::assertSame(FixtureContainerFactory::BetaClassName, get_class(self::$containers['beta']));
+		self::assertMatchesRegularExpression(
+			'~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~',
+			get_class(self::$containers['alpha']),
+		);
+		self::assertMatchesRegularExpression(
+			'~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~',
+			get_class(self::$containers['beta']),
+		);
 	}
 
 	public function testMethodNameMapping(): void

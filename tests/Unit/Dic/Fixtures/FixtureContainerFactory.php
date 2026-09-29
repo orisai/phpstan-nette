@@ -9,19 +9,16 @@ use Nette\DI\ContainerLoader;
 use Nette\DI\Extensions\DIExtension;
 use Nette\DI\Extensions\ExtensionsExtension;
 use function get_class;
+use function preg_match;
 use function sprintf;
 
 final class FixtureContainerFactory
 {
 
-	public const AlphaClassName = 'Container_5011b2e17d';
-
-	public const BetaClassName = 'Container_6a5cfd235d';
-
-	public const ClassNames = [
-		'alpha' => self::AlphaClassName,
-		'beta' => self::BetaClassName,
-	];
+	public static function className(string $profile): string
+	{
+		return get_class((new self())->create($profile));
+	}
 
 	public function create(string $profile): Container
 	{
@@ -43,7 +40,7 @@ final class FixtureContainerFactory
 			throw new LogicException(sprintf('Class %s is not a container.', $className));
 		}
 
-		if (get_class($container) !== (self::ClassNames[$profile] ?? null)) {
+		if (preg_match('~^Container_[0-9a-f]+(?:_[0-9a-f]+)?$~', get_class($container)) !== 1) {
 			throw new LogicException(sprintf('Unexpected container class %s for profile %s.', $className, $profile));
 		}
 

@@ -63,9 +63,12 @@ stale-cache incident (a freshly registered service reported as `orisaiNette.dic.
 ## Components
 
 - `Metadata/ContainerMetadata` (+ `ContainerMetadataFactory`) — a per-profile snapshot built via
-  reflection on a live `Container` instance: service names, resolved types (mirroring
-  `Container::getServiceType()`'s lookup priority — `$types` overrides the reflected method
-  return type), aliases, tags, wiring buckets, and `getParameters()`.
+  reflection on a live `Container` instance: service names, resolved types, aliases, tags, wiring
+  buckets, and `getParameters()`. A service's type is its `createService*()` method's return type;
+  where nette/di < 3.2 compiles no usable one (the `container` service returns the compiled
+  subclass, imported services return `void`), it is the most specific class listing the service in
+  any `$wiring` bucket. `$types` (removed in nette/di 3.2) is never read, so services added at
+  runtime via `Container::addService()` are not indexed.
 - `Metadata/MultiContainerRegistry` — loads all profiles once (lazily, memoized), classifies
   receiver types into profile subsets (`resolveProfiles()`, see *Receiver classes*) and answers
   profile-subset queries: service/type/tag existence per profile, merged service/tag/parameter

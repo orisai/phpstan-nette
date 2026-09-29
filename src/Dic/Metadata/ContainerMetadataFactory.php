@@ -9,6 +9,7 @@ use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionProperty;
 use function get_class;
+use function is_a;
 use function lcfirst;
 use function preg_match;
 use function sprintf;
@@ -21,14 +22,15 @@ final class ContainerMetadataFactory
 	{
 		$reflection = new ReflectionClass($container);
 
-		/** @var array<string, string> $types */
-		$types = $this->readProperty($container, 'types');
 		/** @var array<string, string> $aliases */
 		$aliases = $this->readProperty($container, 'aliases');
 		/** @var array<string, array<string, mixed>> $tags */
 		$tags = $this->readProperty($container, 'tags');
 		/** @var array<string, array<int, array<int, string>>> $wiring */
 		$wiring = $this->readProperty($container, 'wiring');
+
+		$wiredTypes = $this->resolveWiredTypes($wiring);
+		$containerClass = $reflection->getName();
 
 		$typesByMethodName = [];
 		$serviceNames = [];
@@ -48,9 +50,12 @@ final class ContainerMetadataFactory
 				);
 			}
 
-			// Mirrors Container::getServiceType() lookup priority: $types overrides the reflected return type
-			// (e.g. the "container" service's method returns the compiled subclass, but $types pins the base type).
-			$typeName = $types[$serviceName] ?? $this->resolveReturnTypeName($method);
+			// nette/di < 3.2 compiles the "container" service as returning the compiled subclass and imported
+			// services as returning void; the declared type then survives only in the wiring.
+			$typeName = $this->resolveReturnTypeName($method);
+			if ($typeName === null || $typeName === $containerClass) {
+				$typeName = $wiredTypes[$serviceName] ?? $typeName;
+			}
 
 			if ($typeName === null) {
 				throw new LogicException(
@@ -79,6 +84,39 @@ final class ContainerMetadataFactory
 			$wiring,
 			$container->getParameters(),
 		);
+	}
+
+	/**
+	 * @param array<string, array<int, array<int, string>>> $wiring
+	 * @return array<string, string>
+	 */
+	private function resolveWiredTypes(array $wiring): array
+	{
+		$typesByService = [];
+		foreach ($wiring as $type => $buckets) {
+			foreach ($buckets as $names) {
+				foreach ($names as $name) {
+					$typesByService[$name][$type] = true;
+				}
+			}
+		}
+
+		$resolved = [];
+		foreach ($typesByService as $name => $types) {
+			foreach ($types as $candidate => $_) {
+				foreach ($types as $other => $__) {
+					if (!is_a($candidate, $other, true)) {
+						continue 2;
+					}
+				}
+
+				$resolved[$name] = $candidate;
+
+				break;
+			}
+		}
+
+		return $resolved;
 	}
 
 	private function resolveReturnTypeName(ReflectionMethod $method): ?string

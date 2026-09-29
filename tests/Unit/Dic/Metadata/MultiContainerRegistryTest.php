@@ -261,23 +261,23 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 		self::assertResolution(
 			false,
 			['alpha'],
-			$registry->resolveProfiles(new ObjectType(FixtureContainerFactory::AlphaClassName)),
+			$registry->resolveProfiles(new ObjectType(FixtureContainerFactory::className('alpha'))),
 		);
 		self::assertResolution(
 			false,
 			['beta'],
-			$registry->resolveProfiles(new ObjectType(FixtureContainerFactory::BetaClassName)),
+			$registry->resolveProfiles(new ObjectType(FixtureContainerFactory::className('beta'))),
 		);
 		self::assertResolution(false, self::All, $registry->resolveProfiles(TypeCombinator::union(
-			new ObjectType(FixtureContainerFactory::AlphaClassName),
-			new ObjectType(FixtureContainerFactory::BetaClassName),
+			new ObjectType(FixtureContainerFactory::className('alpha')),
+			new ObjectType(FixtureContainerFactory::className('beta')),
 		)));
 		self::assertResolution(true, self::All, $registry->resolveProfiles(TypeCombinator::union(
 			new ObjectType(Container::class),
-			new ObjectType(FixtureContainerFactory::AlphaClassName),
+			new ObjectType(FixtureContainerFactory::className('alpha')),
 		)));
 		self::assertNull($registry->resolveProfiles(TypeCombinator::union(
-			new ObjectType(FixtureContainerFactory::AlphaClassName),
+			new ObjectType(FixtureContainerFactory::className('alpha')),
 			new ObjectType(CustomContainer::class),
 		)));
 		self::assertNull($registry->resolveProfiles(new ObjectType(CustomContainer::class)));
@@ -295,7 +295,7 @@ final class MultiContainerRegistryTest extends PHPStanTestCase
 			new HasMethodType('createServiceFoo'),
 		)));
 		self::assertResolution(false, ['alpha'], $registry->resolveProfiles(TypeCombinator::intersect(
-			new ObjectType(FixtureContainerFactory::AlphaClassName),
+			new ObjectType(FixtureContainerFactory::className('alpha')),
 			new ContainerMissingServicesType(['createServiceBetaOnly']),
 		)));
 	}
