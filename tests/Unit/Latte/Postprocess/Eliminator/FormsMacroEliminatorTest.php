@@ -9,8 +9,9 @@ use Tests\OriPhpstan\Nette\Toolkit\EliminatorRun;
 
 // Inputs are the three bridges' own compiled output: Latte 2 FormMacros (nette/forms 3.1-3.2),
 // Latte 3 FormsExtension with nette/forms 3.1.7-3.2 (identical on 3.0 and 3.1 up to line markers)
-// and nette/forms 3.3's provider runtime. Every case carries another bridge's shape untouched; a
-// paired {label} becomes the one Html stand-in statement on every bridge.
+// and nette/forms 3.3's provider runtime (incl. its {form scope}/{form detached} modes). Every
+// case carries another bridge's shape untouched; a paired {label} becomes the one Html stand-in
+// statement on every bridge.
 final class FormsMacroEliminatorTest extends BaseTestCase
 {
 
@@ -132,6 +133,22 @@ PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_ITEM), $php
 		$this->global->forms->begin($form = $this->global->uiControl['ctx'], global: $this->global) /* pos 15:1 */;
 		echo $this->global->forms->get('w')->getControl() /* pos 16:2 */;
 		$this->global->forms->end();
+		$this->global->forms->begin($form = (is_object($ʟ_tmp = 'sc') ? $ʟ_tmp : ($this->global->forms->isNested() ? $this->global->forms->get($ʟ_tmp, Nette\Forms\Container::class) : $this->global->uiControl[$ʟ_tmp])), global: $this->global) /* pos 18:1 */;
+		echo $this->global->forms->get('a')->getControl() /* pos 19:2 */;
+		$this->global->forms->end();
+		$this->global->forms->begin($form = (is_object($ʟ_tmp = $v) ? $ʟ_tmp : ($this->global->forms->isNested() ? $this->global->forms->get($ʟ_tmp, Nette\Forms\Container::class) : $this->global->uiControl[$ʟ_tmp])), global: $this->global) /* pos 21:1 */;
+		echo $this->global->forms->get('b')->getControl() /* pos 22:2 */;
+		$this->global->forms->end();
+		$this->global->forms->begin($form = $this->global->uiControl['dt'], detached: true, global: $this->global) /* pos 24:1 */;
+		echo $this->global->forms->renderFormBegin([]) /* pos 24:1 */;
+		echo $this->global->forms->renderFormEnd() /* pos 26:1 */;
+		echo $this->global->forms->get('c')->getControl() /* pos 25:2 */;
+		$this->global->forms->end();
+		$this->global->forms->begin($form = (is_object($ʟ_tmp = $w) ? $ʟ_tmp : $this->global->uiControl[$ʟ_tmp]), detached: true, global: $this->global) /* pos 28:1 */;
+		echo $this->global->forms->renderFormBegin([]) /* pos 28:1 */;
+		echo $this->global->forms->renderFormEnd() /* pos 30:1 */;
+		echo $this->global->forms->get('d')->getControl() /* pos 29:2 */;
+		$this->global->forms->end();
 		$form = $this->global->formsStack[] = $this->global->uiControl['p'];
 		echo Nette\Bridges\FormsLatte\Runtime::item('q', $this->global)->getControl();
 		array_pop($this->global->formsStack);
@@ -164,6 +181,14 @@ PHP);
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('z')->getControl();
         $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('ctx');
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('w')->getControl();
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('sc');
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('a')->getControl();
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::formObject($v);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('b')->getControl();
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('dt');
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('c')->getControl();
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::formObject($w);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('d')->getControl();
         $form = $this->global->formsStack[] = $this->global->uiControl['p'];
         echo \Nette\Bridges\FormsLatte\Runtime::item('q', $this->global)->getControl();
         \array_pop($this->global->formsStack);

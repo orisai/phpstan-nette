@@ -20,6 +20,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
@@ -86,6 +87,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	private const PROVIDER_GET = 'get';
 
 	private const PROVIDER_SCOPE = 'getScope';
+
+	private const PROVIDER_NESTED = 'isNested';
 
 	private const LABEL_GETTERS = ['getLabel', 'getLabelPart'];
 
@@ -160,12 +163,17 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 		$lookup = $this->matchFieldLookup($node);
 		if ($lookup !== null) {
-			return $this->helperCall('formField', $lookup, $node);
+			return $this->isVariableNamed($lookup, self::DYNAMIC_TEMP)
+				? null
+				: $this->helperCall('formField', $lookup, $node);
 		}
 
 		$container = $this->matchContainerLookup($node);
+		if ($container === null || $this->isVariableNamed($container, self::DYNAMIC_TEMP)) {
+			return null;
+		}
 
-		return $container === null ? null : $this->helperCall('formContainer', $container, $node);
+		return $this->helperCall('formContainer', $container, $node);
 	}
 
 	private function rebuildFormOpen(Expr $expr): ?Assign
@@ -190,10 +198,13 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		}
 
 		$dynamicSource = $this->matchDynamicFormSource($source);
+		if ($dynamicSource === null) {
+			return null;
+		}
 
-		return $dynamicSource === null
-			? null
-			: new Assign($formVar, $this->helperCall('formObject', $dynamicSource, $source));
+		[$method, $name] = $dynamicSource;
+
+		return new Assign($formVar, $this->helperCall($method, $name, $source));
 	}
 
 	/**
@@ -242,7 +253,13 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		return [$assign->var, $assign->expr];
 	}
 
-	private function matchDynamicFormSource(Expr $source): ?Expr
+	// {form $var} resolves an object or a name; nette/forms 3.3's {form scope x} additionally reads a
+	// nested scope's container by that name, which types as the form named x here.
+
+	/**
+	 * @return array{string, Expr}|null
+	 */
+	private function matchDynamicFormSource(Expr $source): ?array
 	{
 		if (!$source instanceof Ternary || $source->if === null) {
 			return null;
@@ -272,18 +289,37 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		if (
-			!$source->else instanceof ArrayDimFetch
-			|| !GlobalPropertyFetchMatcher::matches($source->else->var, 'uiControl')
-		) {
+		if (!$this->isUiControlLookup($source->else, $tmpName) && !$this->isScopeLookup($source->else, $tmpName)) {
 			return null;
 		}
 
-		if (!$this->isVariableNamed($source->else->dim, $tmpName)) {
-			return null;
+		$name = $tmpAssign->expr;
+
+		return [$name instanceof String_ ? 'form' : 'formObject', $name];
+	}
+
+	private function isUiControlLookup(Expr $expr, string $tmpName): bool
+	{
+		return $expr instanceof ArrayDimFetch
+			&& GlobalPropertyFetchMatcher::matches($expr->var, 'uiControl')
+			&& $this->isVariableNamed($expr->dim, $tmpName);
+	}
+
+	private function isScopeLookup(Expr $expr, string $tmpName): bool
+	{
+		if (!$expr instanceof Ternary || $expr->if === null) {
+			return false;
 		}
 
-		return $tmpAssign->expr;
+		if (!$expr->cond instanceof MethodCall || !$this->isProviderCall($expr->cond, self::PROVIDER_NESTED)) {
+			return false;
+		}
+
+		$container = $this->matchContainerLookup($expr->if);
+
+		return $container !== null
+			&& $this->isVariableNamed($container, $tmpName)
+			&& $this->isUiControlLookup($expr->else, $tmpName);
 	}
 
 	/**
@@ -514,7 +550,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		return $this->isVariableNamed($expr->dim, self::DYNAMIC_TEMP) ? null : $expr->dim;
+		return $expr->dim;
 	}
 
 	private function matchRuntimeItem(Expr $expr): ?Expr

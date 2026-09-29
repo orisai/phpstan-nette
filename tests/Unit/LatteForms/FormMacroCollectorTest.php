@@ -338,23 +338,35 @@ final class FormMacroCollectorTest extends BaseTestCase
 		self::assertSame([], $this->collector()->sitesFor(self::FIXTURE_DIR . '/does-not-exist.latte'));
 	}
 
-	public function testEveryFixtureIsAValidLatteTemplate(): void
+	/**
+	 * @dataProvider provideFixtureFiles
+	 */
+	public function testEveryFixtureIsAValidLatteTemplate(string $file): void
+	{
+		if (InstalledVersionsGuard::latteMajor() !== 2 && in_array(basename($file), self::LATTE_2_ONLY, true)) {
+			self::markTestSkipped(basename($file) . ' is Latte 2 syntax');
+		}
+
+		$source = FileSystem::read($file);
+		$relativePath = self::FIXTURE_DIR . '/' . basename($file);
+		$result = TestAdapter::create()
+			->compile($source, 'LatteFormsFixture' . substr(sha1($source), 0, 8), $relativePath)
+			->getResult();
+
+		self::assertNotNull($result->getPhpSource(), basename($file) . ' must compile');
+	}
+
+	/**
+	 * @return iterable<string, array{string}>
+	 */
+	public function provideFixtureFiles(): iterable
 	{
 		$files = glob($this->projectRoot() . '/' . self::FIXTURE_DIR . '/*.latte');
 		self::assertNotFalse($files);
 		self::assertNotCount(0, $files);
 
-		$adapter = TestAdapter::create();
 		foreach ($files as $file) {
-			if (InstalledVersionsGuard::latteMajor() !== 2 && in_array(basename($file), self::LATTE_2_ONLY, true)) {
-				continue;
-			}
-
-			$source = FileSystem::read($file);
-			$relativePath = self::FIXTURE_DIR . '/' . basename($file);
-			$result = $adapter->compile($source, 'LatteFormsFixture' . substr(sha1($source), 0, 8), $relativePath)
-				->getResult();
-			self::assertNotNull($result->getPhpSource(), basename($file) . ' must compile');
+			yield basename($file) => [$file];
 		}
 	}
 

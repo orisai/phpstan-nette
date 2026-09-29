@@ -48,8 +48,8 @@ final class FamilyCoverageTest extends BaseTestCase
 		}
 	}
 
-	// A consumer matching a Latte 3 family with its Latte 2 table would be a Latte 3 shape silently
-	// matched with Latte 2 patterns: every consumer has a table of its own on every Latte 3 family.
+	// FamilyPatterns::for() never routes a Latte 3 family through its Latte 2 branch: a consumer whose
+	// Latte 3 table equalled its Latte 2 one would match Latte 3 shapes with Latte 2 patterns silently.
 	public function testNoConsumerReusesItsLatte2TableOnLatte3(): void
 	{
 		$latte2 = EliminatorRun::family(ShapeFamily::LATTE_2);
