@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
+use OriPhpstan\Nette\Latte\Includes\TagArgument;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
@@ -55,6 +56,14 @@ final class Latte3Adapter implements LatteVersionAdapter
 	public function defaultCallables(): DefaultCallables
 	{
 		return $this->compiler->defaultCallables();
+	}
+
+	/**
+	 * @return list<TagArgument>
+	 */
+	public function parseTagArguments(string $argsSource): array
+	{
+		return TagLexerArguments::parse($argsSource);
 	}
 
 	// Read before generate(): the passes mutate the parsed tree in place.

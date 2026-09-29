@@ -2,36 +2,34 @@
 
 namespace OriPhpstan\Nette\Latte\Includes;
 
-use Latte\MacroTokens;
-use function ltrim;
-use function strpos;
-use function trim;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 
+// Reads an include-family site's argument list through the installed adapter, so no consumer
+// tokenizes Latte syntax itself.
 final class ArgTyper
 {
+
+	private LatteVersionAdapterAccessor $adapterAccessor;
+
+	public function __construct(LatteVersionAdapterAccessor $adapterAccessor)
+	{
+		$this->adapterAccessor = $adapterAccessor;
+	}
 
 	/**
 	 * @return array{vars: array<string, string>, open: bool}
 	 */
 	public function typeArgs(IncludeTarget $site, TemplateContext $context): array
 	{
-		$tokens = new MacroTokens($site->getArgsSource());
 		$vars = [];
 		$open = false;
 
-		while ($tokens->isNext(...MacroTokens::SIGNIFICANT)) {
-			if ($tokens->nextValue('(expand)') !== null) {
+		foreach ($this->parse($site) as $arg) {
+			if ($arg->isSpread()) {
 				$open = true;
-			} else {
-				$name = $tokens->nextValue(MacroTokens::T_SYMBOL);
-				if ($name !== null && ($tokens->nextToken('=>') !== null || $tokens->nextToken(':') !== null)) {
-					$expr = trim($tokens->joinUntilSameDepth(','));
-					$vars[$name] = $this->classifyExprType($expr, $context);
-				}
+			} elseif ($arg->getName() !== null) {
+				$vars[$arg->getName()] = $this->classifyExprType($arg, $context);
 			}
-
-			$tokens->joinUntilSameDepth(',');
-			$tokens->nextToken(',');
 		}
 
 		return ['vars' => $vars, 'open' => $open];
@@ -41,74 +39,67 @@ final class ArgTyper
 	// rewrite matches by position), but typeArgs() above only recognizes `name: expr`/`name =>
 	// expr` pairs - a bare positional argument is invisible to it. Consumers checking a block's
 	// own declared params against what an edge provides must know when this gap could hide a
-	// real binding, rather than silently trusting an unrelated same-named ambient value. Mirrors
-	// typeArgs()'s own named-arg recognition token-for-token so the two can never disagree on
-	// what counts as "named".
+	// real binding, rather than silently trusting an unrelated same-named ambient value.
 	public function hasPositionalArgs(IncludeTarget $site): bool
 	{
-		$tokens = new MacroTokens($site->getArgsSource());
-
-		while ($tokens->isNext(...MacroTokens::SIGNIFICANT)) {
-			if ($tokens->nextValue('(expand)') !== null) {
-				$tokens->joinUntilSameDepth(',');
-				$tokens->nextToken(',');
-
-				continue;
-			}
-
-			$name = $tokens->nextValue(MacroTokens::T_SYMBOL);
-			$isNamed = $name !== null && ($tokens->nextToken('=>') !== null || $tokens->nextToken(':') !== null);
-			if (!$isNamed) {
+		foreach ($this->parse($site) as $arg) {
+			if (!$arg->isSpread() && $arg->getName() === null) {
 				return true;
 			}
-
-			$tokens->joinUntilSameDepth(',');
-			$tokens->nextToken(',');
 		}
 
 		return false;
 	}
 
-	private function classifyExprType(string $expr, TemplateContext $context): string
+	// Every non-spread argument's expression source in call order, a `name:`/`name =>` prefix
+	// stripped: block params thread by declaration order, so a name a caller writes never picks
+	// the target param.
+
+	/**
+	 * @return list<string>
+	 */
+	public function argSources(IncludeTarget $site): array
 	{
-		$tokens = new MacroTokens($expr);
-		if ($tokens->nextToken(...MacroTokens::SIGNIFICANT) === null) {
-			return 'mixed';
-		}
-
-		$isSingleToken = !$tokens->isNext(...MacroTokens::SIGNIFICANT);
-
-		if ($tokens->isCurrent(MacroTokens::T_VARIABLE)) {
-			if (!$isSingleToken) {
-				return 'mixed';
+		$sources = [];
+		foreach ($this->parse($site) as $arg) {
+			if (!$arg->isSpread()) {
+				$sources[] = $arg->getSource();
 			}
-
-			$name = ltrim((string) $tokens->currentValue(), '$');
-
-			return $context->getVars()[$name] ?? 'mixed';
 		}
 
-		if (!$isSingleToken) {
-			return 'mixed';
+		return $sources;
+	}
+
+	/**
+	 * @return list<array{string, string}>
+	 */
+	public function namedArgSources(IncludeTarget $site): array
+	{
+		$pairs = [];
+		foreach ($this->parse($site) as $arg) {
+			if (!$arg->isSpread() && $arg->getName() !== null) {
+				$pairs[] = [$arg->getName(), $arg->getSource()];
+			}
 		}
 
-		if ($tokens->isCurrent(MacroTokens::T_NUMBER)) {
-			return strpos((string) $tokens->currentValue(), '.') === false ? 'int' : 'float';
+		return $pairs;
+	}
+
+	/**
+	 * @return list<TagArgument>
+	 */
+	private function parse(IncludeTarget $site): array
+	{
+		return $this->adapterAccessor->get()->parseTagArguments($site->getArgsSource());
+	}
+
+	private function classifyExprType(TagArgument $arg, TemplateContext $context): string
+	{
+		if ($arg->getVariable() !== null) {
+			return $context->getVars()[$arg->getVariable()] ?? 'mixed';
 		}
 
-		if ($tokens->isCurrent(MacroTokens::T_STRING)) {
-			return 'string';
-		}
-
-		if ($tokens->isCurrent('true', 'TRUE', 'false', 'FALSE')) {
-			return 'bool';
-		}
-
-		if ($tokens->isCurrent('null', 'NULL')) {
-			return 'null';
-		}
-
-		return 'mixed';
+		return $arg->getLiteralType() ?? 'mixed';
 	}
 
 }

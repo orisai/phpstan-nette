@@ -9,6 +9,7 @@ use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Forms\FormSite;
+use OriPhpstan\Nette\Latte\Includes\TagArgument;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
@@ -92,6 +93,14 @@ final class Latte2Adapter implements LatteVersionAdapter
 			],
 			[],
 		);
+	}
+
+	/**
+	 * @return list<TagArgument>
+	 */
+	public function parseTagArguments(string $argsSource): array
+	{
+		return MacroTokensArguments::parse($argsSource);
 	}
 
 }

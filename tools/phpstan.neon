@@ -168,10 +168,7 @@ parameters:
 			path: ../src/Latte/Includes/TemplateFactExtractor.php
 		-
 			identifier: method.internalClass
-			path: ../src/Latte/Includes/ArgTyper.php
-		-
-			identifier: method.internalClass
-			path: ../src/Latte/Postprocess/EdgeAnchorInjector.php
+			path: ../src/Latte/Version/Latte2/MacroTokensArguments.php
 		# Resolves a filter callable the way Engine::invokeFilter() does, through Latte's @internal FilterExecutor.
 		-
 			identifiers: [instanceof.internalClass, property.internalClass, property.dynamicName]

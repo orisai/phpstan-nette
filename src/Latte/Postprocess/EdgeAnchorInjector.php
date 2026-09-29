@@ -2,7 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
-use Latte\MacroTokens;
 use OriPhpstan\Nette\Latte\Includes\ArgTyper;
 use OriPhpstan\Nette\Latte\Includes\DeclaredVarsResolver;
 use OriPhpstan\Nette\Latte\Includes\EdgeScope;
@@ -43,7 +42,6 @@ use function preg_match;
 use function rtrim;
 use function sort;
 use function strcmp;
-use function trim;
 use function ucfirst;
 use function usort;
 use const SORT_STRING;
@@ -77,7 +75,7 @@ final class EdgeAnchorInjector
 		$this->edgeIndex = $edgeIndex;
 		$this->declaredVarsResolver = new DeclaredVarsResolver($edgeIndex);
 		$this->universe = $universe;
-		$this->argTyper = new ArgTyper();
+		$this->argTyper = new ArgTyper($edgeIndex->getAdapterAccessor());
 		$this->phpParser = $phpParser;
 		$this->includeIsolation = $includeIsolation;
 	}
@@ -302,7 +300,7 @@ final class EdgeAnchorInjector
 		$manifest = $calleeMethod !== null
 			? $this->buildSameFileBlockManifest($includerAbsolute, $context, $calleeMethod, $site->getRawTarget())
 			: $this->buildImportedBlockManifest($context, $relativePath, $site->getRawTarget());
-		$argItems = $this->buildBlockArgItems($site->getArgsSource(), $ownParams);
+		$argItems = $this->buildBlockArgItems($site, $ownParams);
 
 		if ($manifest === [] && $argItems === []) {
 			return null;
@@ -424,42 +422,6 @@ final class EdgeAnchorInjector
 		return $this->edgeIndex->declarationsFor($absoluteFile)->getDefineParams()[$blockName] ?? [];
 	}
 
-	// Positional, not named: {include #b, expr1, expr2} threads args by DECLARATION ORDER of the
-	// block's own {define} params (BlockDispatchEliminator::rebuildDirectCall's own extraValues
-	// cursor is positional too, ignoring any "name:"/"name=>" prefix a caller writes) - an optional
-	// prefix is stripped here only so the expression itself parses, the name it carries is never
-	// used to pick the target param. TokenIterator::$position is @internal (property.internalClass),
-	// so a false-positive name/colon peek is undone by re-prepending the consumed symbol's own
-	// value instead of rewinding the cursor - the same "no non-internal peek-then-rewind API"
-	// constraint ArgTyper/extractArgPairs already work around by never needing to undo a consume.
-
-	/**
-	 * @return list<string>
-	 */
-	private function extractPositionalArgs(string $argsSource): array
-	{
-		$tokens = new MacroTokens($argsSource);
-		$args = [];
-
-		while ($tokens->isNext(...MacroTokens::SIGNIFICANT)) {
-			if ($tokens->nextValue('(expand)') !== null) {
-				$tokens->joinUntilSameDepth(',');
-				$tokens->nextToken(',');
-
-				continue;
-			}
-
-			$name = $tokens->nextValue(MacroTokens::T_SYMBOL);
-			$isNamed = $name !== null && ($tokens->nextToken('=>') !== null || $tokens->nextToken(':') !== null);
-			$rest = trim($tokens->joinUntilSameDepth(','));
-
-			$args[] = $name === null || $isNamed ? $rest : trim($name . ' ' . $rest);
-			$tokens->nextToken(',');
-		}
-
-		return $args;
-	}
-
 	// Per-variable priority, applied per-param instead of per-file: a TYPED own param
 	// ({define b, string $a}) is a declaration, so it never takes a captured type, exactly like a
 	// file-form target's declared var (buildManifest() above) - only an UNTYPED own param
@@ -469,10 +431,10 @@ final class EdgeAnchorInjector
 	 * @param array<int, array{string|null, string}> $ownParams
 	 * @return list<ArrayItem>
 	 */
-	private function buildBlockArgItems(string $argsSource, array $ownParams): array
+	private function buildBlockArgItems(IncludeTarget $site, array $ownParams): array
 	{
 		$items = [];
-		foreach ($this->extractPositionalArgs($argsSource) as $i => $exprSource) {
+		foreach ($this->argTyper->argSources($site) as $i => $exprSource) {
 			$param = $ownParams[$i] ?? null;
 			if ($param === null || $param[0] !== null) {
 				continue;
@@ -525,7 +487,7 @@ final class EdgeAnchorInjector
 	private function buildArgItems(IncludeTarget $site): array
 	{
 		$items = [];
-		foreach ($this->extractArgPairs($site->getArgsSource()) as [$name, $exprSource]) {
+		foreach ($this->argTyper->namedArgSources($site) as [$name, $exprSource]) {
 			$expr = $this->parseExpr($exprSource);
 			if ($expr === null) {
 				continue;
@@ -535,35 +497,6 @@ final class EdgeAnchorInjector
 		}
 
 		return $items;
-	}
-
-	// Mirrors ArgTyper::typeArgs()'s own tokenization loop exactly, capturing each arg's raw
-	// expression source instead of classifying it - the same MacroTokens grammar (name: expr /
-	// name => expr, comma-separated, (expand) spreads skipped) must stay in lockstep with that
-	// class or the two would silently disagree on which args exist.
-
-	/**
-	 * @return list<array{string, string}>
-	 */
-	private function extractArgPairs(string $argsSource): array
-	{
-		$tokens = new MacroTokens($argsSource);
-		$pairs = [];
-
-		while ($tokens->isNext(...MacroTokens::SIGNIFICANT)) {
-			if ($tokens->nextValue('(expand)') === null) {
-				$name = $tokens->nextValue(MacroTokens::T_SYMBOL);
-				if ($name !== null && ($tokens->nextToken('=>') !== null || $tokens->nextToken(':') !== null)) {
-					$expr = trim($tokens->joinUntilSameDepth(','));
-					$pairs[] = [$name, $expr];
-				}
-			}
-
-			$tokens->joinUntilSameDepth(',');
-			$tokens->nextToken(',');
-		}
-
-		return $pairs;
 	}
 
 	// Degradation rule: an arg expression this project's own parser cannot parse (e.g. leftover

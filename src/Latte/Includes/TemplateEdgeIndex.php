@@ -75,6 +75,11 @@ final class TemplateEdgeIndex
 		$this->discoveryStoreEnabled = $discoveryStoreEnabled;
 	}
 
+	public function getAdapterAccessor(): LatteVersionAdapterAccessor
+	{
+		return $this->adapterAccessor;
+	}
+
 	public function factsFor(string $absoluteFile): TemplateFacts
 	{
 		if ($this->cache === null) {

@@ -57,7 +57,7 @@ final class IncludeContractChecker
 		$this->universe = $universe;
 		$this->contextResolver = $contextResolver;
 		$this->typeStringResolver = $typeStringResolver;
-		$this->argTyper = new ArgTyper();
+		$this->argTyper = new ArgTyper($index->getAdapterAccessor());
 		$this->declaredVarsResolver = new DeclaredVarsResolver($index);
 		$this->capturedOverlay = $capturedOverlay;
 		$this->includeIsolation = $includeIsolation;

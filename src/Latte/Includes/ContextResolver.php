@@ -57,7 +57,7 @@ final class ContextResolver
 	{
 		$this->index = $index;
 		$this->universe = $universe;
-		$this->argTyper = new ArgTyper();
+		$this->argTyper = new ArgTyper($index->getAdapterAccessor());
 		$this->declaredVarsResolver = new DeclaredVarsResolver($index);
 		$this->capturedOverlay = $capturedOverlay;
 		$this->includeIsolation = $includeIsolation;

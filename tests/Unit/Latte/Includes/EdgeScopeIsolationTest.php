@@ -70,7 +70,7 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 		$scope = EdgeScope::resolve(
 			new IncludeTarget('embed', IncludeTarget::KIND_STATIC_FILE, 'part.latte', 'part.latte', 'extra: $obj', 1),
 			TemplateContext::root(['ambient' => 'string']),
-			new ArgTyper(),
+			new ArgTyper(TestAdapter::accessor()),
 			static fn (): array => [],
 			true,
 		);
@@ -88,8 +88,14 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 		$context = TemplateContext::root(['ambient' => 'string']);
 
 		self::assertSame(
-			EdgeScope::resolve($site, $context, new ArgTyper(), static fn (): array => [], false),
-			EdgeScope::resolve($site, $context, new ArgTyper(), static fn (): array => [], true),
+			EdgeScope::resolve(
+				$site,
+				$context,
+				new ArgTyper(TestAdapter::accessor()),
+				static fn (): array => [],
+				false,
+			),
+			EdgeScope::resolve($site, $context, new ArgTyper(TestAdapter::accessor()), static fn (): array => [], true),
 		);
 	}
 
@@ -104,8 +110,20 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 			$site = new IncludeTarget($tag, IncludeTarget::KIND_STATIC_FILE, 'p.latte', 'p.latte', 'extra: $obj', 1);
 
 			self::assertSame(
-				EdgeScope::resolve($site, $context, new ArgTyper(), static fn (): array => ['local' => 'int'], false),
-				EdgeScope::resolve($site, $context, new ArgTyper(), static fn (): array => ['local' => 'int'], true),
+				EdgeScope::resolve(
+					$site,
+					$context,
+					new ArgTyper(TestAdapter::accessor()),
+					static fn (): array => ['local' => 'int'],
+					false,
+				),
+				EdgeScope::resolve(
+					$site,
+					$context,
+					new ArgTyper(TestAdapter::accessor()),
+					static fn (): array => ['local' => 'int'],
+					true,
+				),
 				'{' . $tag . '} must read identically in both flag states',
 			);
 		}
@@ -145,7 +163,7 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 		return EdgeScope::resolve(
 			new IncludeTarget('include', IncludeTarget::KIND_STATIC_FILE, 'part.latte', 'part.latte', $argsSource, 1),
 			TemplateContext::root(['ambient' => 'string']),
-			new ArgTyper(),
+			new ArgTyper(TestAdapter::accessor()),
 			static fn (): array => [],
 			$includeIsolation,
 		);

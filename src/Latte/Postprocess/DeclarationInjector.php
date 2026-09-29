@@ -108,7 +108,7 @@ final class DeclarationInjector
 		$this->phpParser = $phpParser;
 		$this->edgeIndex = $edgeIndex;
 		$this->universe = $universe;
-		$this->argTyper = new ArgTyper();
+		$this->argTyper = new ArgTyper($edgeIndex->getAdapterAccessor());
 		$this->capturedOverlay = $capturedOverlay;
 		$this->declaredVarsResolver = new DeclaredVarsResolver($edgeIndex);
 	}

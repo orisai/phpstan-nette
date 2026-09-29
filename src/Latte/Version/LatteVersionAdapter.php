@@ -2,6 +2,8 @@
 
 namespace OriPhpstan\Nette\Latte\Version;
 
+use OriPhpstan\Nette\Latte\Includes\TagArgument;
+
 // Every step that reads Latte's own API or depends on the shape of its generated code goes through
 // here; the rest of the analysis sees only this library's own value objects. compile() yields the
 // generated code AND the template facts from the same parse of $source; extractFacts() is the
@@ -21,5 +23,13 @@ interface LatteVersionAdapter
 	// The stock filters and functions of the installed line, the ones the compiled code can call
 	// without the application registering anything.
 	public function defaultCallables(): DefaultCallables;
+
+	// The argument list of an include-family tag (the text IncludeTarget::getArgsSource() carries),
+	// split the way the installed line tokenizes it.
+
+	/**
+	 * @return list<TagArgument>
+	 */
+	public function parseTagArguments(string $argsSource): array;
 
 }
