@@ -5,10 +5,12 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 use FilesystemIterator;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Cache\LatteCodeVersion;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use function array_unique;
 use function dirname;
 use function getmypid;
 use function glob;
@@ -154,14 +156,46 @@ final class LatteAnalysisCacheTest extends BaseTestCase
 
 	public function testCombineChangesWhenAnyTrackedPackageVersionInputChanges(): void
 	{
-		$base = LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0');
+		$family = (new ShapeFamily(ShapeFamily::LATTE_2, ShapeFamily::FORMS_MACROS))->id();
+		$base = LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', $family);
 
 		self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $base);
-		self::assertNotSame($base, LatteCodeVersion::combine('files-digest', '1.0.1', '2.0.0', '3.0.0', '4.0.0'));
-		self::assertNotSame($base, LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.1', '3.0.0', '4.0.0'));
-		self::assertNotSame($base, LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.1', '4.0.0'));
-		self::assertNotSame($base, LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.1'));
-		self::assertSame($base, LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0'));
+		self::assertNotSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.1', '2.0.0', '3.0.0', '4.0.0', $family),
+		);
+		self::assertNotSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.1', '3.0.0', '4.0.0', $family),
+		);
+		self::assertNotSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.1', '4.0.0', $family),
+		);
+		self::assertNotSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.1', $family),
+		);
+		self::assertSame($base, LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', $family));
+	}
+
+	// Two lines with the same raw version inputs but a different shape family cache different code.
+	public function testCombineDiffersPerShapeFamily(): void
+	{
+		$versions = [];
+		foreach (ShapeFamily::all() as $family) {
+			$versions[$family->id()] = LatteCodeVersion::combine(
+				'files-digest',
+				'1.0.0',
+				'2.0.0',
+				'3.0.0',
+				'4.0.0',
+				$family->id(),
+			);
+		}
+
+		self::assertCount(5, $versions);
+		self::assertCount(5, array_unique($versions));
 	}
 
 	// The package list is spelled out here rather than read from LatteCodeVersion::SALTED_PACKAGES:

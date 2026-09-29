@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Cache;
 
 use FilesystemIterator;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -31,12 +32,17 @@ final class LatteCodeVersion
 			return self::$version;
 		}
 
+		$installed = ProjectInstalledVersions::get();
+		$latteVersion = $installed->getVersion('latte/latte') ?? '';
+		$formsVersion = $installed->getVersion('nette/forms');
+
 		return self::$version = self::combine(
 			self::filesDigest(),
-			ProjectInstalledVersions::get()->getVersion('phpstan/phpstan') ?? '',
-			ProjectInstalledVersions::get()->getVersion('latte/latte') ?? '',
-			ProjectInstalledVersions::get()->getVersion('nette/application') ?? '',
-			ProjectInstalledVersions::get()->getVersion('nette/forms') ?? '',
+			$installed->getVersion('phpstan/phpstan') ?? '',
+			$latteVersion,
+			$installed->getVersion('nette/application') ?? '',
+			$formsVersion ?? '',
+			self::familyId($latteVersion, $formsVersion),
 		);
 	}
 
@@ -45,16 +51,27 @@ final class LatteCodeVersion
 		string $phpstanVersion,
 		string $latteVersion,
 		string $applicationVersion,
-		string $formsVersion
+		string $formsVersion,
+		string $familyId
 	): string
 	{
 		$serialized = $filesDigest
 			. 'phpstan:' . $phpstanVersion . '|'
 			. 'latte:' . $latteVersion . '|'
 			. 'application:' . $applicationVersion . '|'
-			. 'forms:' . $formsVersion . '|';
+			. 'forms:' . $formsVersion . '|'
+			. 'family:' . $familyId . '|';
 
 		return sha1($serialized);
+	}
+
+	// The cached shapes are the family's (line marker, forms bridge, eliminator pattern set), so the
+	// family joins the identity next to the raw versions it is derived from. An unsupported line
+	// never compiles a template (ConfigurationGuard), but the cache directory is still named before
+	// the guard reports.
+	private static function familyId(string $latteVersion, ?string $formsVersion): string
+	{
+		return ShapeFamily::supports($latteVersion) ? ShapeFamily::detect($latteVersion, $formsVersion)->id() : '';
 	}
 
 	public static function filesDigest(): string
