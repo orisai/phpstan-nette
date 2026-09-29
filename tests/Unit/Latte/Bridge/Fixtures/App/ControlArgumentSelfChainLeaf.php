@@ -10,7 +10,7 @@ use Nette\Application\UI\Template;
 final class ControlArgumentSelfChainLeaf extends ControlArgumentSelfChainBase
 {
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return parent::createTemplate();
 	}

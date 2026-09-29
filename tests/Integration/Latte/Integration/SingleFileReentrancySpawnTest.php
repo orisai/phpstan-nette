@@ -114,7 +114,7 @@ PHP);
 final class SpawnReentrantControl extends \Nette\Application\UI\Control
 {
 
-	protected function createTemplate(): SpawnReentrantTemplate
+	protected function createTemplate(?string $class = null): SpawnReentrantTemplate
 	{
 		return new SpawnReentrantTemplate();
 	}

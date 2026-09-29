@@ -3,7 +3,9 @@
 namespace Tests\OriPhpstan\Nette\Unit\Dic\Type;
 
 use PHPStan\Testing\TypeInferenceTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
+use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\FixtureContainerFactory;
 use function assert;
 use function basename;
 use function glob;
@@ -28,12 +30,19 @@ final class DicTypeInferenceTest extends TypeInferenceTestCase
 	/** @return iterable<string, array{string}> */
 	public static function dataFixtures(): iterable
 	{
-		$files = glob(__DIR__ . '/Fixtures/TypeInference/*.php');
-		assert($files !== false);
+		$line = InstalledVersionsGuard::satisfies('nette/di', '^3.2') ? 'Nette32' : 'Nette31';
+		foreach ([__DIR__ . '/Fixtures/TypeInference', __DIR__ . '/Fixtures/TypeInference/' . $line] as $dir) {
+			$files = glob($dir . '/*.php');
+			assert($files !== false);
 
-		foreach ($files as $file) {
-			yield basename($file) => [$file];
+			foreach ($files as $file) {
+				yield basename($file) => [$file];
+			}
 		}
+
+		yield 'ReceiverClassFixture.php' => [
+			FixtureContainerFactory::receiverFixture(__DIR__ . '/Fixtures/TypeInference/ReceiverClassFixture.php.tpl'),
+		];
 	}
 
 	/**

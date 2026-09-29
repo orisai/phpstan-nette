@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Compile\DiscoveryClassName;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
@@ -85,13 +86,16 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 			]);
 
 			// The two PHP-side lines are level 8's honest take on Control::$template's
-			// Template|stdClass union - stable across every run, so they pin output identity just
-			// as well as a clean fixture would (guarding them away would turn the setFile write
-			// conditional and destroy the very record this test exists to move).
-			$expectedOutput = "$relSrc/ScratchRenderer.php:9:"
-				. "Cannot call method render() on Nette\\Application\\UI\\Template|stdClass.\n"
-				. "$relSrc/ScratchTemplateBase.php:8:"
-				. "Cannot call method setFile() on Nette\\Application\\UI\\Template|stdClass.\n"
+			// Template|stdClass union (nette/application 3.1; 3.2 declares DefaultTemplate) - stable
+			// across every run, so they pin output identity just as well as a clean fixture would
+			// (guarding them away would turn the setFile write conditional and destroy the very
+			// record this test exists to move).
+			$expectedOutput = (InstalledVersionsGuard::satisfies('nette/application', '<3.2')
+				? "$relSrc/ScratchRenderer.php:9:"
+					. "Cannot call method render() on Nette\\Application\\UI\\Template|stdClass.\n"
+					. "$relSrc/ScratchTemplateBase.php:8:"
+					. "Cannot call method setFile() on Nette\\Application\\UI\\Template|stdClass.\n"
+				: '')
 				. "$relSrc/unrelated.latte:1:Undefined variable: \$undefinedVar\n";
 
 			$run1 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);

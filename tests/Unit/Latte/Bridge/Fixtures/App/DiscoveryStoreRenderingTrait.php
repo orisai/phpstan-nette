@@ -11,7 +11,7 @@ use Nette\Bridges\ApplicationLatte\Template;
 trait DiscoveryStoreRenderingTrait
 {
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		/** @var Template $template */
 		$template = parent::createTemplate();

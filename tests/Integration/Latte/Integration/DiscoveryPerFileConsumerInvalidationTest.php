@@ -76,7 +76,7 @@ final class DiscoveryPerFileConsumerInvalidationTest extends BaseTestCase
 final class ScratchSecondControl extends \Nette\Application\UI\Control
 {
 
-	protected function createTemplate(): ScratchOtherTemplate
+	protected function createTemplate(?string $class = null): ScratchOtherTemplate
 	{
 		return new ScratchOtherTemplate(new \Latte\Engine());
 	}
@@ -136,7 +136,7 @@ PHP);
 final class ScratchFirstControl extends \Nette\Application\UI\Control
 {
 
-	protected function createTemplate(): ScratchBaseTemplate
+	protected function createTemplate(?string $class = null): ScratchBaseTemplate
 	{
 		return new ScratchBaseTemplate(new \Latte\Engine());
 	}

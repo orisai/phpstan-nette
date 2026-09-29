@@ -12,6 +12,7 @@ use Nette\Bridges\ApplicationLatte\TemplateFactory;
 use Nette\Http;
 use Tests\OriPhpstan\Nette\Integration\Latte\Parity\Lifecycle\Fixtures\LifecycleProbePresenter;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\PresenterFactory;
 use function in_array;
 use function strncmp;
 
@@ -22,19 +23,15 @@ abstract class LifecycleParityTestCase extends BaseTestCase
 	{
 		$presenter = new LifecycleProbePresenter();
 		$presenter->autoCanonicalize = false;
-		$presenter->injectPrimary(
-			null,
-			null,
-			null,
+
+		return PresenterFactory::inject(
+			$presenter,
 			new Http\Request(
 				new Http\UrlScript('http://localhost/'),
 				[],
 				[],
 				['_nss' => '1'],
 			),
-			new Http\Response(),
-			null,
-			null,
 			new TemplateFactory(new class implements LatteFactory {
 
 				public function create(): Engine
@@ -44,8 +41,6 @@ abstract class LifecycleParityTestCase extends BaseTestCase
 
 			}),
 		);
-
-		return $presenter;
 	}
 
 	/**

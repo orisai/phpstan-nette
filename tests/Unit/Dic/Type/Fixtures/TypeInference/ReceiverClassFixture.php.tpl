@@ -2,12 +2,11 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Dic\Type\Fixtures\TypeInference;
 
-use Container_5011b2e17d;
-use Container_6a5cfd235d;
-use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\CustomContainer;
+use {{alpha}};
+use {{beta}};
 use function PHPStan\Testing\assertType;
 
-function (Container_5011b2e17d $container): void {
+function ({{alpha}} $container): void {
 	assertType('true', $container->hasService('alphaOnly'));
 	assertType('bool', $container->hasService('betaOnly'));
 	assertType('Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooService', $container->getService('foo'));
@@ -20,7 +19,7 @@ function (Container_5011b2e17d $container): void {
 	assertType('string', $params['alphaOnlyParam']);
 };
 
-function (Container_6a5cfd235d $container): void {
+function ({{beta}} $container): void {
 	assertType('Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooServiceBeta', $container->getService('foo'));
 
 	$params = $container->getParameters();
@@ -29,7 +28,7 @@ function (Container_6a5cfd235d $container): void {
 };
 
 /**
- * @param Container_5011b2e17d|Container_6a5cfd235d $container
+ * @param {{alpha}}|{{beta}} $container
  */
 function receiverUnion($container): void
 {
@@ -38,15 +37,3 @@ function receiverUnion($container): void
 		$container->getService('foo'),
 	);
 }
-
-function (CustomContainer $container): void {
-	assertType('bool', $container->hasService('foo'));
-	assertType('object', $container->getService('foo'));
-	assertType('string', $container->getServiceType('foo'));
-	assertType('array', $container->getParameters());
-	assertType('array', $container->findByTag('shared.tag'));
-
-	if ($container->hasService('foo')) {
-		assertType('Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\CustomContainer', $container);
-	}
-};

@@ -8,6 +8,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
+use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\FixtureContainerFactory;
 
 /**
  * @extends RuleTestCase<TagCallRule>
@@ -50,7 +51,7 @@ final class TagCallRuleTest extends RuleTestCase
 
 	public function testReceiverClasses(): void
 	{
-		$this->analyse([__DIR__ . '/Fixtures/ReceiverClassFixture.php'], [
+		$this->analyse([FixtureContainerFactory::receiverFixture(__DIR__ . '/Fixtures/ReceiverClassFixture.php.tpl')], [
 			['Tag \'alpha.tag\' is not present in any analysed container (beta).', 27],
 		]);
 	}

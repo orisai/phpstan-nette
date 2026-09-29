@@ -8,9 +8,15 @@ use Nette\DI\Container;
 use Nette\DI\ContainerLoader;
 use Nette\DI\Extensions\DIExtension;
 use Nette\DI\Extensions\ExtensionsExtension;
+use Nette\Utils\FileSystem;
+use function basename;
 use function get_class;
+use function is_file;
+use function md5;
 use function preg_match;
 use function sprintf;
+use function str_replace;
+use function uniqid;
 
 final class FixtureContainerFactory
 {
@@ -20,6 +26,22 @@ final class FixtureContainerFactory
 	public static function className(string $profile): string
 	{
 		return get_class((new self())->create($profile));
+	}
+
+	public static function receiverFixture(string $template): string
+	{
+		$alpha = self::className('alpha');
+		$beta = self::className('beta');
+		$contents = str_replace(['{{alpha}}', '{{beta}}'], [$alpha, $beta], FileSystem::read($template));
+
+		$file = __DIR__ . '/../../../../var/tmp/DicReceiverFixtures/' . md5($alpha . $beta . $template) . '/' . basename($template, '.tpl');
+		if (!is_file($file) || FileSystem::read($file) !== $contents) {
+			$tmp = $file . '.' . uniqid('', true) . '.tmp';
+			FileSystem::write($tmp, $contents);
+			FileSystem::rename($tmp, $file);
+		}
+
+		return $file;
 	}
 
 	public function create(string $profile): Container

@@ -22,7 +22,7 @@ class FixturePropertyNameControlBase extends Control
 	/** @var string|null */
 	protected $layout = 'default';
 
-	public function createTemplate(): Template
+	public function createTemplate(?string $class = null): Template
 	{
 		$template = parent::createTemplate();
 		assert($template instanceof Template);

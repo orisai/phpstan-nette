@@ -18,7 +18,7 @@ final class ControlArgumentForeignReceiverControl extends Control
 		$this->other = $other;
 	}
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return $this->other->createTemplate();
 	}

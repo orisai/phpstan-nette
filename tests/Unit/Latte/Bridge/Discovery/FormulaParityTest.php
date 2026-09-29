@@ -8,15 +8,13 @@ use Nette\Application\Helpers;
 use Nette\Application\Request;
 use Nette\Application\UI\Presenter;
 use Nette\ComponentModel\Component;
-use Nette\Http\Request as HttpRequest;
-use Nette\Http\Response as HttpResponse;
-use Nette\Http\UrlScript;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\FormulaVocabulary;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\TemplateDirectoryListing;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\PresenterFactory;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackDerivedControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackMissingControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackSharedControl;
@@ -338,14 +336,7 @@ final class FormulaParityTest extends BaseTestCase
 	// the dispatched action name is the acceptance proof.
 	private static function vendorAcceptsActionName(string $name): bool
 	{
-		$presenter = new DiscoveryVendorPresenter();
-		$presenter->injectPrimary(
-			null,
-			null,
-			null,
-			new HttpRequest(new UrlScript('http://localhost/')),
-			new HttpResponse(),
-		);
+		$presenter = PresenterFactory::inject(new DiscoveryVendorPresenter());
 
 		$requestProperty = new ReflectionProperty(Presenter::class, 'request');
 		$requestProperty->setAccessible(true);

@@ -2,7 +2,9 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Forms\Component;
 
+use Nette\ComponentModel\Container;
 use PHPStan\Testing\TypeInferenceTestCase;
+use ReflectionMethod;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function assert;
 use function basename;
@@ -22,7 +24,10 @@ final class ComponentTypeInferenceTest extends TypeInferenceTestCase
 	/** @return iterable<string, array{string}> */
 	public static function dataFixtures(): iterable
 	{
-		$files = glob(__DIR__ . '/Fixtures/TypeInference/*.php');
+		$filtered = (new ReflectionMethod(Container::class, 'getComponents'))->getNumberOfParameters() > 0;
+		$files = glob(
+			__DIR__ . '/Fixtures/TypeInference/' . ($filtered ? 'FilteredGetComponents' : 'PlainGetComponents') . '/*.php',
+		);
 		assert($files !== false);
 		if ($files === []) {
 			yield 'no fixtures yet' => [__FILE__];

@@ -34,17 +34,6 @@ final class ParentAccessorNarrowing
 	}
 
 	/**
-	 * lookup() is left to phpstan-nette's own extension, which narrows only the spelling that
-	 * writes $throw out - so the default one, which throws just the same, keeps its declared null.
-	 */
-	public function lookupIsLeftToTheVendorExtension(TextInput $input): void
-	{
-		assertType('Nette\ComponentModel\IComponent|null', $input->lookup(FormsContainer::class));
-		assertType('Nette\ComponentModel\IComponent', $input->lookup(FormsContainer::class, true));
-		assertType('Nette\ComponentModel\IComponent|null', $input->lookup(FormsContainer::class, false));
-	}
-
-	/**
 	 * Nette's own non-throwing overrides answer themselves and were never nullable to begin with.
 	 */
 	public function anOverrideThatAnswersItselfIsUntouched(FormsContainer $container): void

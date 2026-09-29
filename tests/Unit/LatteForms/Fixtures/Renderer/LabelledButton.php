@@ -13,9 +13,8 @@ final class LabelledButton extends SubmitButton
 
 	/**
 	 * @param string|object|null $caption
-	 * @return Html
 	 */
-	public function getLabel($caption = null)
+	public function getLabel($caption = null): Html
 	{
 		return Html::el('label');
 	}

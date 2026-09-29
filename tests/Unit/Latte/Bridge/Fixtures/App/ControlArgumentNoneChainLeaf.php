@@ -9,7 +9,7 @@ use Nette\Application\UI\Template;
 final class ControlArgumentNoneChainLeaf extends ControlArgumentNoneChainBase
 {
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return parent::createTemplate();
 	}

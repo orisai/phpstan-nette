@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Integration\Dic\Invalidation;
 
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 
 /**
@@ -59,21 +60,25 @@ final class InvalidationControlsTest extends DicInvalidationMatrixCase
 		]);
 	}
 
+	// nette/di 3.2 derives the compiled container's class name from the config's content, so there
+	// the comment does reach the container file and the salt legitimately discards the cache.
 	public function testCommentOnlyEditInANeonConfig(): void
 	{
-		$this->assertScenario('control-neon-comment', [
-			[
-				'mutate' => function (InvalidationScenario $scenario): void {
-					$this->writeConfig(
-						$scenario,
-						'alpha',
-						"# a comment the compiled container cannot carry\n" . $this->readConfig($scenario, 'alpha'),
-					);
-				},
-				'expect' => $this->seedErrors(),
-				'maxReanalysed' => 0,
-			],
-		]);
+		$step = [
+			'mutate' => function (InvalidationScenario $scenario): void {
+				$this->writeConfig(
+					$scenario,
+					'alpha',
+					"# a comment the compiled container cannot carry\n" . $this->readConfig($scenario, 'alpha'),
+				);
+			},
+			'expect' => $this->seedErrors(),
+		];
+		if (!InstalledVersionsGuard::satisfies('nette/di', '>=3.2')) {
+			$step['maxReanalysed'] = 0;
+		}
+
+		$this->assertScenario('control-neon-comment', [$step]);
 	}
 
 }

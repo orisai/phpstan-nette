@@ -148,7 +148,7 @@ PHP);
 final class SpawnTypedControl extends \Nette\Application\UI\Control
 {
 
-	protected function createTemplate(): SpawnChildTemplate
+	protected function createTemplate(?string $class = null): SpawnChildTemplate
 	{
 		return new SpawnChildTemplate();
 	}

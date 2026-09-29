@@ -15,6 +15,8 @@ use function sprintf;
 final class InstalledVersionsGuard
 {
 
+	private const ROOT_PACKAGE = 'orisai/phpstan-nette';
+
 	private const GROUPS = [
 		'latte2' => ['latte/latte', '^2.0', 'Latte 2'],
 		'latte3' => ['latte/latte', '^3.0', 'Latte 3'],
@@ -35,13 +37,22 @@ final class InstalledVersionsGuard
 		self::$versions = $versions;
 	}
 
+	// This project's own installed set, never the merged one: a PHPStan container booted in-process
+	// registers the phar's Composer loader too, whose installed.php lists PHPStan's bundled
+	// dependencies (nette/di among them) and would win InstalledVersions::getVersion().
 	public static function version(string $package): ?string
 	{
 		if (self::$versions !== null) {
 			return self::$versions[$package] ?? null;
 		}
 
-		return InstalledVersions::isInstalled($package) ? InstalledVersions::getVersion($package) : null;
+		foreach (InstalledVersions::getAllRawData() as $installed) {
+			if ($installed['root']['name'] === self::ROOT_PACKAGE) {
+				return $installed['versions'][$package]['version'] ?? null;
+			}
+		}
+
+		throw new LogicException(sprintf('Installed data of %s not found.', self::ROOT_PACKAGE));
 	}
 
 	public static function satisfies(string $package, string $constraint): bool

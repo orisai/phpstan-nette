@@ -13,7 +13,7 @@ use Nette\Application\UI\Presenter;
 final class OverridingComponentFixture extends Control
 {
 
-	public function getPresenter(): ?Presenter
+	public function getPresenter(bool $throw = true): ?Presenter
 	{
 		return $this->getPresenterIfExists();
 	}

@@ -8,7 +8,7 @@ use Nette\Application\UI\Template;
 abstract class ControlArgumentSelfChainBase extends Control
 {
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return parent::createTemplate();
 	}

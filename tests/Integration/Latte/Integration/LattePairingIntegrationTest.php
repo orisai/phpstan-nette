@@ -58,7 +58,7 @@ namespace LatteSpawnPairing;
 final class SpawnDriftPresenter
 {
 
-	protected function createTemplate(): SpawnBaseTemplate
+	protected function createTemplate(?string $class = null): SpawnBaseTemplate
 	{
 		return new SpawnBaseTemplate();
 	}

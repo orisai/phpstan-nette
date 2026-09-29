@@ -203,4 +203,32 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 		return null;
 	}
 
+	public function testVersionReadsThisProjectsVendorEvenWithPhpstansPharLoaderRegistered(): void
+	{
+		$expected = null;
+		$pharAutoload = null;
+		foreach (InstalledVersions::getAllRawData() as $installed) {
+			if ($installed['root']['name'] === 'orisai/phpstan-nette') {
+				$expected = $installed['versions']['nette/di']['version'] ?? null;
+				$pharAutoload = 'phar://' . ($installed['versions']['phpstan/phpstan']['install_path'] ?? '')
+					. '/phpstan.phar/vendor/autoload.php';
+			}
+		}
+
+		self::assertNotNull($expected);
+		self::assertNotNull($pharAutoload);
+		self::assertFileExists($pharAutoload);
+		require_once $pharAutoload;
+
+		$bundled = null;
+		foreach (InstalledVersions::getAllRawData() as $installed) {
+			if ($installed['root']['name'] === 'phpstan/phpstan-src') {
+				$bundled = $installed['versions']['nette/di']['version'] ?? null;
+			}
+		}
+
+		self::assertNotNull($bundled, 'the phar loader must be registered by now');
+		self::assertSame($expected, InstalledVersionsGuard::version('nette/di'));
+	}
+
 }

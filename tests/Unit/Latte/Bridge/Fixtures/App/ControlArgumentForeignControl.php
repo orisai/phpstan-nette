@@ -21,7 +21,7 @@ final class ControlArgumentForeignControl extends Control
 		$this->other = $other;
 	}
 
-	protected function createTemplate(): Template
+	protected function createTemplate(?string $class = null): Template
 	{
 		return $this->templateFactory->createTemplate($this->other);
 	}

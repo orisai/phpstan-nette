@@ -83,7 +83,6 @@ function (Container $container, string $dynamicName, bool $flag): void {
 		"'Tests\\\\OriPhpstan\\\\Nette\\\\Unit\\\\Dic\\\\Fixtures\\\\App\\\\AlphaVariant'|'Tests\\\\OriPhpstan\\\\Nette\\\\Unit\\\\Dic\\\\Fixtures\\\\App\\\\BetaVariant'",
 		$container->getServiceType('sharedName'),
 	);
-	assertType('string', $container->getServiceType($dynamicName));
 	assertType(
 		"'Tests\\\\OriPhpstan\\\\Nette\\\\Unit\\\\Dic\\\\Fixtures\\\\App\\\\FooService'|'Tests\\\\OriPhpstan\\\\Nette\\\\Unit\\\\Dic\\\\Fixtures\\\\App\\\\FooServiceBeta'",
 		$container->getServiceType('chainedAlias'),

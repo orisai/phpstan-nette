@@ -2,15 +2,15 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Dic\Rule\Fixtures;
 
-use Container_5011b2e17d;
-use Container_6a5cfd235d;
+use {{alpha}};
+use {{beta}};
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\BetaOnlyService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\CustomContainer;
 
 final class ReceiverClassFixture
 {
 
-	public function alphaReceiver(Container_5011b2e17d $container): void
+	public function alphaReceiver({{alpha}} $container): void
 	{
 		$container->getService('alphaOnly'); // OK: registered in alpha
 		$container->getService('betaOnly'); // error: not registered in alpha
@@ -21,14 +21,14 @@ final class ReceiverClassFixture
 		$container->findByTag('alpha.tag'); // OK: tag exists in alpha
 	}
 
-	public function betaReceiver(Container_6a5cfd235d $container): void
+	public function betaReceiver({{beta}} $container): void
 	{
 		$container->getService('betaOnly'); // OK: registered in beta
 		$container->findByTag('alpha.tag'); // error: tag missing in beta
 	}
 
 	/**
-	 * @param Container_5011b2e17d|Container_6a5cfd235d $container
+	 * @param {{alpha}}|{{beta}} $container
 	 */
 	public function unionReceiver($container): void
 	{
@@ -48,7 +48,7 @@ final class ReceiverClassFixture
 	}
 
 	/**
-	 * @param Container_5011b2e17d|CustomContainer $container
+	 * @param {{alpha}}|CustomContainer $container
 	 */
 	public function mixedUnknownUnion($container): void
 	{
