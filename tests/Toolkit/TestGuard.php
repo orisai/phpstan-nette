@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Toolkit;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Testing\PHPStanTestCase;
@@ -36,6 +37,7 @@ final class TestGuard
 			$config, // @phpstan-ignore argument.type
 			$fileExtensions, // @phpstan-ignore argument.type
 			$container->getByType(ReflectionProvider::class),
+			ProjectInstalledVersions::get(),
 		);
 	}
 
@@ -76,6 +78,7 @@ final class TestGuard
 			$config,
 			['php', 'latte'],
 			PHPStanTestCase::getContainer()->getByType(ReflectionProvider::class),
+			ProjectInstalledVersions::get(),
 		);
 	}
 

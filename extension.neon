@@ -55,6 +55,7 @@ services:
 		arguments:
 			orisaiNette: %orisaiNette%
 			fileExtensions: %fileExtensions%
+			installedVersions: @orisaiNette.installedVersions
 		autowired: false
 
 	-

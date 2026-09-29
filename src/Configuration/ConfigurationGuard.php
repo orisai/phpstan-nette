@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Forms\Catalog\Stub\FormModifierCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormReplicatorCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormRuleTypeCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormValueTypeCatalog;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use PHPStan\Reflection\ReflectionProvider;
 use function array_keys;
 use function in_array;
@@ -14,6 +15,7 @@ use function is_file;
 use function is_readable;
 use function sprintf;
 use function strtolower;
+use function version_compare;
 
 /**
  * @phpstan-type OrisaiNetteConfig array{
@@ -81,17 +83,25 @@ final class ConfigurationGuard
 
 	private ReflectionProvider $reflectionProvider;
 
+	private ProjectInstalledVersions $installedVersions;
+
 	private bool $validated = false;
 
 	/**
 	 * @param OrisaiNetteConfig $orisaiNette
 	 * @param list<string> $fileExtensions
 	 */
-	public function __construct(array $orisaiNette, array $fileExtensions, ReflectionProvider $reflectionProvider)
+	public function __construct(
+		array $orisaiNette,
+		array $fileExtensions,
+		ReflectionProvider $reflectionProvider,
+		ProjectInstalledVersions $installedVersions
+	)
 	{
 		$this->config = $orisaiNette;
 		$this->fileExtensions = $fileExtensions;
 		$this->reflectionProvider = $reflectionProvider;
+		$this->installedVersions = $installedVersions;
 	}
 
 	public function validate(): void
@@ -107,6 +117,10 @@ final class ConfigurationGuard
 
 		if ($latte['narrowing']['enabled'] && !$latte['enabled']) {
 			throw new InvalidConfiguration('orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.');
+		}
+
+		if ($latte['enabled']) {
+			$this->validateLatteVersionPairs();
 		}
 
 		$loaders = [
@@ -163,6 +177,50 @@ final class ConfigurationGuard
 		}
 
 		$this->validated = true;
+	}
+
+	// UIExtension exists from nette/application 3.1.6 and FormsExtension from nette/forms 3.1.7;
+	// application 3.2.0-3.2.9 and forms 3.2.0-3.2.6 declare a conflict with Latte 3.1.
+	private function validateLatteVersionPairs(): void
+	{
+		$latte = $this->installedVersions->getVersion('latte/latte');
+		if ($latte === null || self::isBelow($latte, '3.0.0')) {
+			return;
+		}
+
+		$forms = $this->installedVersions->getVersion('nette/forms');
+		$application = $this->installedVersions->getVersion('nette/application');
+
+		if ($forms !== null && self::isBelow($forms, '3.1.7')) {
+			throw new InvalidConfiguration(
+				sprintf('Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed %s.', $forms),
+			);
+		}
+
+		if ($application !== null && self::isBelow($application, '3.1.6')) {
+			throw new InvalidConfiguration(
+				sprintf('Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed %s.', $application),
+			);
+		}
+
+		if (
+			!self::isBelow($latte, '3.1.0')
+			&& (
+				($forms !== null && self::isBelow($forms, '3.2.7'))
+				|| ($application !== null && self::isBelow($application, '3.2.10'))
+			)
+		) {
+			throw new InvalidConfiguration(sprintf(
+				'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed %s/%s.',
+				$forms ?? 'none',
+				$application ?? 'none',
+			));
+		}
+	}
+
+	private static function isBelow(string $version, string $minimum): bool
+	{
+		return version_compare($version, $minimum) < 0;
 	}
 
 	private function validateCatalogMethods(): void
