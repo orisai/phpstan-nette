@@ -7,7 +7,6 @@ use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Parser\LatteRoutingParser;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\NodeFinder;
@@ -38,6 +37,12 @@ final class SnapshotTest extends BaseTestCase
 		'2' => 'raw',
 		'3.0' => 'latte3.0/raw',
 		'3.1' => 'latte3.1/raw',
+	];
+
+	private const PROCESSED_SNAPSHOT_DIRECTORIES = [
+		'2' => 'processed',
+		'3.0' => 'latte3.0/processed',
+		'3.1' => 'latte3.1/processed',
 	];
 
 	/**
@@ -75,22 +80,25 @@ final class SnapshotTest extends BaseTestCase
 
 	/**
 	 * @dataProvider provideFixtures
-	 * @group latte2
 	 */
 	public function testProcessedSnapshot(string $lattePath): void
 	{
 		self::requireFixtureTags($lattePath);
-		$className = TemplateClassName::forPath('fixtures/' . basename($lattePath));
-		$latteSource = FileSystem::read($lattePath);
-		$result = (new LatteCompiler())->compile($latteSource, $className);
+		$relativePath = 'fixtures/' . basename($lattePath);
+		$className = TemplateClassName::forPath($relativePath);
+		$compiled = TestAdapter::create()->compile(FileSystem::read($lattePath), $className, $relativePath);
+		$result = $compiled->getResult();
 		self::assertNotNull($result->getPhpSource(), 'fixture must compile');
 
-		$declarations = (new DeclarationScanner())->scan($latteSource);
-		$processed = PipelineFactory::create()->dump($result, $declarations);
+		$processed = PipelineFactory::create()->dump($result, $compiled->getFacts()->getDeclarations());
 
+		$directory = self::PROCESSED_SNAPSHOT_DIRECTORIES[InstalledVersionsGuard::latteLine()] ?? null;
+		self::assertNotNull($directory);
 		$this->assertSnapshot(
-			dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/__snapshots__/processed/' . basename($lattePath) . '.php',
-			$processed,
+			dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/__snapshots__/' . $directory . '/' . basename(
+				$lattePath,
+			) . '.php',
+			self::withoutPatchVersion($processed),
 		);
 	}
 

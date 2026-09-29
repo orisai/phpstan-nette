@@ -1,0 +1,116 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "title": "string"
+        },
+        "headerVarTypeLines": {
+            "title": 4
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "title": [],
+            "content": []
+        },
+        "defineParamDefaults": {
+            "title": [],
+            "content": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "layout",
+                "kind": "file",
+                "rawTarget": "parent.latte",
+                "resolvedPath": "fixtures/parent.latte",
+                "argsSource": "",
+                "latteLine": 2
+            },
+            {
+                "tag": "import",
+                "kind": "file",
+                "rawTarget": "blocks-snippets.latte",
+                "resolvedPath": "fixtures/blocks-snippets.latte",
+                "argsSource": "",
+                "latteLine": 3
+            },
+            {
+                "tag": "include",
+                "kind": "block",
+                "rawTarget": "typed",
+                "resolvedPath": null,
+                "argsSource": "'value'",
+                "latteLine": 10
+            }
+        ],
+        "blockNames": [
+            "title",
+            "content"
+        ],
+        "defineNames": [],
+        "topLevelVars": {
+            "subtitle": "string"
+        },
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "contentType",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "layout",
+                    "column": 1
+                }
+            ],
+            "3": [
+                {
+                    "name": "import",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "5": [
+                {
+                    "name": "var",
+                    "column": 1
+                }
+            ],
+            "7": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "9": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ],
+            "10": [
+                {
+                    "name": "include",
+                    "column": 2
+                }
+            ]
+        },
+        "layoutMode": "declared"
+    }
+}

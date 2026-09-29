@@ -1,0 +1,11 @@
+{contentType html}
+{layout 'parent.latte'}
+{import 'blocks-snippets.latte'}
+{varType string $title}
+{var $subtitle = 'sub'}
+
+{block title}{$title} {$subtitle}{/block}
+
+{block content}
+	{include #typed, 'value'}
+{/block}
