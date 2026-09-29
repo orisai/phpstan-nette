@@ -33,16 +33,19 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 		self::assertInstanceOf(Latte2EngineReader::class, $factory->createEngineReader());
 	}
 
-	public function testLatte3InstallHasNoAdapterYet(): void
+	// The Latte 3 adapter is constructed by reflection and holds no Latte object of its own, so the
+	// selection itself can be pinned on any install; the adapter's behaviour is tested under Latte 3.
+	public function testLatte3InstallGetsTheLatte3Adapter(): void
 	{
 		$factory = $this->factory(['latte/latte' => '3.1.6.0', 'nette/forms' => '3.3.0.0']);
 
 		self::assertSame('3.1/provider', $factory->family()->id());
 
-		$this->expectException(LogicException::class);
-		$this->expectExceptionMessage('Latte 3 adapter not available yet');
+		$adapter = $factory->create(new AdapterCollaborators(new DeclarationScanner()));
 
-		$factory->create(new AdapterCollaborators(new DeclarationScanner()));
+		self::assertNotInstanceOf(Latte2Adapter::class, $adapter);
+		self::assertSame('3.1/provider', $adapter->family()->id());
+		self::assertSame($factory->family(), $adapter->family());
 	}
 
 	public function testLatte3InstallHasNoEngineReaderYet(): void
@@ -73,15 +76,15 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 		self::assertInstanceOf(Latte2EngineReader::class, TestAdapter::engineReader());
 	}
 
-	public function testAccessorResolvesOnceAndOnlyWhenAsked(): void
+	public function testAccessorResolvesTheLatte3AdapterOnceWhenAsked(): void
 	{
-		$factory = $this->factory(['latte/latte' => '3.1.6.0']);
+		$factory = $this->factory(['latte/latte' => '3.0.26.0', 'nette/forms' => '3.2.9.0']);
 		$accessor = new LatteVersionAdapterAccessor($factory, new AdapterCollaborators(new DeclarationScanner()));
 
-		$this->expectException(LogicException::class);
-		$this->expectExceptionMessage('Latte 3 adapter not available yet');
+		$adapter = $accessor->get();
 
-		$accessor->get();
+		self::assertSame('3.0/item', $adapter->family()->id());
+		self::assertSame($adapter, $accessor->get());
 	}
 
 	public function testHarvesterAsksForTheReaderOnlyWhenAnEngineIsHarvested(): void

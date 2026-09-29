@@ -11,7 +11,6 @@ use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2EngineReader;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use ReflectionMethod;
-use function class_exists;
 
 // The one version switch. It holds nothing but the installed versions and is only ever asked at
 // first use (LatteVersionAdapterAccessor::get(), CustomsHarvester::harvest()), never at container
@@ -56,10 +55,6 @@ final class LatteVersionAdapterFactory
 				new TemplateFactExtractor(),
 				new FormSiteScanner(),
 			);
-		}
-
-		if (!class_exists(self::LATTE3_ADAPTER_CLASS)) {
-			throw new LogicException('Latte 3 adapter not available yet');
 		}
 
 		$adapter = (new ReflectionMethod(self::LATTE3_ADAPTER_CLASS, 'create'))->invoke(null, $family, $collaborators);

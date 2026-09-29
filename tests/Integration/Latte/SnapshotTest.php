@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Integration\Latte;
 
 use Nette\Utils\FileSystem;
+use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
@@ -16,18 +17,25 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
+use function array_filter;
 use function basename;
 use function dirname;
 use function getenv;
 use function glob;
+use function in_array;
 use function sys_get_temp_dir;
 use function uniqid;
 
-/**
- * @group latte2
- */
 final class SnapshotTest extends BaseTestCase
 {
+
+	// One directory per Latte line: the Latte 2 snapshots are the regression gate of the Latte 2
+	// compiler, the Latte 3 ones record what each line generates.
+	private const RAW_SNAPSHOT_DIRECTORIES = [
+		'2' => 'raw',
+		'3.0' => 'latte3.0/raw',
+		'3.1' => 'latte3.1/raw',
+	];
 
 	/**
 	 * @dataProvider provideFixtures
@@ -35,19 +43,36 @@ final class SnapshotTest extends BaseTestCase
 	public function testRawCompilationSnapshot(string $lattePath): void
 	{
 		self::requireFixtureTags($lattePath);
-		$className = TemplateClassName::forPath('fixtures/' . basename($lattePath));
-		$result = (new LatteCompiler())->compile(FileSystem::read($lattePath), $className);
+		$relativePath = 'fixtures/' . basename($lattePath);
+		$className = TemplateClassName::forPath($relativePath);
+		$result = TestAdapter::create()->compile(FileSystem::read($lattePath), $className, $relativePath)->getResult();
 		self::assertNotNull($result->getPhpSource(), 'fixture must compile');
-		self::assertSame([], $result->getDiagnostics(), 'fixture must compile without diagnostics');
+		self::assertSame(
+			[],
+			array_filter(
+				$result->getDiagnostics(),
+				static fn (Diagnostic $diagnostic): bool => !in_array(
+					$diagnostic->getIdentifier(),
+					self::toleratedDiagnostics($lattePath),
+					true,
+				),
+			),
+			'fixture must compile without diagnostics',
+		);
 
+		$directory = self::RAW_SNAPSHOT_DIRECTORIES[InstalledVersionsGuard::latteLine()] ?? null;
+		self::assertNotNull($directory);
 		$this->assertSnapshot(
-			dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/__snapshots__/raw/' . basename($lattePath) . '.php',
+			dirname(__DIR__, 2) . '/Unit/Latte/Fixtures/__snapshots__/' . $directory . '/' . basename(
+				$lattePath,
+			) . '.php',
 			$result->getPhpSource(),
 		);
 	}
 
 	/**
 	 * @dataProvider provideFixtures
+	 * @group latte2
 	 */
 	public function testProcessedSnapshot(string $lattePath): void
 	{
@@ -74,6 +99,16 @@ final class SnapshotTest extends BaseTestCase
 		}
 	}
 
+	// nette/application 3.2's Latte 3 {ifCurrent} compiles with a deprecation notice.
+
+	/**
+	 * @return list<string>
+	 */
+	private static function toleratedDiagnostics(string $lattePath): array
+	{
+		return basename($lattePath) === 'ifcurrent.latte' ? ['orisaiNette.latte.deprecated'] : [];
+	}
+
 	/**
 	 * @return iterable<string, array{string}>
 	 */
@@ -87,6 +122,10 @@ final class SnapshotTest extends BaseTestCase
 	// Not part of provideFixtures()/Fixtures/*.latte: those are compiled with a bare
 	// `new LatteCompiler()` (no harvester), where the gettext family is genuinely unknown and would
 	// fail the "compiles without diagnostics" assertion every other fixture in that glob relies on.
+
+	/**
+	 * @group latte2
+	 */
 	public function testGettextFamilySnapshotProvesNativeCompilation(): void
 	{
 		$engineLoaderFile = dirname(__DIR__, 2) . '/Unit/Latte/Customs/Fixtures/engine-loader-gettext.php';
@@ -105,6 +144,9 @@ final class SnapshotTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testRouterProducesAstForFixture(): void
 	{
 		$projectRoot = dirname(__DIR__, 2) . '/Unit/Latte/Fixtures';
@@ -127,6 +169,9 @@ final class SnapshotTest extends BaseTestCase
 		self::assertStringNotContainsString('escapeHtml', $printed);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testRouterEliminatesCachingIteratorOnlyWhenNamesAreResolved(): void
 	{
 		$projectRoot = dirname(__DIR__, 2) . '/Unit/Latte/Fixtures';
@@ -147,6 +192,9 @@ final class SnapshotTest extends BaseTestCase
 		self::assertStringNotContainsString('ʟ_it', $printed);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testRouterReportsDiagnosticsForFixtureWithUnknownFilter(): void
 	{
 		$this->withTempProjectFile(
@@ -160,6 +208,9 @@ final class SnapshotTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testRouterMemoizesRepeatedParsesOfTheSamePath(): void
 	{
 		// Superseded design point: this used to pin assertNotSame() across repeat parses of one
@@ -188,6 +239,9 @@ final class SnapshotTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testRouterKeepsDiagnosticsIndependentAcrossFilesWithIdenticalContent(): void
 	{
 		// The real hazard a content-keyed cache would hit: two DIFFERENT paths sharing

@@ -15,6 +15,7 @@ parameters:
 	paths:
 		- ../src/Latte/Version
 		- ../tests/Toolkit/Latte3
+		- ../tests/Unit/Latte/Version/Latte3
 	excludePaths!:
 		analyse:
 			- ../src/Latte/Version/Latte2
