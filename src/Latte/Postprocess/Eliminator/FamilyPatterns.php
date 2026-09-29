@@ -5,13 +5,12 @@ namespace OriPhpstan\Nette\Latte\Postprocess\Eliminator;
 use LogicException;
 use OriPhpstan\Nette\Latte\Postprocess\FilterRewriter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
-use function in_array;
 use function sprintf;
 
 // The generated-code shapes each post-processing consumer matches, per shape family. Names every
 // line shares stay constants on the consumer; a family-specific shape lives here, so a new Latte
-// line is a new column of this table. Consumers listed in PROVISIONAL still match their Latte 2
-// shapes on the Latte 3 lines and get the Latte 2 set there.
+// line is a new column of this table. The core shapes follow the Latte line, the forms shapes the
+// forms bridge.
 final class FamilyPatterns
 {
 
@@ -29,10 +28,6 @@ final class FamilyPatterns
 		FilterRewriter::class,
 	];
 
-	public const PROVISIONAL = [
-		FormsMacroEliminator::class => [ShapeFamily::LATTE_30, ShapeFamily::LATTE_31],
-	];
-
 	private const LATTE_RUNTIME_FILTERS = ['Latte\Runtime\Filters', 'LR\Filters'];
 
 	private const LATTE_RUNTIME_HELPERS = ['Latte\Runtime\Helpers', 'LR\Helpers'];
@@ -47,7 +42,7 @@ final class FamilyPatterns
 
 	public static function for(ShapeFamily $family, string $consumer): PatternSet
 	{
-		$line = self::isProvisional($family, $consumer) ? ShapeFamily::LATTE_2 : $family->latteLine;
+		$line = $family->latteLine;
 
 		switch ($consumer) {
 			case PrologEliminator::class:
@@ -67,7 +62,7 @@ final class FamilyPatterns
 			case UiMacroEliminator::class:
 				return self::uiMacro($line);
 			case FormsMacroEliminator::class:
-				return self::formsMacro($line);
+				return self::formsMacro($family->formsBridge);
 			case BlockDispatchEliminator::class:
 				return self::blockDispatch($line);
 			case FilterRewriter::class:
@@ -75,11 +70,6 @@ final class FamilyPatterns
 		}
 
 		throw new LogicException(sprintf('%s has no pattern table.', $consumer));
-	}
-
-	public static function isProvisional(ShapeFamily $family, string $consumer): bool
-	{
-		return in_array($family->latteLine, self::PROVISIONAL[$consumer] ?? [], true);
 	}
 
 	private static function prolog(string $line): PatternSet
@@ -271,20 +261,40 @@ final class FamilyPatterns
 		]);
 	}
 
-	// Latte 2 shapes: $this->global->formsStack[] = ..., FormsLatte\Runtime::initializeForm/
-	// renderFormBegin/renderFormEnd, end($this->global->formsStack)['x'], $ʟ_input/$ʟ_label temps.
-	private static function formsMacro(string $line): PatternSet
+	// Latte 2 FormMacros and Latte 3 + nette/forms 3.1.7-3.2 push the form on $this->global->formsStack
+	// and call the static FormsLatte\Runtime; the first offsets end($this->global->formsStack)['x'] into
+	// $ʟ_input/$ʟ_label temps, the second resolves Runtime::item('x', $this->global) into $ʟ_label/
+	// $ʟ_elem. nette/forms 3.3 keeps the scope inside the $this->global->forms Runtime instance
+	// (begin/get/getScope/renderFormBegin/renderFormEnd/end).
+	private static function formsMacro(string $bridge): PatternSet
 	{
-		self::latte2Only($line, FormsMacroEliminator::class);
+		if ($bridge === ShapeFamily::FORMS_PROVIDER) {
+			return new PatternSet([], [
+				FormsMacroEliminator::ROLE_FORM_OPEN => [FormsMacroEliminator::SHAPE_PROVIDER_BEGIN],
+				FormsMacroEliminator::ROLE_FIELD_LOOKUP => [FormsMacroEliminator::SHAPE_PROVIDER_GET],
+				FormsMacroEliminator::ROLE_FORMS_PROVIDER => ['forms'],
+				FormsMacroEliminator::ROLE_LABEL_TEMP => ["\u{29F}_label"],
+				FormsMacroEliminator::ROLE_ELEM_TEMP => ["\u{29F}_elem"],
+			]);
+		}
+
+		$macros = $bridge === ShapeFamily::FORMS_MACROS;
 
 		return new PatternSet([
-			'runtime' => [
-				'Nette\Bridges\FormsLatte\Runtime' => ['initializeForm', 'renderFormBegin', 'renderFormEnd'],
+			FormsMacroEliminator::ROLE_RUNTIME => [
+				'Nette\Bridges\FormsLatte\Runtime' => $macros
+					? ['initializeForm', 'renderFormBegin', 'renderFormEnd']
+					: ['initializeForm', 'renderFormBegin', 'renderFormEnd', 'item'],
 			],
 		], [
-			'formsStackProvider' => ['formsStack'],
-			'inputTemp' => ["\u{29F}_input"],
-			'labelTemp' => ["\u{29F}_label"],
+			FormsMacroEliminator::ROLE_FORM_OPEN => [FormsMacroEliminator::SHAPE_STACK_PUSH],
+			FormsMacroEliminator::ROLE_FIELD_LOOKUP => [
+				$macros ? FormsMacroEliminator::SHAPE_STACK_OFFSET : FormsMacroEliminator::SHAPE_RUNTIME_ITEM,
+			],
+			FormsMacroEliminator::ROLE_STACK_PROVIDER => ['formsStack'],
+			FormsMacroEliminator::ROLE_INPUT_TEMP => $macros ? ["\u{29F}_input"] : [],
+			FormsMacroEliminator::ROLE_LABEL_TEMP => ["\u{29F}_label"],
+			FormsMacroEliminator::ROLE_ELEM_TEMP => $macros ? [] : ["\u{29F}_elem"],
 		]);
 	}
 
@@ -318,13 +328,6 @@ final class FamilyPatterns
 		], [
 			FilterRewriter::ROLE_FUNCTION_TEMPLATE_ARG => $line === ShapeFamily::LATTE_2 ? [] : ['this'],
 		]);
-	}
-
-	private static function latte2Only(string $line, string $consumer): void
-	{
-		if ($line !== ShapeFamily::LATTE_2) {
-			throw new LogicException(sprintf('%s has no %s pattern table.', $consumer, $line));
-		}
 	}
 
 	/**

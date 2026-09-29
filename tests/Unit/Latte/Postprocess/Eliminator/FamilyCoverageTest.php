@@ -2,7 +2,6 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess\Eliminator;
 
-use OriPhpstan\Nette\Latte\Postprocess\Eliminator\AttrShellEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EliminatorVisitor;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EscapingEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FamilyPatterns;
@@ -12,7 +11,6 @@ use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\EliminatorRun;
 use function array_filter;
-use function array_keys;
 use function array_values;
 use function basename;
 use function dirname;
@@ -20,8 +18,8 @@ use function glob;
 use function is_subclass_of;
 use function sort;
 
-// Every consumer of generated-code shapes has a pattern table for every shape family, and the
-// consumers still matching their Latte 2 shapes on Latte 3 are exactly the listed ones.
+// Every consumer of generated-code shapes has a pattern table of its own for every shape family, and
+// only the forms consumer's follows the forms bridge.
 final class FamilyCoverageTest extends BaseTestCase
 {
 
@@ -50,46 +48,24 @@ final class FamilyCoverageTest extends BaseTestCase
 		}
 	}
 
-	// The list shrinks as Task 14 gives the forms consumer its own Latte 3 tables; a NEW
-	// provisional entry is a Latte 3 shape silently matched with a Latte 2 table.
-	public function testProvisionalConsumersAreExactlyTheOnesStillOnLatte2Shapes(): void
-	{
-		$provisional = [];
-		foreach (FamilyPatterns::CONSUMERS as $consumer) {
-			foreach (ShapeFamily::all() as $family) {
-				if (FamilyPatterns::isProvisional($family, $consumer)) {
-					$provisional[$consumer . '@' . $family->id()] = true;
-				}
-			}
-		}
-
-		self::assertSame(
-			[
-				FormsMacroEliminator::class . '@3.0/item',
-				FormsMacroEliminator::class . '@3.0/provider',
-				FormsMacroEliminator::class . '@3.1/item',
-				FormsMacroEliminator::class . '@3.1/provider',
-			],
-			array_keys($provisional),
-		);
-	}
-
-	public function testAProvisionalConsumerGetsItsLatte2SetOnEveryLatte3Family(): void
+	// A consumer matching a Latte 3 family with its Latte 2 table would be a Latte 3 shape silently
+	// matched with Latte 2 patterns: every consumer has a table of its own on every Latte 3 family.
+	public function testNoConsumerReusesItsLatte2TableOnLatte3(): void
 	{
 		$latte2 = EliminatorRun::family(ShapeFamily::LATTE_2);
-		foreach (FamilyPatterns::PROVISIONAL as $consumer => $lines) {
-			foreach ($lines as $line) {
-				$family = EliminatorRun::family($line);
+		foreach (FamilyPatterns::CONSUMERS as $consumer) {
+			foreach (ShapeFamily::all() as $family) {
+				if ($family->latteLine === ShapeFamily::LATTE_2) {
+					continue;
+				}
 
-				self::assertTrue(FamilyPatterns::isProvisional($family, $consumer));
-				self::assertEquals(FamilyPatterns::for($latte2, $consumer), FamilyPatterns::for($family, $consumer));
+				self::assertNotEquals(
+					FamilyPatterns::for($latte2, $consumer),
+					FamilyPatterns::for($family, $consumer),
+					$consumer . ' on ' . $family->id(),
+				);
 			}
 		}
-
-		self::assertFalse(FamilyPatterns::isProvisional($latte2, AttrShellEliminator::class));
-		self::assertFalse(
-			FamilyPatterns::isProvisional(EliminatorRun::family(ShapeFamily::LATTE_31), EscapingEliminator::class),
-		);
 	}
 
 	public function testMigratedConsumersDescribeDifferentShapesPerLine(): void
@@ -111,12 +87,32 @@ final class FamilyCoverageTest extends BaseTestCase
 	public function testTheFormsBridgeDoesNotChangeTheCoreShapes(): void
 	{
 		foreach (FamilyPatterns::CONSUMERS as $consumer) {
+			if ($consumer === FormsMacroEliminator::class) {
+				continue;
+			}
+
 			self::assertEquals(
 				FamilyPatterns::for(new ShapeFamily(ShapeFamily::LATTE_31, ShapeFamily::FORMS_ITEM), $consumer),
 				FamilyPatterns::for(new ShapeFamily(ShapeFamily::LATTE_31, ShapeFamily::FORMS_PROVIDER), $consumer),
 				$consumer,
 			);
 		}
+	}
+
+	public function testTheLatteLineDoesNotChangeTheFormsShapes(): void
+	{
+		$sets = [];
+		foreach (ShapeFamily::all() as $family) {
+			$sets[$family->id()] = FamilyPatterns::for($family, FormsMacroEliminator::class);
+		}
+
+		self::assertEquals($sets['3.0/item'], $sets['3.1/item']);
+		self::assertEquals($sets['3.0/provider'], $sets['3.1/provider']);
+		self::assertNotEquals($sets['2/macros'], $sets['3.1/item']);
+		self::assertNotEquals($sets['3.1/item'], $sets['3.1/provider']);
+		self::assertStringContainsString('stackOffset', $sets['2/macros']->describe());
+		self::assertStringContainsString('runtimeItem', $sets['3.1/item']->describe());
+		self::assertStringContainsString('providerGet', $sets['3.1/provider']->describe());
 	}
 
 	/**

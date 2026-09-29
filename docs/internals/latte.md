@@ -131,9 +131,18 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   line; `{formPrint}`/`{formClassPrint}`'s `Blueprint::latte|dataClass(...); exit;` is dropped like
   `{templatePrint}`. A Latte 3 `{cache}` compiles through `DeterministicCacheNode`, keyed by tag
   position instead of `CacheNode`'s random bytes (Latte 2: `DeterministicCacheMacro`), and the
-  `createCache()/end()/rollback()` calls stay analysed on every line. `FamilyCoverageTest` fails
-  when a family lacks a table; the consumers still matching their Latte 2 shapes on Latte 3 are the
-  explicit `FamilyPatterns::PROVISIONAL` list.
+  `createCache()/end()/rollback()` calls stay analysed on every line. The forms shapes follow the
+  forms bridge rather than the Latte line: Latte 2 `FormMacros` offsets
+  `end($this->global->formsStack)['x']` into `$ʟ_input`/`$ʟ_label` temps, Latte 3 with
+  nette/forms 3.1.7–3.2 resolves `FormsLatte\Runtime::item('x', $this->global)` into
+  `$ʟ_label`/`$ʟ_elem`, and nette/forms 3.3 keeps the scope inside the `$this->global->forms`
+  runtime (`begin($form = uiControl['x'], global: …)`, `get('x')`, `get('c', Container::class)`,
+  `getScope()`, `renderFormBegin/End()`, `end()`); all three reduce to the same
+  `Helpers::form('x')`/`formObject($var)`/`formContainer('c')`/`formField('x')` calls (a dynamic
+  Latte 3 name goes through `formField($name)` too, the Latte 2 `is_object($ʟ_tmp = …) ? … :
+  end(…)[$ʟ_tmp]` ternary stays as it is), with `$ʟ_elem` renamed to `$latteElem`.
+  `FamilyCoverageTest` fails when a family lacks a table or when a consumer's Latte 3 table is
+  its Latte 2 one.
 - **Filter-call rewrite** — `($this->filters->truncate)(...)` becomes the real callable
   (`\Latte\Runtime\Filters::truncate(...)` on Latte 2, `\Latte\Essential\Filters::truncate(...)` on
   Latte 3, `number_format(...)`, ...), so filter arguments check against real vendor signatures;

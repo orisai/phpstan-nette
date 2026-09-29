@@ -9,49 +9,100 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
-use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\Node\Stmt\Foreach_;
-use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
 use function count;
 use function is_string;
 
+// The three generations of nette/forms' Latte bridge render a control reference three ways, and all
+// of them reduce to the same Helpers::form()/formObject()/formContainer()/formField() calls the
+// LatteForms bridge types. A dynamic reference on the stack-offset shape stays as it is: its
+// `is_object($ʟ_tmp = …) ? $ʟ_tmp : end(…)[$ʟ_tmp]` ternary is untyped either way.
 final class FormsMacroEliminator extends EliminatorVisitor
 {
 
+	// {form x} opens a scope by pushing the form on $this->global->formsStack (Latte 2 FormMacros,
+	// Latte 3 + nette/forms < 3.3) or by handing it to the $this->global->forms runtime (nette/forms 3.3).
+	public const ROLE_FORM_OPEN = 'formOpen';
+
+	public const SHAPE_STACK_PUSH = 'stackPush';
+
+	public const SHAPE_PROVIDER_BEGIN = 'providerBegin';
+
+	// {input x}/{label x}/{inputError x}/n:name read the control off the innermost scope.
+	public const ROLE_FIELD_LOOKUP = 'fieldLookup';
+
+	public const SHAPE_STACK_OFFSET = 'stackOffset';
+
+	public const SHAPE_RUNTIME_ITEM = 'runtimeItem';
+
+	public const SHAPE_PROVIDER_GET = 'providerGet';
+
+	// Static FormsLatte\Runtime calls of the stack shapes.
+	public const ROLE_RUNTIME = 'runtime';
+
+	public const ROLE_STACK_PROVIDER = 'stackProvider';
+
+	public const ROLE_FORMS_PROVIDER = 'formsProvider';
+
+	public const ROLE_INPUT_TEMP = 'inputTemp';
+
+	public const ROLE_LABEL_TEMP = 'labelTemp';
+
+	public const ROLE_ELEM_TEMP = 'elemTemp';
+
 	private const HELPERS_CLASS = Helpers::class;
 
-	private const FORMS_RUNTIME_CLASS = 'Nette\Bridges\FormsLatte\Runtime';
+	private const CONTAINER_CLASS = 'Nette\Forms\Container';
 
-	private const INPUT_TEMP = "\u{29F}_input";
+	private const METHOD_INITIALIZE_FORM = 'initializeForm';
 
-	private const INPUT_RENAME = 'latteInput';
+	private const METHOD_ITEM = 'item';
 
-	private const LABEL_TEMP = "\u{29F}_label";
+	private const METHOD_RENDER = ['renderFormBegin', 'renderFormEnd'];
 
-	private const LABEL_RENAME = 'latteLabel';
+	private const PROVIDER_BEGIN = 'begin';
+
+	private const PROVIDER_END = 'end';
+
+	private const PROVIDER_GET = 'get';
+
+	private const PROVIDER_SCOPE = 'getScope';
+
+	private const CONTAINER_VAR = 'formContainer';
+
+	private const DYNAMIC_TEMP = "\u{29F}_tmp";
+
+	private const TEMP_RENAMES = [
+		self::ROLE_INPUT_TEMP => 'latteInput',
+		self::ROLE_LABEL_TEMP => 'latteLabel',
+		self::ROLE_ELEM_TEMP => 'latteElem',
+	];
 
 	public function describePattern(): string
 	{
-		return '{form x}/{form $var} $form = formsStack[] = uiControl["x"] (or is_object(...) ? ... : uiControl[...] '
-			. 'for an object form) + initializeForm($form) + echo renderFormBegin(...) shell -> $form = Helpers::form(\'x\') '
-			. '/ Helpers::formObject($var); interleaved literal HTML echo (attribute-form <form n:name> case) kept in place; '
-			. 'echo renderFormEnd(array_pop(...), ...) dropped, $form stays bound; {formContainer c} push shell -> '
-			. '$formContainer = Helpers::formContainer(\'c\'); {/formContainer} pop (array_pop + re-derive) dropped '
-			. '(unprovable parent restore); {input}/{label}/{inputError}/n:name end($this->global->formsStack)["x"] base '
-			. '-> Helpers::formField(\'x\'), trailing ->getControl()/->getLabel()/->getError()/->getControlPart()->attributes() '
-			. 'chain kept; $ʟ_input/$ʟ_label temps renamed to $latteInput/$latteLabel';
+		return '{form x}/{form $var}/{formContext x}/<form n:name> $form = formsStack[] = uiControl["x"] '
+			. '(or is_object(...) ? ... : uiControl[...] for an object form) | $this->global->forms->begin($form = ..., '
+			. 'global: ...) -> $form = Helpers::form(\'x\') / Helpers::formObject($var); initializeForm($form), '
+			. 'echo renderFormBegin(...)/renderFormEnd(...), array_pop(formsStack), $this->global->forms->end() and the '
+			. '{/formContainer} re-derive ($formContainer = end(formsStack) | forms->getScope()) dropped (unprovable '
+			. 'parent restore); {formContainer c} formsStack[] = $formContainer = <lookup> | forms->begin($formContainer '
+			. '= forms->get(\'c\', Container::class)) -> $formContainer = Helpers::formContainer(\'c\'); '
+			. '{input}/{label}/{inputError}/n:name end(formsStack)["x"] | Runtime::item(\'x\', $this->global) | '
+			. 'forms->get(\'x\') -> Helpers::formField(\'x\') with the trailing ->getControl()/->getLabel()/->getError()/'
+			. '->getControlPart()->attributes() chain kept; $ʟ_input/$ʟ_label/$ʟ_elem temps renamed to '
+			. '$latteInput/$latteLabel/$latteElem: ' . $this->patterns()->describe();
 	}
 
 	/**
@@ -59,163 +110,117 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	 */
 	public function leaveNode(Node $node)
 	{
-		if ($node instanceof ClassMethod && $node->stmts !== null) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
-
-		if ($node instanceof If_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-
-			$labelIf = $this->rebuildLabelIf($node);
-			if ($labelIf !== null) {
-				return $labelIf;
-			}
-		}
-
-		if ($node instanceof Foreach_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
-
 		if ($node instanceof Expression) {
-			$containerPush = $this->rebuildContainerPush($node->expr);
-			if ($containerPush !== null) {
-				return new Expression($containerPush);
+			$rebuilt = $this->rebuildFormOpen($node->expr) ?? $this->rebuildContainerPush($node->expr);
+			if ($rebuilt !== null) {
+				return new Expression($rebuilt, $node->getAttributes());
 			}
 
-			$inputAssign = $this->rebuildInputAssign($node->expr);
-			if ($inputAssign !== null) {
-				return new Expression($inputAssign);
-			}
-
-			if ($this->isContainerPopDrop($node->expr) || $this->isContainerReassignDrop($node->expr)) {
-				return NodeVisitor::REMOVE_NODE;
-			}
+			return $this->isScopePlumbing($node->expr) ? NodeVisitor::REMOVE_NODE : null;
 		}
 
 		if ($node instanceof Echo_) {
-			if ($this->matchRenderFormEndEcho($node)) {
-				return NodeVisitor::REMOVE_NODE;
-			}
-
-			$fieldEcho = $this->rebuildFieldEcho($node);
-			if ($fieldEcho !== null) {
-				return $fieldEcho;
-			}
+			return count($node->exprs) === 1 && $this->isRenderCall($node->exprs[0])
+				? NodeVisitor::REMOVE_NODE
+				: null;
 		}
 
-		if ($node instanceof Variable && $node->name === self::INPUT_TEMP) {
-			return new Variable(self::INPUT_RENAME);
-		}
-
-		if ($node instanceof Variable && $node->name === self::LABEL_TEMP) {
-			return new Variable(self::LABEL_RENAME);
-		}
-
-		return null;
-	}
-
-	/**
-	 * @param array<Stmt> $stmts
-	 * @return array<Stmt>
-	 */
-	private function normalizeStmts(array $stmts): array
-	{
-		$result = [];
-		$count = count($stmts);
-		$i = 0;
-
-		while ($i < $count) {
-			$collapsed = $this->tryMatchFormBeginShell($stmts, $i);
-			if ($collapsed !== null) {
-				[$consumed, $replacement] = $collapsed;
-				foreach ($replacement as $replacementStmt) {
-					$result[] = $replacementStmt;
+		if ($node instanceof Variable && is_string($node->name)) {
+			foreach (self::TEMP_RENAMES as $role => $rename) {
+				if ($this->patterns()->hasName($role, $node->name)) {
+					return new Variable($rename, $node->getAttributes());
 				}
-
-				$i += $consumed;
-
-				continue;
 			}
 
-			$result[] = $stmts[$i];
-			$i++;
+			return null;
 		}
 
-		return $result;
+		if (!$node instanceof Expr) {
+			return null;
+		}
+
+		$lookup = $this->matchFieldLookup($node);
+		if ($lookup !== null) {
+			return $this->helperCall('formField', $lookup, $node);
+		}
+
+		$container = $this->matchContainerLookup($node);
+
+		return $container === null ? null : $this->helperCall('formContainer', $container, $node);
 	}
 
-	/**
-	 * @param array<Stmt> $stmts
-	 * @return array{int, array<Stmt>}|null
-	 */
-	private function tryMatchFormBeginShell(array $stmts, int $i): ?array
+	private function rebuildFormOpen(Expr $expr): ?Assign
 	{
-		$push = $this->matchFormPush($stmts[$i] ?? null);
-		if ($push === null) {
+		$open = $this->matchStackFormOpen($expr) ?? $this->matchProviderFormOpen($expr);
+		if ($open === null) {
 			return null;
 		}
 
-		[$formVarName, $helperMethod, $sourceExpr] = $push;
+		[$formVar, $source] = $open;
 
-		if (!$this->matchInitializeForm($stmts[$i + 1] ?? null, $formVarName)) {
-			return null;
+		if ($this->matchHelperCall($source, 'formContainer') !== null) {
+			return new Assign($formVar, $source);
 		}
-
-		$helperCall = new Expression(new Assign(
-			new Variable($formVarName),
-			new StaticCall(
-				new FullyQualified(self::HELPERS_CLASS),
-				new Identifier($helperMethod),
-				[new Arg($sourceExpr)],
-			),
-		));
-
-		if ($this->matchRenderFormBeginEcho($stmts[$i + 2] ?? null)) {
-			return [3, [$helperCall]];
-		}
-
-		$kept = $stmts[$i + 2] ?? null;
-		if ($kept !== null && $this->matchRenderFormBeginEcho($stmts[$i + 3] ?? null)) {
-			return [4, [$helperCall, $kept]];
-		}
-
-		return null;
-	}
-
-	/**
-	 * @return array{string, string, Expr}|null
-	 */
-	private function matchFormPush(?Stmt $stmt): ?array
-	{
-		if (!$stmt instanceof Expression || !$stmt->expr instanceof Assign) {
-			return null;
-		}
-
-		$outer = $stmt->expr;
-		if (!$outer->var instanceof Variable || !is_string($outer->var->name)) {
-			return null;
-		}
-
-		if (!$outer->expr instanceof Assign || !$this->isFormsStackPush($outer->expr->var)) {
-			return null;
-		}
-
-		$source = $outer->expr->expr;
 
 		if (
 			$source instanceof ArrayDimFetch
 			&& $source->dim !== null
 			&& GlobalPropertyFetchMatcher::matches($source->var, 'uiControl')
 		) {
-			return [$outer->var->name, 'form', $source->dim];
+			return new Assign($formVar, $this->helperCall('form', $source->dim, $source));
 		}
 
 		$dynamicSource = $this->matchDynamicFormSource($source);
-		if ($dynamicSource !== null) {
-			return [$outer->var->name, 'formObject', $dynamicSource];
+
+		return $dynamicSource === null
+			? null
+			: new Assign($formVar, $this->helperCall('formObject', $dynamicSource, $source));
+	}
+
+	/**
+	 * @return array{Variable, Expr}|null
+	 */
+	private function matchStackFormOpen(Expr $expr): ?array
+	{
+		if (!$this->patterns()->hasName(self::ROLE_FORM_OPEN, self::SHAPE_STACK_PUSH)) {
+			return null;
 		}
 
-		return null;
+		if (!$expr instanceof Assign || !$expr->var instanceof Variable || !is_string($expr->var->name)) {
+			return null;
+		}
+
+		if (!$expr->expr instanceof Assign || !$this->isFormsStackPush($expr->expr->var)) {
+			return null;
+		}
+
+		return [$expr->var, $expr->expr->expr];
+	}
+
+	/**
+	 * @return array{Variable, Expr}|null
+	 */
+	private function matchProviderFormOpen(Expr $expr): ?array
+	{
+		if (!$this->patterns()->hasName(self::ROLE_FORM_OPEN, self::SHAPE_PROVIDER_BEGIN)) {
+			return null;
+		}
+
+		if (!$expr instanceof MethodCall || !$this->isProviderCall($expr, self::PROVIDER_BEGIN)) {
+			return null;
+		}
+
+		$arg = $expr->args[0] ?? null;
+		if (!$arg instanceof Arg || !$arg->value instanceof Assign) {
+			return null;
+		}
+
+		$assign = $arg->value;
+		if (!$assign->var instanceof Variable || !is_string($assign->var->name)) {
+			return null;
+		}
+
+		return [$assign->var, $assign->expr];
 	}
 
 	private function matchDynamicFormSource(Expr $source): ?Expr
@@ -262,241 +267,242 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		return $tmpAssign->expr;
 	}
 
-	private function isFormsStackPush(Expr $expr): bool
-	{
-		return $expr instanceof ArrayDimFetch && $expr->dim === null && GlobalPropertyFetchMatcher::matches(
-			$expr->var,
-			'formsStack',
-		);
-	}
-
-	private function matchInitializeForm(?Stmt $stmt, string $formVarName): bool
-	{
-		if (!$stmt instanceof Expression || !$stmt->expr instanceof StaticCall) {
-			return false;
-		}
-
-		$call = $stmt->expr;
-		if (!$call->class instanceof Name || $call->class->toString() !== self::FORMS_RUNTIME_CLASS) {
-			return false;
-		}
-
-		if (!$call->name instanceof Identifier || $call->name->toString() !== 'initializeForm') {
-			return false;
-		}
-
-		if (count($call->args) !== 1 || !$call->args[0] instanceof Arg) {
-			return false;
-		}
-
-		return $this->isVariableNamed($call->args[0]->value, $formVarName);
-	}
-
-	private function matchRenderFormBeginEcho(?Stmt $stmt): bool
-	{
-		if (!$stmt instanceof Echo_ || count($stmt->exprs) !== 1) {
-			return false;
-		}
-
-		$expr = $stmt->exprs[0];
-
-		return $expr instanceof StaticCall
-			&& $expr->class instanceof Name
-			&& $expr->class->toString() === self::FORMS_RUNTIME_CLASS
-			&& $expr->name instanceof Identifier
-			&& $expr->name->toString() === 'renderFormBegin';
-	}
-
-	private function matchRenderFormEndEcho(Echo_ $node): bool
-	{
-		if (count($node->exprs) !== 1 || !$node->exprs[0] instanceof StaticCall) {
-			return false;
-		}
-
-		$call = $node->exprs[0];
-
-		return $call->class instanceof Name
-			&& $call->class->toString() === self::FORMS_RUNTIME_CLASS
-			&& $call->name instanceof Identifier
-			&& $call->name->toString() === 'renderFormEnd';
-	}
-
+	// {formContainer c} on a stack shape; the lookup inside was reduced to Helpers::formField('c')
+	// on the way up. The provider shape's begin($formContainer = forms->get('c', Container::class))
+	// is a form open whose source is already Helpers::formContainer('c').
 	private function rebuildContainerPush(Expr $expr): ?Assign
 	{
 		if (!$expr instanceof Assign || !$this->isFormsStackPush($expr->var)) {
 			return null;
 		}
 
-		if (!$expr->expr instanceof Assign) {
-			return null;
-		}
-
 		$inner = $expr->expr;
-		if (!$inner->var instanceof Variable || !is_string($inner->var->name)) {
+		if (!$inner instanceof Assign || !$inner->var instanceof Variable || !is_string($inner->var->name)) {
 			return null;
 		}
 
-		$lookup = $this->matchFormsStackFieldLookup($inner->expr);
-		if ($lookup === null) {
-			return null;
+		$name = $this->matchHelperCall($inner->expr, 'formField');
+
+		return $name === null ? null : new Assign($inner->var, $this->helperCall('formContainer', $name, $inner->expr));
+	}
+
+	private function isScopePlumbing(Expr $expr): bool
+	{
+		if ($expr instanceof StaticCall && $this->isRuntimeCall($expr, self::METHOD_INITIALIZE_FORM)) {
+			return true;
 		}
 
-		return new Assign(
-			$inner->var,
-			new StaticCall(
-				new FullyQualified(self::HELPERS_CLASS),
-				new Identifier('formContainer'),
-				[new Arg($lookup)],
-			),
-		);
-	}
+		if ($expr instanceof FuncCall && $this->isFormsStackCall($expr, 'array_pop')) {
+			return true;
+		}
 
-	private function isContainerPopDrop(Expr $expr): bool
-	{
-		return $expr instanceof FuncCall
-			&& $this->isFuncCallNamed($expr, 'array_pop')
-			&& count($expr->args) === 1
-			&& $expr->args[0] instanceof Arg
-			&& GlobalPropertyFetchMatcher::matches($expr->args[0]->value, 'formsStack');
-	}
+		if ($expr instanceof MethodCall && $this->isProviderCall($expr, self::PROVIDER_END)) {
+			return true;
+		}
 
-	private function isContainerReassignDrop(Expr $expr): bool
-	{
-		if (!$expr instanceof Assign || !$this->isVariableNamed($expr->var, 'formContainer')) {
+		if (!$expr instanceof Assign || !$this->isVariableNamed($expr->var, self::CONTAINER_VAR)) {
 			return false;
 		}
 
 		$call = $expr->expr;
 
-		return $call instanceof FuncCall
-			&& $this->isFuncCallNamed($call, 'end')
-			&& count($call->args) === 1
-			&& $call->args[0] instanceof Arg
-			&& GlobalPropertyFetchMatcher::matches($call->args[0]->value, 'formsStack');
+		return ($call instanceof MethodCall && $this->isProviderCall($call, self::PROVIDER_SCOPE))
+			|| ($call instanceof FuncCall && $this->isFormsStackCall($call, 'end'));
 	}
 
-	private function rebuildInputAssign(Expr $expr): ?Assign
+	private function isRenderCall(Expr $expr): bool
 	{
-		if (!$expr instanceof Assign || !$this->isVariableNamed($expr->var, self::INPUT_RENAME)) {
-			return null;
+		foreach (self::METHOD_RENDER as $method) {
+			if ($expr instanceof StaticCall && $this->isRuntimeCall($expr, $method)) {
+				return true;
+			}
+
+			if ($expr instanceof MethodCall && $this->isProviderCall($expr, $method)) {
+				return true;
+			}
 		}
 
-		if (
-			!$expr->expr instanceof Assign
-			|| !$expr->expr->var instanceof Variable
-			|| $expr->expr->var->name !== '_input'
-		) {
-			return null;
-		}
-
-		$lookup = $this->matchFormsStackFieldLookup($expr->expr->expr);
-		if ($lookup === null) {
-			return null;
-		}
-
-		return new Assign(
-			$expr->var,
-			new Assign(
-				$expr->expr->var,
-				new StaticCall(
-					new FullyQualified(self::HELPERS_CLASS),
-					new Identifier('formField'),
-					[new Arg($lookup)],
-				),
-			),
-		);
+		return false;
 	}
 
-	private function rebuildFieldEcho(Echo_ $node): ?Echo_
+	private function matchFieldLookup(Expr $expr): ?Expr
 	{
-		if (count($node->exprs) !== 1 || !$node->exprs[0] instanceof MethodCall) {
-			return null;
+		$patterns = $this->patterns();
+
+		if ($patterns->hasName(self::ROLE_FIELD_LOOKUP, self::SHAPE_STACK_OFFSET)) {
+			return $this->matchStackOffset($expr);
 		}
 
-		$call = $node->exprs[0];
-		$lookup = $this->matchFormsStackFieldLookup($call->var);
-		if ($lookup === null) {
-			return null;
+		if ($patterns->hasName(self::ROLE_FIELD_LOOKUP, self::SHAPE_RUNTIME_ITEM)) {
+			return $this->matchRuntimeItem($expr);
 		}
 
-		$newCall = new MethodCall(
-			new StaticCall(new FullyQualified(self::HELPERS_CLASS), new Identifier('formField'), [new Arg($lookup)]),
-			$call->name,
-			$call->args,
-		);
+		if ($patterns->hasName(self::ROLE_FIELD_LOOKUP, self::SHAPE_PROVIDER_GET)) {
+			return $this->matchProviderGet($expr, 1);
+		}
 
-		return new Echo_([$newCall]);
+		return null;
 	}
 
-	private function rebuildLabelIf(If_ $node): ?If_
+	private function matchContainerLookup(Expr $expr): ?Expr
 	{
-		if ($node->elseifs !== [] || $node->else !== null || count($node->stmts) !== 1) {
+		if (!$this->patterns()->hasName(self::ROLE_FIELD_LOOKUP, self::SHAPE_PROVIDER_GET)) {
 			return null;
 		}
 
-		if (!$node->cond instanceof Assign || !$this->isVariableNamed($node->cond->var, self::LABEL_RENAME)) {
+		$name = $this->matchProviderGet($expr, 2);
+		if ($name === null || !$expr instanceof MethodCall) {
 			return null;
 		}
 
-		$call = $node->cond->expr;
-		if (
-			!$call instanceof MethodCall
-			|| !$call->name instanceof Identifier
-			|| $call->name->toString() !== 'getLabel'
-		) {
-			return null;
-		}
+		$typeArg = $expr->args[1];
+		$type = $typeArg instanceof Arg ? $typeArg->value : null;
 
-		$lookup = $this->matchFormsStackFieldLookup($call->var);
-		if ($lookup === null) {
-			return null;
-		}
-
-		$bodyStmt = $node->stmts[0];
-		if (
-			!$bodyStmt instanceof Echo_
-			|| count($bodyStmt->exprs) !== 1
-			|| !$this->isVariableNamed($bodyStmt->exprs[0], self::LABEL_RENAME)
-		) {
-			return null;
-		}
-
-		$newCond = new Assign(
-			$node->cond->var,
-			new MethodCall(
-				new StaticCall(
-					new FullyQualified(self::HELPERS_CLASS),
-					new Identifier('formField'),
-					[new Arg($lookup)],
-				),
-				$call->name,
-				[],
-			),
-		);
-
-		return new If_($newCond, ['stmts' => $node->stmts]);
+		return $type instanceof ClassConstFetch
+			&& $type->class instanceof Name
+			&& $type->class->toString() === self::CONTAINER_CLASS
+			&& $type->name instanceof Identifier
+			&& $type->name->toString() === 'class'
+			? $name
+			: null;
 	}
 
-	private function matchFormsStackFieldLookup(Expr $expr): ?Expr
+	private function matchStackOffset(Expr $expr): ?Expr
 	{
 		if (!$expr instanceof ArrayDimFetch || $expr->dim === null) {
 			return null;
 		}
 
+		if (!$expr->var instanceof FuncCall || !$this->isFormsStackCall($expr->var, 'end')) {
+			return null;
+		}
+
+		return $this->isVariableNamed($expr->dim, self::DYNAMIC_TEMP) ? null : $expr->dim;
+	}
+
+	private function matchRuntimeItem(Expr $expr): ?Expr
+	{
+		if (!$expr instanceof StaticCall || !$this->isRuntimeCall($expr, self::METHOD_ITEM)) {
+			return null;
+		}
+
+		if (count($expr->args) !== 2 || !$expr->args[0] instanceof Arg || !$expr->args[1] instanceof Arg) {
+			return null;
+		}
+
+		return $this->isGlobal($expr->args[1]->value) ? $expr->args[0]->value : null;
+	}
+
+	private function matchProviderGet(Expr $expr, int $argCount): ?Expr
+	{
+		if (!$expr instanceof MethodCall || !$this->isProviderCall($expr, self::PROVIDER_GET)) {
+			return null;
+		}
+
+		if (count($expr->args) !== $argCount) {
+			return null;
+		}
+
+		$values = [];
+		foreach ($expr->args as $arg) {
+			if (!$arg instanceof Arg) {
+				return null;
+			}
+
+			$values[] = $arg->value;
+		}
+
+		return $values[0] ?? null;
+	}
+
+	private function isProviderCall(MethodCall $call, string $method): bool
+	{
+		if (!$call->name instanceof Identifier || $call->name->toString() !== $method) {
+			return false;
+		}
+
+		foreach ($this->patterns()->names(self::ROLE_FORMS_PROVIDER) as $provider) {
+			if (GlobalPropertyFetchMatcher::matches($call->var, $provider)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function isRuntimeCall(StaticCall $call, string $method): bool
+	{
+		return $call->class instanceof Name
+			&& $call->name instanceof Identifier
+			&& $call->name->toString() === $method
+			&& $this->patterns()->isStaticCall(self::ROLE_RUNTIME, $call->class->toString(), $method);
+	}
+
+	private function isFormsStackCall(FuncCall $call, string $function): bool
+	{
+		return $this->isFuncCallNamed($call, $function)
+			&& count($call->args) === 1
+			&& $call->args[0] instanceof Arg
+			&& $this->isFormsStack($call->args[0]->value);
+	}
+
+	private function isFormsStackPush(Expr $expr): bool
+	{
+		return $expr instanceof ArrayDimFetch && $expr->dim === null && $this->isFormsStack($expr->var);
+	}
+
+	private function isFormsStack(Expr $expr): bool
+	{
+		foreach ($this->patterns()->names(self::ROLE_STACK_PROVIDER) as $provider) {
+			if (GlobalPropertyFetchMatcher::matches($expr, $provider)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function isGlobal(Expr $expr): bool
+	{
+		return $expr instanceof PropertyFetch
+			&& $expr->name instanceof Identifier
+			&& $expr->name->toString() === 'global'
+			&& $expr->var instanceof Variable
+			&& $expr->var->name === 'this';
+	}
+
+	private function matchHelperCall(Expr $expr, string $method): ?Expr
+	{
 		if (
-			!$expr->var instanceof FuncCall
-			|| !$this->isFuncCallNamed($expr->var, 'end')
-			|| count($expr->var->args) !== 1
+			!$expr instanceof StaticCall
+			|| !$expr->class instanceof FullyQualified
+			|| $expr->class->toString() !== self::HELPERS_CLASS
+			|| !$expr->name instanceof Identifier
+			|| $expr->name->toString() !== $method
+			|| count($expr->args) !== 1
 		) {
 			return null;
 		}
 
-		$arg = $expr->var->args[0];
+		$arg = $expr->args[0];
 
-		return $arg instanceof Arg && GlobalPropertyFetchMatcher::matches(
-			$arg->value,
-			'formsStack',
-		) ? $expr->dim : null;
+		return $arg instanceof Arg ? $arg->value : null;
+	}
+
+	private function helperCall(string $method, Expr $arg, Node $replaced): StaticCall
+	{
+		$attributes = [];
+		if ($replaced->hasAttribute('startLine')) {
+			$attributes['startLine'] = $replaced->getStartLine();
+			$attributes['endLine'] = $replaced->getEndLine();
+		}
+
+		return new StaticCall(
+			new FullyQualified(self::HELPERS_CLASS),
+			new Identifier($method),
+			[new Arg($arg)],
+			$attributes,
+		);
 	}
 
 	private function isFuncCallNamed(FuncCall $node, string $name): bool

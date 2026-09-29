@@ -79,12 +79,18 @@ final class Helpers
 		throw new LogicException('never executed');
 	}
 
-	public static function formContainer(string $name): Container
+	/**
+	 * @param string|int|object $name
+	 */
+	public static function formContainer($name): Container
 	{
 		throw new LogicException('never executed');
 	}
 
-	public static function formField(string $name): BaseControl
+	/**
+	 * @param string|int|object $name
+	 */
+	public static function formField($name): BaseControl
 	{
 		throw new LogicException('never executed');
 	}

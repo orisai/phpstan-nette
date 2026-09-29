@@ -194,17 +194,20 @@ checking.
 ## Is the macro right for the component
 
 Three diagnostics, one question: the name resolves, but can the component it names answer the macro
-that named it? Every verdict is read off **vendor's own compiled output** (Latte 2,
-`vendor/nette/forms/src/Bridges/FormsLatte/FormMacros.php`), which is what makes each of them
-definite rather than stylistic:
+that named it? Every verdict is read off **vendor's own compiled output**, which is what makes each
+of them definite rather than stylistic. The three generations of the bridge — Latte 2 `FormMacros`,
+Latte 3 `FormsExtension` with nette/forms 3.1.7–3.2 and nette/forms 3.3's `FormsExtension` — differ
+only in how they reach the control: `<X>` below is `end($formsStack)[X]`,
+`Runtime::item(X, $this->global)` or `$this->global->forms->get(X)` respectively, and the pipeline
+reduces all three to the same `Helpers::formField(X)`:
 
 | Macro | compiles to | so it needs |
 |---|---|---|
-| `{input X}` | `end($formsStack)[X]->getControl()` (`->getControlPart(…)` with a `:`-part) | a control |
-| `{label X}` / `n:label` | `if ($l = end($formsStack)[X]->getLabel()) echo $l` | a control **that renders a label** |
-| `{inputError X}` | `end($formsStack)[X]->getError()` | a control |
-| `<el n:name="X">` | `end($formsStack)[X]->getControlPart()->attributes()` | a control |
-| `{formContainer X}` / `n:formContainer` | pushes X on `$formsStack`; every reference under it offsets it | a container |
+| `{input X}` | `<X>->getControl()` (`->getControlPart(…)` with a `:`-part) | a control |
+| `{label X}` / `n:label` | `if ($l = <X>->getLabel()) echo $l` (Latte 3: `($ʟ_label = <X>->getLabel())?->startTag()`) | a control **that renders a label** |
+| `{inputError X}` | `<X>->getError()` | a control |
+| `<el n:name="X">` | `<X>->getControlPart()->attributes()` | a control |
+| `{formContainer X}` / `n:formContainer` | pushes X on `$formsStack` (3.3: `forms->begin(forms->get(X, Container::class))`); every reference under it offsets it | a container |
 
 `Nette\Forms\Container` declares none of those four control methods, and its `__call()` falls through
 to `Nette\SmartObject`'s strict one — so a control macro on a container is a runtime error, not a

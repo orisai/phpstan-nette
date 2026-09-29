@@ -11,19 +11,24 @@ use PHPStan\Type\ObjectType;
 use function ltrim;
 
 // Whether the macro that names a component is one that component can answer. Every verdict below is
-// read off vendor's own compiled output (Latte 2, nette/forms 3.1
-// vendor/nette/forms/src/Bridges/FormsLatte/FormMacros.php), never guessed:
+// read off vendor's own compiled output, never guessed - the three generations of the forms bridge
+// (Latte 2 FormMacros, nette/forms < 3.3 FormsExtension, nette/forms 3.3 FormsExtension) differ only
+// in how they reach the control, so one verdict holds for all of them:
 //
-// - {input X} compiles to `end($formsStack)[X]->getControl()` (or ->getControlPart(...) with a
-//   ':'-part), {label X} / n:label to `if ($l = end($formsStack)[X]->getLabel()) echo $l`,
-//   {inputError X} to `->getError()`, and <el n:name="X"> to `->getControlPart()->attributes()`.
+// - {input X} compiles to `<X>->getControl()` (or ->getControlPart(...) with a ':'-part), {label X} /
+//   n:label to `if ($l = <X>->getLabel()) echo $l` (`($ʟ_label = <X>->getLabel())?->startTag()` on
+//   Latte 3), {inputError X} to `<X>->getError()`, and <el n:name="X"> to
+//   `<X>->getControlPart()->attributes()`, where <X> is `end($formsStack)[X]` (Latte 2),
+//   `Runtime::item(X, $this->global)` (nette/forms 3.1.7-3.2) or `$this->global->forms->get(X)` (3.3).
 //   Nette\Forms\Container declares none of those four methods and its __call() falls through to
-//   Nette\SmartObject's strict one, so any of them on a container is a runtime error, not a no-op.
-// - {formContainer X} / n:formContainer pushes the component onto $formsStack, and every reference
-//   under it offsets that component (`end($formsStack)[Y]`). A Nette\Forms\Controls\BaseControl is
-//   not an ArrayAccess, so the first reference inside fatals; a body with no reference in it is
-//   inert markup. Reported either way: the macro's only purpose is to scope inner references, and
-//   there is no component that is both a control and a container to scope them against.
+//   Nette\SmartObject's strict one, so any of them on a container is a runtime error, not a no-op;
+//   the 3.3 runtime's get() throws on a container before the call is even made.
+// - {formContainer X} / n:formContainer pushes the component onto $formsStack (3.3: `forms->begin(
+//   forms->get(X, Container::class))`), and every reference under it offsets that component. A
+//   Nette\Forms\Controls\BaseControl is not an ArrayAccess, so the first reference inside fatals
+//   (3.3: get() rejects it up front); a body with no reference in it is inert markup. Reported
+//   either way: the macro's only purpose is to scope inner references, and there is no component
+//   that is both a control and a container to scope them against.
 // - Button::getLabel() and HiddenField::getLabel() are vendor overrides whose whole body is
 //   `return null`, commented "Bypasses label generation" - so {label} on one renders NOTHING at all.
 //   The declaring class is what is asked, not the ancestry: a project subclass that overrides

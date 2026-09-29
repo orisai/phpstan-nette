@@ -397,9 +397,6 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('$name', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testFormMacroBindsTypedFormVariable(): void
 	{
 		$php = $this->process("{form login}{input user}{/form}\n");
@@ -409,7 +406,7 @@ final class EliminatorTest extends BaseTestCase
 			$php,
 		);
 		self::assertMatchesRegularExpression('~Helpers::formField\(([\'"])user\1\)~', $php);
-		self::assertStringNotContainsString('formsStack', $php);
+		self::assertNoFormsBridgeResidue($php);
 	}
 
 	public function testControlShellReducedButArgsAnalyzed(): void
@@ -434,28 +431,23 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('renderBlock(', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testFormContainerPushAndPopDropFormsStack(): void
 	{
 		$php = $this->process("{form f}{formContainer c}{input z}{/formContainer}{/form}\n");
 
 		self::assertMatchesRegularExpression('~Helpers::formContainer\(([\'"])c\1\)~', $php);
 		self::assertMatchesRegularExpression('~Helpers::formField\(([\'"])z\1\)~', $php);
-		self::assertStringNotContainsString('formsStack', $php);
 		self::assertStringNotContainsString('array_pop', $php);
+		self::assertStringNotContainsString('getScope', $php);
+		self::assertNoFormsBridgeResidue($php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testNNameInputUsesFormFieldAndDropsLatteTemp(): void
 	{
 		$php = $this->process("{form f}<input n:name=\"x\">{/form}\n");
 
 		self::assertMatchesRegularExpression('~Helpers::formField\(([\'"])x\1\)~', $php);
-		self::assertStringNotContainsString('ʟ_', $php);
+		self::assertNoFormsBridgeResidue($php);
 	}
 
 	public function testPlinkUsesUiLinkHelper(): void
@@ -488,9 +480,6 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('Helpers::snippetId($ʟ_nm = $name)', $php);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testObjectFormUsesFormObjectHelper(): void
 	{
 		$php = $this->process("{varType \\Nette\\Forms\\Form \$myForm}\n{form \$myForm}{input x}{/form}\n");
@@ -499,6 +488,7 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('$myForm', $php);
 		self::assertStringNotContainsString('is_object', $php);
 		self::assertStringNotContainsString('uiControl', $php);
+		self::assertNoFormsBridgeResidue($php);
 	}
 
 	public function testIfCurrentWithDestinationRoutesThroughHelperAndKeepsArgsAnalyzed(): void
@@ -667,6 +657,14 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('ʟ_', $php);
 		self::assertStringNotContainsString('this->filters', $php);
 		self::assertStringNotContainsString('global->fn', $php);
+	}
+
+	private static function assertNoFormsBridgeResidue(string $php): void
+	{
+		self::assertStringNotContainsString('formsStack', $php);
+		self::assertStringNotContainsString('FormsLatte', $php);
+		self::assertStringNotContainsString('->forms->', $php);
+		self::assertStringNotContainsString('ʟ_', $php);
 	}
 
 	private function process(string $latte): string
