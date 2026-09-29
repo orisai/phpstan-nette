@@ -3,8 +3,6 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\AttrShellEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\BlockDispatchEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\CaptureEliminator;
@@ -12,6 +10,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\ControlFlowEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\DevTagEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EliminatorVisitor;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EscapingEliminator;
+use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FamilyPatterns;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FormsMacroEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
@@ -23,11 +22,9 @@ use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function substr_count;
 
-/**
- * @group latte2
- */
 final class EliminatorTest extends BaseTestCase
 {
 
@@ -59,7 +56,9 @@ final class EliminatorTest extends BaseTestCase
 		$php = $this->process("{varType bool \$a}\n{if \$a}x{/if}\n");
 
 		self::assertStringNotContainsString('get_defined_vars', $php);
-		self::assertStringContainsString('return []', $php);
+		if (InstalledVersionsGuard::latteMajor() === 2) {
+			self::assertStringContainsString('return []', $php);
+		}
 	}
 
 	public function testEscapingUnwrapped(): void
@@ -126,7 +125,7 @@ final class EliminatorTest extends BaseTestCase
 		$php = $this->process("{block content}x{/block}\n");
 
 		self::assertStringNotContainsString('getParentName', $php);
-		self::assertSame(1, substr_count($php, 'return []'));
+		self::assertSame(InstalledVersionsGuard::latteMajor() === 2 ? 1 : 0, substr_count($php, 'return []'));
 		self::assertStringNotContainsString('renderBlock', $php);
 		self::assertStringNotContainsString('get_defined_vars', $php);
 		self::assertStringContainsString('$this->blockContent();', $php);
@@ -139,7 +138,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('trigger_error', $php);
 		self::assertStringNotContainsString('array_intersect_key', $php);
 		self::assertStringNotContainsString('getReferringTemplate', $php);
-		self::assertStringContainsString('UIRuntime::initialize', $php);
+		if (InstalledVersionsGuard::latteMajor() === 2) {
+			self::assertStringContainsString('UIRuntime::initialize', $php);
+		}
 	}
 
 	public function testEmptyPrepareMethodRemoved(): void
@@ -178,7 +179,7 @@ final class EliminatorTest extends BaseTestCase
 			"{varType array<int> \$items}\n{foreach \$items as \$i}{\$iterator->counter}{\$i}{/foreach}\n",
 		);
 
-		self::assertStringContainsString('$iterator = new \\Latte\\Runtime\\CachingIterator($items', $php);
+		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '($items', $php);
 		self::assertStringContainsString('foreach ($items as $i)', $php);
 		self::assertStringNotContainsString('ʟ_it', $php);
 	}
@@ -225,9 +226,9 @@ final class EliminatorTest extends BaseTestCase
 		);
 
 		self::assertStringNotContainsString('ʟ_it', $php);
-		self::assertSame(2, substr_count($php, 'new \\Latte\\Runtime\\CachingIterator('));
-		self::assertStringContainsString('$iterator = new \\Latte\\Runtime\\CachingIterator($groups);', $php);
-		self::assertStringContainsString('$iterator = new \\Latte\\Runtime\\CachingIterator($group);', $php);
+		self::assertSame(2, substr_count($php, 'new \\' . self::cachingIteratorClass() . '('));
+		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '($groups);', $php);
+		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '($group);', $php);
 		self::assertStringContainsString('foreach ($groups as $group)', $php);
 		self::assertStringContainsString('foreach ($group as $item)', $php);
 		self::assertStringNotContainsString('getParent', $php);
@@ -323,6 +324,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('echo $x', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNAttrExpressionsAnalyzed(): void
 	{
 		$php = $this->process("{varType bool \$cond}\n<div n:attr=\"data-x => \$cond ? 1 : null\"></div>\n");
@@ -332,6 +336,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('ʟ_tmp', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNTagExpressionAnalyzed(): void
 	{
 		$php = $this->process("{varType string \$tagName}\n<div n:tag=\"\$tagName\">x</div>\n");
@@ -341,6 +348,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('checkTagSwitch', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNIfcontentReducedToBody(): void
 	{
 		$php = $this->process("{varType bool \$cond}\n<p n:ifcontent>{if \$cond}x{/if}</p>\n");
@@ -372,6 +382,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('$name', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testFormMacroBindsTypedFormVariable(): void
 	{
 		$php = $this->process("{form login}{input user}{/form}\n");
@@ -406,6 +419,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('renderBlock(', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testFormContainerPushAndPopDropFormsStack(): void
 	{
 		$php = $this->process("{form f}{formContainer c}{input z}{/formContainer}{/form}\n");
@@ -416,6 +432,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('array_pop', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNNameInputUsesFormFieldAndDropsLatteTemp(): void
 	{
 		$php = $this->process("{form f}<input n:name=\"x\">{/form}\n");
@@ -454,6 +473,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('Helpers::snippetId($ʟ_nm = $name)', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testObjectFormUsesFormObjectHelper(): void
 	{
 		$php = $this->process("{varType \\Nette\\Forms\\Form \$myForm}\n{form \$myForm}{input x}{/form}\n");
@@ -488,6 +510,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringContainsString('$label', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testEmbedFileFormRoutesThroughHelperAndDropsLayerPlumbing(): void
 	{
 		$php = $this->process(
@@ -507,6 +532,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('createTemplate', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testEmbedBlockFormDropsLayerPlumbingKeepsDirectCall(): void
 	{
 		$php = $this->process("{block sub}x{/block}\n{embed block sub}\n{/embed}\n");
@@ -526,6 +554,9 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('ʟ_', $php);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testNoLatteInternalsRemainInEmbedFixture(): void
 	{
 		$php = $this->processFixture('embed.latte');
@@ -541,7 +572,7 @@ final class EliminatorTest extends BaseTestCase
 	{
 		$php = $this->process("{varType string \$s}\n{\$s|truncate:10}\n");
 
-		self::assertStringContainsString('\\Latte\\Runtime\\Filters::truncate($s, 10)', $php);
+		self::assertStringContainsString('\\' . self::filtersClass() . '::truncate($s, 10)', $php);
 		self::assertStringNotContainsString('this->filters', $php);
 	}
 
@@ -565,10 +596,9 @@ final class EliminatorTest extends BaseTestCase
 	public function testUnknownFilterDiagnosticIsCollected(): void
 	{
 		$latte = "{varType string \$greeting}\n{\$greeting|notARealLatteFilter}\n";
-		$compiled = (new LatteCompiler())->compile($latte, 'LatteTpl_test_diag');
-		$declarations = (new DeclarationScanner())->scan($latte);
+		$compiled = TestAdapter::create()->compile($latte, 'LatteTpl_test_diag', 'fixtures/diag.latte');
 		$pipeline = PipelineFactory::create();
-		$pipeline->dump($compiled, $declarations);
+		$pipeline->dump($compiled->getResult(), $compiled->getFacts()->getDeclarations());
 
 		$diagnostics = $pipeline->getDiagnostics();
 
@@ -584,8 +614,9 @@ final class EliminatorTest extends BaseTestCase
 		// parse of byte-identical generated PHP - silently dropping this diagnostic on the second
 		// call and sharing mutable line attributes between the two ASTs.
 		$latte = "{varType string \$greeting}\n{\$greeting|notARealLatteFilterEitherXyz}\n";
-		$compiled = (new LatteCompiler())->compile($latte, 'LatteTpl_test_diag_repeat');
-		$declarations = (new DeclarationScanner())->scan($latte);
+		$compiledTemplate = TestAdapter::create()->compile($latte, 'LatteTpl_test_diag_repeat', 'fixtures/diag.latte');
+		$compiled = $compiledTemplate->getResult();
+		$declarations = $compiledTemplate->getFacts()->getDeclarations();
 
 		$pipelineA = PipelineFactory::create();
 		$stmtsFromA = $pipelineA->process($compiled, $declarations);
@@ -611,7 +642,7 @@ final class EliminatorTest extends BaseTestCase
 	{
 		$php = $this->process("{varType string \$s}\n{\$s|datastream}\n");
 
-		self::assertStringContainsString('\\Latte\\Runtime\\Filters::dataStream($s)', $php);
+		self::assertStringContainsString('\\' . self::filtersClass() . '::dataStream($s)', $php);
 		self::assertStringNotContainsString('this->filters', $php);
 	}
 
@@ -619,7 +650,7 @@ final class EliminatorTest extends BaseTestCase
 	{
 		$php = $this->process("{varType int \$v}\n{=clamp(\$v, 0, 10)}\n");
 
-		self::assertStringContainsString('\\Latte\\Runtime\\Filters::clamp($v, 0, 10)', $php);
+		self::assertStringContainsString('\\' . self::filtersClass() . '::clamp($v, 0, 10)', $php);
 		self::assertStringNotContainsString('global->fn', $php);
 	}
 
@@ -634,19 +665,28 @@ final class EliminatorTest extends BaseTestCase
 
 	private function process(string $latte): string
 	{
-		$compiled = (new LatteCompiler())->compile($latte, 'LatteTpl_test');
-		$declarations = (new DeclarationScanner())->scan($latte);
+		$compiled = TestAdapter::create()->compile($latte, 'LatteTpl_test', 'fixtures/test.latte');
 
-		return PipelineFactory::create()->dump($compiled, $declarations);
+		return PipelineFactory::create()->dump(
+			$compiled->getResult(),
+			$compiled->getFacts()->getDeclarations(),
+		);
 	}
 
 	private function processFixture(string $name): string
 	{
-		$latte = FileSystem::read(__DIR__ . '/../Fixtures/' . $name);
-		$compiled = (new LatteCompiler())->compile($latte, 'LatteTpl_test');
-		$declarations = (new DeclarationScanner())->scan($latte);
+		return $this->process(FileSystem::read(__DIR__ . '/../Fixtures/' . $name));
+	}
 
-		return PipelineFactory::create()->dump($compiled, $declarations);
+	private static function cachingIteratorClass(): string
+	{
+		return FamilyPatterns::for(TestAdapter::factory()->family(), IteratorEliminator::class)
+			->name(IteratorEliminator::ROLE_CACHING_ITERATOR);
+	}
+
+	private static function filtersClass(): string
+	{
+		return InstalledVersionsGuard::latteMajor() === 2 ? 'Latte\Runtime\Filters' : 'Latte\Essential\Filters';
 	}
 
 }

@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FilterRewriter;
 use OriPhpstan\Nette\Latte\Postprocess\FilterTable;
 use OriPhpstan\Nette\Latte\Postprocess\FunctionTable;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\FuncCall;
@@ -15,17 +16,16 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Expression;
 use PHPStan\Parser\Parser;
 use PHPStan\Php\PhpVersion;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\EliminatorRun;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 
-/**
- * @group latte2
- */
 final class FilterRewriterTest extends BaseTestCase
 {
 
@@ -33,10 +33,10 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('webalize', 5);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 		);
 
 		$call = $expression->expr;
@@ -52,10 +52,10 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('webAlize', 1);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 		);
 
 		self::assertSame('webAlize', $expression->expr->getAttribute(FilterRewriter::FILTER_PROVENANCE_ATTRIBUTE));
@@ -65,10 +65,10 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('definitelyNotAFilter', 3);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 		);
 
 		$call = $expression->expr;
@@ -103,10 +103,10 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('webalize', 1);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 		);
 
 		self::assertNull($expression->expr->getAttribute(FilterRewriter::FUNCTION_NO_TIP_ATTRIBUTE));
@@ -121,10 +121,10 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('docFilter', 4);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
 		);
@@ -154,10 +154,10 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('docFilter', 1);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 			self::class,
 			$this->templateTypeCustoms(),
 		);
@@ -168,6 +168,115 @@ final class FilterRewriterTest extends BaseTestCase
 		self::assertSame('unknownFilter', $call->name->toString());
 	}
 
+	// Latte 3 passes the template as a function's first argument; the table entries take the
+	// author's own arguments only.
+
+	/**
+	 * @group latte3
+	 */
+	public function testLatte3LeadingTemplateArgumentIsDroppedFromAFunctionCall(): void
+	{
+		$call = $this->rewriteGlobalFnCall('clamp', 7, [new Arg(new Variable('this')), new Arg(new Variable('x'))]);
+
+		self::assertCount(1, $call->args);
+		self::assertInstanceOf(Arg::class, $call->args[0]);
+		self::assertInstanceOf(Variable::class, $call->args[0]->value);
+		self::assertSame('x', $call->args[0]->value->name);
+	}
+
+	/**
+	 * @group latte2
+	 */
+	public function testLatte2KeepsAFunctionCallsLeadingThisArgument(): void
+	{
+		$call = $this->rewriteGlobalFnCall('clamp', 7, [new Arg(new Variable('this')), new Arg(new Variable('x'))]);
+
+		self::assertCount(2, $call->args);
+	}
+
+	/**
+	 * @group latte3
+	 */
+	public function testLatte3InstanceMethodFilterDispatchesThroughATypedInstance(): void
+	{
+		$expression = $this->filtersAccessorExpression('number', 2);
+
+		self::rewriter()->rewrite([$expression], self::filterTable(), self::functionTable());
+
+		$call = $expression->expr;
+		self::assertInstanceOf(MethodCall::class, $call);
+		self::assertSame('number', $call->getAttribute(FilterRewriter::FILTER_PROVENANCE_ATTRIBUTE));
+		$receiver = $call->var;
+		self::assertInstanceOf(StaticCall::class, $receiver);
+		self::assertInstanceOf(Identifier::class, $receiver->name);
+		self::assertSame('templateTypeInstance', $receiver->name->toString());
+		$classArg = $receiver->args[0];
+		self::assertInstanceOf(Arg::class, $classArg);
+		self::assertInstanceOf(ClassConstFetch::class, $classArg->value);
+		self::assertInstanceOf(Name::class, $classArg->value->class);
+		self::assertSame('Latte\Essential\Filters', $classArg->value->class->toString());
+	}
+
+	/**
+	 * @dataProvider provideConvertToLines
+	 */
+	public function testConvertToOfTheFamilyGetsTheFilterInfoStandIn(string $latteLine, string $class): void
+	{
+		$fi = new Variable("\u{29F}_fi");
+		$convertTo = new StaticCall(new Name($class), new Identifier('convertTo'), [
+			new Arg($fi),
+			new Arg(new String_('html')),
+			new Arg(new Variable('s')),
+		]);
+		$other = new StaticCall(new Name('Latte\Runtime\Other'), new Identifier('convertTo'), [
+			new Arg(new Variable("\u{29F}_fi")),
+			new Arg(new String_('html')),
+			new Arg(new Variable('s')),
+		]);
+		$stmts = [new Expression($convertTo), new Expression($other)];
+
+		(new FilterRewriter(EliminatorRun::family($latteLine)))->rewrite(
+			$stmts,
+			self::filterTable(),
+			self::functionTable(),
+		);
+
+		$rewritten = $convertTo->args[0];
+		self::assertInstanceOf(Arg::class, $rewritten);
+		self::assertInstanceOf(StaticCall::class, $rewritten->value);
+		self::assertInstanceOf(Identifier::class, $rewritten->value->name);
+		self::assertSame('filterInfo', $rewritten->value->name->toString());
+		$kept = $other->args[0];
+		self::assertInstanceOf(Arg::class, $kept);
+		self::assertInstanceOf(Variable::class, $kept->value);
+		self::assertSame($fi->name, $kept->value->name);
+	}
+
+	/**
+	 * @return iterable<string, array{string, string}>
+	 */
+	public function provideConvertToLines(): iterable
+	{
+		yield 'latte 2' => [ShapeFamily::LATTE_2, 'Latte\Runtime\Filters'];
+		yield 'latte 3.0' => [ShapeFamily::LATTE_30, 'Latte\Runtime\Filters'];
+		yield 'latte 3.1' => [ShapeFamily::LATTE_31, 'Latte\Runtime\Helpers'];
+	}
+
+	private static function rewriter(): FilterRewriter
+	{
+		return new FilterRewriter(TestAdapter::factory()->family());
+	}
+
+	private static function filterTable(): FilterTable
+	{
+		return new FilterTable(TestAdapter::create()->defaultCallables());
+	}
+
+	private static function functionTable(): FunctionTable
+	{
+		return new FunctionTable(TestAdapter::create()->defaultCallables());
+	}
+
 	private function templateTypeCustoms(): TemplateTypeCustoms
 	{
 		/** @var Parser $parser */
@@ -176,18 +285,25 @@ final class FilterRewriterTest extends BaseTestCase
 		return new TemplateTypeCustoms(new PhpVersion(70400), $parser);
 	}
 
-	private function rewriteGlobalFnCall(string $functionName, int $line): StaticCall
+	/**
+	 * @param list<Arg>|null $args
+	 */
+	private function rewriteGlobalFnCall(string $functionName, int $line, ?array $args = null): StaticCall
 	{
 		$globalFetch = new PropertyFetch(new Variable('this'), 'global');
 		$fnFetch = new PropertyFetch($globalFetch, 'fn');
 		$nameFetch = new PropertyFetch($fnFetch, $functionName);
-		$funcCall = new FuncCall($nameFetch, [new Arg(new Variable('x'))], ['startLine' => $line, 'endLine' => $line]);
+		$funcCall = new FuncCall(
+			$nameFetch,
+			$args ?? [new Arg(new Variable('x'))],
+			['startLine' => $line, 'endLine' => $line],
+		);
 		$expression = new Expression($funcCall, ['startLine' => $line, 'endLine' => $line]);
 
-		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+		self::rewriter()->rewrite(
 			[$expression],
-			new FilterTable(),
-			new FunctionTable(),
+			self::filterTable(),
+			self::functionTable(),
 		);
 
 		$call = $expression->expr;

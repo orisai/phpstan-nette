@@ -402,19 +402,20 @@ final class FilterRewriter extends NodeVisitorAbstract
 			return $unknownCall;
 		}
 
-		[$class, $method, $isContentAware, $isPerTemplate, $isStatic] = $resolved;
+		[$class, $method, $isContentAware, , $isStatic] = $resolved;
 
 		$finalArgs = $isContentAware
 			? array_merge([new Arg($this->filterInfoCall())], $args)
 			: $args;
 
-		// A per-template STATIC method dispatches exactly like a base entry - Class::method() -
-		// never through the instance-receiver shape below: PHP allows calling a static method
-		// through `->`, but PHPStan's own staticMethod.dynamicCall flags it at strict level 8
-		// (verified via a real spawn).
-		$call = $isPerTemplate && !$isStatic
-			? $this->perTemplateCall($class, $method, $finalArgs, $attributes)
-			: $this->staticOrFunctionCall($class, $method, $finalArgs, $attributes);
+		// A STATIC method - per-template or stock - dispatches as Class::method(), never through the
+		// instance-receiver shape below: PHP allows calling a static method through `->`, but
+		// PHPStan's own staticMethod.dynamicCall flags it at strict level 8 (verified via a real
+		// spawn). An instance method (a per-template one, or a stock Latte 3 |number) needs the
+		// typed receiver.
+		$call = $isStatic
+			? $this->staticOrFunctionCall($class, $method, $finalArgs, $attributes)
+			: $this->instanceCall($class, $method, $finalArgs, $attributes);
 
 		if ($kind === 'filter') {
 			$call->setAttribute(self::FILTER_PROVENANCE_ATTRIBUTE, $name);
@@ -436,18 +437,17 @@ final class FilterRewriter extends NodeVisitorAbstract
 			: new StaticCall(new FullyQualified($class), new Identifier($method), $args, $attributes);
 	}
 
-	// No real params instance exists at analysis time (Latte's own runtime only creates one at
-	// render() call sites, which this pipeline never executes) - Helpers::templateTypeInstance()
-	// stands in as a typed receiver (its own @template T of object + class-string<T> $class + @return
-	// T declaration makes PHPStan resolve the MethodCall below against C's REAL reflected method,
-	// static or not: PHP allows calling a static method through `->`, so one dispatch shape covers
-	// both qualifying kinds without needing to know which this entry is).
+	// No real instance exists at analysis time (Latte's own runtime creates the params instance at
+	// render() call sites and the Essential\Filters instance inside CoreExtension, neither of which
+	// this pipeline ever executes) - Helpers::templateTypeInstance() stands in as a typed receiver
+	// (its own @template T of object + class-string<T> $class + @return T declaration makes PHPStan
+	// resolve the MethodCall below against C's REAL reflected method).
 
 	/**
 	 * @param array<Arg|VariadicPlaceholder> $args
 	 * @param array<string, int> $attributes
 	 */
-	private function perTemplateCall(string $class, string $method, array $args, array $attributes): MethodCall
+	private function instanceCall(string $class, string $method, array $args, array $attributes): MethodCall
 	{
 		$receiver = new StaticCall(
 			new FullyQualified(Helpers::class),

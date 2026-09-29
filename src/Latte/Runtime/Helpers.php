@@ -121,6 +121,26 @@ final class Helpers
 	}
 
 	/**
+	 * @template TValue of iterable<mixed>|string
+	 * @param TValue $value
+	 * @return (TValue is string ? string : (TValue is array ? array<key-of<TValue>, value-of<TValue>> : iterable<mixed>))
+	 */
+	public static function limit($value, int $length)
+	{
+		throw new LogicException('never executed');
+	}
+
+	public static function hasBlock(string $name): bool
+	{
+		throw new LogicException('never executed');
+	}
+
+	public static function hasTemplate(string $name): bool
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
 	 * @param mixed ...$args
 	 * @return mixed
 	 */

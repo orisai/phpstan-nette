@@ -2,49 +2,60 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
-use Latte\Runtime\Defaults;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FunctionTable;
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
+use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use PHPStan\Parser\Parser;
 use PHPStan\Php\PhpVersion;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 use function strtolower;
 
-/**
- * @group latte2
- */
 final class FunctionTableTest extends BaseTestCase
 {
 
 	public function testResolvesEveryDefaultFunction(): void
 	{
-		$table = new FunctionTable();
-		foreach ((new Defaults())->getFunctions() as $name => $callable) {
+		$table = self::table();
+		foreach (self::defaults()->getFunctions() as $name => $callable) {
 			self::assertNotNull($table->resolve(strtolower($name)), "function $name unresolved");
 		}
 	}
 
 	public function testUnknownFunctionIsNull(): void
 	{
-		self::assertNull((new FunctionTable())->resolve('definitelynotafunction'));
+		self::assertNull(self::table()->resolve('definitelynotafunction'));
 	}
 
 	public function testFilterOnlyDefaultNameIsNotAFunction(): void
 	{
-		// 'batch'/'trim'/'upper' exist only in Defaults::getFilters(), never in getFunctions().
-		self::assertNull((new FunctionTable())->resolve('batch'));
-		self::assertNull((new FunctionTable())->resolve('trim'));
+		// 'batch'/'trim'/'upper' exist only among the default filters, never the functions.
+		self::assertNull(self::table()->resolve('batch'));
+		self::assertNull(self::table()->resolve('trim'));
 	}
 
 	public function testClampResolvesToFiltersClamp(): void
 	{
 		self::assertSame(
-			['Latte\Runtime\Filters', 'clamp', false],
-			(new FunctionTable())->resolve('clamp'),
+			[self::filtersClass(), 'clamp', false],
+			self::table()->resolve('clamp'),
 		);
+	}
+
+	/**
+	 * @group latte3
+	 */
+	public function testLatte3BlockLambdasResolveToTheHelpers(): void
+	{
+		// hasBlock()/hasTemplate() are inline lambdas taking the template first; the helpers take
+		// the name the rewriter leaves after dropping that argument.
+		self::assertSame([Helpers::class, 'hasBlock', false], self::table()->resolve('hasblock'));
+		self::assertSame([Helpers::class, 'hasTemplate', false], self::table()->resolve('hastemplate'));
 	}
 
 	public function testHarvestedFunctionWithStaticCallableIsRegistered(): void
@@ -53,7 +64,7 @@ final class FunctionTableTest extends BaseTestCase
 
 		self::assertSame(
 			[self::class, 'fixtureFunctionMethod', false],
-			(new FunctionTable($harvested))->resolve('myfunction'),
+			self::table($harvested)->resolve('myfunction'),
 		);
 	}
 
@@ -61,7 +72,7 @@ final class FunctionTableTest extends BaseTestCase
 	{
 		$harvested = self::harvestedWithFunction('myFunction', static fn (int $n = 0): int => $n);
 
-		self::assertNull((new FunctionTable($harvested))->resolve('myfunction'));
+		self::assertNull(self::table($harvested)->resolve('myfunction'));
 	}
 
 	public function testBuiltInFunctionWinsOverAHarvestedNameCollision(): void
@@ -69,14 +80,14 @@ final class FunctionTableTest extends BaseTestCase
 		$harvested = self::harvestedWithFunction('clamp', [self::class, 'fixtureFunctionMethod']);
 
 		self::assertSame(
-			['Latte\Runtime\Filters', 'clamp', false],
-			(new FunctionTable($harvested))->resolve('clamp'),
+			[self::filtersClass(), 'clamp', false],
+			self::table($harvested)->resolve('clamp'),
 		);
 	}
 
 	public function testResolveForTemplateResolvesAPerTemplateFunctionAsInstanceScoped(): void
 	{
-		$resolved = (new FunctionTable())->resolveForTemplate(
+		$resolved = self::table()->resolveForTemplate(
 			'docfunction',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
@@ -87,13 +98,13 @@ final class FunctionTableTest extends BaseTestCase
 
 	public function testResolveForTemplateFallsBackToTheBaseTableWhenTheTemplateTypeClassHasNoMatchingFunction(): void
 	{
-		$resolved = (new FunctionTable())->resolveForTemplate(
+		$resolved = self::table()->resolveForTemplate(
 			'clamp',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame(['Latte\Runtime\Filters', 'clamp', false, false, false], $resolved);
+		self::assertSame([self::filtersClass(), 'clamp', false, false, true], $resolved);
 	}
 
 	// See FilterTableTest's identical-in-spirit test - the same last-write-wins runtime precedence
@@ -103,7 +114,7 @@ final class FunctionTableTest extends BaseTestCase
 	{
 		$harvested = self::harvestedWithFunction('docFunction', [self::class, 'fixtureFunctionMethod']);
 
-		$resolved = (new FunctionTable($harvested))->resolveForTemplate(
+		$resolved = self::table($harvested)->resolveForTemplate(
 			'docfunction',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
@@ -123,6 +134,21 @@ final class FunctionTableTest extends BaseTestCase
 	public static function fixtureFunctionMethod(int $n = 0): int
 	{
 		return $n;
+	}
+
+	private static function table(?HarvestedCustoms $harvested = null): FunctionTable
+	{
+		return new FunctionTable(self::defaults(), $harvested);
+	}
+
+	private static function defaults(): DefaultCallables
+	{
+		return TestAdapter::create()->defaultCallables();
+	}
+
+	private static function filtersClass(): string
+	{
+		return InstalledVersionsGuard::latteMajor() === 2 ? 'Latte\Runtime\Filters' : 'Latte\Essential\Filters';
 	}
 
 	// Engine::addFunction() keeps the exact spelling as-is (unlike filters, whose harvested keys

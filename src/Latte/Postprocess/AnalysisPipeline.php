@@ -23,7 +23,6 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
-use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
@@ -192,7 +191,7 @@ final class AnalysisPipeline
 	private function filterTable(): FilterTable
 	{
 		if ($this->filterTable === null) {
-			$this->filterTable = new FilterTable($this->harvested());
+			$this->filterTable = new FilterTable($this->adapterAccessor->get()->defaultCallables(), $this->harvested());
 		}
 
 		return $this->filterTable;
@@ -201,7 +200,10 @@ final class AnalysisPipeline
 	private function functionTable(): FunctionTable
 	{
 		if ($this->functionTable === null) {
-			$this->functionTable = new FunctionTable($this->harvested());
+			$this->functionTable = new FunctionTable(
+				$this->adapterAccessor->get()->defaultCallables(),
+				$this->harvested(),
+			);
 		}
 
 		return $this->functionTable;
@@ -305,17 +307,15 @@ final class AnalysisPipeline
 		// $declarations is this FILE's own header declaration, so the per-template overlay it
 		// unlocks is strictly scoped to this compiled class and the context clones cloned from it
 		// below - never to an unrelated file that happens to declare the same {templateType}.
-		// FilterTable/FunctionTable are read from Latte 2's Latte\Runtime\Defaults; a Latte 3 family
-		// keeps its filter and function calls as compiled.
-		$filterDiagnostics = $family->latteLine === ShapeFamily::LATTE_2
-			? (new FilterRewriter($family))->rewrite(
-				$processed,
-				$this->filterTable(),
-				$this->functionTable(),
-				$declarations->getTemplateTypeClass(),
-				$this->templateTypeCustoms,
-			)
-			: [];
+		// FilterTable/FunctionTable hold the installed line's own stock filters and functions
+		// (LatteVersionAdapter::defaultCallables()).
+		$filterDiagnostics = (new FilterRewriter($family))->rewrite(
+			$processed,
+			$this->filterTable(),
+			$this->functionTable(),
+			$declarations->getTemplateTypeClass(),
+			$this->templateTypeCustoms,
+		);
 		$this->lastDiagnostics = array_merge($compileDiagnostics, $injectorDiagnostics, $filterDiagnostics);
 
 		// Last, after every eliminator/rewriter above has settled the AST shape: cloning already

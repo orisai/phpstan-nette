@@ -18,4 +18,8 @@ interface LatteVersionAdapter
 
 	public function family(): ShapeFamily;
 
+	// The stock filters and functions of the installed line, the ones the compiled code can call
+	// without the application registering anything.
+	public function defaultCallables(): DefaultCallables;
+
 }

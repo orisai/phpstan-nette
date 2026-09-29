@@ -2,10 +2,10 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
-use Latte\Runtime\Defaults;
 use LogicException;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
+use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use Throwable;
 use function ksort;
 use function strtolower;
@@ -18,12 +18,13 @@ final class FunctionTable
 	/** @var array<string, array{string, string, bool}> */
 	private array $table = [];
 
-	public function __construct(?HarvestedCustoms $harvested = null)
-	{
-		$defaults = new Defaults();
+	/** @var array<string, true> */
+	private array $instanceDispatch = [];
 
+	public function __construct(DefaultCallables $defaults, ?HarvestedCustoms $harvested = null)
+	{
 		foreach ($defaults->getFunctions() as $name => $callable) {
-			$this->register($name, $callable);
+			$this->register($name, $callable, $defaults);
 		}
 
 		foreach (($harvested ?? HarvestedCustoms::empty())->getFunctions() as $name => $callable) {
@@ -62,30 +63,40 @@ final class FunctionTable
 
 		$base = $this->resolve($lowerName);
 
-		return $base === null ? null : [$base[0], $base[1], $base[2], false, false];
+		return $base === null
+			? null
+			: [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
 	}
-
-	// Defaults::getFunctions() (unlike getFilters()) never wraps an entry in an extension-guard
-	// closure - every value is a plain "Class::method" static array, so no CLOSURE_FALLBACKS-style
-	// hardcoded map is needed here.
 
 	/**
 	 * @param callable(mixed...): mixed $callable
 	 */
-	private function register(string $name, callable $callable): void
+	private function register(string $name, callable $callable, DefaultCallables $defaults): void
 	{
 		$key = strtolower($name);
 		if (isset($this->table[$key])) {
 			return;
 		}
 
-		$target = $this->resolveStaticTarget($callable);
-		if ($target === null) {
+		$target = $this->resolveDefaultTarget($callable) ?? $this->fallbackTarget($name, $defaults);
+		[$class, $method, $isStatic] = $target;
+		$this->table[$key] = [$class, $method, $this->isContentAware($class, $method)];
+		if (!$isStatic) {
+			$this->instanceDispatch[$key] = true;
+		}
+	}
+
+	/**
+	 * @return array{string, string, bool}
+	 */
+	private function fallbackTarget(string $name, DefaultCallables $defaults): array
+	{
+		$fallback = $defaults->functionFallback(strtolower($name));
+		if ($fallback === null) {
 			throw new LogicException("FunctionTable has no static-callable mapping for default function '$name'.");
 		}
 
-		[$class, $method] = $target;
-		$this->table[$key] = [$class, $method, $this->isContentAware($class, $method)];
+		return [$fallback[0], $fallback[1], true];
 	}
 
 	// Same degrade as FilterTable::registerHarvested() - an unrepresentable harvested callable

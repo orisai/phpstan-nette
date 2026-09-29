@@ -2,76 +2,77 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
-use Latte\Runtime\Defaults;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FilterTable;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
+use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use PHPStan\Parser\Parser;
 use PHPStan\Php\PhpVersion;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 use function strtolower;
 
-/**
- * @group latte2
- */
+// The table over the installed Latte's own stock filters: Latte 2 lists Latte\Runtime\Filters,
+// Latte 3 the Latte\Essential\Filters instance CoreExtension holds.
 final class FilterTableTest extends BaseTestCase
 {
 
 	public function testResolvesEveryDefaultFilter(): void
 	{
-		$table = new FilterTable();
-		foreach ((new Defaults())->getFilters() as $name => $callable) {
+		$table = self::table();
+		foreach (self::defaults()->getFilters() as $name => $callable) {
 			self::assertNotNull($table->resolve(strtolower($name)), "filter $name unresolved");
 		}
 	}
 
 	public function testUnknownFilterIsNull(): void
 	{
-		self::assertNull((new FilterTable())->resolve('definitelynotafilter'));
+		self::assertNull(self::table()->resolve('definitelynotafilter'));
 	}
 
 	public function testSliceResolvesToTheTypedHelper(): void
 	{
-		self::assertSame([Helpers::class, 'slice', false], (new FilterTable())->resolve('slice'));
+		self::assertSame([Helpers::class, 'slice', false], self::table()->resolve('slice'));
 	}
 
 	public function testFunctionOnlyDefaultNameIsNotAFilter(): void
 	{
-		// 'divisibleBy'/'even'/'odd' exist only in Defaults::getFunctions(), never in getFilters().
-		// Regression guard: FilterTable must never also register getFunctions() into the same
+		// 'divisibleBy'/'even'/'odd' exist only among the default functions, never the filters.
+		// Regression guard: FilterTable must never also register the functions into the same
 		// table, or `{$x|divisibleBy}` would silently "resolve" even though that syntax is invalid
 		// Latte.
-		self::assertNull((new FilterTable())->resolve('divisibleby'));
-		self::assertNull((new FilterTable())->resolve('even'));
-		self::assertNull((new FilterTable())->resolve('odd'));
+		self::assertNull(self::table()->resolve('divisibleby'));
+		self::assertNull(self::table()->resolve('even'));
+		self::assertNull(self::table()->resolve('odd'));
 	}
 
 	public function testTrimIsContentAware(): void
 	{
-		$resolved = (new FilterTable())->resolve('trim');
+		$resolved = self::table()->resolve('trim');
 
 		self::assertNotNull($resolved);
-		self::assertSame(['Latte\Runtime\Filters', 'trim', true], $resolved);
+		self::assertSame([self::filtersClass(), 'trim', true], $resolved);
 	}
 
 	public function testTruncateIsNotContentAware(): void
 	{
-		$resolved = (new FilterTable())->resolve('truncate');
+		$resolved = self::table()->resolve('truncate');
 
 		self::assertNotNull($resolved);
-		self::assertSame(['Latte\Runtime\Filters', 'truncate', false], $resolved);
+		self::assertSame([self::filtersClass(), 'truncate', false], $resolved);
 	}
 
 	public function testDataStreamAliasResolvesToCanonicalMethodCasing(): void
 	{
 		// resolve() keys are lowercase by contract (callers lowercase before calling, as
 		// FilterRewriter does); an un-lowercased lookup misses even though 'datastream' hits.
-		self::assertNull((new FilterTable())->resolve('dataStream'));
+		self::assertNull(self::table()->resolve('dataStream'));
 
-		$resolved = (new FilterTable())->resolve('datastream');
+		$resolved = self::table()->resolve('datastream');
 		self::assertNotNull($resolved);
 		self::assertSame('dataStream', $resolved[1]);
 	}
@@ -80,7 +81,7 @@ final class FilterTableTest extends BaseTestCase
 	{
 		self::assertSame(
 			['OriPhpstan\Nette\Latte\Runtime\Helpers', 'translate', false],
-			(new FilterTable())->resolve('translate'),
+			self::table()->resolve('translate'),
 		);
 	}
 
@@ -88,7 +89,7 @@ final class FilterTableTest extends BaseTestCase
 	{
 		self::assertSame(
 			['OriPhpstan\Nette\Latte\Runtime\Helpers', 'modifyDate', false],
-			(new FilterTable())->resolve('modifydate'),
+			self::table()->resolve('modifydate'),
 		);
 	}
 
@@ -96,8 +97,58 @@ final class FilterTableTest extends BaseTestCase
 	{
 		self::assertSame(
 			['Nette\Utils\Strings', 'webalize', false],
-			(new FilterTable())->resolve('webalize'),
+			self::table()->resolve('webalize'),
 		);
+	}
+
+	// Latte 2's Defaults wraps the mbstring-guarded filters in closures; the fallback map names the
+	// static method, so the resolution never depends on the guard branch PHP took.
+	public function testMbstringGuardedFiltersResolveToTheStaticMethod(): void
+	{
+		foreach (['capitalize', 'firstupper', 'lower', 'upper'] as $name) {
+			$resolved = self::table()->resolve($name);
+
+			self::assertNotNull($resolved, $name);
+			self::assertSame(self::filtersClass(), $resolved[0], $name);
+			self::assertSame([$name, false], [strtolower($resolved[1]), $resolved[2]], $name);
+		}
+	}
+
+	/**
+	 * @group latte3
+	 */
+	public function testLatte3InstanceMethodFiltersDispatchThroughAnInstance(): void
+	{
+		// CoreExtension registers Essential\Filters' locale-aware methods on its own instance.
+		foreach (['number', 'bytes', 'localdate', 'sort'] as $name) {
+			$resolved = self::table()->resolveForTemplate($name, null, null);
+
+			self::assertNotNull($resolved, $name);
+			self::assertSame('Latte\Essential\Filters', $resolved[0], $name);
+			self::assertFalse($resolved[3], $name);
+			self::assertFalse($resolved[4], $name);
+		}
+
+		self::assertSame(
+			['Latte\Essential\Filters', 'upper', false, false, true],
+			self::table()->resolveForTemplate('upper', null, null),
+		);
+	}
+
+	/**
+	 * @group latte3
+	 */
+	public function testLatte3CheckUrlIsAKnownFilter(): void
+	{
+		self::assertSame(['Latte\Essential\Filters', 'checkUrl', false], self::table()->resolve('checkurl'));
+	}
+
+	/**
+	 * @group latte31
+	 */
+	public function testLatte31LimitLambdaResolvesToTheTypedHelper(): void
+	{
+		self::assertSame([Helpers::class, 'limit', false], self::table()->resolve('limit'));
 	}
 
 	public function testHarvestedFilterWithStaticCallableIsRegistered(): void
@@ -106,7 +157,7 @@ final class FilterTableTest extends BaseTestCase
 
 		self::assertSame(
 			[self::class, 'fixtureFilterMethod', false],
-			(new FilterTable($harvested))->resolve('myfilter'),
+			self::table($harvested)->resolve('myfilter'),
 		);
 	}
 
@@ -114,7 +165,7 @@ final class FilterTableTest extends BaseTestCase
 	{
 		$harvested = self::harvestedWithFilter('myFilter', static fn (string $s = ''): string => $s);
 
-		self::assertNull((new FilterTable($harvested))->resolve('myfilter'));
+		self::assertNull(self::table($harvested)->resolve('myfilter'));
 	}
 
 	public function testBuiltInFilterWinsOverAHarvestedNameCollision(): void
@@ -125,22 +176,22 @@ final class FilterTableTest extends BaseTestCase
 		$harvested = self::harvestedWithFilter('upper', [self::class, 'fixtureFilterMethod']);
 
 		self::assertSame(
-			['Latte\Runtime\Filters', 'upper', false],
-			(new FilterTable($harvested))->resolve('upper'),
+			[self::filtersClass(), 'upper', false],
+			self::table($harvested)->resolve('upper'),
 		);
 	}
 
 	public function testResolveForTemplateWithoutATemplateTypeClassFallsBackToTheBaseTable(): void
 	{
 		self::assertSame(
-			['Latte\Runtime\Filters', 'upper', false, false, false],
-			(new FilterTable())->resolveForTemplate('upper', null, $this->templateTypeCustoms()),
+			[self::filtersClass(), 'upper', false, false, true],
+			self::table()->resolveForTemplate('upper', null, $this->templateTypeCustoms()),
 		);
 	}
 
 	public function testResolveForTemplateResolvesAPerTemplateFilterAsInstanceScoped(): void
 	{
-		$resolved = (new FilterTable())->resolveForTemplate(
+		$resolved = self::table()->resolveForTemplate(
 			'docfilter',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
@@ -156,7 +207,7 @@ final class FilterTableTest extends BaseTestCase
 	// TemplateTypeCustomsIntegrationTest::testStaticPerTemplateFilterDispatchesCleanlyThroughARealSpawn).
 	public function testResolveForTemplateFlagsAPerTemplateStaticFilterAsStatic(): void
 	{
-		$resolved = (new FilterTable())->resolveForTemplate(
+		$resolved = self::table()->resolveForTemplate(
 			'docstaticfilter',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
@@ -170,13 +221,13 @@ final class FilterTableTest extends BaseTestCase
 
 	public function testResolveForTemplateFallsBackToTheBaseTableWhenTheTemplateTypeClassHasNoMatchingFilter(): void
 	{
-		$resolved = (new FilterTable())->resolveForTemplate(
+		$resolved = self::table()->resolveForTemplate(
 			'upper',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame(['Latte\Runtime\Filters', 'upper', false, false, false], $resolved);
+		self::assertSame([self::filtersClass(), 'upper', false, false, true], $resolved);
 	}
 
 	// A DIFFERENT template's declaring class must never see this one's per-template filter -
@@ -185,7 +236,7 @@ final class FilterTableTest extends BaseTestCase
 	public function testResolveForTemplateNeverLeaksAPerTemplateFilterToAnUnrelatedTemplateTypeClass(): void
 	{
 		self::assertNull(
-			(new FilterTable())->resolveForTemplate('docfilter', self::class, $this->templateTypeCustoms()),
+			self::table()->resolveForTemplate('docfilter', self::class, $this->templateTypeCustoms()),
 		);
 	}
 
@@ -201,7 +252,7 @@ final class FilterTableTest extends BaseTestCase
 	{
 		$harvested = self::harvestedWithFilter('docFilter', [self::class, 'fixtureFilterMethod']);
 
-		$resolved = (new FilterTable($harvested))->resolveForTemplate(
+		$resolved = self::table($harvested)->resolveForTemplate(
 			'docfilter',
 			ProcessParamsQualificationFixture::class,
 			$this->templateTypeCustoms(),
@@ -221,6 +272,21 @@ final class FilterTableTest extends BaseTestCase
 	public static function fixtureFilterMethod(string $s = ''): string
 	{
 		return $s;
+	}
+
+	private static function table(?HarvestedCustoms $harvested = null): FilterTable
+	{
+		return new FilterTable(self::defaults(), $harvested);
+	}
+
+	private static function defaults(): DefaultCallables
+	{
+		return TestAdapter::create()->defaultCallables();
+	}
+
+	private static function filtersClass(): string
+	{
+		return InstalledVersionsGuard::latteMajor() === 2 ? 'Latte\Runtime\Filters' : 'Latte\Essential\Filters';
 	}
 
 	/**

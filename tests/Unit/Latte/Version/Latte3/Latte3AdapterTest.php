@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Version\Latte3;
 
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\Latte3\Latte3Adapter;
 use OriPhpstan\Nette\Latte\Version\Latte3\Latte3Compiler;
@@ -92,6 +93,26 @@ final class Latte3AdapterTest extends BaseTestCase
 				: ShapeFamily::LINE_MARKER_PATTERN_POS,
 			$pattern,
 		);
+	}
+
+	public function testDefaultCallablesAreTheCompileEnginesFiltersAndFunctions(): void
+	{
+		$defaults = $this->adapter()->defaultCallables();
+		$filters = $defaults->getFilters();
+		$functions = $defaults->getFunctions();
+
+		// CoreExtension, plus the bridges the compile engine carries: UIExtension's |modifyDate and
+		// the translator's |translate.
+		self::assertArrayHasKey('upper', $filters);
+		self::assertArrayHasKey('checkUrl', $filters);
+		self::assertArrayHasKey('modifyDate', $filters);
+		self::assertArrayHasKey('translate', $filters);
+		self::assertArrayHasKey('clamp', $functions);
+		self::assertArrayHasKey('hasBlock', $functions);
+		self::assertArrayNotHasKey('isLinkCurrent', $functions);
+		self::assertSame([Helpers::class, 'hasBlock'], $defaults->functionFallback('hasblock'));
+		self::assertSame([Helpers::class, 'limit'], $defaults->filterFallback('limit'));
+		self::assertNull($defaults->filterFallback('upper'));
 	}
 
 	public function testCreateIsTheFactorySeam(): void

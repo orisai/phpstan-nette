@@ -150,10 +150,10 @@ parameters:
 		# Latte ships no public accessor for its filter/function registry or macro-tag tokenizer.
 		-
 			identifiers: [new.internalClass, method.internalClass, classConstant.internalClass]
-			path: ../src/Latte/Postprocess/FilterTable.php
+			path: ../src/Latte/Version/Latte2/Latte2Adapter.php
 		-
 			identifiers: [new.internalClass, method.internalClass]
-			path: ../src/Latte/Postprocess/FunctionTable.php
+			path: ../tests/Unit/Latte/Version/Latte2/Latte2AdapterTest.php
 		-
 			identifiers: [new.internalClass, method.internalClass]
 			path: ../src/Latte/Postprocess/CaseMismatchScanner.php
@@ -177,13 +177,6 @@ parameters:
 			identifiers: [instanceof.internalClass, property.internalClass, property.dynamicName]
 			path: ../src/Latte/Version/Latte2/Latte2EngineReader.php
 
-		# Latte tests exercising the mechanisms above directly.
-		-
-			identifiers: [new.internalClass, method.internalClass]
-			path: ../tests/Unit/Latte/Postprocess/FilterTableTest.php
-		-
-			identifiers: [new.internalClass, method.internalClass]
-			path: ../tests/Unit/Latte/Postprocess/FunctionTableTest.php
 		-
 			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
 			path: ../tests/Unit/Latte/Reflection/LatteTemplateSourceLocatorTest.php

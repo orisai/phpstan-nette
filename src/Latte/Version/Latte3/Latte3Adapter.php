@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
+use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
@@ -49,6 +50,11 @@ final class Latte3Adapter implements LatteVersionAdapter
 	public function family(): ShapeFamily
 	{
 		return $this->family;
+	}
+
+	public function defaultCallables(): DefaultCallables
+	{
+		return $this->compiler->defaultCallables();
 	}
 
 	// Read before generate(): the passes mutate the parsed tree in place.

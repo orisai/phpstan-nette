@@ -98,15 +98,32 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
 - **Typed declaration injection** — the `extract($this->params)`/`extract($ʟ_args)` prologue Latte
   emits is replaced with explicit, typed parameters/locals (see *Typing templates* below), after the
   Latte 3 `main`/`prepare` split has been folded back into the Latte 2 layout (see above).
-- **Plumbing elimination** — a registry of eliminators for Latte 2.11's finite set of emission
+- **Plumbing elimination** — a registry of eliminators for each Latte line's finite set of emission
   patterns (escaping wrappers except `escapeJs()`, which JSON-encodes any value and therefore
   stays, `$ʟ_*` temporaries, snippet try/finally shells, `CachingIterator` wrapping,
   block-dispatch plumbing, forms/UI runtime calls, …) reduces generated scaffolding to the plain
-  analysable expressions underneath it, so strict-rule noise doesn't leak through.
+  analysable expressions underneath it, so strict-rule noise doesn't leak through. The shapes an
+  eliminator matches are a `PatternSet` per `ShapeFamily`, kept in one table
+  (`Eliminator/FamilyPatterns`): Latte 2 and 3.0 escape through `Latte\Runtime\Filters`, 3.1
+  through `HtmlHelpers`/`XmlHelpers`/`Helpers` and prints a plain attribute whole
+  (`formatAttribute(' title', $a)` reduces to `$a`); 3.x iterates with
+  `Latte\Essential\CachingIterator`, opens capturing shells with `ob_start(fn() => '')`, drops
+  `{templatePrint}`'s `printClass(...); exit;`, and 3.1 minifies `{spaceless}` through
+  `WhitespaceMinifier::start()/end()` and re-wraps a filtered `{capture}` in `Html` behind a
+  `$ʟ_fi->contentType` guard that goes with the shell. `FamilyCoverageTest` fails when a family
+  lacks a table; the consumers still matching their Latte 2 shapes on Latte 3 are the explicit
+  `FamilyPatterns::PROVISIONAL` list.
 - **Filter-call rewrite** — `($this->filters->truncate)(...)` becomes the real callable
-  (`\Latte\Runtime\Filters::truncate(...)`, `number_format(...)`, ...), so filter arguments check
-  against real vendor signatures; harvested and per-template custom filters/functions rewrite the
-  same way, against their own real signatures (see *Custom filters, functions and macros* below).
+  (`\Latte\Runtime\Filters::truncate(...)` on Latte 2, `\Latte\Essential\Filters::truncate(...)` on
+  Latte 3, `number_format(...)`, ...), so filter arguments check against real vendor signatures;
+  harvested and per-template custom filters/functions rewrite the same way, against their own real
+  signatures (see *Custom filters, functions and macros* below). The stock table comes from the
+  adapter's `defaultCallables()`: Latte 2's `Latte\Runtime\Defaults`, Latte 3's compile engine
+  (`CoreExtension` plus the bridges it carries), with typed `Helpers` standing in for the entries
+  Latte wraps in closures (`|limit`, `hasBlock()`, `hasTemplate()`, `|translate`, `|modifyDate`).
+  A Latte 3 function call passes the template first (`($this->global->fn->clamp)($this, $v)`); that
+  argument is dropped before the signature is matched, and an instance-method entry such as Latte
+  3's locale-aware `|number` dispatches through a typed receiver instead of a static call.
   The stock `slice` filter is redirected to a typed helper whose return follows the input (array in,
   an array whose values keep their type and whose keys widen to `int|string` out (refinements such
   as non-empty or list are dropped, because a slice can be empty and preserved keys need not be

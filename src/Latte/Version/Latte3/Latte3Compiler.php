@@ -14,6 +14,8 @@ use Nette\Caching\Storages\DevNullStorage;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Compile\VendorErrorContainment;
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
+use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use function array_merge;
 use function class_exists;
 use function preg_match;
@@ -175,9 +177,39 @@ final class Latte3Compiler
 		);
 	}
 
+	// The filters and functions the compile engine registers, so the table the rewriter resolves
+	// against and the names the compiler accepts agree. CoreExtension's inline lambdas (|limit,
+	// hasBlock(), hasTemplate()) have no static target of their own; Helpers stands in for them.
+	public function defaultCallables(): DefaultCallables
+	{
+		$engine = $this->createBaseEngine();
+
+		return new DefaultCallables(
+			$engine->getFilters(),
+			$engine->getFunctions(),
+			['limit' => [Helpers::class, 'limit']],
+			['hasblock' => [Helpers::class, 'hasBlock'], 'hastemplate' => [Helpers::class, 'hasTemplate']],
+		);
+	}
+
 	// Engine's own defaults (CoreExtension, SandboxExtension) plus the nette bridges the DI extension
 	// would add and the translator tags Latte 2 had in its core; the harvested set replaces this
 	// fixed list later. Strict types stay off on every line until a harvested engine says otherwise.
+	private function createBaseEngine(): Engine
+	{
+		$engine = new Engine();
+		$engine->setFeature(Feature::StrictTypes, false);
+		$engine->addExtension(new UIExtension(null));
+		$engine->addExtension(new FormsExtension());
+		if (class_exists(CacheExtension::class)) {
+			$engine->addExtension(new CacheExtension(new DevNullStorage()));
+		}
+
+		$engine->addExtension(new TranslatorExtension(null));
+
+		return $engine;
+	}
+
 	// The analysis extension is added last with the effective tag map of everything before it, so
 	// TagRecorder wraps the parser Latte itself would have dispatched to.
 
@@ -192,15 +224,7 @@ final class Latte3Compiler
 		array $passthroughAttributes
 	): Engine
 	{
-		$engine = new Engine();
-		$engine->setFeature(Feature::StrictTypes, false);
-		$engine->addExtension(new UIExtension(null));
-		$engine->addExtension(new FormsExtension());
-		if (class_exists(CacheExtension::class)) {
-			$engine->addExtension(new CacheExtension(new DevNullStorage()));
-		}
-
-		$engine->addExtension(new TranslatorExtension(null));
+		$engine = $this->createBaseEngine();
 
 		$baseTags = [];
 		foreach ($engine->getExtensions() as $extension) {

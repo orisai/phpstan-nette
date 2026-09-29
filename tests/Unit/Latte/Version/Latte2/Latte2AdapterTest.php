@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Version\Latte2;
 
+use Latte\Runtime\Defaults;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
@@ -18,6 +19,7 @@ use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
+use function array_keys;
 use function dirname;
 use function preg_match;
 use function sha1;
@@ -122,6 +124,18 @@ final class Latte2AdapterTest extends BaseTestCase
 	public function testFamily(): void
 	{
 		self::assertSame('2/macros', $this->adapter()->family()->id());
+	}
+
+	public function testDefaultCallablesAreLattesOwnDefaultsWithTheGuardedEntriesMapped(): void
+	{
+		$defaults = $this->adapter()->defaultCallables();
+
+		self::assertSame(array_keys((new Defaults())->getFilters()), array_keys($defaults->getFilters()));
+		self::assertSame(array_keys((new Defaults())->getFunctions()), array_keys($defaults->getFunctions()));
+		self::assertSame(['Latte\Runtime\Filters', 'upper'], $defaults->filterFallback('upper'));
+		self::assertSame(['Nette\Utils\Strings', 'webalize'], $defaults->filterFallback('webalize'));
+		self::assertNull($defaults->filterFallback('trim'));
+		self::assertNull($defaults->functionFallback('clamp'));
 	}
 
 	private function adapter(?LatteCompiler $compiler = null): LatteVersionAdapter
