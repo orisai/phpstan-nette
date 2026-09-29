@@ -4,9 +4,13 @@ namespace OriPhpstan\Nette\Latte\Postprocess;
 
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
+use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FamilyPatterns;
+use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PatternSet;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArgPlaceholder;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -55,9 +59,16 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 	private const CAPTURED_STRING_TEMP = "\u{29F}_tmp";
 
+	// The content-type conversion wrapping a filtered block/{translate} output.
+	public const ROLE_CONVERT_TO = 'convertTo';
+
+	// The variable a Latte 3 function call passes first (the template itself), dropped before
+	// the signature is matched.
+	public const ROLE_FUNCTION_TEMPLATE_ARG = 'functionTemplateArg';
+
 	private const FILTER_INFO_CLASS_NAMES = ['Latte\Runtime\FilterInfo', 'LR\FilterInfo'];
 
-	private const FILTERS_CLASS_NAMES = ['Latte\Runtime\Filters', 'LR\Filters'];
+	private PatternSet $patterns;
 
 	private ?FilterTable $filterTable = null;
 
@@ -69,6 +80,11 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 	/** @var array<Diagnostic> */
 	private array $diagnostics = [];
+
+	public function __construct(ShapeFamily $family)
+	{
+		$this->patterns = FamilyPatterns::for($family, self::class);
+	}
 
 	/**
 	 * @param array<Stmt> $stmts
@@ -120,7 +136,12 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 			$functionName = $this->matchGlobalFnAccessor($node->name);
 			if ($functionName !== null) {
-				return $this->rewriteResolvedCall($functionName, $node->args, $node->getStartLine(), 'function');
+				return $this->rewriteResolvedCall(
+					$functionName,
+					$this->withoutTemplateArg($node->args),
+					$node->getStartLine(),
+					'function',
+				);
 			}
 		}
 
@@ -310,9 +331,8 @@ final class FilterRewriter extends NodeVisitorAbstract
 	{
 		if (
 			!$node->class instanceof Name
-			|| !in_array($node->class->toString(), self::FILTERS_CLASS_NAMES, true)
 			|| !$node->name instanceof Identifier
-			|| $node->name->toString() !== 'convertTo'
+			|| !$this->patterns->isStaticCall(self::ROLE_CONVERT_TO, $node->class->toString(), $node->name->toString())
 		) {
 			return false;
 		}
@@ -327,6 +347,24 @@ final class FilterRewriter extends NodeVisitorAbstract
 		$node->args[0] = new Arg($this->filterInfoCall());
 
 		return $node;
+	}
+
+	/**
+	 * @param array<Arg|ArgPlaceholder|VariadicPlaceholder> $args
+	 * @return array<Arg|ArgPlaceholder|VariadicPlaceholder>
+	 */
+	private function withoutTemplateArg(array $args): array
+	{
+		$first = $args[0] ?? null;
+		if (
+			$this->patterns->has(self::ROLE_FUNCTION_TEMPLATE_ARG)
+			&& $first instanceof Arg
+			&& $this->isVariableNamed($first->value, $this->patterns->name(self::ROLE_FUNCTION_TEMPLATE_ARG))
+		) {
+			return array_slice($args, 1);
+		}
+
+		return $args;
 	}
 
 	/**

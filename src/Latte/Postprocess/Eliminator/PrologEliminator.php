@@ -19,10 +19,22 @@ use function count;
 final class PrologEliminator extends EliminatorVisitor
 {
 
+	public const ROLE_DEFINED_VARS = 'definedVars';
+
+	public const ROLE_EXTENDS_GUARD = 'extendsGuard';
+
+	public const ROLE_OVERWRITE_WARNING = 'overwriteWarning';
+
+	public const ROLE_EMPTY_PREPARE = 'emptyPrepare';
+
 	public function describePattern(): string
 	{
-		return 'return get_defined_vars() -> return []; drop getParentName() extends-guard; '
-			. 'drop prepare() overwrite-warning foreach; drop prepare() when it becomes empty';
+		$patterns = $this->patterns();
+
+		return 'return get_defined_vars() -> return []; '
+			. ($patterns->has(self::ROLE_EXTENDS_GUARD) ? 'drop getParentName() extends-guard; ' : '')
+			. 'drop prepare() overwrite-warning foreach'
+			. ($patterns->has(self::ROLE_EMPTY_PREPARE) ? '; drop prepare() when it becomes empty' : '');
 	}
 
 	/**
@@ -34,7 +46,7 @@ final class PrologEliminator extends EliminatorVisitor
 			return $this->simplifyReturn($node);
 		}
 
-		if ($node instanceof If_ && $this->isExtendsGuard($node)) {
+		if ($node instanceof If_ && $this->patterns()->has(self::ROLE_EXTENDS_GUARD) && $this->isExtendsGuard($node)) {
 			return NodeVisitor::REMOVE_NODE;
 		}
 
@@ -42,7 +54,11 @@ final class PrologEliminator extends EliminatorVisitor
 			return NodeVisitor::REMOVE_NODE;
 		}
 
-		if ($node instanceof ClassMethod && $node->name->toString() === 'lattePrepare' && $node->stmts === []) {
+		if (
+			$node instanceof ClassMethod
+			&& $this->patterns()->hasName(self::ROLE_EMPTY_PREPARE, $node->name->toString())
+			&& $node->stmts === []
+		) {
 			return NodeVisitor::REMOVE_NODE;
 		}
 
@@ -70,7 +86,7 @@ final class PrologEliminator extends EliminatorVisitor
 			return false;
 		}
 
-		return $this->isThisMethodCall($node->cond, 'getParentName');
+		return $this->isThisMethodCall($node->cond, $this->patterns()->name(self::ROLE_EXTENDS_GUARD));
 	}
 
 	private function isOverwriteWarningGuard(If_ $node): bool
@@ -88,7 +104,8 @@ final class PrologEliminator extends EliminatorVisitor
 
 	private function isOverwriteWarningForeach(Foreach_ $foreach): bool
 	{
-		if (!$foreach->expr instanceof FuncCall || !$this->isFuncCallNamed($foreach->expr, 'array_intersect_key')) {
+		[$intersect, $trigger] = $this->patterns()->names(self::ROLE_OVERWRITE_WARNING);
+		if (!$foreach->expr instanceof FuncCall || !$this->isFuncCallNamed($foreach->expr, $intersect)) {
 			return false;
 		}
 
@@ -100,12 +117,15 @@ final class PrologEliminator extends EliminatorVisitor
 
 		return $inner instanceof Expression
 			&& $inner->expr instanceof FuncCall
-			&& $this->isFuncCallNamed($inner->expr, 'trigger_error');
+			&& $this->isFuncCallNamed($inner->expr, $trigger);
 	}
 
 	private function isGetDefinedVarsCall(?Node $node): bool
 	{
-		if (!$node instanceof FuncCall || !$this->isFuncCallNamed($node, 'get_defined_vars')) {
+		if (
+			!$node instanceof FuncCall
+			|| !$this->isFuncCallNamed($node, $this->patterns()->name(self::ROLE_DEFINED_VARS))
+		) {
 			return false;
 		}
 

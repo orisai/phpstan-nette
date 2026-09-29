@@ -3,28 +3,30 @@
 namespace OriPhpstan\Nette\Latte\Postprocess\Eliminator;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Identifier;
 use function count;
-use function in_array;
 
 final class EscapingEliminator extends EliminatorVisitor
 {
 
-	private const CLASS_NAMES = ['Latte\Runtime\Filters', 'LR\Filters'];
+	// Escaping and URL-check calls whose first argument is the printed value.
+	public const ROLE_UNWRAP_VALUE = 'unwrapValue';
 
-	private const METHOD_NAMES = [
-		'escapeHtmlText',
-		'escapeHtmlAttr',
-		'escapeHtmlComment',
-		'escapeXml',
-		'escapeCss',
-		'escapeICal',
-		'safeUrl',
-	];
+	// Whole-attribute formatters whose second argument is the attribute value.
+	public const ROLE_UNWRAP_ATTRIBUTE_VALUE = 'unwrapAttributeValue';
+
+	// URL-check filters applied as ($this->filters->name)($url).
+	public const ROLE_UNWRAP_FILTER = 'unwrapFilter';
 
 	public function describePattern(): string
 	{
-		return 'unwrap Latte\Runtime\Filters::escape*/safeUrl($e) -> $e, recursively; escapeJs kept (JSON-encodes any value)';
+		return 'unwrap escaping/URL-check calls to their argument, recursively; escapeJs kept (JSON-encodes any value): '
+			. $this->patterns()->describe();
 	}
 
 	/**
@@ -32,26 +34,64 @@ final class EscapingEliminator extends EliminatorVisitor
 	 */
 	public function leaveNode(Node $node)
 	{
-		if (!$node instanceof StaticCall || !$this->isEscapeCall($node)) {
+		if ($node instanceof StaticCall) {
+			return $this->unwrapStaticCall($node);
+		}
+
+		if ($node instanceof FuncCall && $node->name instanceof PropertyFetch && count($node->args) === 1) {
+			return $this->isUnwrappedFilter($node->name) ? $this->argValue($node, 0) : null;
+		}
+
+		return null;
+	}
+
+	private function unwrapStaticCall(StaticCall $node): ?Expr
+	{
+		if (!$node->class instanceof Node\Name || !$node->name instanceof Identifier) {
 			return null;
 		}
 
-		$arg = $node->args[0];
+		$class = $node->class->toString();
+		$method = $node->name->toString();
+		$patterns = $this->patterns();
 
-		return $arg instanceof Node\Arg ? $arg->value : null;
+		if ($patterns->isStaticCall(self::ROLE_UNWRAP_VALUE, $class, $method) && count($node->args) === 1) {
+			return $this->argValue($node, 0);
+		}
+
+		if ($patterns->isStaticCall(self::ROLE_UNWRAP_ATTRIBUTE_VALUE, $class, $method) && count($node->args) >= 2) {
+			return $this->argValue($node, 1);
+		}
+
+		return null;
 	}
 
-	private function isEscapeCall(StaticCall $node): bool
+	private function isUnwrappedFilter(PropertyFetch $name): bool
 	{
-		if (!$node->class instanceof Node\Name || !in_array($node->class->toString(), self::CLASS_NAMES, true)) {
+		if (
+			!$name->name instanceof Identifier
+			|| !$this->patterns()->hasName(self::ROLE_UNWRAP_FILTER, $name->name->toString())
+		) {
 			return false;
 		}
 
-		if (!$node->name instanceof Node\Identifier || !in_array($node->name->toString(), self::METHOD_NAMES, true)) {
-			return false;
-		}
+		$filters = $name->var;
 
-		return count($node->args) === 1;
+		return $filters instanceof PropertyFetch
+			&& $filters->name instanceof Identifier
+			&& $filters->name->toString() === 'filters'
+			&& $filters->var instanceof Variable
+			&& $filters->var->name === 'this';
+	}
+
+	/**
+	 * @param StaticCall|FuncCall $call
+	 */
+	private function argValue(Expr $call, int $index): ?Expr
+	{
+		$arg = $call->args[$index] ?? null;
+
+		return $arg instanceof Node\Arg ? $arg->value : null;
 	}
 
 }

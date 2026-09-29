@@ -43,21 +43,28 @@ final class ControlFlowEliminator extends EliminatorVisitor
 
 	private const LOC_TEMP = "\u{29F}_loc";
 
-	private const TAG_IF_TEMP = "\u{29F}_if";
-
 	private const IF_CAPTURE_PREFIX = "\u{29F}_if"; // Bare-Variable match only; ʟ_ifc is always ArrayDimFetch-wrapped, so the ifc prefix collision cannot fire.
 
 	private const SWITCH_RENAME = 'latteSwitch';
 
 	private const EXCEPTION_RENAME = 'latteException';
 
+	// The buffer call opening {try}'s catch block and the one closing it (Latte 2 only).
+	public const ROLE_TRY_CATCH_OPEN = 'tryCatchOpen';
+
+	public const ROLE_TRY_CATCH_CLOSE = 'tryCatchClose';
+
+	// n:tag-if's own temp (Latte 2; Latte 3 reuses n:tag's $ʟ_tag).
+	public const ROLE_TAG_IF_TEMP = 'tagIfTemp';
+
 	public function describePattern(): string
 	{
 		return 'capture-form {if} ob_start/try/finally shell -> plain if (COND) { BODY }; '
 			. '$ʟ_switch temp renamed (if/elseif in_array chain kept); {try}/{rollback} ob_start/$ʟ_try '
 			. 'stash+restore dropped, catch (\Throwable $ʟ_e) renamed to $latteException, finally dropped; '
-			. '{ifchanged} $ʟ_loc compare shell -> if (true) { compared expr assigned; BODY }; '
-			. 'n:tag-if $ʟ_if[n] temp renamed';
+			. '{ifchanged} $ʟ_loc compare shell -> if (true) { compared expr assigned; BODY }'
+			. ($this->patterns()->has(self::ROLE_TAG_IF_TEMP) ? '; n:tag-if $ʟ_if[n] temp renamed' : '')
+			. ': ' . $this->patterns()->describe();
 	}
 
 	/**
@@ -96,7 +103,8 @@ final class ControlFlowEliminator extends EliminatorVisitor
 
 		if (
 			$node instanceof ArrayDimFetch
-			&& $this->isVariableNamed($node->var, self::TAG_IF_TEMP)
+			&& $this->patterns()->has(self::ROLE_TAG_IF_TEMP)
+			&& $this->isVariableNamed($node->var, $this->patterns()->name(self::ROLE_TAG_IF_TEMP))
 			&& $node->dim instanceof Int_
 		) {
 			return new Variable('latteTagIf' . $node->dim->value);
@@ -119,7 +127,7 @@ final class ControlFlowEliminator extends EliminatorVisitor
 			$stmt = $stmts[$i];
 			$next = $stmts[$i + 1] ?? null;
 
-			if ($this->isNoopObStart($stmt) && $next instanceof TryCatch) {
+			if (NoopObStart::matches($stmt, $this->patterns()) && $next instanceof TryCatch) {
 				$tryShell = $this->rebuildTryShell($next);
 				if ($tryShell !== null) {
 					$result[] = $tryShell;
@@ -165,26 +173,6 @@ final class ControlFlowEliminator extends EliminatorVisitor
 			&& $this->isVariableNamed($item->value->left, self::ITERATOR_TEMP);
 	}
 
-	private function isNoopObStart(Stmt $stmt): bool
-	{
-		if (!$stmt instanceof Expression || !$stmt->expr instanceof FuncCall) {
-			return false;
-		}
-
-		if (!$this->isFuncCallNamed($stmt->expr, 'ob_start') || count($stmt->expr->args) !== 1) {
-			return false;
-		}
-
-		$arg = $stmt->expr->args[0];
-		if (!$arg instanceof Node\Arg || !$arg->value instanceof Node\Expr\Closure) {
-			return false;
-		}
-
-		$closure = $arg->value;
-
-		return $closure->params === [] && $closure->uses === [] && $closure->stmts === [];
-	}
-
 	private function rebuildTryShell(TryCatch $node): ?TryCatch
 	{
 		if (count($node->catches) !== 1) {
@@ -202,18 +190,20 @@ final class ControlFlowEliminator extends EliminatorVisitor
 
 		$catchStmts = $catch->stmts;
 		$lastIndex = count($catchStmts) - 1;
-		if ($lastIndex < 1) {
+		$close = $this->patterns()->names(self::ROLE_TRY_CATCH_CLOSE);
+		if ($lastIndex < count($close)) {
 			return null;
 		}
 
-		if (
-			!$this->isBareFuncCall($catchStmts[0], 'ob_end_clean')
-			|| !$this->isBareFuncCall($catchStmts[$lastIndex], 'ob_start')
-		) {
+		if (!$this->isBareFuncCall($catchStmts[0], $this->patterns()->name(self::ROLE_TRY_CATCH_OPEN))) {
 			return null;
 		}
 
-		$middleStmts = array_slice($catchStmts, 1, -1);
+		if ($close !== [] && !$this->isBareFuncCall($catchStmts[$lastIndex], $close[0])) {
+			return null;
+		}
+
+		$middleStmts = array_slice($catchStmts, 1, $close === [] ? null : -1);
 		$newCatch = new Catch_($catch->types, $catch->var, $middleStmts);
 
 		return new TryCatch($node->stmts, [$newCatch], null);

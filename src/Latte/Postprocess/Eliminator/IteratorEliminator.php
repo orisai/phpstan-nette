@@ -24,13 +24,15 @@ use function count;
 final class IteratorEliminator extends EliminatorVisitor
 {
 
-	private const CACHING_ITERATOR_CLASS = 'Latte\Runtime\CachingIterator';
+	// The CachingIterator class {foreach} instantiates.
+	public const ROLE_CACHING_ITERATOR = 'cachingIterator';
+
+	// The n:foreach $iterations counter Latte 2 keeps next to the iterator.
+	public const ROLE_ITERATIONS_VAR = 'iterationsVar';
 
 	private const ITERATOR_TEMP = "\u{29F}_it";
 
 	private const ITERATOR_VAR = 'iterator';
-
-	private const ITERATIONS_VAR = 'iterations';
 
 	private const MARKER_ITERATOR_NEW = 'iteratorEliminator.iteratorNew';
 
@@ -38,8 +40,9 @@ final class IteratorEliminator extends EliminatorVisitor
 	{
 		return 'foreach ($iterator = $ʟ_it = new CachingIterator(EXPR, $ʟ_it ?? null) as ...) -> '
 			. '$iterator = new CachingIterator(EXPR); foreach (EXPR as ...); drop '
-			. '$iterator = $ʟ_it = $ʟ_it->getParent() restores and adjacent $iterations counters '
-			. '(plain foreach untouched)';
+			. '$iterator = $ʟ_it = $ʟ_it->getParent() restores'
+			. ($this->patterns()->has(self::ROLE_ITERATIONS_VAR) ? ' and adjacent $iterations counters' : '')
+			. ' (plain foreach untouched): ' . $this->patterns()->describe();
 	}
 
 	/**
@@ -77,7 +80,7 @@ final class IteratorEliminator extends EliminatorVisitor
 		$iteratorAssign = new Expression(
 			new Assign(
 				new Variable(self::ITERATOR_VAR),
-				new New_(new FullyQualified(self::CACHING_ITERATOR_CLASS), [new Arg($expr)]),
+				new New_(new FullyQualified($this->patterns()->name(self::ROLE_CACHING_ITERATOR)), [new Arg($expr)]),
 			),
 		);
 		$iteratorAssign->setAttribute(self::MARKER_ITERATOR_NEW, true);
@@ -120,7 +123,8 @@ final class IteratorEliminator extends EliminatorVisitor
 
 	private function isCachingIteratorClass(New_ $new): bool
 	{
-		return $new->class instanceof Node\Name && $new->class->toString() === self::CACHING_ITERATOR_CLASS;
+		return $new->class instanceof Node\Name
+			&& $new->class->toString() === $this->patterns()->name(self::ROLE_CACHING_ITERATOR);
 	}
 
 	private function isIteratorTempCoalesceNull(Expr $expr): bool
@@ -156,12 +160,15 @@ final class IteratorEliminator extends EliminatorVisitor
 	private function stripTrailingIterationsIncrement(array $stmts): array
 	{
 		$lastIndex = count($stmts) - 1;
-		if ($lastIndex < 0) {
+		if ($lastIndex < 0 || !$this->patterns()->has(self::ROLE_ITERATIONS_VAR)) {
 			return $stmts;
 		}
 
 		$last = $stmts[$lastIndex];
-		if ($last instanceof Expression && $this->isPostIncVariable($last->expr, self::ITERATIONS_VAR)) {
+		if (
+			$last instanceof Expression
+			&& $this->isPostIncVariable($last->expr, $this->patterns()->name(self::ROLE_ITERATIONS_VAR))
+		) {
 			array_pop($stmts);
 		}
 
@@ -179,6 +186,10 @@ final class IteratorEliminator extends EliminatorVisitor
 	 */
 	private function normalizeStmts(array $stmts): array
 	{
+		if (!$this->patterns()->has(self::ROLE_ITERATIONS_VAR)) {
+			return $stmts;
+		}
+
 		$result = [];
 		$count = count($stmts);
 
@@ -200,7 +211,7 @@ final class IteratorEliminator extends EliminatorVisitor
 	{
 		return $stmt instanceof Expression
 			&& $stmt->expr instanceof Assign
-			&& $this->isVariableNamed($stmt->expr->var, self::ITERATIONS_VAR)
+			&& $this->isVariableNamed($stmt->expr->var, $this->patterns()->name(self::ROLE_ITERATIONS_VAR))
 			&& $stmt->expr->expr instanceof Int_
 			&& $stmt->expr->expr->value === 0;
 	}

@@ -20,6 +20,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Php\PhpVersion;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 
 /**
@@ -32,7 +33,11 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('webalize', 5);
 
-		(new FilterRewriter())->rewrite([$expression], new FilterTable(), new FunctionTable());
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+			[$expression],
+			new FilterTable(),
+			new FunctionTable(),
+		);
 
 		$call = $expression->expr;
 		self::assertInstanceOf(StaticCall::class, $call);
@@ -47,7 +52,11 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('webAlize', 1);
 
-		(new FilterRewriter())->rewrite([$expression], new FilterTable(), new FunctionTable());
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+			[$expression],
+			new FilterTable(),
+			new FunctionTable(),
+		);
 
 		self::assertSame('webAlize', $expression->expr->getAttribute(FilterRewriter::FILTER_PROVENANCE_ATTRIBUTE));
 	}
@@ -56,7 +65,11 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('definitelyNotAFilter', 3);
 
-		(new FilterRewriter())->rewrite([$expression], new FilterTable(), new FunctionTable());
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+			[$expression],
+			new FilterTable(),
+			new FunctionTable(),
+		);
 
 		$call = $expression->expr;
 		self::assertInstanceOf(StaticCall::class, $call);
@@ -90,7 +103,11 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('webalize', 1);
 
-		(new FilterRewriter())->rewrite([$expression], new FilterTable(), new FunctionTable());
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+			[$expression],
+			new FilterTable(),
+			new FunctionTable(),
+		);
 
 		self::assertNull($expression->expr->getAttribute(FilterRewriter::FUNCTION_NO_TIP_ATTRIBUTE));
 	}
@@ -104,7 +121,7 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('docFilter', 4);
 
-		(new FilterRewriter())->rewrite(
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
 			[$expression],
 			new FilterTable(),
 			new FunctionTable(),
@@ -137,7 +154,7 @@ final class FilterRewriterTest extends BaseTestCase
 	{
 		$expression = $this->filtersAccessorExpression('docFilter', 1);
 
-		(new FilterRewriter())->rewrite(
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
 			[$expression],
 			new FilterTable(),
 			new FunctionTable(),
@@ -167,7 +184,11 @@ final class FilterRewriterTest extends BaseTestCase
 		$funcCall = new FuncCall($nameFetch, [new Arg(new Variable('x'))], ['startLine' => $line, 'endLine' => $line]);
 		$expression = new Expression($funcCall, ['startLine' => $line, 'endLine' => $line]);
 
-		(new FilterRewriter())->rewrite([$expression], new FilterTable(), new FunctionTable());
+		(new FilterRewriter(TestAdapter::factory()->family()))->rewrite(
+			[$expression],
+			new FilterTable(),
+			new FunctionTable(),
+		);
 
 		$call = $expression->expr;
 		self::assertInstanceOf(StaticCall::class, $call);

@@ -64,6 +64,22 @@ final class ShapeFamily
 		return $latte !== null && ($latte[0] === 2 || ($latte[0] === 3 && $latte[1] <= 1));
 	}
 
+	// Every combination detect() can produce.
+
+	/**
+	 * @return list<self>
+	 */
+	public static function all(): array
+	{
+		return [
+			new self(self::LATTE_2, self::FORMS_MACROS),
+			new self(self::LATTE_30, self::FORMS_ITEM),
+			new self(self::LATTE_30, self::FORMS_PROVIDER),
+			new self(self::LATTE_31, self::FORMS_ITEM),
+			new self(self::LATTE_31, self::FORMS_PROVIDER),
+		];
+	}
+
 	public function id(): string
 	{
 		return $this->latteLine . '/' . $this->formsBridge;

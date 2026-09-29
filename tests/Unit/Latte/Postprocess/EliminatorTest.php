@@ -16,6 +16,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FormsMacroEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Testing\PHPStanTestCase;
@@ -32,22 +33,24 @@ final class EliminatorTest extends BaseTestCase
 
 	public function testEveryEliminatorDescribesItsPattern(): void
 	{
-		/** @var array<EliminatorVisitor> $eliminators */
-		$eliminators = [
-			new AttrShellEliminator(),
-			new BlockDispatchEliminator(),
-			new CaptureEliminator(),
-			new ControlFlowEliminator(),
-			new DevTagEliminator(),
-			new EscapingEliminator(),
-			new FormsMacroEliminator(),
-			new IteratorEliminator(),
-			new PrologEliminator(),
-			new UiMacroEliminator(),
-		];
+		foreach (ShapeFamily::all() as $family) {
+			/** @var array<EliminatorVisitor> $eliminators */
+			$eliminators = [
+				new AttrShellEliminator($family),
+				new BlockDispatchEliminator($family),
+				new CaptureEliminator($family),
+				new ControlFlowEliminator($family),
+				new DevTagEliminator($family),
+				new EscapingEliminator($family),
+				new FormsMacroEliminator($family),
+				new IteratorEliminator($family),
+				new PrologEliminator($family),
+				new UiMacroEliminator($family),
+			];
 
-		foreach ($eliminators as $eliminator) {
-			self::assertNotSame('', $eliminator->describePattern());
+			foreach ($eliminators as $eliminator) {
+				self::assertNotSame('', $eliminator->describePattern(), $family->id());
+			}
 		}
 	}
 
@@ -161,7 +164,7 @@ final class EliminatorTest extends BaseTestCase
 
 		$stmts = PHPStanTestCase::getParser()->parseString($code);
 		$traverser = new NodeTraverser();
-		$traverser->addVisitor(new PrologEliminator());
+		$traverser->addVisitor(new PrologEliminator(new ShapeFamily(ShapeFamily::LATTE_2, ShapeFamily::FORMS_MACROS)));
 		$stmts = $traverser->traverse($stmts);
 
 		$printed = (new Standard())->prettyPrintFile($stmts);

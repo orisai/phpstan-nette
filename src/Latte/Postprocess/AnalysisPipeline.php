@@ -275,17 +275,18 @@ final class AnalysisPipeline
 		// never enterBlockLayer/copyBlockLayer) and from every ob_start-keyed try matcher above (an
 		// enterBlockLayer/copyBlockLayer MethodCall or an If_ can never satisfy a FuncCall named
 		// ob_start).
+		$family = $adapter->family();
 		$traverser = new NodeTraverser();
-		$traverser->addVisitor(new PrologEliminator());
-		$traverser->addVisitor(new EscapingEliminator());
-		$traverser->addVisitor(new IteratorEliminator());
-		$traverser->addVisitor(new ControlFlowEliminator());
-		$traverser->addVisitor(new DevTagEliminator());
-		$traverser->addVisitor(new CaptureEliminator());
-		$traverser->addVisitor(new AttrShellEliminator());
-		$traverser->addVisitor(new UiMacroEliminator());
-		$traverser->addVisitor(new FormsMacroEliminator());
-		$traverser->addVisitor(new BlockDispatchEliminator());
+		$traverser->addVisitor(new PrologEliminator($family));
+		$traverser->addVisitor(new EscapingEliminator($family));
+		$traverser->addVisitor(new IteratorEliminator($family));
+		$traverser->addVisitor(new ControlFlowEliminator($family));
+		$traverser->addVisitor(new DevTagEliminator($family));
+		$traverser->addVisitor(new CaptureEliminator($family));
+		$traverser->addVisitor(new AttrShellEliminator($family));
+		$traverser->addVisitor(new UiMacroEliminator($family));
+		$traverser->addVisitor(new FormsMacroEliminator($family));
+		$traverser->addVisitor(new BlockDispatchEliminator($family));
 
 		/** @var array<Stmt> $processed */
 		$processed = $traverser->traverse($stmts);
@@ -306,8 +307,8 @@ final class AnalysisPipeline
 		// below - never to an unrelated file that happens to declare the same {templateType}.
 		// FilterTable/FunctionTable are read from Latte 2's Latte\Runtime\Defaults; a Latte 3 family
 		// keeps its filter and function calls as compiled.
-		$filterDiagnostics = $adapter->family()->latteLine === ShapeFamily::LATTE_2
-			? (new FilterRewriter())->rewrite(
+		$filterDiagnostics = $family->latteLine === ShapeFamily::LATTE_2
+			? (new FilterRewriter($family))->rewrite(
 				$processed,
 				$this->filterTable(),
 				$this->functionTable(),

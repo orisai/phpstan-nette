@@ -7,9 +7,12 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
-use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
+use PhpParser\Node\Expr\BinaryOp\Identical;
+use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
@@ -25,8 +28,10 @@ use PhpParser\Node\Stmt\Finally_;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\TryCatch;
+use PhpParser\NodeVisitor;
 use function count;
 use function in_array;
+use function is_string;
 
 final class CaptureEliminator extends EliminatorVisitor
 {
@@ -41,23 +46,39 @@ final class CaptureEliminator extends EliminatorVisitor
 
 	private const HELPERS_CLASS = Helpers::class;
 
-	private const SPACELESS_CALLABLES = [
-		'Latte\Runtime\Filters::spacelessHtmlHandler',
-		'Latte\Runtime\Filters::spacelessText',
-	];
+	// {spaceless} as an ob_start(handler, 4096)/try/finally ob_end_flush() shell: the handler callables.
+	public const ROLE_SPACELESS_HANDLER = 'spacelessHandler';
+
+	// {spaceless} as a start()/try/finally end() pair of static calls (Latte 3.1).
+	public const ROLE_SPACELESS_START = 'spacelessStart';
+
+	public const ROLE_SPACELESS_END = 'spacelessEnd';
+
+	// The `if ($ʟ_fi->contentType === 'html' && $v !== '') $v = new Html($v);` guard Latte 3.1 appends
+	// to a filtered {capture}: the compared FilterInfo property.
+	public const ROLE_FILTERED_CAPTURE_HTML_GUARD = 'filteredCaptureHtmlGuard';
 
 	public function describePattern(): string
 	{
-		return '{capture $v}/{translate} ob_start(function(){})/try/finally $ʟ_tmp = ob_get_length() ? new Html(ob_get_clean()) '
+		$patterns = $this->patterns();
+
+		return '{capture $v}/{translate} ob_start(noop)/try/finally $ʟ_tmp = ob_get_length() ? new Html(ob_get_clean()) '
 			. ': ob_get_clean() (or bare ob_get_clean() for {translate}) shell -> body statements + $ʟ_tmp = Helpers::capturedString(); '
 			. 'further collapsed to $v = Helpers::capturedString() when immediately followed by the unfiltered '
 			. '$ʟ_fi = new FilterInfo(...); $v = $ʟ_tmp; tail (filtered-capture/translate filterContent tails referencing $ʟ_fi '
-			. 'are left in place); {spaceless} ob_start(spacelessHtmlHandler|spacelessText, 4096)/try/finally '
-			. 'ob_end_flush() shell -> body statements only';
+			. 'are left in place); {spaceless} '
+			. ($patterns->has(
+				self::ROLE_SPACELESS_HANDLER,
+			) ? 'ob_start(handler, 4096)/try/finally ob_end_flush()' : 'start()/try/finally end()')
+			. ' shell -> body statements only'
+			. ($patterns->has(
+				self::ROLE_FILTERED_CAPTURE_HTML_GUARD,
+			) ? '; filtered-capture Html re-wrap guard dropped' : '')
+			. ': ' . $patterns->describe();
 	}
 
 	/**
-	 * @return Node|int|null
+	 * @return int|null
 	 */
 	public function leaveNode(Node $node)
 	{
@@ -66,6 +87,10 @@ final class CaptureEliminator extends EliminatorVisitor
 		}
 
 		if ($node instanceof If_) {
+			if ($this->isFilteredCaptureHtmlGuard($node)) {
+				return NodeVisitor::REMOVE_NODE;
+			}
+
 			$node->stmts = $this->normalizeStmts($node->stmts);
 		}
 
@@ -74,6 +99,61 @@ final class CaptureEliminator extends EliminatorVisitor
 		}
 
 		return null;
+	}
+
+	private function isFilteredCaptureHtmlGuard(If_ $node): bool
+	{
+		$patterns = $this->patterns();
+		if (!$patterns->has(self::ROLE_FILTERED_CAPTURE_HTML_GUARD) || $node->elseifs !== [] || $node->else !== null) {
+			return false;
+		}
+
+		$cond = $node->cond;
+		if (
+			!$cond instanceof BooleanAnd
+			|| !$cond->left instanceof Identical
+			|| !$cond->right instanceof NotIdentical
+		) {
+			return false;
+		}
+
+		$contentType = $cond->left->left;
+		if (
+			!$contentType instanceof PropertyFetch
+			|| !$this->isVariableNamed($contentType->var, self::FILTER_INFO_TEMP)
+			|| !$contentType->name instanceof Identifier
+			|| $contentType->name->toString() !== $patterns->name(self::ROLE_FILTERED_CAPTURE_HTML_GUARD)
+			|| !$cond->left->right instanceof String_
+		) {
+			return false;
+		}
+
+		$captured = $cond->right->left;
+		if (
+			!$captured instanceof Variable
+			|| !is_string($captured->name)
+			|| !$cond->right->right instanceof String_
+			|| $cond->right->right->value !== ''
+			|| count($node->stmts) !== 1
+		) {
+			return false;
+		}
+
+		$stmt = $node->stmts[0];
+		if (!$stmt instanceof Expression || !$stmt->expr instanceof Assign) {
+			return false;
+		}
+
+		$rewrap = $stmt->expr->expr;
+
+		return $stmt->expr->var instanceof Variable
+			&& $stmt->expr->var->name === $captured->name
+			&& $rewrap instanceof New_
+			&& $rewrap->class instanceof Name
+			&& in_array($rewrap->class->toString(), self::HTML_CLASS_NAMES, true)
+			&& count($rewrap->args) === 1
+			&& $rewrap->args[0] instanceof Arg
+			&& $this->isVariableNamed($rewrap->args[0]->value, $captured->name);
 	}
 
 	/**
@@ -91,7 +171,7 @@ final class CaptureEliminator extends EliminatorVisitor
 			$next = $stmts[$i + 1] ?? null;
 
 			if ($next instanceof TryCatch) {
-				if ($this->isSpacelessObStart($stmt) && $this->isSpacelessFinally($next)) {
+				if ($this->isSpacelessShell($stmt, $next)) {
 					foreach ($this->normalizeStmts($next->stmts) as $bodyStmt) {
 						$result[] = $bodyStmt;
 					}
@@ -134,7 +214,11 @@ final class CaptureEliminator extends EliminatorVisitor
 	 */
 	private function matchObCaptureShell(Stmt $obStart, TryCatch $tryCatch): ?array
 	{
-		if (!$this->isEmptyObStart($obStart) || count($tryCatch->catches) !== 0 || $tryCatch->finally === null) {
+		if (
+			!NoopObStart::matches($obStart, $this->patterns())
+			|| count($tryCatch->catches) !== 0
+			|| $tryCatch->finally === null
+		) {
 			return null;
 		}
 
@@ -239,6 +323,21 @@ final class CaptureEliminator extends EliminatorVisitor
 		return new StaticCall(new FullyQualified(self::HELPERS_CLASS), new Identifier('capturedString'), []);
 	}
 
+	private function isSpacelessShell(Stmt $open, TryCatch $tryCatch): bool
+	{
+		if (count($tryCatch->catches) !== 0 || $tryCatch->finally === null || count($tryCatch->finally->stmts) !== 1) {
+			return false;
+		}
+
+		$close = $tryCatch->finally->stmts[0];
+		if ($this->isSpacelessObStart($open)) {
+			return $this->isBareFuncCall($close, 'ob_end_flush');
+		}
+
+		return $this->isRoleStaticCall(self::ROLE_SPACELESS_START, $open)
+			&& $this->isRoleStaticCall(self::ROLE_SPACELESS_END, $close);
+	}
+
 	private function isSpacelessObStart(Stmt $stmt): bool
 	{
 		if (!$stmt instanceof Expression || !$stmt->expr instanceof FuncCall) {
@@ -258,38 +357,21 @@ final class CaptureEliminator extends EliminatorVisitor
 			return false;
 		}
 
-		return in_array($handlerArg->value->value, self::SPACELESS_CALLABLES, true);
+		return $this->patterns()->hasName(self::ROLE_SPACELESS_HANDLER, $handlerArg->value->value);
 	}
 
-	private function isSpacelessFinally(TryCatch $tryCatch): bool
+	private function isRoleStaticCall(string $role, Stmt $stmt): bool
 	{
-		if (count($tryCatch->catches) !== 0 || $tryCatch->finally === null) {
+		if (!$stmt instanceof Expression || !$stmt->expr instanceof StaticCall) {
 			return false;
 		}
 
-		$stmts = $tryCatch->finally->stmts;
-
-		return count($stmts) === 1 && $this->isBareFuncCall($stmts[0], 'ob_end_flush');
-	}
-
-	private function isEmptyObStart(Stmt $stmt): bool
-	{
-		if (!$stmt instanceof Expression || !$stmt->expr instanceof FuncCall) {
+		$call = $stmt->expr;
+		if (!$call->class instanceof Name || !$call->name instanceof Identifier) {
 			return false;
 		}
 
-		if (!$this->isFuncCallNamed($stmt->expr, 'ob_start') || count($stmt->expr->args) !== 1) {
-			return false;
-		}
-
-		$arg = $stmt->expr->args[0];
-		if (!$arg instanceof Arg || !$arg->value instanceof Closure) {
-			return false;
-		}
-
-		$closure = $arg->value;
-
-		return $closure->params === [] && $closure->uses === [] && $closure->stmts === [];
+		return $this->patterns()->isStaticCall($role, $call->class->toString(), $call->name->toString());
 	}
 
 	private function isBareFuncCall(Stmt $stmt, string $name): bool
