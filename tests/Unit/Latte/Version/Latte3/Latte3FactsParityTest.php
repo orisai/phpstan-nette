@@ -23,8 +23,8 @@ final class Latte3FactsParityTest extends BaseTestCase
 	// Syntax Latte 3 rejects outright; the adapter reports Latte's own parse error instead of facts.
 	private const LATTE2_ONLY = [
 		'fixtures/ifcurrent.latte' => 'nette/application 3.3 dropped {ifCurrent}',
-		'latteforms/input-error.latte' => 'Latte 3 {inputError} requires an argument (Latte 2 echoed the last {input} error)',
-		'latteforms/Rule/types.latte' => 'Latte 3 {label} must be closed ({/label} or /}); Latte 2 auto-closed it',
+		'latteforms/input-error-bare.latte' => 'Latte 3 {inputError} requires an argument (Latte 2 echoed the last {input} error)',
+		'latteforms/Rule/types-nlabel.latte' => 'Latte 3 has no n:label (Latte 2 FormMacros registered it)',
 	];
 
 	/**

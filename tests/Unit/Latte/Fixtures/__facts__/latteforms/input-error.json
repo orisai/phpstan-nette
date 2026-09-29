@@ -126,10 +126,6 @@
                 {
                     "name": "input",
                     "column": 1
-                },
-                {
-                    "name": "inputError",
-                    "column": 14
                 }
             ]
         },

@@ -4,30 +4,30 @@ namespace Tests\OriPhpstan\Nette\Unit\LatteForms;
 
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Forms\ControlReference;
 use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\LatteForms\FormMacroCollector;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use function basename;
 use function dirname;
 use function getmypid;
 use function glob;
 use function implode;
+use function in_array;
 use function sha1;
 use function substr;
 use function sys_get_temp_dir;
 use function uniqid;
 
-/**
- * @group latte2
- */
 final class FormMacroCollectorTest extends BaseTestCase
 {
 
 	private const FIXTURE_DIR = 'tests/Unit/LatteForms/Fixtures';
+
+	private const LATTE_2_ONLY = ['input-error-bare.latte'];
 
 	public function testMacroFormOpenerCarriesEveryMacroReferenceKind(): void
 	{
@@ -344,12 +344,32 @@ final class FormMacroCollectorTest extends BaseTestCase
 		self::assertNotFalse($files);
 		self::assertNotCount(0, $files);
 
-		$compiler = new LatteCompiler();
+		$adapter = TestAdapter::create();
 		foreach ($files as $file) {
+			if (InstalledVersionsGuard::latteMajor() !== 2 && in_array(basename($file), self::LATTE_2_ONLY, true)) {
+				continue;
+			}
+
 			$source = FileSystem::read($file);
-			$result = $compiler->compile($source, 'LatteFormsFixture' . substr(sha1($source), 0, 8));
+			$relativePath = self::FIXTURE_DIR . '/' . basename($file);
+			$result = $adapter->compile($source, 'LatteFormsFixture' . substr(sha1($source), 0, 8), $relativePath)
+				->getResult();
 			self::assertNotNull($result->getPhpSource(), basename($file) . ' must compile');
 		}
+	}
+
+	// A bare {inputError} reads the last rendered control and names none; only Latte 2 FormMacros
+	// accepts it.
+
+	/**
+	 * @group latte2
+	 */
+	public function testBareInputErrorIsNotAReference(): void
+	{
+		$sites = $this->sitesFor('input-error-bare.latte');
+
+		self::assertCount(1, $sites);
+		self::assertSame([[ControlReference::KIND_INPUT, 'email', '', 2]], $this->tuples($sites[0]));
 	}
 
 	public function testExistenceGuardsMarkOnlyTheReferencesTheyName(): void

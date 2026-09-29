@@ -10,6 +10,7 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
+use function in_array;
 use function str_replace;
 use function strlen;
 use function substr_compare;
@@ -17,9 +18,6 @@ use function uniqid;
 use function usort;
 use const PHP_BINARY;
 
-/**
- * @group latte2
- */
 final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 {
 
@@ -281,7 +279,13 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 					continue;
 				}
 
+				// The typed-value findings only: nette/forms 3.3 deprecates CsrfProtection, which the
+				// typed $form['_token_'] read then reports as a vendor deprecation of its own.
 				foreach ($fileMessages['messages'] as $message) {
+					if (!in_array($message['identifier'], ['method.notFound', 'arguments.count'], true)) {
+						continue;
+					}
+
 					$messages[] = [
 						'line' => $message['line'],
 						'message' => $message['message'],

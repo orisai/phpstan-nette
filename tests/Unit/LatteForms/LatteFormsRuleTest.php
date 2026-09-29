@@ -83,6 +83,8 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 
 	private const TYPES = 'types.latte';
 
+	private const TYPES_NLABEL = 'types-nlabel.latte';
+
 	private const TYPES_OPEN = 'types-open.latte';
 
 	private const TYPES_LOST = 'types-lost.latte';
@@ -104,9 +106,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		}
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testAbsentControlIsReportedOnItsOwnTemplateLine(): void
 	{
 		$errors = $this->reported([self::ABSENT => [ClosedRenderer::class]], [self::ABSENT]);
@@ -124,9 +123,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([3], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The reported row above and this silent one come out of the SAME call: `name` is present on the
 	// form, so a rule that reported everything would fail here and a rule that reported nothing
 	// would fail above.
@@ -140,9 +136,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// Both sources of nesting render as one dotted path, and both spellings of the same runtime
 	// lookup produce the same text: the macro chain ({formContainer address} + {input nope}) and the
 	// '-' path ({input address-nope}) are the same component.
@@ -160,9 +153,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([4, 6], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The multi-renderer rule, positive direction: absent from EVERY resolved form, so the message
 	// names every renderer it is absent from.
 	public function testNameAbsentFromEveryRendererIsReportedNamingAllOfThem(): void
@@ -181,9 +171,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The renderer list is a DOCUMENTED promise ("sorted and comma-separated", docs/phpstan-latte-forms.md),
 	// so the order the links were recorded in must never reach the message. Same corpus as the row
 	// above, links recorded the other way round. Two mechanisms deliver it today - the store
@@ -205,9 +192,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The multi-renderer rule, negative direction: present in ONE of three linked renderers is the
 	// shared-partial pattern the analysis cannot tell from a bug, so it stays silent. Detection
 	// power comes from the row above, which differs only in the third renderer.
@@ -221,9 +205,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([], $this->messages($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// THE PIN (design §2, review §11.7): an UNRESOLVED renderer must PREVENT the report, never be
 	// skipped as "not present". The two runs differ by exactly one linked renderer whose form the
 	// analyser cannot enumerate - reporting "absent from the resolved subset" while that renderer
@@ -247,9 +228,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// THE SAME PIN ONE LEVEL UP. A renderer whose COMPONENT does not resolve never becomes a form at
 	// all, so it never reaches lookup() and cannot answer UNRESOLVED there - and the resolved subset
 	// would be reported as if it were the whole truth. Both shapes of that evidence gap (no such
@@ -282,9 +260,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The certainty gate with no closed renderer at all: an open shape lists a name set the walk
 	// could not finish, so nothing about it is negative evidence.
 	public function testAnOpenRendererAloneNeverReports(): void
@@ -295,9 +270,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testDynamicReferenceIsSkippedWhileItsLiteralSiblingIsReported(): void
 	{
 		$errors = $this->reported([self::DYNAMIC => [ClosedRenderer::class]], [self::DYNAMIC]);
@@ -309,9 +281,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([3], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// A {form $var} scope names no component, so nothing inside it can be resolved - while the
 	// literal sibling scope in the same template still is.
 	public function testDynamicFormScopeIsSkippedWhileItsLiteralSiblingIsReported(): void
@@ -325,9 +294,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([5], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The nameless-site skip is LOAD-BEARING, not a typing guard: an empty component name resolves to
 	// Nette's own createComponent() hook through 'createComponent' . ucfirst(''), so a renderer that
 	// overrides it with a concrete return type answers a real shape for the empty name. Without the
@@ -349,9 +315,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// Task 1 records the n:ifset guard; this rule honours it. The guarded and the unguarded
 	// reference name components that are equally absent, so only the guard can explain the
 	// difference.
@@ -366,9 +329,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([5], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// A template the discovery store links to nothing resolves no form at all. Asserted next to a
 	// linked template in the same call, so a rule that silently resolved nothing fails on the other
 	// half.
@@ -385,9 +345,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The reportable set is the ANALYSED template set, never the whole .latte universe or the whole
 	// store: `other.latte` is linked and would report, but nobody asked PHPStan to analyse it.
 	public function testTemplateOutsideTheAnalysedSetIsNeverReported(): void
@@ -404,9 +361,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// {form X} naming a component that is definitely not a form: no instance of it is a form and no
 	// form is an instance of it, so the macro can never render.
 	public function testComponentThatIsDefinitelyNotAFormIsReportedAsAnUnknownForm(): void
@@ -422,9 +376,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([1], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// THE WIDENING PIN. IndexShapeResolver falls back to the builder's DECLARED return class, which
 	// is "equal or wider than the store's runtime class" - so a component typed Nette\Forms\Container
 	// may hand back a real Form at runtime. An ANCESTOR of Form is therefore not evidence of
@@ -445,9 +396,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The same UNRESOLVED-blocks discipline for the form scope itself: a renderer that declares no
 	// such component at all proves nothing, so it must cancel the claim the non-form renderer makes.
 	public function testARendererThatResolvesNothingBlocksTheUnknownFormReport(): void
@@ -461,9 +409,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// A form resolving on ONE renderer is a form: the non-form sibling contributes nothing, and the
 	// controls are then checked against the resolved form as usual.
 	public function testOneResolvedFormSilencesTheUnknownFormAndTheControlsAreStillChecked(): void
@@ -479,9 +424,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// THE TYPE-AWARE CHECKS, all three of them and every silent sibling, out of one processNode()
 	// call over one template. Vendor's own compiled output is what makes each row a mismatch:
 	// {input}/{inputError}/n:name/{label} all call a method Nette\Forms\Container does not declare,
@@ -499,19 +441,15 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 				"Component 'address' on form 'simpleForm' is a container, not a control" . $renderer,
 				"Component 'address' on form 'simpleForm' is a container, not a control" . $renderer,
 				"Control 'send' on form 'simpleForm' is a " . SubmitButton::class . ', which renders no label' . $renderer,
-				"Control 'send' on form 'simpleForm' is a " . SubmitButton::class . ', which renders no label' . $renderer,
 				"Component 'email' on form 'simpleForm' is a control, not a container" . $renderer,
 				"Component 'email' on form 'simpleForm' is a control, not a container" . $renderer,
 				"Component 'send' on form 'simpleForm' is a control, not a container" . $renderer,
 			],
 			$this->messages($errors),
 		);
-		self::assertSame([2, 3, 4, 5, 6, 7, 8, 9], $this->lines($errors));
+		self::assertSame([2, 3, 4, 5, 6, 7, 8], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// Three identifiers, one per mismatch, so each can be baselined without silencing the others -
 	// and all of them as ignorable and fixer-free as the two the bridge already had.
 	public function testEachMismatchCarriesItsOwnIgnorableIdentifier(): void
@@ -523,7 +461,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 				LatteFormsRule::CONTAINER_AS_CONTROL_IDENTIFIER,
 				LatteFormsRule::CONTAINER_AS_CONTROL_IDENTIFIER,
 				LatteFormsRule::CONTAINER_AS_CONTROL_IDENTIFIER,
-				LatteFormsRule::LABELLESS_CONTROL_IDENTIFIER,
 				LatteFormsRule::LABELLESS_CONTROL_IDENTIFIER,
 				LatteFormsRule::CONTROL_AS_CONTAINER_IDENTIFIER,
 				LatteFormsRule::CONTROL_AS_CONTAINER_IDENTIFIER,
@@ -540,9 +477,26 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		}
 	}
 
+	// n:label is Latte 2 FormMacros' attribute form of {label}; Latte 3 has <label n:name> only.
+
 	/**
 	 * @group latte2
 	 */
+	public function testNLabelAttributeIsALabelReference(): void
+	{
+		$errors = $this->reported([self::TYPES_NLABEL => [ClosedRenderer::class]], [self::TYPES_NLABEL]);
+
+		self::assertSame(
+			[
+				"Control 'send' on form 'simpleForm' is a " . SubmitButton::class . ', which renders no label ('
+				. ClosedRenderer::class . ').',
+			],
+			$this->messages($errors),
+		);
+		self::assertSame(LatteFormsRule::LABELLESS_CONTROL_IDENTIFIER, $errors[0]->getIdentifier());
+		self::assertSame([2], $this->lines($errors));
+	}
+
 	// The multi-renderer rule, positive direction: the same mismatch on both linked forms, so the
 	// message names both - sorted, like every other renderer list this rule prints.
 	public function testAMismatchHoldingOnEveryLinkedRendererNamesThemAll(): void
@@ -557,14 +511,11 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 			. ClosedRenderer::class . ', ' . TypeAgreeingRenderer::class . ').',
 			$this->messages($errors)[0],
 		);
-		self::assertCount(8, $errors);
+		self::assertCount(7, $errors);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The multi-renderer rule, negative direction: one linked renderer on which every one of these
-	// macros is CORRECT is the shared-partial pattern, and it silences all eight. Detection power
+	// macros is CORRECT is the shared-partial pattern, and it silences all seven. Detection power
 	// comes from the row above, which differs only in the second renderer.
 	public function testARendererTheMacroFitsSilencesTheMismatchEntirely(): void
 	{
@@ -577,9 +528,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// UNRESOLVED BLOCKS, for the type question exactly as for the existence one: a linked renderer
 	// whose component does not resolve may be the one that renders this template, so what the others
 	// say about the name is a subset, never the whole truth.
@@ -594,17 +542,14 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// UNRESOLVED BLOCKS one level further in, where the site is NOT skipped: both renderers resolve
 	// the form and declare every referenced name, but one of them cannot say what those names ARE.
 	// Skipping it and reporting what the other proves is the false-positive shape the whole feature
-	// is built to avoid - so it must silence all eight findings the first renderer alone makes.
+	// is built to avoid - so it must silence all seven findings the first renderer alone makes.
 	public function testARendererWhoseComponentIdentitiesAreUnknownBlocksTheMismatchesTheOtherProves(): void
 	{
 		self::assertCount(
-			8,
+			7,
 			$this->reported([self::TYPES => [ClosedRenderer::class]], [self::TYPES]),
 			'the identifiable renderer alone reports every one of them',
 		);
@@ -618,9 +563,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// THE REACH ROW, and the one thing that separates this check's gate from the absence check's. The
 	// same form, in one call, answers BOTH: `nope` cannot be called absent because a dynamic add left
 	// the name set unfinished, while `inner` is still definitely a container, because no amount of
@@ -640,9 +582,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		self::assertSame([2], $this->lines($errors));
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// The other half of that gate: the unknown reasons that mean a component may have been LOST -
 	// here a statically-named child pulled out of the form - can rebind a name, so they block. The
 	// companion template reports from the same call, so a rule that went silent everywhere fails.
@@ -659,9 +598,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// Same gate, other input: a form reached from outside its builder may have the very component
 	// removed and re-added as something else, so nothing its shape says about a name's kind holds.
 	public function testAnExternallyMutatedFormIsNeverTypeChecked(): void
@@ -677,9 +613,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// Presence and kind are independent axes here too: a container the builder only SOMETIMES
 	// attaches is still a container on every path that has it, and {input} can address it on none.
 	public function testAConditionallyAttachedContainerIsStillAContainer(): void
@@ -726,9 +659,6 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 		);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	// Both identifiers must stay baselineable, and neither may carry a fixer: the rule under-detects
 	// by construction (every unproven situation is silent), so an automated edit would delete
 	// markup that is correct.

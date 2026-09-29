@@ -46,8 +46,8 @@
                     "guarded": false
                 },
                 {
-                    "kind": "label",
-                    "name": "send",
+                    "kind": "container",
+                    "name": "email",
                     "containerPath": [],
                     "line": 6,
                     "guarded": false
@@ -61,51 +61,44 @@
                 },
                 {
                     "kind": "container",
-                    "name": "email",
-                    "containerPath": [],
-                    "line": 8,
-                    "guarded": false
-                },
-                {
-                    "kind": "container",
                     "name": "send",
                     "containerPath": [],
-                    "line": 9,
+                    "line": 8,
                     "guarded": false
                 },
                 {
                     "kind": "input",
                     "name": "name",
                     "containerPath": [],
-                    "line": 10,
+                    "line": 9,
                     "guarded": false
                 },
                 {
                     "kind": "label",
                     "name": "name",
                     "containerPath": [],
-                    "line": 11,
+                    "line": 10,
                     "guarded": false
                 },
                 {
                     "kind": "input",
                     "name": "send",
                     "containerPath": [],
-                    "line": 12,
+                    "line": 11,
                     "guarded": false
                 },
                 {
                     "kind": "input",
                     "name": "address-street",
                     "containerPath": [],
-                    "line": 13,
+                    "line": 12,
                     "guarded": false
                 },
                 {
                     "kind": "container",
                     "name": "address",
                     "containerPath": [],
-                    "line": 14,
+                    "line": 13,
                     "guarded": false
                 },
                 {
@@ -114,14 +107,14 @@
                     "containerPath": [
                         "address"
                     ],
-                    "line": 14,
+                    "line": 13,
                     "guarded": false
                 },
                 {
                     "kind": "nameAttr",
                     "name": "address",
                     "containerPath": [],
-                    "line": 15,
+                    "line": 14,
                     "guarded": true
                 }
             ]
@@ -160,7 +153,13 @@
                     "column": 2
                 }
             ],
-            "7": [
+            "6": [
+                {
+                    "name": "formContainer",
+                    "column": 2
+                }
+            ],
+            "8": [
                 {
                     "name": "formContainer",
                     "column": 2
@@ -168,19 +167,19 @@
             ],
             "9": [
                 {
-                    "name": "formContainer",
+                    "name": "input",
                     "column": 2
                 }
             ],
             "10": [
                 {
-                    "name": "input",
+                    "name": "label",
                     "column": 2
                 }
             ],
             "11": [
                 {
-                    "name": "label",
+                    "name": "input",
                     "column": 2
                 }
             ],
@@ -191,12 +190,6 @@
                 }
             ],
             "13": [
-                {
-                    "name": "input",
-                    "column": 2
-                }
-            ],
-            "14": [
                 {
                     "name": "formContainer",
                     "column": 2
