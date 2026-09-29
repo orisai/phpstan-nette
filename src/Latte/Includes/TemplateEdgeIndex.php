@@ -96,10 +96,16 @@ final class TemplateEdgeIndex
 	// placement checks, the templateType collector and the debug dump) asks here instead.
 	public function declarationsFor(string $absoluteFile): Declarations
 	{
+		return $this->findDeclarations($absoluteFile)
+			?? new Declarations(null, null, [], [], [], [], [], null, [], [], []);
+	}
+
+	public function findDeclarations(string $absoluteFile): ?Declarations
+	{
 		try {
 			$source = FileSystem::read($absoluteFile);
 		} catch (IOException $e) {
-			return new Declarations(null, null, [], [], [], [], [], null, [], [], []);
+			return null;
 		}
 
 		$hash = sha1($source);

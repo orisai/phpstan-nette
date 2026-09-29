@@ -50,10 +50,10 @@ final class Latte3FactsParityTest extends BaseTestCase
 		);
 	}
 
-	// Review Focus 2, fact level: the header declaration reaches the same Declarations surface as on
-	// Latte 2 - DeclarationInjector then injects it and PHPStan's own class.notFound reports the class,
-	// which the spawn-level counterpart pins once the pipeline runs on Latte 3 (Task 11).
-	public function testUnknownVarTypeClassIsReportedLikeLatte2(): void
+	// Fact level only: the header declaration reaches the same Declarations surface as on Latte 2.
+	// Reporting the unknown class is PHPStan's own class.notFound on the injected @param, pinned at
+	// spawn level.
+	public function testUnknownVarTypeClassReachesHeaderVarTypesLikeLatte2(): void
 	{
 		$declarations = $this->adapter()
 			->extractFacts("{varType UnknownClass \$x}\n{\$x}\n", 'version/unknown-vartype-class.latte')

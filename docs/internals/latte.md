@@ -39,6 +39,19 @@ classes described below (`FormSiteScanner` holds the Latte 2 form-macro token sc
 cache key carries the family id and the adapter class, so a different adapter never serves
 another's compiled output.
 
+Template facts take the same route. `TemplateEdgeIndex::declarationsFor()` (and its nullable
+`findDeclarations()`, null for an unreadable file) is the single declarations reader: contract
+checks, declared-vars resolution, placement checks, the `{templateType}` collector and the debug dump
+all read through it, and `factsFor()` caches under the content-addressed `latte-facts|<family>` node
+id, so a different family never reads another's cached facts. `Latte2Adapter` scans the token
+stream; `Latte3Adapter` reads the node tree of the one parse before the compiler passes mutate it
+(`NodeFactsExtractor`): a `TagRecorder` turns every tag into a `TemplateEvent` stream, and the ported
+scanners (`EventDeclarationScanner`, `EventFactExtractor`, `NodeFormSiteCollector`) apply the Latte 2
+rules — including the Latte 2 head rule — to that stream, which is what keeps the two adapters'
+`Declarations`, `TemplateFacts` and form sites byte-identical on every shared fixture
+(`Latte3FactsParityTest`); the divergences Latte 3's own parsing forces are pinned in
+`Latte3FactsDivergenceTest`.
+
 For each `.latte` file, `LatteCompiler` (`src/Latte/Compile/`) runs the real
 `Latte\Parser`/`Latte\Compiler` (Latte 2.11 — no `Engine::compile`, no engine cache, no
 application boot) with the five built-in macro sets (`CoreMacros`,

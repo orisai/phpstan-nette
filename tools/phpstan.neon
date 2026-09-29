@@ -200,6 +200,9 @@ parameters:
 			identifier: phpstanApi.constructor
 			path: ../tests/Unit/Latte/Rule/LatteAnalyzedFileMarkerCollectorTest.php
 		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Unit/Latte/Rule/LatteTemplateTypeDeclarationCollectorTest.php
+		-
 			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
 			path: ../tests/Unit/Latte/Rule/LatteTemplateGraphRuleTest.php
 		-

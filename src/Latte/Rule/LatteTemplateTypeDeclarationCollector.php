@@ -66,7 +66,10 @@ final class LatteTemplateTypeDeclarationCollector implements Collector
 			return null;
 		}
 
-		$declarations = $this->edgeIndex->declarationsFor($file);
+		$declarations = $this->edgeIndex->findDeclarations($file);
+		if ($declarations === null) {
+			return null;
+		}
 
 		return [
 			'path' => $this->universe->relativePath($file),
