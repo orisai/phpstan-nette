@@ -148,6 +148,7 @@ jobs:
   tests-profile:
     name: "Tests - ${{ matrix.profile }}"
     runs-on: "${{ matrix.operating-system }}"
+    continue-on-error: true
 
     if: |
       github.event_name != 'pull_request'

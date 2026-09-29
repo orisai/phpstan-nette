@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Catalog\Stub;
 
+use Composer\InstalledVersions;
 use Nette\Utils\FileSystem;
 use ReflectionClass;
 use ReflectionException;
@@ -64,7 +65,7 @@ final class VendorCatalogFreshness
 
 	public const CATALOG = 'src/Forms/Catalog/Stub/FormValueTypeCatalog.php';
 
-	public const VENDOR_PACKAGE = 'vendor/nette/forms';
+	public const PACKAGE = 'nette/forms';
 
 	public const FORMS_CONTAINER = 'Nette\Forms\Container';
 
@@ -83,15 +84,28 @@ final class VendorCatalogFreshness
 	 */
 	private string $root;
 
-	public function __construct(?string $root = null)
+	/**
+	 * Where the gated vendor source is read from. Defaults to the installed package; a test points
+	 * it at a throwaway copy, like the root.
+	 */
+	private ?string $packageRoot;
+
+	public function __construct(?string $root = null, ?string $packageRoot = null)
 	{
 		$this->root = $this->normalize($root ?? self::projectRoot());
+		$packageRoot ??= self::installedPackageRoot();
+		$this->packageRoot = $packageRoot !== null ? $this->normalize($packageRoot) : null;
 	}
 
 	/** The real project root, which is where a class is LOCATED even when contents are read elsewhere. */
 	private static function projectRoot(): string
 	{
 		return dirname(__DIR__, 4);
+	}
+
+	private static function installedPackageRoot(): ?string
+	{
+		return InstalledVersions::isInstalled(self::PACKAGE) ? InstalledVersions::getInstallPath(self::PACKAGE) : null;
 	}
 
 	/**
@@ -110,7 +124,7 @@ final class VendorCatalogFreshness
 	 */
 	private function stubDrifts(): array
 	{
-		$stub = $this->declarations(self::STUB);
+		$stub = $this->declarations($this->root . '/' . self::STUB);
 		if ($stub === null) {
 			return [sprintf('Cannot read %s — is the project installed?', self::STUB)];
 		}
@@ -123,14 +137,14 @@ final class VendorCatalogFreshness
 					"%s redeclares %s, which %s no longer declares.\n  %s",
 					self::STUB,
 					$className,
-					self::VENDOR_PACKAGE,
+					self::PACKAGE,
 					self::STUB_FIX_HINT,
 				);
 
 				continue;
 			}
 
-			$vendor = $this->declarations($file);
+			$vendor = $this->declarations($this->packageRoot . '/' . $file);
 			$ours = $this->memberTags($declaration['doc']);
 
 			foreach ($this->memberTags($vendor[$className]['doc'] ?? null) as $tag => $ignored) {
@@ -140,7 +154,7 @@ final class VendorCatalogFreshness
 
 				$drifts[] = sprintf(
 					"%s declares %s on %s and %s does not restate it, so redeclaring the class drops it.\n  %s",
-					$file,
+					self::PACKAGE . '/' . $file,
 					$tag,
 					$className,
 					self::STUB,
@@ -157,19 +171,19 @@ final class VendorCatalogFreshness
 	 */
 	private function catalogDrifts(): array
 	{
-		$catalog = $this->declarations(self::CATALOG);
+		$catalog = $this->declarations($this->root . '/' . self::CATALOG);
 		$containerFile = $this->vendorFileOf(self::FORMS_CONTAINER);
 		if ($catalog === null || $containerFile === null) {
 			return [
 				sprintf(
 					'Cannot read %s or the installed %s — is the project installed?',
 					self::CATALOG,
-					self::VENDOR_PACKAGE,
+					self::PACKAGE,
 				),
 			];
 		}
 
-		$vendor = $this->declarations($containerFile);
+		$vendor = $this->declarations($this->packageRoot . '/' . $containerFile);
 		$factories = $vendor[self::FORMS_CONTAINER]['methods'] ?? [];
 		$entries = $catalog[FormValueTypeCatalog::class]['methods'] ?? [];
 
@@ -188,7 +202,7 @@ final class VendorCatalogFreshness
 					self::CATALOG,
 					self::FORMS_CONTAINER,
 					$method,
-					$containerFile,
+					self::PACKAGE . '/' . $containerFile,
 					self::CATALOG_FIX_HINT,
 				);
 
@@ -260,7 +274,7 @@ final class VendorCatalogFreshness
 	}
 
 	/**
-	 * Where the installed vendor package declares $className, as a project-relative path — or null
+	 * Where the installed vendor package declares $className, as a package-relative path — or null
 	 * when it declares it nowhere.
 	 *
 	 * Native reflection LOCATES the file, which is a question about the filesystem and not about
@@ -278,15 +292,16 @@ final class VendorCatalogFreshness
 		}
 
 		$file = $reflection->getFileName();
-		if ($file === false) {
+		$installed = self::installedPackageRoot();
+		if ($file === false || $installed === null) {
 			return null;
 		}
 
-		$prefix = $this->normalize(self::projectRoot()) . '/' . self::VENDOR_PACKAGE . '/';
-		$located = str_replace('\\', '/', $file);
+		$prefix = $this->normalize($installed) . '/';
+		$located = $this->normalize($file);
 
 		return strpos($located, $prefix) === 0
-			? self::VENDOR_PACKAGE . '/' . substr($located, strlen($prefix))
+			? (string) substr($located, strlen($prefix))
 			: null;
 	}
 
@@ -306,9 +321,8 @@ final class VendorCatalogFreshness
 	 *
 	 * @return array<string, array{doc: string|null, methods: array<string, string>}>|null
 	 */
-	private function declarations(string $relativePath): ?array
+	private function declarations(string $file): ?array
 	{
-		$file = $this->root . '/' . $relativePath;
 		if (!is_file($file)) {
 			return null;
 		}

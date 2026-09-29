@@ -11,12 +11,15 @@ use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @extends RuleTestCase<FormWriteAccessRule|FormShapeUnknownAccessRule|ComponentShapeDumpRule>
  */
 final class InferenceKillSwitchRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @var FormWriteAccessRule|FormShapeUnknownAccessRule|ComponentShapeDumpRule */
 	private Rule $ruleUnderTest;

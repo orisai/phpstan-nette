@@ -16,6 +16,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_filter;
 use function array_map;
 use function array_merge;
@@ -28,6 +29,8 @@ use function uniqid;
 
 final class IncludeContractCheckerTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private ?LatteUniverse $universe = null;
 

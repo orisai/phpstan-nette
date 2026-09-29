@@ -10,12 +10,15 @@ use PhpParser\ParserFactory;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Testing\PHPStanTestCase;
 use ReflectionClass;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Forms\Support\LiteralNameConstHolder;
 use function assert;
 use function count;
 
 final class LiteralNameResolverTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private function parseExpr(string $code): Expr
 	{

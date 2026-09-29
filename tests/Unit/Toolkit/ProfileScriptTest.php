@@ -48,6 +48,16 @@ final class ProfileScriptTest extends BaseTestCase
 		self::assertStringContainsString('Unknown profile "nonexistent"', $process->getErrorOutput());
 	}
 
+	public function testUnknownModeFails(): void
+	{
+		$process = new Process([PHP_BINARY, dirname(__DIR__, 3) . '/tools/profile.php', 'latte31', '--print']);
+		$process->run();
+
+		self::assertSame(1, $process->getExitCode());
+		self::assertStringContainsString('Unknown mode "--print"', $process->getErrorOutput());
+		self::assertSame('', $process->getOutput());
+	}
+
 	/**
 	 * @param list<string> $arguments
 	 */

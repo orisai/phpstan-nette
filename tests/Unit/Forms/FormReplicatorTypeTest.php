@@ -23,10 +23,12 @@ use Tests\OriPhpstan\Nette\Doubles\Forms\Form\CustomReplicatorContainer;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Form\CustomSubmitButton;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer;
 use Tests\OriPhpstan\Nette\Toolkit\ShapeSnapshotAssertions;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 final class FormReplicatorTypeTest extends PHPStanTestCase
 {
 
+	use VersionGroupGate;
 	use ShapeSnapshotAssertions;
 
 	public static function setUpBeforeClass(): void

@@ -21,6 +21,7 @@ use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\TypeInferenceTestCase;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\VerbosityLevel;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_keys;
 use function assert;
 use function dirname;
@@ -29,6 +30,8 @@ use function uniqid;
 
 final class SummaryFactoryTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

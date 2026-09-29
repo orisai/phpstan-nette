@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Forms\Inference;
 
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @template TRule of Rule
@@ -11,6 +12,8 @@ use PHPStan\Testing\RuleTestCase;
  */
 abstract class InferenceRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

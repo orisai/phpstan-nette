@@ -10,10 +10,13 @@ use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\UnionType;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function get_class;
 
 final class TypeCanonicalizerTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	public static function setUpBeforeClass(): void
 	{

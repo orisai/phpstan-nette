@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Rule\LatteFixStrippingRule;
 use PhpParser\Node\Expr\ConstFetch;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Rule\Fixtures\AlwaysFixesTrueConstantRule;
 
 /**
@@ -13,6 +14,8 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Rule\Fixtures\AlwaysFixesTrueConstantRule;
  */
 final class LatteFixStrippingRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureDir = __DIR__ . '/../Fixtures/Rule';
 

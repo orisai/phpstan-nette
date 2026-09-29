@@ -12,9 +12,12 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\VerbosityLevel;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 final class AcceptedTypeCatalogTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	private ControlAcceptedTypeResolver $resolver;
 

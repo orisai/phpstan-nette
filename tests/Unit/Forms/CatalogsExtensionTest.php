@@ -7,10 +7,13 @@ use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
 use PHPStan\Type\VerbosityLevel;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Catalog\ColorCatalog;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function dirname;
 
 final class CatalogsExtensionTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

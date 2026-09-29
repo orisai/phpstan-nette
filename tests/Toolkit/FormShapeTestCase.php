@@ -28,6 +28,7 @@ use function usort;
 abstract class FormShapeTestCase extends TypeInferenceTestCase
 {
 
+	use VersionGroupGate;
 	use ShapeSnapshotAssertions;
 
 	/** @return list<string> */

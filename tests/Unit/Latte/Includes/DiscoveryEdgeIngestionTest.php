@@ -18,6 +18,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -34,6 +35,8 @@ use const SORT_STRING;
 // owner-ratified auto-layout suppression, and the checker valves the edges flip.
 final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const RENDERER = 'Fixture\\ProbePresenter';
 

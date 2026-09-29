@@ -13,6 +13,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnassignedPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnmappedAbstractRenderer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnmappedEndpoint;
@@ -28,6 +29,8 @@ use function uniqid;
  */
 final class LatteDiscoveryRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureDir = __DIR__ . '/../Bridge/Fixtures/App';
 

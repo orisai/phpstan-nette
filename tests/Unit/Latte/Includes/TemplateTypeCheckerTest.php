@@ -22,6 +22,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Includes\TemplateTypeChecker;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryAbstractViewPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryLegacyPathControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileOpaquePresenter;
@@ -53,6 +54,8 @@ use const SORT_STRING;
 
 final class TemplateTypeCheckerTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const PairingFixtureDir = __DIR__ . '/../Bridge/Pairing/Fixtures/App';
 

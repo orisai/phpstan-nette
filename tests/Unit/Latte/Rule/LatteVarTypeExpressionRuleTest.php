@@ -12,6 +12,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPStan\Type\FileTypeMapper;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_map;
 use function sprintf;
 
@@ -27,6 +28,8 @@ use function sprintf;
  */
 final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const NarrowingFixtureFile = __DIR__ . '/../Fixtures/Rule/vartype-expression-narrowing.latte';
 

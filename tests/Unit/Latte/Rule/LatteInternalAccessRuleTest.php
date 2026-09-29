@@ -6,12 +6,15 @@ use OriPhpstan\Nette\Latte\Rule\LatteInternalAccessRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @extends RuleTestCase<LatteInternalAccessRule>
  */
 final class LatteInternalAccessRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FlaggedFixtureFile = __DIR__ . '/../Fixtures/Rule/internal-access-flagged.latte';
 

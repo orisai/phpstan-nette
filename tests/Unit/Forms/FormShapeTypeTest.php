@@ -14,9 +14,12 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\VerbosityLevel;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Form\CustomSubmitButton;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 final class FormShapeTypeTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	public static function setUpBeforeClass(): void
 	{

@@ -32,6 +32,7 @@ use PHPStan\Rules\TipRuleError;
 use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\MockObject\Stub;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryVendorPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingAgreeExactPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\FixtureTemplateTypeContainer;
@@ -45,6 +46,8 @@ use function uniqid;
 // the property the 186 committed baseline entries depend on.
 final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const PairingFixtureDir = __DIR__ . '/../Bridge/Pairing/Fixtures/App';
 

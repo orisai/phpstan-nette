@@ -27,6 +27,7 @@ use PhpParser\NodeFinder;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Discovery\Fixtures\FixtureRecordSourceContainer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsControlRenderer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsStandaloneControl;
@@ -43,6 +44,8 @@ use function uniqid;
 // the checker; this file only proves the wiring actually carries a finding through to that point.
 final class LatteRoutingParserProviderAvailabilityTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const AppFixtureDir = __DIR__ . '/../Includes/Fixtures/App';
 

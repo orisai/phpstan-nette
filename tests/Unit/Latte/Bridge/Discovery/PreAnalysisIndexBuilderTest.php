@@ -16,6 +16,7 @@ use PHPStan\File\FileExcluder;
 use PHPStan\File\FileHelper;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStoreActionPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStoreLinkedControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStoreTrailingRendererControl;
@@ -32,6 +33,8 @@ use function uniqid;
 
 final class PreAnalysisIndexBuilderTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const LINKED_TEMPLATE_REL = 'App/discoveryStoreLinked.latte';
 

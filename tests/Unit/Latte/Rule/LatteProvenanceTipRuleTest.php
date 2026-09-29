@@ -8,6 +8,7 @@ use PhpParser\Node\Expr\ConstFetch;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Rule\Fixtures\ProvenanceTipFixtureRule;
 
 // Decorator-level coverage (node-attribute provenance only - the macro line-map path is covered
@@ -20,6 +21,8 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Rule\Fixtures\ProvenanceTipFixtureRule;
  */
 final class LatteProvenanceTipRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const LatteFixtureFile = __DIR__ . '/../Fixtures/Rule/provenance-tip-scenarios.latte';
 

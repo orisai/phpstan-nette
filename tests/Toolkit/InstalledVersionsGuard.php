@@ -8,6 +8,8 @@ use LogicException;
 use PHPUnit\Framework\Assert;
 use function explode;
 use function in_array;
+use function is_string;
+use function preg_match;
 use function sprintf;
 
 final class InstalledVersionsGuard
@@ -76,6 +78,16 @@ final class InstalledVersionsGuard
 	 */
 	public static function skipReason(array $groups): ?string
 	{
+		foreach ($groups as $group) {
+			if (
+				is_string($group)
+				&& !isset(self::GROUPS[$group])
+				&& preg_match('~^(latte|nette)\d~', $group) === 1
+			) {
+				throw new LogicException(sprintf('Unknown version group "%s".', $group));
+			}
+		}
+
 		foreach (self::GROUPS as $group => [$package, $constraint, $label]) {
 			if (in_array($group, $groups, true) && !self::satisfies($package, $constraint)) {
 				return self::reason($package, $label);

@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Forms;
 
+use Composer\InstalledVersions;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Forms\Catalog\Stub\VendorCatalogFreshness;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
@@ -13,9 +14,11 @@ use function uniqid;
 final class VendorCatalogFreshnessTest extends BaseTestCase
 {
 
-	private const VENDOR_CHOICE_CONTROL = 'vendor/nette/forms/src/Forms/Controls/ChoiceControl.php';
+	private const PACKAGE_COPY = 'nette-forms';
 
-	private const VENDOR_CONTAINER = 'vendor/nette/forms/src/Forms/Container.php';
+	private const VENDOR_CHOICE_CONTROL = self::PACKAGE_COPY . '/src/Forms/Controls/ChoiceControl.php';
+
+	private const VENDOR_CONTAINER = self::PACKAGE_COPY . '/src/Forms/Container.php';
 
 	/** @var list<string> */
 	private array $throwawayRoots = [];
@@ -56,7 +59,7 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 			" * @property-read mixed \$selectedItem\n * @property-read string \$prompt",
 		);
 
-		$drifts = (new VendorCatalogFreshness($root))->drifts();
+		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
 
 		self::assertCount(1, $drifts);
 		self::assertStringContainsString('property-read $prompt', $drifts[0]);
@@ -72,7 +75,7 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 			' * @property array<int|string, mixed> $items',
 		);
 
-		$drifts = (new VendorCatalogFreshness($root))->drifts();
+		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
 
 		self::assertCount(1, $drifts);
 		self::assertStringContainsString('property-read $selectedItem', $drifts[0]);
@@ -86,7 +89,7 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 			'public function addColour(',
 		);
 
-		$drifts = (new VendorCatalogFreshness($root))->drifts();
+		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
 
 		self::assertCount(1, $drifts);
 		self::assertStringContainsString('addColor()', $drifts[0]);
@@ -106,7 +109,7 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 			'public function addSelect(string $name, $label = null, ?array $items = null, ?int $size = null)',
 		);
 
-		$drifts = (new VendorCatalogFreshness($root))->drifts();
+		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
 
 		self::assertCount(1, $drifts);
 		self::assertStringContainsString('no declared return type', $drifts[0]);
@@ -120,7 +123,7 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 			'interface FormValueTypeCatalogRenamed',
 		);
 
-		$drifts = (new VendorCatalogFreshness($root))->drifts();
+		$drifts = (new VendorCatalogFreshness($root, $root . '/' . self::PACKAGE_COPY))->drifts();
 
 		self::assertCount(1, $drifts);
 		self::assertStringContainsString('declares no factory at all', $drifts[0]);
@@ -137,10 +140,9 @@ final class VendorCatalogFreshnessTest extends BaseTestCase
 		$root = sys_get_temp_dir() . '/' . uniqid('forms-vendor-freshness-', true);
 		$this->throwawayRoots[] = $root;
 
-		FileSystem::copy(
-			$real . '/' . VendorCatalogFreshness::VENDOR_PACKAGE,
-			$root . '/' . VendorCatalogFreshness::VENDOR_PACKAGE,
-		);
+		$installed = InstalledVersions::getInstallPath(VendorCatalogFreshness::PACKAGE);
+		self::assertNotNull($installed);
+		FileSystem::copy($installed, $root . '/' . self::PACKAGE_COPY);
 
 		foreach ([VendorCatalogFreshness::STUB, VendorCatalogFreshness::CATALOG] as $file) {
 			FileSystem::copy($real . '/' . $file, $root . '/' . $file);

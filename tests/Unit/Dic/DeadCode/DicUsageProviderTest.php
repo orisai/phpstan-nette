@@ -9,6 +9,7 @@ use PhpParser\Node\Stmt\Class_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ChildService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ParentService;
@@ -16,6 +17,8 @@ use function sort;
 
 final class DicUsageProviderTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	/**
 	 * The fixture container constructs ChildService and calls configureParent() on it, but BOTH members

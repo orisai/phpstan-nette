@@ -18,6 +18,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_map;
 use function getmypid;
 use function sys_get_temp_dir;
@@ -30,6 +31,8 @@ use function uniqid;
 // sandbox, namedKeys/open).
 final class EdgeScopeIsolationTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	public function testFileIncludeUnionsAmbientScopeWithExplicitArgsWhenIsolationIsOff(): void
 	{

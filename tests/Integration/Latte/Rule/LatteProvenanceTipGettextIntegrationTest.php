@@ -10,6 +10,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Integration\Latte\Rule\Fixtures\ForbiddenCallFixtureRule;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function sys_get_temp_dir;
 
 // Real pipeline, end to end: {_'Hello'} compiles through the REAL vendor
@@ -22,6 +23,8 @@ use function sys_get_temp_dir;
  */
 final class LatteProvenanceTipGettextIntegrationTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureFile = __DIR__ . '/../../../Unit/Latte/Fixtures/Rule/provenance-tip-gettext.latte';
 

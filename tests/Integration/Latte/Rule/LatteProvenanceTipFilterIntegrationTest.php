@@ -8,6 +8,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Integration\Latte\Rule\Fixtures\ForbiddenCallFixtureRule;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 // Real pipeline, end to end: {$x|webalize} compiles through
 // FilterRewriter into a real Nette\Utils\Strings::webalize() static call - the node FilterRewriter
@@ -18,6 +19,8 @@ use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
  */
 final class LatteProvenanceTipFilterIntegrationTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureFile = __DIR__ . '/../../../Unit/Latte/Fixtures/Rule/provenance-tip-filter.latte';
 

@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Toolkit;
 
 use Composer\InstalledVersions;
 use Generator;
+use LogicException;
 use PHPUnit\Framework\SkippedTest;
 use PHPUnit\Framework\TestSuite;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
@@ -83,6 +84,16 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 			['latte3'],
 			'requires Latte 3 (installed latte/latte none)',
 		];
+	}
+
+	public function testUnknownVersionGroupFailsLoudly(): void
+	{
+		InstalledVersionsGuard::overrideVersions(self::LATTE31_NETTE33);
+
+		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage('Unknown version group "latte32".');
+
+		InstalledVersionsGuard::skipReason(['latte3', 'latte32']);
 	}
 
 	public function testLatteMajorAndLine(): void

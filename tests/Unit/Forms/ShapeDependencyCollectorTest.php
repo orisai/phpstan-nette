@@ -10,9 +10,12 @@ use OriPhpstan\Nette\Forms\Shape\UnknownInfo;
 use PHPStan\Testing\PHPStanTestCase;
 use ReflectionClass;
 use Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 final class ShapeDependencyCollectorTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private function collector(DependencyRecorder $recorder): ShapeDependencyCollector
 	{

@@ -17,6 +17,7 @@ use OriPhpstan\Nette\Latte\Includes\ProviderAvailabilityChecker;
 use OriPhpstan\Nette\Latte\Postprocess\ProviderMacroScanner;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Discovery\Fixtures\FixtureRecordSourceContainer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsControlRenderer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsDisagreeingControl;
@@ -36,6 +37,8 @@ use function uniqid;
 // axis - never about the macro-site DETECTION itself, which ProviderMacroScannerTest pins instead.
 final class ProviderAvailabilityCheckerTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const AppFixtureDir = __DIR__ . '/Fixtures/App';
 

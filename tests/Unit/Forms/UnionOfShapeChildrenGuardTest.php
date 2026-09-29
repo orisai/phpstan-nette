@@ -15,6 +15,7 @@ use PHPStan\Type\Type;
 use PHPStan\Type\VerbosityLevel;
 use ReflectionClass;
 use ReflectionMethod;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function assert;
 
 /**
@@ -29,6 +30,8 @@ use function assert;
  */
 final class UnionOfShapeChildrenGuardTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	public static function setUpBeforeClass(): void
 	{

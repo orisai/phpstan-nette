@@ -9,6 +9,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Rule\ConventionNameWidget;
 use Tests\OriPhpstan\Nette\Unit\Latte\Rule\Fixtures\CollectedDataEchoRule;
 use function array_map;
@@ -18,6 +19,8 @@ use function array_map;
  */
 final class LatteConventionNameCollectorTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FIXTURE = __DIR__ . '/../Fixtures/Rule/ConventionNameCaller.php';
 

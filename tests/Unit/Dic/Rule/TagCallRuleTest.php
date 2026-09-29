@@ -7,12 +7,15 @@ use OriPhpstan\Nette\Dic\Rule\TagCallRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @extends RuleTestCase<TagCallRule>
  */
 final class TagCallRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const LoaderFile = __DIR__ . '/../Fixtures/fixture-container-loader.php';
 

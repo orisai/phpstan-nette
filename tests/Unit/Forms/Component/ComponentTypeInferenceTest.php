@@ -3,12 +3,15 @@
 namespace Tests\OriPhpstan\Nette\Unit\Forms\Component;
 
 use PHPStan\Testing\TypeInferenceTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function assert;
 use function basename;
 use function glob;
 
 final class ComponentTypeInferenceTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

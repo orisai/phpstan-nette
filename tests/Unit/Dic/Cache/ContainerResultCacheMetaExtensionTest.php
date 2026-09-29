@@ -8,11 +8,14 @@ use OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry;
 use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function str_replace;
 use function uniqid;
 
 final class ContainerResultCacheMetaExtensionTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const LoaderFile = __DIR__ . '/../Fixtures/fixture-container-loader.php';
 

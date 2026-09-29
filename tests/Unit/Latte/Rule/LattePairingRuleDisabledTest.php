@@ -14,6 +14,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function getmypid;
 use function is_dir;
 use function realpath;
@@ -25,6 +26,8 @@ use function uniqid;
  */
 final class LattePairingRuleDisabledTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureDir = __DIR__ . '/../Bridge/Pairing/Fixtures/App';
 

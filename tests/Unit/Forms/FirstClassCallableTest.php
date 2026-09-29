@@ -50,6 +50,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\TypeInferenceTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\ShapeSnapshotAssertions;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function assert;
 use function dirname;
 use function is_dir;
@@ -67,6 +68,7 @@ use function uniqid;
 final class FirstClassCallableTest extends TypeInferenceTestCase
 {
 
+	use VersionGroupGate;
 	use ShapeSnapshotAssertions;
 
 	private const FORM_CLASS = 'Nette\Forms\Form';

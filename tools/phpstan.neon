@@ -232,7 +232,7 @@ parameters:
 		# own test runs a nested suite and catches the skip to prove it reaches the result.
 		-
 			identifier: method.internal
-			path: ../tests/Toolkit/BaseTestCase.php
+			path: ../tests/Toolkit/VersionGroupGate.php
 		-
 			identifiers: [new.internalClass, method.internalClass, catch.internalInterface]
 			path: ../tests/Unit/Toolkit/InstalledVersionsGuardTest.php

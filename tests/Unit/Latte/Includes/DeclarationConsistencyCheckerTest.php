@@ -11,6 +11,7 @@ use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_filter;
 use function array_map;
 use function array_values;
@@ -20,6 +21,8 @@ use function uniqid;
 
 final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	// === FILE level: {templateType}-derived property type (native) vs top-level {varType} (override) ===
 

@@ -7,6 +7,7 @@
 		"nette/forms": "^3.2.7 <3.3",
 		"kdyby/forms-replicator": "^3.0.0"
 	},
-	"php": "8.4",
-	"ignore-platform-req": ["php"]
+	"ignore-platform-req": [
+		"php"
+	]
 }

@@ -28,6 +28,7 @@ use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\VerbosityLevel;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Forms\Support\AnnotatedAddsContainer;
 use Tests\OriPhpstan\Nette\Unit\Forms\Support\AnnotatedChoiceControl;
 use Tests\OriPhpstan\Nette\Unit\Forms\Support\AnnotatedCustomControl;
@@ -39,6 +40,8 @@ use function dirname;
 
 final class CatalogAnnotationReaderTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

@@ -7,12 +7,15 @@ use OriPhpstan\Nette\Dic\Rule\ServiceNameCallRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @extends RuleTestCase<ServiceNameCallRule>
  */
 final class ServiceNameCallRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const LoaderFile = __DIR__ . '/../Fixtures/fixture-container-loader.php';
 

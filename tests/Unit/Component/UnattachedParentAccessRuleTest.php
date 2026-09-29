@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Component\UnattachedParentAccessRule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function dirname;
 
 /**
@@ -13,6 +14,8 @@ use function dirname;
  */
 final class UnattachedParentAccessRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureFile = __DIR__ . '/../../Doubles/Component/UnattachedParentAccessRuleFixture.php';
 

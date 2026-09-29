@@ -25,6 +25,7 @@ use PHPStan\Reflection\ClassReflection;
 use PHPStan\Testing\PHPStanTestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\BoundaryChildPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\BoundaryMiddleFixture;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\ConditionalAfterUnconditionalPresenter;
@@ -127,6 +128,8 @@ use function sort;
 
 final class PhpRenderWalkTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FactoryDefaultContainerLoaderFile = __DIR__ . '/Fixtures/factory-default-container-loader.php';
 

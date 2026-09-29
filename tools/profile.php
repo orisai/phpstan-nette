@@ -12,6 +12,10 @@ $fail = static function (string $message): void {
 	exit(1);
 };
 
+if ($mode !== null && $mode !== '--flags' && $mode !== '--stdout') {
+	$fail(sprintf('Unknown mode "%s", expected --flags or --stdout.', $mode));
+}
+
 $profileFile = $root . '/tools/profiles/' . $name . '.json';
 if (preg_match('~^[a-z0-9-]+$~', $name) !== 1 || !is_file($profileFile)) {
 	$fail(sprintf('Unknown profile "%s".', $name));

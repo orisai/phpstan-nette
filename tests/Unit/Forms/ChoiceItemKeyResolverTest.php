@@ -11,12 +11,15 @@ use PHPStan\Testing\PHPStanTestCase;
 use PHPStan\Type\Type;
 use PHPStan\Type\VerbosityLevel;
 use ReflectionClass;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Forms\Support\ChoiceConstHolder;
 use function assert;
 use function count;
 
 final class ChoiceItemKeyResolverTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private function resolver(): ChoiceItemKeyResolver
 	{

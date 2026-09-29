@@ -13,6 +13,7 @@ use OriPhpstan\Nette\Latte\Bridge\SetFileFact;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackDerivedControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackMissingControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackSharedControl;
@@ -53,6 +54,8 @@ use function realpath;
  */
 final class DiscoveryResolverTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const MappingLoaderFile = __DIR__ . '/../Fixtures/presenter-mapping-container-loader.php';
 

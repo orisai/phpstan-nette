@@ -9,6 +9,7 @@ use PHPStan\Collectors\Collector;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Rule\NeverTerminatingRenderProbeControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Rule\TerminatingRenderProbeControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Rule\Fixtures\CollectedDataEchoRule;
@@ -21,6 +22,8 @@ use function realpath;
  */
 final class LatteTerminatingRenderCollectorTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FIXTURE = __DIR__ . '/../Fixtures/Rule/TerminatingRenderProbeControl.php';
 

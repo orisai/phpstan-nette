@@ -36,6 +36,7 @@ use PhpParser\NodeFinder;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsAncestorBasePresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsAncestorLeftPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsAncestorRightPresenter;
@@ -76,6 +77,8 @@ use function uniqid;
 // presenter.
 final class FactoryProvidedVarsTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const AppFixtureDir = __DIR__ . '/Fixtures/App';
 

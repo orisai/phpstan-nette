@@ -8,6 +8,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Integration\Latte\Rule\Fixtures\FunctionVsMacroLineFixtureRule;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 // Pinned together at the rule level through the
 // real pipeline: {foreach $xs as $x}{clamp($x, 0, 10)}{if true}{/if}{/foreach} - one source line
@@ -18,6 +19,8 @@ use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;
  */
 final class LatteProvenanceTipFunctionVsMacroLineIntegrationTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureFile = __DIR__ . '/../../../Unit/Latte/Fixtures/Rule/provenance-tip-function-vs-macro-line.latte';
 

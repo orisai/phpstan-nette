@@ -4,5 +4,5 @@ parameters:
 		- ../../../../tests/autoload.php
 
 includes:
-	- ../../../../vendor/phpstan/phpstan-nette/extension.neon
+	- ../../../../%env.COMPOSER_VENDOR_DIR%/phpstan/phpstan-nette/extension.neon
 	- ../../../../extension.neon

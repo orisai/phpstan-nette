@@ -17,6 +17,7 @@ use OriPhpstan\Nette\LatteForms\ComponentIdentity;
 use OriPhpstan\Nette\LatteForms\ControlReference;
 use OriPhpstan\Nette\LatteForms\MacroSuitability;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\LabelledButton;
 
 // The vendor-semantics table on its own, as a pure function of (macro kind, component identity).
@@ -24,6 +25,8 @@ use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\LabelledButton;
 // "means" - see MacroSuitability's own header for the four compiled forms it encodes.
 final class MacroSuitabilityTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const CONTROL_MACROS = [
 		ControlReference::KIND_INPUT,

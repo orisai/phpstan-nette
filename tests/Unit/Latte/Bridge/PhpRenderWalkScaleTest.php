@@ -13,6 +13,7 @@ use OriPhpstan\Nette\Latte\Bridge\TemplateClassFact;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function array_keys;
 use function basename;
 use function count;
@@ -27,6 +28,8 @@ use const SORT_STRING;
 // output, never asserted (a hard time gate would flake under parallel load).
 final class PhpRenderWalkScaleTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const GeneratorFile = __DIR__ . '/Fixtures/fleet-generator.php';
 

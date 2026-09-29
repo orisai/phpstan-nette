@@ -18,6 +18,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\TypeInferenceTestCase;
 use PHPStan\Type\ObjectType;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Forms\Support\UnannotatedRegistrarContainer;
 use function assert;
 use function dirname;
@@ -34,6 +35,8 @@ use function uniqid;
  */
 final class UnannotatedRegistrarTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	private const OURS = __DIR__ . '/Support';
 

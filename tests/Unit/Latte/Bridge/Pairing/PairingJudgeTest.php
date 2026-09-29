@@ -16,6 +16,7 @@ use OriPhpstan\Nette\Latte\Bridge\TemplateClassFact;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingAgreeExactPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingBaseTemplateReplica;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingChildTemplateReplica;
@@ -41,6 +42,8 @@ use function serialize;
 
 final class PairingJudgeTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	// Deliberately a string literal: the point is a class name reflection cannot resolve, the
 	// shape cache-loaded facts produce after a template class is deleted or renamed.

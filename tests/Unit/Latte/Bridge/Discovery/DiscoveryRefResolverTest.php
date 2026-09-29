@@ -14,6 +14,7 @@ use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Compile\DiscoveryClassName;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Discovery\Fixtures\FixtureRecordSourceContainer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStoreLinkedControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\FixtureStoreLinkedControlBase;
@@ -24,6 +25,8 @@ use function uniqid;
 
 final class DiscoveryRefResolverTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const LINKED_TEMPLATE_REL = 'App/discoveryStoreLinked.latte';
 

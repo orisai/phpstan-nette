@@ -8,6 +8,5 @@
 		"kdyby/forms-replicator": "^3.0.0",
 		"nette/caching": "^3.4.0"
 	},
-	"php": "8.4",
 	"ignore-platform-req": []
 }

@@ -3,9 +3,12 @@
 namespace Tests\OriPhpstan\Nette\Unit\Forms\Inference;
 
 use PHPStan\Testing\TypeInferenceTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 final class InferenceKillSwitchTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

@@ -17,6 +17,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingBaseTemplateReplica;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingChildTemplateReplica;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingUnrelatedTemplateReplica;
@@ -32,6 +33,8 @@ use function uniqid;
  */
 final class LattePairingRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureDir = __DIR__ . '/../Bridge/Pairing/Fixtures/App';
 

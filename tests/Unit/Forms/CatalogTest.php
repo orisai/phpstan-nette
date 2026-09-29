@@ -40,6 +40,7 @@ use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\VerbosityLevel;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function assert;
 use function dirname;
 use function is_dir;
@@ -48,6 +49,8 @@ use function uniqid;
 
 final class CatalogTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	private NetteEffectiveControlValueTypeResolver $resolver;
 

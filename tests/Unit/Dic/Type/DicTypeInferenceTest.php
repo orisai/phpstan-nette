@@ -3,12 +3,15 @@
 namespace Tests\OriPhpstan\Nette\Unit\Dic\Type;
 
 use PHPStan\Testing\TypeInferenceTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use function assert;
 use function basename;
 use function glob;
 
 final class DicTypeInferenceTest extends TypeInferenceTestCase
 {
+
+	use VersionGroupGate;
 
 	public static function setUpBeforeClass(): void
 	{

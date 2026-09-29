@@ -3,9 +3,12 @@
 namespace Tests\OriPhpstan\Nette\Unit\Forms\Inference\Unit;
 
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 final class KillSwitchConfigTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	/** @return list<string> */
 	public static function getAdditionalConfigFiles(): array

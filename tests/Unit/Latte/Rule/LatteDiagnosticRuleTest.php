@@ -7,12 +7,15 @@ use OriPhpstan\Nette\Latte\Runtime\Diag;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 
 /**
  * @extends RuleTestCase<LatteDiagnosticRule>
  */
 final class LatteDiagnosticRuleTest extends RuleTestCase
 {
+
+	use VersionGroupGate;
 
 	private const FixtureFile = __DIR__ . '/../Fixtures/Rule/diag.php';
 

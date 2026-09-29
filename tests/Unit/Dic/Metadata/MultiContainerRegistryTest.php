@@ -16,6 +16,7 @@ use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\VerbosityLevel;
+use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\AlphaOnlyService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\AlphaVariant;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\BetaVariant;
@@ -30,6 +31,8 @@ use function sprintf;
 
 final class MultiContainerRegistryTest extends PHPStanTestCase
 {
+
+	use VersionGroupGate;
 
 	private const All = ['alpha', 'beta'];
 
