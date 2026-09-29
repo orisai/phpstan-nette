@@ -14,6 +14,8 @@ use function array_keys;
 use function ob_get_clean;
 use function ob_start;
 
+// The engine-resolving cases stay Latte 2 until the Latte 3 engine reader exists: a resolved engine
+// with no reader is a LogicException by design (LatteVersionAdapterFactoryTest pins it).
 final class CustomsHarvesterTest extends BaseTestCase
 {
 
@@ -84,6 +86,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertArrayHasKey('fixturefilter', $harvested->getFilters());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testMemoizationEngineLoaderFileRequiredOnce(): void
 	{
 		InvocationCounter::$count = 0;
@@ -96,6 +101,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertSame(1, InvocationCounter::$count);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testDeterminismAcrossTwoHarvests(): void
 	{
 		$first = $this->harvest(null, self::EngineLoaderFile);
@@ -171,6 +179,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertEmptyHarvest($harvested);
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testEnumerationStageFailureDegradesToEmptyWithoutException(): void
 	{
 		// Resolution succeeds (a real Engine comes back); the failure happens later, inside
@@ -257,6 +268,9 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertTrue($this->harvester(null, self::EngineLoaderThrowingFile)->hasConfiguredSource());
 	}
 
+	/**
+	 * @group latte2
+	 */
 	public function testAmbiguousBuiltInSpellingsAreDroppedFromTheOriginalNameMap(): void
 	{
 		// Defaults deliberately registers 'dataStream'/'datastream' (and other pairs) as two

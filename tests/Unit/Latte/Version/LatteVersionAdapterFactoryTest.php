@@ -87,13 +87,24 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 	public function testHarvesterAsksForTheReaderOnlyWhenAnEngineIsHarvested(): void
 	{
 		$factory = $this->factory(['latte/latte' => '3.1.6.0']);
-		$loader = dirname(__DIR__, 2) . '/Customs/Fixtures/engine-loader-gettext.php';
 
 		$unconfigured = new CustomsHarvester(new EngineSource(null, null), $factory);
-		$configured = new CustomsHarvester(new EngineSource(null, $loader), $factory);
 
 		self::assertSame(HarvestedCustoms::empty()->getSaltHash(), $unconfigured->harvest()->getSaltHash());
-		self::assertSame(HarvestedCustoms::empty()->getSaltHash(), $configured->harvest()->getSaltHash());
+	}
+
+	// A reader the factory cannot provide must never degrade into an empty harvest: that would
+	// silently drop every custom of a Latte 3 project.
+	public function testHarvesterDoesNotSwallowAMissingReader(): void
+	{
+		$factory = $this->factory(['latte/latte' => '3.1.6.0']);
+		$loader = dirname(__DIR__) . '/Customs/Fixtures/engine-loader-counting.php';
+		$harvester = new CustomsHarvester(new EngineSource(null, $loader), $factory);
+
+		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage('Latte 3 engine reader not available yet');
+
+		$harvester->harvest();
 	}
 
 	public function testAccessorMemoizesTheAdapter(): void
