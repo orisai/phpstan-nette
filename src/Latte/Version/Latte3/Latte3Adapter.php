@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Version\Latte3;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
+use OriPhpstan\Nette\Latte\Compile\GeneratedSyntaxCheck;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
 use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\TagArgument;
@@ -39,6 +40,8 @@ final class Latte3Adapter implements LatteVersionAdapter
 
 	private ?DiscoveryStore $discoveryStore;
 
+	private GeneratedSyntaxCheck $syntaxCheck;
+
 	public function __construct(
 		Latte3Compiler $compiler,
 		ShapeFamily $family,
@@ -50,6 +53,7 @@ final class Latte3Adapter implements LatteVersionAdapter
 		$this->family = $family;
 		$this->cache = $cache;
 		$this->discoveryStore = $discoveryStore;
+		$this->syntaxCheck = new GeneratedSyntaxCheck();
 	}
 
 	public static function create(ShapeFamily $family, AdapterCollaborators $collaborators): self
@@ -141,8 +145,16 @@ final class Latte3Adapter implements LatteVersionAdapter
 	{
 		$parsed = $this->compiler->parse($source);
 		$facts = $this->factsOf($parsed, $source, $relativePath);
-		$compiled = new CompiledTemplate($this->compiler->generate($parsed, $className, $relativePath), $facts);
+		$result = $this->compiler->generate($parsed, $className, $relativePath);
 		unset($parsed);
+		$phpSource = $result->getPhpSource();
+		$syntaxError = $phpSource !== null
+			? $this->syntaxCheck->check($phpSource, $this->family->lineMarkerPattern())
+			: null;
+		$compiled = new CompiledTemplate(
+			$syntaxError !== null ? CompileResult::failure($className, $syntaxError) : $result,
+			$facts,
+		);
 		self::collectParserCycles();
 
 		return $compiled;

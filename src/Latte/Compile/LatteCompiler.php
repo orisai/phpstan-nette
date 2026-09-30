@@ -19,6 +19,7 @@ use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\CaseMismatchScanner;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Throwable;
 use function array_keys;
 use function array_merge;
@@ -191,7 +192,7 @@ final class LatteCompiler
 					},
 				);
 
-				$syntaxError = $this->syntaxCheck->check($phpSource);
+				$syntaxError = $this->syntaxCheck->check($phpSource, ShapeFamily::LINE_MARKER_PATTERN_LINE);
 				if ($syntaxError !== null) {
 					return CompileResult::failure($className, $syntaxError);
 				}
