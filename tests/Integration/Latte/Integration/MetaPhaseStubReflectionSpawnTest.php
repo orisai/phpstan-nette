@@ -5,12 +5,14 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte\Integration;
 use Nette\Utils\FileSystem;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function dirname;
-use function is_file;
+use function sprintf;
 use function uniqid;
 use const PHP_BINARY;
+use const PHP_VERSION;
 use const PHP_VERSION_ID;
 
 // The pre-analysis index build runs inside PHPStan's result-cache meta phase, before PHPStan 2.2.10+
@@ -23,6 +25,14 @@ final class MetaPhaseStubReflectionSpawnTest extends BaseTestCase
 
 	public function testTheMetaPhaseResolvesAnAttributedStubMethod(): void
 	{
+		if (PHP_VERSION_ID >= 80000 || !InstalledVersionsGuard::satisfies('phpstan/phpstan', '>=2.2.10')) {
+			self::markTestSkipped(sprintf(
+				'The meta-phase stub crash needs PHP 7 with PHPStan 2.2.10+ (spawned: PHP %s, PHPStan %s)',
+				PHP_VERSION,
+				InstalledVersionsGuard::version('phpstan/phpstan') ?? 'none',
+			));
+		}
+
 		$projectRoot = dirname(__DIR__, 4);
 		$scratch = $projectRoot . '/var/tmp/latte-meta-phase-stubs-' . uniqid('', true);
 		$srcDir = $scratch . '/src';
@@ -82,7 +92,7 @@ final class MetaPhaseStubReflectionSpawnTest extends BaseTestCase
 			$process = new Process(
 				[
 					PHP_BINARY,
-					self::phpstanEntry($projectRoot, $scratch),
+					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
 					'--level=8',
@@ -100,22 +110,6 @@ final class MetaPhaseStubReflectionSpawnTest extends BaseTestCase
 		} finally {
 			FileSystem::delete($scratch);
 		}
-	}
-
-	// The failure needs PHP 7 with PHPStan 2.2.10+, while the lowest set installs PHPStan 2.2.0: on PHP 7 the
-	// spawn runs a copy of the primary vendor's PHPStan phar, the newest, when that vendor is installed. The
-	// copy sits outside any vendor directory, so the phar loads only the selected vendor's autoloader.
-	private static function phpstanEntry(string $projectRoot, string $scratch): string
-	{
-		$primaryPhar = $projectRoot . '/vendor/phpstan/phpstan/phpstan.phar';
-		if (PHP_VERSION_ID >= 80000 || !is_file($primaryPhar)) {
-			return $projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan';
-		}
-
-		$copy = $scratch . '/phar/phpstan.phar';
-		FileSystem::copy($primaryPhar, $copy);
-
-		return $copy;
 	}
 
 }
