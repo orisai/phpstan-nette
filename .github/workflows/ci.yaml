@@ -94,11 +94,12 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
+    # PHP 7.4: tools/phpstan.neon analyses for PHP 7.4 up, which needs the polyfills only 7.4 installs.
     strategy:
       matrix:
         include:
           - operating-system: "ubuntu-latest"
-            php-version: "8.3"
+            php-version: "7.4"
 
     steps:
       - name: "Checkout"

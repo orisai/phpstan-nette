@@ -100,7 +100,8 @@ Version groups gate tests at runtime (`VersionGroupGate`, `InstalledVersionsGuar
 not match it, so each suite runs everything its versions support — a Latte 3 profile skips about 760 tests. An unknown
 group name throws.
 
-CI runs cs and phpstan on the default set, phpstan on `latte30` and `latte31`, the tests on every row above, the
+CI runs cs (PHP 8.3) and phpstan (PHP 7.4: `tools/phpstan.neon` analyses for PHP 7.4 up, and on PHP 8 the default set
+installs no `symfony/polyfill-php80`) on the default set, phpstan on `latte30` and `latte31`, the tests on every row above, the
 corpus gate per profile (see [latte-versions.md](latte-versions.md#upstream-template-corpus)) and `make lint`.
 
 ### PHP 7.4 syntax
