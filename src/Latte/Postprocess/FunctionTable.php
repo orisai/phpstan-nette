@@ -21,14 +21,18 @@ final class FunctionTable
 	/** @var array<string, true> */
 	private array $instanceDispatch = [];
 
+	/** @var array<string, true> */
+	private array $templateAware = [];
+
 	public function __construct(DefaultCallables $defaults, ?HarvestedCustoms $harvested = null)
 	{
 		foreach ($defaults->getFunctions() as $name => $callable) {
 			$this->register($name, $callable, $defaults);
 		}
 
-		foreach (($harvested ?? HarvestedCustoms::empty())->getFunctions() as $name => $callable) {
-			$this->registerHarvested($name, $callable);
+		$harvested ??= HarvestedCustoms::empty();
+		foreach ($harvested->getFunctions() as $name => $callable) {
+			$this->registerHarvested($name, $callable, $harvested->isExtensionHarvest());
 		}
 
 		ksort($this->table);
@@ -40,6 +44,13 @@ final class FunctionTable
 	public function resolve(string $lowerName): ?array
 	{
 		return $this->table[$lowerName] ?? null;
+	}
+
+	// A harvested Latte 3 function whose first parameter is typed Latte\Runtime\Template: the
+	// compiled call's leading $this is its real first argument, not the one FunctionExecutor skips.
+	public function receivesTemplate(string $lowerName): bool
+	{
+		return isset($this->templateAware[$lowerName]);
 	}
 
 	// See FilterTable::resolveForTemplate()'s own doc - identical contract, mirrored here for
@@ -100,33 +111,40 @@ final class FunctionTable
 	}
 
 	// Same degrade as FilterTable::registerHarvested() - an unrepresentable harvested callable
-	// shape (instance-bound array, Closure, invokable object) stays unknown rather than crashing
-	// or guessing; a built-in of the same lowercase name always wins.
+	// shape stays unknown rather than crashing or guessing; a built-in of the same lowercase name
+	// always wins.
 
 	/**
 	 * @param callable(mixed...): mixed $callable
 	 */
-	private function registerHarvested(string $name, callable $callable): void
+	private function registerHarvested(string $name, callable $callable, bool $extensionHarvest): void
 	{
 		$key = strtolower($name);
 		if (isset($this->table[$key])) {
 			return;
 		}
 
-		$target = $this->resolveStaticTarget($callable);
-		if ($target === null) {
-			return;
-		}
-
-		[$class, $method] = $target;
-
 		try {
+			$target = $this->resolveHarvestedTarget($callable, $extensionHarvest);
+			if ($target === null) {
+				return;
+			}
+
+			[$class, $method, $isStatic] = $target;
 			$isContentAware = $this->isContentAware($class, $method);
+			$isTemplateAware = $extensionHarvest && $this->isTemplateAware($class, $method);
 		} catch (Throwable $e) {
 			return;
 		}
 
 		$this->table[$key] = [$class, $method, $isContentAware];
+		if (!$isStatic) {
+			$this->instanceDispatch[$key] = true;
+		}
+
+		if ($isTemplateAware) {
+			$this->templateAware[$key] = true;
+		}
 	}
 
 }

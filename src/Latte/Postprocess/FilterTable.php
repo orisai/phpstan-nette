@@ -36,8 +36,9 @@ final class FilterTable
 			$this->register($name, $callable, $defaults);
 		}
 
-		foreach (($harvested ?? HarvestedCustoms::empty())->getFilters() as $name => $callable) {
-			$this->registerHarvested($name, $callable);
+		$harvested ??= HarvestedCustoms::empty();
+		foreach ($harvested->getFilters() as $name => $callable) {
+			$this->registerHarvested($name, $callable, $harvested->isExtensionHarvest());
 		}
 
 		ksort($this->table);
@@ -100,35 +101,38 @@ final class FilterTable
 
 	// Harvested callables (real, running-engine values) can take shapes resolveTarget()/
 	// isContentAware() never throw for on the stock domain but aren't representable as a static
-	// "Class::method"/plain-function AST reference at all (an instance-bound [$object, 'method']
-	// array, a Closure, an invokable object) - those degrade to "stays unknown" here rather than
-	// crashing or guessing; a built-in of the same lowercase name always wins (register() above
-	// runs first).
+	// "Class::method"/plain-function AST reference at all - a Closure, an invokable object, and on a
+	// Latte 2 harvest an instance-bound [$object, 'method'] array (a Latte 3 extension harvest
+	// resolves those and named-method closures to an instance dispatch) - those degrade to "stays
+	// unknown" here rather than crashing or guessing; a built-in of the same lowercase name always
+	// wins (register() above runs first).
 
 	/**
 	 * @param callable(mixed...): mixed $callable
 	 */
-	private function registerHarvested(string $name, callable $callable): void
+	private function registerHarvested(string $name, callable $callable, bool $extensionHarvest): void
 	{
 		$key = strtolower($name);
 		if (isset($this->table[$key])) {
 			return;
 		}
 
-		$target = $this->resolveStaticTarget($callable);
-		if ($target === null) {
-			return;
-		}
-
-		[$class, $method] = $target;
-
 		try {
+			$target = $this->resolveHarvestedTarget($callable, $extensionHarvest);
+			if ($target === null) {
+				return;
+			}
+
+			[$class, $method, $isStatic] = $target;
 			$isContentAware = $this->isContentAware($class, $method);
 		} catch (Throwable $e) {
 			return;
 		}
 
 		$this->table[$key] = [$class, $method, $isContentAware];
+		if (!$isStatic) {
+			$this->instanceDispatch[$key] = true;
+		}
 	}
 
 	/**

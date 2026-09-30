@@ -2,7 +2,6 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Version;
 
-use LogicException;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
@@ -16,7 +15,7 @@ use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
-use function dirname;
+use function get_class;
 
 final class LatteVersionAdapterFactoryTest extends BaseTestCase
 {
@@ -48,14 +47,15 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 		self::assertSame($factory->family(), $adapter->family());
 	}
 
-	public function testLatte3InstallHasNoEngineReaderYet(): void
+	// Constructed by class name like the adapter; it reads a Latte 3 engine only when asked to.
+	public function testLatte3InstallGetsTheLatte3EngineReader(): void
 	{
 		$factory = $this->factory(['latte/latte' => '3.0.26.0']);
 
-		$this->expectException(LogicException::class);
-		$this->expectExceptionMessage('Latte 3 engine reader not available yet');
-
-		$factory->createEngineReader();
+		self::assertSame(
+			'OriPhpstan\\Nette\\Latte\\Version\\Latte3\\Latte3EngineReader',
+			get_class($factory->createEngineReader()),
+		);
 	}
 
 	public function testUnknownInstallFallsBackToTheLoadedEngineVersion(): void
@@ -94,20 +94,6 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 		$unconfigured = new CustomsHarvester(new EngineSource(null, null), $factory);
 
 		self::assertSame(HarvestedCustoms::empty()->getSaltHash(), $unconfigured->harvest()->getSaltHash());
-	}
-
-	// A reader the factory cannot provide must never degrade into an empty harvest: that would
-	// silently drop every custom of a Latte 3 project.
-	public function testHarvesterDoesNotSwallowAMissingReader(): void
-	{
-		$factory = $this->factory(['latte/latte' => '3.1.6.0']);
-		$loader = dirname(__DIR__) . '/Customs/Fixtures/engine-loader-counting.php';
-		$harvester = new CustomsHarvester(new EngineSource(null, $loader), $factory);
-
-		$this->expectException(LogicException::class);
-		$this->expectExceptionMessage('Latte 3 engine reader not available yet');
-
-		$harvester->harvest();
 	}
 
 	public function testAccessorMemoizesTheAdapter(): void

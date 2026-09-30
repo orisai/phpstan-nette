@@ -103,6 +103,13 @@ parameters:
 			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
 			path: ../tests/Unit/LatteForms/LatteFormsRuleTest.php
 
+		# Latte: the extension-harvest accessors are called from the Latte 3 seam and its tests, which
+		# phpstan.latte3.neon analyses.
+		-
+			identifier: shipmonk.deadMethod
+			message: '#^Unused OriPhpstan\\Nette\\Latte\\Customs\\HarvestedCustoms::(fromExtensions|getExtensions|getFeatures|getProviderTypes)$#'
+			path: ../src/Latte/Customs/HarvestedCustoms.php
+
 		# Latte: runtime helpers are called only from generated template code.
 		-
 			identifier: shipmonk.deadMethod

@@ -43,6 +43,18 @@ final class HarvestedCustoms
 	/** @var array<string, string> */
 	private array $functionOriginalNames;
 
+	// Latte 3 only: the engine's extensions in registration order, its feature flags as the engine
+	// stores them (3.0 keys by the Feature constant's value, 3.1 by the enum case name) and its
+	// providers' value types. Empty for a Latte 2 harvest, which keeps its salt unchanged.
+	/** @var list<object> */
+	private array $extensions;
+
+	/** @var array<string, bool> */
+	private array $features;
+
+	/** @var array<string, string> */
+	private array $providerTypes;
+
 	private string $saltHash;
 
 	/**
@@ -52,6 +64,9 @@ final class HarvestedCustoms
 	 * @param array<string, class-string> $macroClassesByName
 	 * @param array<string, string> $filterOriginalNames
 	 * @param array<string, string> $functionOriginalNames
+	 * @param list<object> $extensions
+	 * @param array<string, bool> $features
+	 * @param array<string, string> $providerTypes
 	 */
 	public function __construct(
 		array $filters,
@@ -59,7 +74,10 @@ final class HarvestedCustoms
 		array $macroSets,
 		array $macroClassesByName,
 		array $filterOriginalNames,
-		array $functionOriginalNames
+		array $functionOriginalNames,
+		array $extensions = [],
+		array $features = [],
+		array $providerTypes = []
 	)
 	{
 		$this->filters = $filters;
@@ -68,18 +86,91 @@ final class HarvestedCustoms
 		$this->macroClassesByName = $macroClassesByName;
 		$this->filterOriginalNames = $filterOriginalNames;
 		$this->functionOriginalNames = $functionOriginalNames;
+		$this->extensions = $extensions;
+		$this->features = $features;
+		$this->providerTypes = $providerTypes;
 		$this->saltHash = self::computeSaltHash(
 			$filters,
 			$functions,
 			$macroClassesByName,
 			$filterOriginalNames,
 			$functionOriginalNames,
+			$extensions,
+			$features,
+			$providerTypes,
 		);
 	}
 
 	public static function empty(): self
 	{
 		return new self([], [], [], [], [], []);
+	}
+
+	// A Latte 3 engine's tags live on its extensions: $tagClassesByName maps every name the parser
+	// accepts - including the n:, n:inner- and n:tag- attributes Latte derives from a generator
+	// tag parser - to the extension class that wins it.
+
+	/**
+	 * @param array<string, callable(mixed...): mixed> $filters
+	 * @param array<string, callable(mixed...): mixed> $functions
+	 * @param list<object> $extensions
+	 * @param array<string, class-string> $tagClassesByName
+	 * @param array<string, string> $filterOriginalNames
+	 * @param array<string, string> $functionOriginalNames
+	 * @param array<string, bool> $features
+	 * @param array<string, string> $providerTypes
+	 */
+	public static function fromExtensions(
+		array $filters,
+		array $functions,
+		array $extensions,
+		array $tagClassesByName,
+		array $filterOriginalNames,
+		array $functionOriginalNames,
+		array $features,
+		array $providerTypes
+	): self
+	{
+		return new self(
+			$filters,
+			$functions,
+			[],
+			$tagClassesByName,
+			$filterOriginalNames,
+			$functionOriginalNames,
+			$extensions,
+			$features,
+			$providerTypes,
+		);
+	}
+
+	public function isExtensionHarvest(): bool
+	{
+		return $this->extensions !== [];
+	}
+
+	/**
+	 * @return list<object>
+	 */
+	public function getExtensions(): array
+	{
+		return $this->extensions;
+	}
+
+	/**
+	 * @return array<string, bool>
+	 */
+	public function getFeatures(): array
+	{
+		return $this->features;
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	public function getProviderTypes(): array
+	{
+		return $this->providerTypes;
 	}
 
 	/**
@@ -141,13 +232,19 @@ final class HarvestedCustoms
 	 * @param array<string, class-string> $macroClassesByName
 	 * @param array<string, string> $filterOriginalNames
 	 * @param array<string, string> $functionOriginalNames
+	 * @param list<object> $extensions
+	 * @param array<string, bool> $features
+	 * @param array<string, string> $providerTypes
 	 */
 	private static function computeSaltHash(
 		array $filters,
 		array $functions,
 		array $macroClassesByName,
 		array $filterOriginalNames,
-		array $functionOriginalNames
+		array $functionOriginalNames,
+		array $extensions,
+		array $features,
+		array $providerTypes
 	): string
 	{
 		$lines = self::canonicalCallableLines('filter', $filters);
@@ -165,6 +262,20 @@ final class HarvestedCustoms
 		}
 
 		foreach (self::canonicalOriginalNameLines('functionOrig', $functionOriginalNames) as $line) {
+			$lines[] = $line;
+		}
+
+		foreach ($extensions as $index => $extension) {
+			$class = get_class($extension);
+			$lines[] = "extension\x1f" . $index . "\x1f" . $class . "\x1f" . self::describeMacroClass($class);
+		}
+
+		ksort($features, SORT_STRING);
+		foreach ($features as $feature => $enabled) {
+			$lines[] = "feature\x1f" . $feature . "\x1f" . ($enabled ? '1' : '0');
+		}
+
+		foreach (self::canonicalOriginalNameLines('provider', $providerTypes) as $line) {
 			$lines[] = $line;
 		}
 

@@ -26,12 +26,13 @@ Everything that reads Latte's own API or depends on the shape of its generated c
 generated code and the `ExtractedFacts` (declarations, include edges, form-macro sites) from the
 same parse — `extractFacts()` is the facts-only path, plus the line-marker pattern and the
 `ShapeFamily` (Latte line + forms bridge, e.g. `2/macros`). The engine harvest is the sibling
-`LatteEngineReader`, which `CustomsHarvester` calls inside its own error containment.
+`LatteEngineReader` (`Latte2EngineReader`, `Latte3\Latte3EngineReader`), whose `read()`
+`CustomsHarvester` calls inside its own error containment.
 `LatteVersionAdapterFactory` is the one version switch (installed `latte/latte` and `nette/forms`
 versions). Nothing asks it while the container is built: the adapter is resolved by
 `LatteVersionAdapterAccessor::get()` on the first `.latte` parse and the reader inside
-`CustomsHarvester::harvest()` (first harvest, inside its containment window, so a missing reader
-degrades to the empty harvest). With `orisaiNette.latte.enabled` off no template is parsed and no
+`CustomsHarvester::harvest()` (first harvest; asked outside the containment window, so a missing
+reader is a loud `LogicException` rather than an empty harvest). With `orisaiNette.latte.enabled` off no template is parsed and no
 salt harvested, so an unsupported install is inert; with it on, `ConfigurationGuard` rejects the
 install with its own message before any parse. `ExtractedFacts` resolves each fact on first
 access, so the routing parser's `compile()` pays only for the declarations it reads. `Latte2Adapter` wraps the
@@ -769,6 +770,47 @@ The harvest runs once per PHPStan process and is memoized; two harvests of the s
 byte-identical (proven by a dedicated determinism test), which is what makes the salt in
 *Invalidation* below meaningful.
 
+### Latte 3 extension harvest
+
+On Latte 3 the same two sources yield an engine whose customs live on its extensions.
+`Latte3EngineReader` reads `Engine::getExtensions()` in registration order, the tag names from each
+extension's `getTags()` keys (a later extension wins a name, as in `TemplateParser::addTags()`),
+the static `getFilters()`/`getFunctions()`/`getProviders()` entries and the engine's feature flags
+(read from `Engine`'s private `$features` as stored: 3.0 keys by the `Feature` constant's value,
+3.1 by the enum case name). `HarvestedCustoms::fromExtensions()` carries them: the tag map reuses
+the macro-name slot (`getMacroNames()`), and every generator tag parser also contributes the
+`n:name`, `n:inner-name` and `n:tag-name` attributes Latte derives from it, recorded explicitly;
+`getExtensions()`, `getFeatures()` and `getProviderTypes()` are new and empty for a Latte 2
+harvest, whose salt is therefore unchanged. Filter and function loaders stay invisible to
+`Engine::getFilters()`/`getFunctions()`.
+
+nette/application adds two extensions only at render time: `TemplateFactory` adds
+`UIExtension($control)` when `LatteFactory::create()` ran without a control (application 3.2 —
+the harvest calls `create()` without one), and `Template::setTranslator()` adds
+`TranslatorExtension`. The reader appends `UIExtension(null)` and `TranslatorExtension(null)` after
+the project's own extensions when the engine lacks them, so `{link}`, `{control}` or `{_}` never
+read as unknown tags.
+
+The compile then runs over the harvest instead of the fixed extension set: a fresh `Engine` (its
+own `CoreExtension` and `SandboxExtension` stand for the project engine's), the harvested
+extensions in the project's order, functions the project added directly with `addFunction()` (so
+CoreExtension's `customFunctions` pass compiles their calls to `$this->global->fn->name(...)` like
+the project's engine does), the harvested features copied as stored — strict types, strict parsing
+and the rest follow the project's engine — and `AnalysisExtension` last. With nothing harvested
+the fixed set stays: `UIExtension(null)`, `FormsExtension`, `CacheExtension` when nette/caching is
+installed, `TranslatorExtension(null)`, strict types off on both lines. The filter/function tables
+keep the fixed set's callables as the stock entries; harvested ones join as `HarvestedCustoms`,
+and from an extension harvest an instance-bound `[$object, 'method']` array or a named-method
+closure (`$this->method(...)`) resolves to that method with an instance dispatch (Latte 2 harvests
+keep the static-only resolution). `FunctionExecutor` hands the template only to a function whose
+first parameter is typed `Latte\Runtime\Template`; such a harvested function keeps the compiled
+call's leading `$this` (`FunctionTable::receivesTemplate()`), every other one has it dropped.
+
+`isLinkCurrent()`/`isModuleCurrent()` are registered by `UIExtension` only with a presenter, which
+no harvest has; the Latte 3 function table therefore always carries them as typed stand-ins
+(`Helpers::presenterIsLinkCurrent()`/`presenterIsModuleCurrent()`, the `Component`/`Presenter`
+signatures).
+
 ### Typed filters and functions
 
 Harvested filter/function names join the existing filter-rewrite table with **real, reflected
@@ -907,9 +949,11 @@ have accidentally made it work depending on render order. This is the documented
 for new code: never rely on the runtime leak, declare `{templateType}` on every template that needs
 a custom.
 
-**Latte 3 forward note.** `processParams()` is *removed entirely* in Latte 3 (v3.1.4-verified) —
-replaced by `Extension::getFilters()`/`getFunctions()`. A future Latte 3 migration must retire this
-mechanism outright, not adjust its matching rules.
+**Latte 3.** The mechanism stays: Latte 3.0 keeps `Engine::processParams()` (the docblock tags
+raise a deprecation notice but still register, attributes are always read), 3.1 moves it to
+`Helpers::resolveParams()`/`inspectParamsClass()`, which reads the attributes only.
+`TemplateTypeCustoms` models the installed line; `ProcessParamsQualificationParityTest` pins the
+model against the real registration on every line.
 
 **Invalidation.** Every `.latte` file gets a direct dependency edge to every `{templateType}` class
 reachable *anywhere* in its own transitive include graph (`{include}`/`{layout}`/`{extends}`/
@@ -969,6 +1013,13 @@ Two independent caches consume this salt:
   re-analysis) but the re-analysis would still read the STALE compiled PHP back out of this cache,
   silently keeping the old harvest's shape indefinitely — exactly the failure mode an application
   hits when it deregisters a macro extension.
+
+A Latte 3 harvest adds one line per extension (position, class, `sha1_file()` of its declaring
+file — an edit to an extension's code changes the salt even when its class and tag names do not),
+one per feature flag and one per provider. The Latte 3 compile joins `LatteAnalysisCache` under
+`Latte3Adapter::compile()` with the key `sha1($source)|$className|$relativePath|$engineSalt|
+$discoverySalt|$family|Latte3Adapter`, where `$engineSalt` is the harvest salt for an extension
+harvest and a constant for the fixed set; the entry holds the `CompileResult` and the resolved facts.
 
 A harvester with nothing configured and no harvester wired at all produce byte-identical salts
 (both `HarvestedCustoms::empty()`) — wiring the harvester service by itself never causes spurious

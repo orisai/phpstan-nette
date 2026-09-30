@@ -63,6 +63,19 @@ final class Helpers
 	}
 
 	/**
+	 * @param mixed $args
+	 */
+	public static function presenterIsLinkCurrent(?string $destination = null, $args = []): bool
+	{
+		throw new LogicException('never executed');
+	}
+
+	public static function presenterIsModuleCurrent(string $module): bool
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
 	 * @param mixed $target
 	 */
 	public static function embedTemplate($target): void

@@ -2,40 +2,102 @@
 
 namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
+use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
+use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
+use OriPhpstan\Nette\Latte\Compile\CompileResult;
+use OriPhpstan\Nette\Latte\Declarations\Declarations;
+use OriPhpstan\Nette\Latte\Forms\FormSite;
 use OriPhpstan\Nette\Latte\Includes\TagArgument;
+use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\CompiledTemplate;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
+use function implode;
+use function sha1;
 
 // Holds no Latte 3 object itself: LatteVersionAdapterFactory may class_exists() and construct it
 // where Latte 3 is not installed, so everything Latte-typed lives in the compiler's parse results.
 final class Latte3Adapter implements LatteVersionAdapter
 {
 
+	private const CACHE_NODE_ID = 'latte3-compile';
+
 	private Latte3Compiler $compiler;
 
 	private ShapeFamily $family;
 
-	public function __construct(Latte3Compiler $compiler, ShapeFamily $family)
+	private ?LatteAnalysisCache $cache;
+
+	private ?DiscoveryStore $discoveryStore;
+
+	public function __construct(
+		Latte3Compiler $compiler,
+		ShapeFamily $family,
+		?LatteAnalysisCache $cache = null,
+		?DiscoveryStore $discoveryStore = null
+	)
 	{
 		$this->compiler = $compiler;
 		$this->family = $family;
+		$this->cache = $cache;
+		$this->discoveryStore = $discoveryStore;
 	}
 
 	public static function create(ShapeFamily $family, AdapterCollaborators $collaborators): self
 	{
-		return new self(new Latte3Compiler(), $family);
+		return new self(
+			new Latte3Compiler($collaborators->getHarvester()),
+			$family,
+			$collaborators->getCache(),
+			$collaborators->isDiscoveryStoreEnabled() ? $collaborators->getDiscoveryStore() : null,
+		);
 	}
 
+	// Keyed like LatteCompiler's Latte 2 entries - source, class, harvest and discovery salts, the
+	// family and adapter - plus the relative path, which the generated code and the facts carry.
+	// Only a successful compile is cached, with its facts resolved.
 	public function compile(string $source, string $className, string $relativePath): CompiledTemplate
 	{
-		$parsed = $this->compiler->parse($source);
-		$facts = $this->factsOf($parsed, $source, $relativePath);
+		if ($this->cache === null) {
+			return $this->doCompile($source, $className, $relativePath);
+		}
 
-		return new CompiledTemplate($this->compiler->generate($parsed, $className, $relativePath), $facts);
+		$contentHash = implode('|', [
+			sha1($source),
+			$className,
+			$relativePath,
+			$this->compiler->engineSalt(),
+			$this->discoveryStore !== null ? $this->discoveryStore->recordsSaltForTemplateClass(
+				$className,
+			) : 'disabled',
+			$this->family->id() . '|' . self::class,
+		]);
+
+		/** @var array{result: CompileResult, declarations: Declarations, templateFacts: TemplateFacts, formSites: list<FormSite>}|null $cached */
+		$cached = $this->cache->readContentAddressed($contentHash, self::CACHE_NODE_ID);
+		if ($cached !== null) {
+			return new CompiledTemplate(
+				$cached['result'],
+				ExtractedFacts::eager($cached['declarations'], $cached['templateFacts'], $cached['formSites']),
+			);
+		}
+
+		$compiled = $this->doCompile($source, $className, $relativePath);
+		$result = $compiled->getResult();
+		if ($result->getPhpSource() !== null) {
+			$facts = $compiled->getFacts();
+			$this->cache->writeContentAddressed($contentHash, self::CACHE_NODE_ID, [
+				'result' => $result,
+				'declarations' => $facts->getDeclarations(),
+				'templateFacts' => $facts->getTemplateFacts(),
+				'formSites' => $facts->getFormSites(),
+			]);
+		}
+
+		return $compiled;
 	}
 
 	public function extractFacts(string $source, string $relativePath): ExtractedFacts
@@ -64,6 +126,14 @@ final class Latte3Adapter implements LatteVersionAdapter
 	public function parseTagArguments(string $argsSource): array
 	{
 		return TagLexerArguments::parse($argsSource);
+	}
+
+	private function doCompile(string $source, string $className, string $relativePath): CompiledTemplate
+	{
+		$parsed = $this->compiler->parse($source);
+		$facts = $this->factsOf($parsed, $source, $relativePath);
+
+		return new CompiledTemplate($this->compiler->generate($parsed, $className, $relativePath), $facts);
 	}
 
 	// Read before generate(): the passes mutate the parsed tree in place.

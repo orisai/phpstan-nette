@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Version\Latte3;
 use Latte\CompileException;
 use Latte\Engine;
 use Latte\Essential\TranslatorExtension;
+use Latte\Extension;
 use Latte\Feature;
 use LogicException;
 use Nette\Bridges\ApplicationLatte\UIExtension;
@@ -14,10 +15,14 @@ use Nette\Caching\Storages\DevNullStorage;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Compile\VendorErrorContainment;
+use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
+use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
+use ReflectionProperty;
 use function array_merge;
 use function class_exists;
+use function get_class;
 use function preg_match;
 use function preg_quote;
 use function str_replace;
@@ -25,7 +30,8 @@ use function strpos;
 use const E_USER_DEPRECATED;
 
 // Engine::parse() -> applyPasses() -> generate(), the same three steps Engine::compile() runs, over
-// a fixed extension set with AnalysisExtension registered last. Unknown tags and attributes are
+// the harvested engine's extensions and features (or, with nothing harvested, a fixed extension
+// set) with AnalysisExtension registered last. Unknown tags and attributes are
 // claimed as passthrough and retried, the way LatteCompiler does for Latte 2 - Latte 3 has no
 // unknown-tag hook, only the CompileException from TemplateParser::getTagParser() /
 // TemplateParserHtml::prepareNAttrs().
@@ -33,6 +39,8 @@ final class Latte3Compiler
 {
 
 	private const MAX_UNKNOWN_TAG_RETRIES = 20;
+
+	private const FIXED_SET_SALT = 'fixed-set';
 
 	// Latte 2 core/bridge tags Latte 3 dropped: their "Unexpected tag" is a migration error, never a
 	// custom tag worth a passthrough.
@@ -42,6 +50,22 @@ final class Latte3Compiler
 		'status' => true,
 		'use' => true,
 	];
+
+	private ?CustomsHarvester $harvester;
+
+	public function __construct(?CustomsHarvester $harvester = null)
+	{
+		$this->harvester = $harvester;
+	}
+
+	// What the compile engine depends on beyond the source: the harvested extensions (class and
+	// declaring-file hash), functions and features, or the fixed set.
+	public function engineSalt(): string
+	{
+		$harvested = $this->harvested();
+
+		return $harvested->isExtensionHarvest() ? $harvested->getSaltHash() : self::FIXED_SET_SALT;
+	}
 
 	public function parse(string $source): ParsedTemplate
 	{
@@ -177,25 +201,29 @@ final class Latte3Compiler
 		);
 	}
 
-	// The filters and functions the compile engine registers, so the table the rewriter resolves
-	// against and the names the compiler accepts agree. CoreExtension's inline lambdas (|limit,
-	// hasBlock(), hasTemplate()) have no static target of their own; Helpers stands in for them.
+	// The stock filters and functions of the fixed set, so the table the rewriter resolves against
+	// and the names the compiler accepts agree; harvested ones join the tables as HarvestedCustoms.
+	// CoreExtension's inline lambdas (|limit, hasBlock(), hasTemplate()) have no static target of
+	// their own and UIExtension registers isLinkCurrent()/isModuleCurrent() only with a presenter;
+	// Helpers stands in for all of them.
 	public function defaultCallables(): DefaultCallables
 	{
-		$engine = $this->createBaseEngine();
+		$engine = $this->createFixedEngine();
 
 		return new DefaultCallables(
 			$engine->getFilters(),
-			$engine->getFunctions(),
+			$engine->getFunctions() + [
+				'isLinkCurrent' => [Helpers::class, 'presenterIsLinkCurrent'],
+				'isModuleCurrent' => [Helpers::class, 'presenterIsModuleCurrent'],
+			],
 			['limit' => [Helpers::class, 'limit']],
 			['hasblock' => [Helpers::class, 'hasBlock'], 'hastemplate' => [Helpers::class, 'hasTemplate']],
 		);
 	}
 
 	// Engine's own defaults (CoreExtension, SandboxExtension) plus the nette bridges the DI extension
-	// would add and the translator tags Latte 2 had in its core; the harvested set replaces this
-	// fixed list later. Strict types stay off on every line until a harvested engine says otherwise.
-	private function createBaseEngine(): Engine
+	// would add and the translator tags Latte 2 had in its core. Strict types stay off on every line.
+	private function createFixedEngine(): Engine
 	{
 		$engine = new Engine();
 		$engine->setFeature(Feature::StrictTypes, false);
@@ -206,6 +234,49 @@ final class Latte3Compiler
 		}
 
 		$engine->addExtension(new TranslatorExtension(null));
+
+		return $engine;
+	}
+
+	// The harvested extensions in the project's order on a fresh engine, which already carries the
+	// CoreExtension and SandboxExtension every Engine constructs with; functions added to the
+	// project engine directly (not through an extension) are registered too, so CoreExtension's
+	// customFunctions pass compiles their calls the way the project's engine does. The features are
+	// copied as the engine stores them - the key format differs between 3.0 and 3.1.
+	private function createHarvestedEngine(HarvestedCustoms $harvested): Engine
+	{
+		$engine = new Engine();
+
+		$ownClasses = [];
+		foreach ($engine->getExtensions() as $extension) {
+			$ownClasses[get_class($extension)] = true;
+		}
+
+		foreach ($harvested->getExtensions() as $extension) {
+			if (!$extension instanceof Extension) {
+				continue;
+			}
+
+			$class = get_class($extension);
+			if (isset($ownClasses[$class])) {
+				unset($ownClasses[$class]);
+
+				continue;
+			}
+
+			$engine->addExtension($extension);
+		}
+
+		$registered = $engine->getFunctions();
+		foreach ($harvested->getFunctions() as $name => $function) {
+			if (!isset($registered[$name])) {
+				$engine->addFunction($name, $function);
+			}
+		}
+
+		$features = new ReflectionProperty(Engine::class, 'features');
+		$features->setAccessible(true);
+		$features->setValue($engine, $harvested->getFeatures());
 
 		return $engine;
 	}
@@ -224,7 +295,10 @@ final class Latte3Compiler
 		array $passthroughAttributes
 	): Engine
 	{
-		$engine = $this->createBaseEngine();
+		$harvested = $this->harvested();
+		$engine = $harvested->isExtensionHarvest()
+			? $this->createHarvestedEngine($harvested)
+			: $this->createFixedEngine();
 
 		$baseTags = [];
 		foreach ($engine->getExtensions() as $extension) {
@@ -238,6 +312,11 @@ final class Latte3Compiler
 		);
 
 		return $engine;
+	}
+
+	private function harvested(): HarvestedCustoms
+	{
+		return $this->harvester !== null ? $this->harvester->harvest() : HarvestedCustoms::empty();
 	}
 
 	/**

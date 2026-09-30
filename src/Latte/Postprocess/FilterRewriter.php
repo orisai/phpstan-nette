@@ -65,7 +65,8 @@ final class FilterRewriter extends NodeVisitorAbstract
 	// The variable a compiled Latte 3 function call passes first (the template itself); at runtime
 	// FunctionExecutor hands it only to a callable whose first parameter is typed
 	// Latte\Runtime\Template and wraps every other one to skip it, so the stock table entries (none
-	// Template-aware, the two lambdas standing in as Helpers) match their signature without it.
+	// Template-aware, the two lambdas standing in as Helpers) match their signature without it and a
+	// harvested Template-aware function (FunctionTable::receivesTemplate()) keeps it.
 	public const ROLE_FUNCTION_TEMPLATE_ARG = 'functionTemplateArg';
 
 	private const FILTER_INFO_CLASS_NAMES = ['Latte\Runtime\FilterInfo', 'LR\FilterInfo'];
@@ -138,9 +139,12 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 			$functionName = $this->matchGlobalFnAccessor($node->name);
 			if ($functionName !== null) {
+				$receivesTemplate = $this->functionTable !== null
+					&& $this->functionTable->receivesTemplate(strtolower($functionName));
+
 				return $this->rewriteResolvedCall(
 					$functionName,
-					$this->withoutTemplateArg($node->args),
+					$receivesTemplate ? $node->args : $this->withoutTemplateArg($node->args),
 					$node->getStartLine(),
 					'function',
 				);

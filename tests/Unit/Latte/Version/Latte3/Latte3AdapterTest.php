@@ -102,14 +102,15 @@ final class Latte3AdapterTest extends BaseTestCase
 		$functions = $defaults->getFunctions();
 
 		// CoreExtension, plus the bridges the compile engine carries: UIExtension's |modifyDate and
-		// the translator's |translate.
+		// the translator's |translate; UIExtension's presenter-only functions as stand-ins.
 		self::assertArrayHasKey('upper', $filters);
 		self::assertArrayHasKey('checkUrl', $filters);
 		self::assertArrayHasKey('modifyDate', $filters);
 		self::assertArrayHasKey('translate', $filters);
 		self::assertArrayHasKey('clamp', $functions);
 		self::assertArrayHasKey('hasBlock', $functions);
-		self::assertArrayNotHasKey('isLinkCurrent', $functions);
+		self::assertSame([Helpers::class, 'presenterIsLinkCurrent'], $functions['isLinkCurrent'] ?? null);
+		self::assertSame([Helpers::class, 'presenterIsModuleCurrent'], $functions['isModuleCurrent'] ?? null);
 		self::assertSame([Helpers::class, 'hasBlock'], $defaults->functionFallback('hasblock'));
 		self::assertSame([Helpers::class, 'limit'], $defaults->filterFallback('limit'));
 		self::assertNull($defaults->filterFallback('upper'));

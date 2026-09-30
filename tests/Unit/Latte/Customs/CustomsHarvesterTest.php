@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureMacroSet;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\InvocationCounter;
@@ -14,8 +15,8 @@ use function array_keys;
 use function ob_get_clean;
 use function ob_start;
 
-// The engine-resolving cases stay Latte 2 until the Latte 3 engine reader exists: a resolved engine
-// with no reader is a LogicException by design (LatteVersionAdapterFactoryTest pins it).
+// The macro-set cases stay Latte 2 (Latte3EngineReaderTest covers the extension harvest); the
+// resolution, memoization and degradation cases run on every line with that line's loader.
 final class CustomsHarvesterTest extends BaseTestCase
 {
 
@@ -36,6 +37,10 @@ final class CustomsHarvesterTest extends BaseTestCase
 	private const EngineLoaderTriggerErrorFile = __DIR__ . '/Fixtures/engine-loader-trigger-error.php';
 
 	private const MissingFile = __DIR__ . '/Fixtures/does-not-exist.php';
+
+	private const Latte3EngineLoaderFile = __DIR__ . '/Latte3/Fixtures/engine-loader.php';
+
+	private const Latte3EngineLoaderEnumerationThrowsFile = __DIR__ . '/Latte3/Fixtures/engine-loader-enumeration-throws.php';
 
 	/**
 	 * @group latte2
@@ -86,9 +91,6 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertArrayHasKey('fixturefilter', $harvested->getFilters());
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testMemoizationEngineLoaderFileRequiredOnce(): void
 	{
 		InvocationCounter::$count = 0;
@@ -101,13 +103,12 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertSame(1, InvocationCounter::$count);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testDeterminismAcrossTwoHarvests(): void
 	{
-		$first = $this->harvest(null, self::EngineLoaderFile);
-		$second = $this->harvest(null, self::EngineLoaderFile);
+		$first = $this->harvest(null, self::engineLoaderFile());
+		$second = $this->harvest(null, self::engineLoaderFile());
+
+		self::assertNotSame([], $first->getFilters());
 
 		self::assertSame(array_keys($first->getFilters()), array_keys($second->getFilters()));
 		self::assertSame(array_keys($first->getFunctions()), array_keys($second->getFunctions()));
@@ -179,15 +180,18 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertEmptyHarvest($harvested);
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testEnumerationStageFailureDegradesToEmptyWithoutException(): void
 	{
-		// Resolution succeeds (a real Engine comes back); the failure happens later, inside
-		// enumerate() itself (an onCompile[] handler throwing) - a different failure stage than
-		// every other test in this class, which all fail during EngineSource::resolve().
-		$harvested = $this->harvest(null, self::EngineLoaderEnumerationThrowsFile);
+		// Resolution succeeds (a real Engine comes back); the failure happens later, inside the
+		// reader itself (a Latte 2 onCompile[] handler, a Latte 3 extension's getTags() throwing) - a
+		// different failure stage than every other test in this class, which all fail during
+		// EngineSource::resolve().
+		$harvested = $this->harvest(
+			null,
+			InstalledVersionsGuard::latteMajor() === 2
+				? self::EngineLoaderEnumerationThrowsFile
+				: self::Latte3EngineLoaderEnumerationThrowsFile,
+		);
 
 		self::assertEmptyHarvest($harvested);
 	}
@@ -243,6 +247,11 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertContains('fixtureMacro', $harvested->getMacroNames());
 	}
 
+	private static function engineLoaderFile(): string
+	{
+		return InstalledVersionsGuard::latteMajor() === 2 ? self::EngineLoaderFile : self::Latte3EngineLoaderFile;
+	}
+
 	private function harvest(?string $containerLoaderFile, ?string $latteEngineLoaderFile): HarvestedCustoms
 	{
 		return $this->harvester($containerLoaderFile, $latteEngineLoaderFile)->harvest();
@@ -268,16 +277,15 @@ final class CustomsHarvesterTest extends BaseTestCase
 		self::assertTrue($this->harvester(null, self::EngineLoaderThrowingFile)->hasConfiguredSource());
 	}
 
-	/**
-	 * @group latte2
-	 */
 	public function testAmbiguousBuiltInSpellingsAreDroppedFromTheOriginalNameMap(): void
 	{
-		// Defaults deliberately registers 'dataStream'/'datastream' (and other pairs) as two
-		// equally-valid spellings of the same filter - buildOriginalNameMap() must not guess a
-		// single "canonical" one (either guess would false-positive a case-mismatch diagnostic
-		// against real app template usage of the other, correctly-registered spelling).
-		$harvested = $this->harvest(null, self::EngineLoaderFile);
+		// Defaults (Latte 3: CoreExtension) deliberately registers 'dataStream'/'datastream' (and
+		// other pairs) as two equally-valid spellings of the same filter - buildOriginalNameMap() must
+		// not guess a single "canonical" one (either guess would false-positive a case-mismatch
+		// diagnostic against real app template usage of the other, correctly-registered spelling).
+		$harvested = $this->harvest(null, self::engineLoaderFile());
+
+		self::assertArrayHasKey('upper', $harvested->getFilterOriginalNames());
 
 		self::assertArrayNotHasKey('datastream', $harvested->getFilterOriginalNames());
 		self::assertArrayNotHasKey('striptags', $harvested->getFilterOriginalNames());

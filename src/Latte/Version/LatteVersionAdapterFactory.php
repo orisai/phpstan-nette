@@ -22,6 +22,8 @@ final class LatteVersionAdapterFactory
 	// out of the default one's type-checked graph.
 	private const LATTE3_ADAPTER_CLASS = 'OriPhpstan\Nette\Latte\Version\Latte3\Latte3Adapter';
 
+	private const LATTE3_ENGINE_READER_CLASS = 'OriPhpstan\Nette\Latte\Version\Latte3\Latte3EngineReader';
+
 	private ProjectInstalledVersions $installedVersions;
 
 	private ?ShapeFamily $family = null;
@@ -71,7 +73,12 @@ final class LatteVersionAdapterFactory
 			return new Latte2EngineReader();
 		}
 
-		throw new LogicException('Latte 3 engine reader not available yet');
+		$reader = (new ReflectionMethod(self::LATTE3_ENGINE_READER_CLASS, 'create'))->invoke(null);
+		if (!$reader instanceof LatteEngineReader) {
+			throw new LogicException('Latte 3 engine reader must be a LatteEngineReader.');
+		}
+
+		return $reader;
 	}
 
 }

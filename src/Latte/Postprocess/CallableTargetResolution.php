@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Postprocess;
 
 use Closure;
 use Latte\Runtime\FilterInfo;
+use Latte\Runtime\Template;
 use LogicException;
 use ReflectionFunction;
 use ReflectionMethod;
@@ -95,6 +96,36 @@ trait CallableTargetResolution
 
 	private function isContentAware(string $class, string $method): bool
 	{
+		return $this->firstParameterTypeIs($class, $method, FilterInfo::class);
+	}
+
+	// Latte 3's FunctionExecutor hands the template only to a function whose first parameter is typed
+	// Latte\Runtime\Template; every other one is wrapped to skip it.
+	private function isTemplateAware(string $class, string $method): bool
+	{
+		return $this->firstParameterTypeIs($class, $method, Template::class);
+	}
+
+	// A harvested Latte 3 extension hands out instance-bound callables ([$this, 'm'], $this->m(...))
+	// as often as static ones; Latte 2 harvests keep the static-only resolution.
+
+	/**
+	 * @param callable(mixed...): mixed $callable
+	 * @return array{string, string, bool}|null
+	 */
+	private function resolveHarvestedTarget(callable $callable, bool $extensionHarvest): ?array
+	{
+		if ($extensionHarvest) {
+			return $this->resolveDefaultTarget($callable);
+		}
+
+		$static = $this->resolveStaticTarget($callable);
+
+		return $static !== null ? [$static[0], $static[1], true] : null;
+	}
+
+	private function firstParameterTypeIs(string $class, string $method, string $typeName): bool
+	{
 		$parameters = $class === ''
 			? (new ReflectionFunction($method))->getParameters()
 			: (new ReflectionMethod($class, $method))->getParameters();
@@ -105,7 +136,7 @@ trait CallableTargetResolution
 
 		$type = $parameters[0]->getType();
 
-		return $type instanceof ReflectionNamedType && $type->getName() === FilterInfo::class;
+		return $type instanceof ReflectionNamedType && $type->getName() === $typeName;
 	}
 
 }
