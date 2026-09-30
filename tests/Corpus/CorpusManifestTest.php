@@ -64,6 +64,10 @@ final class CorpusManifestTest extends BaseTestCase
 	{
 		$profile = self::profile();
 		$corpusDir = dirname(__DIR__, 2) . '/var/corpus/templates/' . $profile;
+		if (!is_dir($corpusDir) && !is_file(__DIR__ . '/manifest.' . $profile . '.json')) {
+			self::markTestSkipped(sprintf('The %s set has no corpus.', $profile));
+		}
+
 		if (!is_dir($corpusDir)) {
 			self::markTestSkipped(sprintf(
 				'The %s corpus is not harvested; run make corpus-harvest%s.',
