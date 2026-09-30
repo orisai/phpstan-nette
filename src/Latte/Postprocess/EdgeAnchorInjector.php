@@ -53,6 +53,8 @@ final class EdgeAnchorInjector
 
 	private const LAYOUT_TAGS = ['layout', 'extends'];
 
+	private const PREPARE_METHOD = 'lattePrepare';
+
 	private TemplateEdgeIndex $edgeIndex;
 
 	private DeclaredVarsResolver $declaredVarsResolver;
@@ -210,18 +212,18 @@ final class EdgeAnchorInjector
 
 			if (in_array($site->getTag(), self::LAYOUT_TAGS, true)) {
 				$this->insertAtEnd($method, $anchor);
-			} else {
-				// A miss here is either a block-dispatch site nested inside a NON-cloned block
-				// method (a block calling another block, never appearing in a latteMain_ctx{i}
-				// clone's own statement tree) or a file-form site whose line-tagged statement has
-				// vanished (an eliminator folding it away unexpectedly - every include-family
-				// emission keeps one at the mapped line otherwise). insertAtEnd() would misattribute
-				// the anchor to the wrong scope in the first case, and risk capturing a manifest
-				// var's type AFTER a reassignment below the site's real line in the second (a WRONG
-				// type, not merely a wider one) - both strictly worse than no anchor, so this skips
-				// silently instead (documented limitation, never a wrong-scope or wrong-type
-				// capture).
-				$this->insertAtLineStrict($method, $site->getLatteLine(), $anchor);
+			} elseif (
+				!$this->tryInsertAtLine($method, $site->getLatteLine(), $anchor)
+				&& $site->getKind() === IncludeTarget::KIND_STATIC_FILE
+			) {
+				// A file-form site inside a {block}/{define}/{snippet} body has its line-tagged
+				// statement in that block's own method, never in a clone: the anchor goes next to it
+				// there, where the scope holds the block's params - the same declared names the
+				// clone threads in. A block-dispatch site nested in a non-cloned block method stays
+				// unanchored (a wrong-scope capture would be worse than none), as does a file-form
+				// site whose statement vanished; insertAtEnd() is never a fallback here, it could
+				// capture a manifest var AFTER a reassignment below the site's real line.
+				$this->insertIntoBlockMethod($methodsByName, $site->getLatteLine(), $anchor);
 			}
 		}
 	}
@@ -536,9 +538,21 @@ final class EdgeAnchorInjector
 	// proven type there is the union of all incoming branches - a supertype (or equal) of what the
 	// guarded branch alone would show. A misplaced capture can only widen, never narrow, what the
 	// collector/writer later persist.
-	private function insertAtLineStrict(ClassMethod $method, int $line, Expression $anchor): void
+
+	/**
+	 * @param array<string, ClassMethod> $methodsByName
+	 */
+	private function insertIntoBlockMethod(array $methodsByName, int $line, Expression $anchor): void
 	{
-		$this->tryInsertAtLine($method, $line, $anchor);
+		foreach ($methodsByName as $name => $blockMethod) {
+			if (
+				$this->matchClone($name) === null
+				&& $name !== self::PREPARE_METHOD
+				&& $this->tryInsertAtLine($blockMethod, $line, $anchor)
+			) {
+				return;
+			}
+		}
 	}
 
 	// A returned array from leaveNode() replaces the matched node in whatever Stmt-array property
