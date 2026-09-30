@@ -1,6 +1,6 @@
 {
 	"require": {
-		"latte/latte": "^2.11.6"
+		"latte/latte": "^2.11.7"
 	},
 	"require-dev": {
 		"nette/application": "^3.2.10 <3.3",

@@ -19,9 +19,9 @@ final class ProfileScriptTest extends BaseTestCase
 
 		$merged = Json::decode($this->runProfileScript(['latte2', '--stdout']), Json::FORCE_ARRAY);
 
-		self::assertSame('^2.11.6', $merged['require']['latte/latte']);
+		self::assertSame('^2.11.7', $merged['require']['latte/latte']);
 		self::assertSame('~3.1.15', $merged['require']['nette/application']);
-		self::assertSame('~3.1.11', $merged['require']['nette/forms']);
+		self::assertSame('~3.1.15', $merged['require']['nette/forms']);
 		self::assertSame('^2.0.0', $merged['require-dev']['kdyby/forms-replicator']);
 		self::assertSame($composer['require-dev']['nette/caching'], $merged['require-dev']['nette/caching']);
 		self::assertArrayNotHasKey('nette/application', $merged['require-dev']);
