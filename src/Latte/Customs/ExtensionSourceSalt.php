@@ -23,7 +23,7 @@ use function substr_compare;
 // What identifies a harvested Latte 3 extension's code: its generated PHP lives in its node classes
 // as much as in the extension. An extension inside an installed package is its package version; a
 // first-party one every PHP file under its class's directory. The walk leaves out PHPStan's tmpDir,
-// the discovery store (rewritten by every run), Composer vendor directories, installed packages, dot-directories and nested projects (a
+// the discovery and narrowing stores (rewritten by every run), Composer vendor directories, installed packages, dot-directories and nested projects (a
 // composer.json of their own). An extension whose directory is the project root, holds the tmpDir
 // or exceeds MAX_FILES is salted shallowly - its own directory's PHP files only. An unreadable
 // directory is salted as such and reported, never fatal.
@@ -38,27 +38,32 @@ final class ExtensionSourceSalt
 
 	private ProjectInstalledVersions $installed;
 
-	private ?string $discoveryStorePath;
+	/** @var list<string> */
+	private array $storePaths;
 
 	private bool $resolved = false;
 
 	private ?string $realTmpDir = null;
 
-	private ?string $realDiscoveryStorePath = null;
+	/** @var array<string, true> */
+	private array $realStorePaths = [];
 
 	private ?string $realProjectRoot = null;
 
+	/**
+	 * @param list<string> $storePaths
+	 */
 	public function __construct(
 		?string $tmpDir,
 		?string $projectRoot,
 		ProjectInstalledVersions $installed,
-		?string $discoveryStorePath = null
+		array $storePaths = []
 	)
 	{
 		$this->tmpDir = $tmpDir;
 		$this->projectRoot = $projectRoot;
 		$this->installed = $installed;
-		$this->discoveryStorePath = $discoveryStorePath;
+		$this->storePaths = $storePaths;
 	}
 
 	/**
@@ -237,7 +242,7 @@ final class ExtensionSourceSalt
 			return false;
 		}
 
-		if ($real === $this->realTmpDir || $real === $this->realDiscoveryStorePath) {
+		if ($real === $this->realTmpDir || isset($this->realStorePaths[$real])) {
 			return true;
 		}
 
@@ -255,8 +260,12 @@ final class ExtensionSourceSalt
 		$this->realTmpDir = $tmpDir !== false ? $tmpDir : null;
 		$projectRoot = $this->projectRoot !== null ? realpath($this->projectRoot) : false;
 		$this->realProjectRoot = $projectRoot !== false ? $projectRoot : null;
-		$discoveryStorePath = $this->discoveryStorePath !== null ? realpath($this->discoveryStorePath) : false;
-		$this->realDiscoveryStorePath = $discoveryStorePath !== false ? $discoveryStorePath : null;
+		foreach ($this->storePaths as $storePath) {
+			$realStorePath = realpath($storePath);
+			if ($realStorePath !== false) {
+				$this->realStorePaths[$realStorePath] = true;
+			}
+		}
 	}
 
 	private static function isWithin(string $path, string $directory): bool

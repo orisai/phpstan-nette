@@ -79,5 +79,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   analysis with an internal error
 - Latte: a template surface declared inside `firstPartyPaths` stays a binding even when Composer installs it (a
   path-repository package of a monorepo), instead of being treated as a vendor floor
-- Latte 3: a discovery store kept inside a first-party extension's directory no longer changes the extension's harvest
-  salt on every run
+- Latte 3: a discovery or narrowing store kept inside a first-party extension's directory no longer changes the
+  extension's harvest salt on every run

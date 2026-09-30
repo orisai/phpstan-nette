@@ -103,20 +103,23 @@ final class ExtensionSourceSaltTest extends BaseTestCase
 		);
 	}
 
-	public function testTheDiscoveryStoreInsideTheTreeIsLeftOut(): void
+	/**
+	 * @dataProvider provideStoreFile
+	 */
+	public function testAStoreInsideTheTreeIsLeftOut(string $store, string $file): void
 	{
 		$class = $this->extension('ext');
-		$this->write('ext/store/LatteDiscovery_a.php', 1);
+		$this->write('ext/' . $store . '/' . $file . 'a.php', 1);
 		$salt = fn (): ExtensionSourceSalt => new ExtensionSourceSalt(
 			null,
 			null,
 			ProjectInstalledVersions::get(),
-			$this->root . '/ext/store',
+			[$this->root . '/ext/discovery', $this->root . '/ext/sitescope'],
 		);
 
 		$before = $salt()->describe($class);
-		$this->write('ext/store/LatteDiscovery_a.php', 2);
-		$this->write('ext/store/LatteDiscovery_b.php', 1);
+		$this->write('ext/' . $store . '/' . $file . 'a.php', 2);
+		$this->write('ext/' . $store . '/' . $file . 'b.php', 1);
 		$after = $salt()->describe($class);
 
 		self::assertFalse($before['shallow']);
@@ -124,6 +127,15 @@ final class ExtensionSourceSaltTest extends BaseTestCase
 
 		$this->write('ext/Nodes/HelloNode.php', 1);
 		self::assertNotSame($before['salt'], $salt()->describe($class)['salt']);
+	}
+
+	/**
+	 * @return iterable<string, array{string, string}>
+	 */
+	public function provideStoreFile(): iterable
+	{
+		yield 'discovery store' => ['discovery', 'LatteDiscovery_'];
+		yield 'narrowing store' => ['sitescope', 'LatteSlice_'];
 	}
 
 	public function testProjectRootIsSaltedShallowly(): void

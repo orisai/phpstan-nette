@@ -147,14 +147,16 @@ services:
 		autowired: false
 
 	# What identifies a harvested Latte 3 extension's code in the harvest salt; the walk stays out of
-	# PHPStan's own tmpDir and the discovery store and treats the project root shallowly.
+	# PHPStan's own tmpDir and the discovery and narrowing stores and treats the project root shallowly.
 	latteExtensionSourceSalt:
 		class: OriPhpstan\Nette\Latte\Customs\ExtensionSourceSalt
 		arguments:
 			tmpDir: %tmpDir%
 			projectRoot: %currentWorkingDirectory%
 			installed: @orisaiNette.installedVersions
-			discoveryStorePath: %orisaiNette.latte.discovery.storePath%
+			storePaths:
+				- %orisaiNette.latte.discovery.storePath%
+				- %orisaiNette.latte.narrowing.storePath%
 		autowired: false
 
 	# Per-{templateType} filter/function entries - modelled off the
