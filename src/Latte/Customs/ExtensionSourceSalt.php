@@ -23,10 +23,11 @@ use function substr_compare;
 // What identifies a harvested Latte 3 extension's code: its generated PHP lives in its node classes
 // as much as in the extension. An extension inside an installed package is its package version; a
 // first-party one every PHP file under its class's directory. The walk leaves out PHPStan's tmpDir,
-// the discovery and narrowing stores (rewritten by every run), Composer vendor directories, installed packages, dot-directories and nested projects (a
-// composer.json of their own). An extension whose directory is the project root, holds the tmpDir
-// or exceeds MAX_FILES is salted shallowly - its own directory's PHP files only. An unreadable
-// directory is salted as such and reported, never fatal.
+// the discovery and narrowing stores (rewritten by every run), Composer vendor directories,
+// installed packages, dot-directories and nested projects (a composer.json of their own). An
+// extension whose directory is the project root, holds the tmpDir or exceeds MAX_FILES is salted
+// shallowly - its own directory's PHP files only. An unreadable directory is salted as such and
+// reported, never fatal.
 final class ExtensionSourceSalt
 {
 

@@ -59,7 +59,7 @@ final class Latte3Adapter implements LatteVersionAdapter
 	public static function create(ShapeFamily $family, AdapterCollaborators $collaborators): self
 	{
 		return new self(
-			new Latte3Compiler($collaborators->getHarvester()),
+			new Latte3Compiler($collaborators->getHarvester(), $family),
 			$family,
 			$collaborators->getCache(),
 			$collaborators->isDiscoveryStoreEnabled() ? $collaborators->getDiscoveryStore() : null,

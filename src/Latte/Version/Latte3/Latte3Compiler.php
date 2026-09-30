@@ -24,12 +24,15 @@ use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use ReflectionProperty;
 use Throwable;
 use function array_merge;
 use function array_shift;
 use function class_exists;
 use function get_class;
+use function get_object_vars;
+use function is_a;
 use function preg_match;
 use function preg_quote;
 use function str_replace;
@@ -49,6 +52,9 @@ final class Latte3Compiler
 	private const MAX_UNKNOWN_TAG_RETRIES = 20;
 
 	private const FIXED_SET_SALT = 'fixed-set';
+
+	// Latte 3.0 only; 3.1 has no FunctionCallableNode.
+	private const FUNCTION_CALLABLE_NODE = 'Latte\\Compiler\\Nodes\\Php\\Expression\\FunctionCallableNode';
 
 	private const FUNCTION_CASE_MISMATCH_PATTERN = "~^Case mismatch on function name '([^']+)', correct name is '([^']+)'\\.$~";
 
@@ -71,9 +77,12 @@ final class Latte3Compiler
 
 	private ?CustomsHarvester $harvester;
 
-	public function __construct(?CustomsHarvester $harvester = null)
+	private ?ShapeFamily $family;
+
+	public function __construct(?CustomsHarvester $harvester = null, ?ShapeFamily $family = null)
 	{
 		$this->harvester = $harvester;
+		$this->family = $family;
 	}
 
 	// What the compile engine depends on beyond the source: the harvested extensions, functions and
@@ -186,7 +195,9 @@ final class Latte3Compiler
 		}
 
 		$deprecations = [];
-		$functionCallLines = self::functionCallLines($node);
+		$functionCallLines = $this->family === null || $this->family->latteLine === ShapeFamily::LATTE_30
+			? self::functionCallLines($node)
+			: [];
 
 		try {
 			$code = VendorErrorContainment::run(
@@ -210,7 +221,9 @@ final class Latte3Compiler
 							'orisaiNette.latte.functionCaseMismatch',
 							"Latte function '$m[1]' differs in case from the registered '$m[2]' - Latte 3.0 resolves it "
 							. 'with a warning, Latte 3.1 does not resolve it.',
-							array_shift($functionCallLines[$m[1]]) ?? 1,
+							isset($functionCallLines[$m[1]]) && $functionCallLines[$m[1]] !== []
+								? array_shift($functionCallLines[$m[1]])
+								: 1,
 						);
 					}
 				},
@@ -415,8 +428,8 @@ final class Latte3Compiler
 	}
 
 	// Latte 3.0's customFunctionsPass resolves a function spelled in another case than registered and
-	// warns once per call, in traversal order, without a line; the calls' lines are read before the
-	// pass replaces them.
+	// warns once per call or first-class callable, in traversal order, without a line; their lines are
+	// read before the pass replaces them. Latte 3.1 does not warn.
 
 	/**
 	 * @return array<string, list<int>>
@@ -425,8 +438,17 @@ final class Latte3Compiler
 	{
 		$lines = [];
 		(new NodeTraverser())->traverse($node, static function (Node $node) use (&$lines): void {
-			if ($node instanceof FunctionCallNode && $node->name instanceof NameNode && $node->position !== null) {
-				$lines[(string) $node->name][] = $node->position->line;
+			$position = $node->position;
+			if ($node instanceof FunctionCallNode) {
+				$name = $node->name;
+			} elseif (is_a($node, self::FUNCTION_CALLABLE_NODE)) {
+				$name = get_object_vars($node)['name'] ?? null;
+			} else {
+				return;
+			}
+
+			if ($name instanceof NameNode && $position !== null) {
+				$lines[(string) $name][] = $position->line;
 			}
 		});
 

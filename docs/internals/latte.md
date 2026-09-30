@@ -1098,28 +1098,27 @@ Two independent caches consume this salt:
 A Latte 3 harvest adds one line per extension, one per feature flag and one per provider. An
 extension's generated code lives in its node classes as much as in the extension, so its line
 identifies the code, not the class: an extension declared inside an installed Composer package
-(`ProjectInstalledVersions::packageContaining()`, the root package excluded) by that package's
-name, version and reference; a first-party extension by the relative path and `sha1_file()` of
-every `*.php` file under its class's directory, recursively — so an edited node class beside or
-below the extension changes the salt even when no class or tag name does (`ExtensionSourceSalt`,
-applied by `CustomsHarvester` through `HarvestedCustoms::withExtensionSources()`). The walk leaves
-out PHPStan's `%tmpDir%`, the discovery and narrowing stores (`discovery.storePath`, `narrowing.storePath`, rewritten by every
-run), installed package
-roots, Composer vendor directories (a
-`composer/installed.json` inside) and a `composer` directory itself, dot-directories, symlinked
+(`ProjectInstalledVersions::packageContaining()`, the root package excluded) by that package's name,
+version and reference; a first-party extension by the relative path and `sha1_file()` of every
+`*.php` file under its class's directory, recursively — so an edited node class beside or below the
+extension changes the salt even when no class or tag name does (`ExtensionSourceSalt`, applied by
+`CustomsHarvester` through `HarvestedCustoms::withExtensionSources()`). The walk leaves out
+PHPStan's `%tmpDir%`, the discovery and narrowing stores (`discovery.storePath`,
+`narrowing.storePath`, rewritten by every run), installed package roots, Composer vendor directories
+(a `composer/installed.json` inside) and a `composer` directory itself, dot-directories, symlinked
 directories and nested projects (a `composer.json` of their own). When the extension's directory is
 the project root (`%currentWorkingDirectory%`) or holds the `%tmpDir%`, or the walk passes
-`ExtensionSourceSalt::MAX_FILES` (5000) `*.php` files (other files are not counted, so a tree heavy in
-non-PHP files is still walked in full), the extension is salted shallowly: only its own
+`ExtensionSourceSalt::MAX_FILES` (5000) `*.php` files (other files are not counted, so a tree heavy
+in non-PHP files is still walked in full), the extension is salted shallowly: only its own
 directory's `*.php` files, with a `harvest note:` line in `dumpLatteCustoms()`. Limitation: node
 classes of such an extension in subdirectories do not invalidate the analysis — declare extensions
 in a directory of their own. An unreadable directory in the walk is salted as `<path> unreadable`
 (so a permission flip changes the salt), skipped, and reported once as
 `orisaiNette.latte.customsHarvest` on line 1 of the analysed universe's first template (sorted, the
 same file on every worker and run; `HarvestProblemReporter`) and as a `harvest problem:` dump line —
-the harvest itself is kept. The reported path is relative to `%currentWorkingDirectory%` when it lies
-inside it, so the message is stable in a baseline. A run which does not analyse that first template
-(a partial run over some paths) carries the dump line but not the finding.
+the harvest itself is kept. The reported path is relative to `%currentWorkingDirectory%` when it
+lies inside it, so the message is stable in a baseline. A run which does not analyse that first
+template (a partial run over some paths) carries the dump line but not the finding.
 
 The Latte 3 compile joins `LatteAnalysisCache` under
 `Latte3Adapter::compile()` with the key `sha1($source)|$className|$relativePath|$engineSalt|
