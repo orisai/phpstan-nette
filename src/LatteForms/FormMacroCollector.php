@@ -97,7 +97,7 @@ final class FormMacroCollector
 		 */
 		$entry = $this->cache->rememberContentAddressed(
 			sha1($source),
-			self::CACHE_NODE_ID,
+			self::CACHE_NODE_ID . '|' . $this->adapterAccessor->get()->family()->id(),
 			fn (): array => ['sites' => $this->scanToArrays($source, $templateRelPath)],
 		);
 

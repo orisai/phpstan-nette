@@ -314,6 +314,12 @@ final class FormMacroCollectorTest extends BaseTestCase
 					],
 				],
 			],
+			$cache->readContentAddressed(
+				sha1(FileSystem::read($root . '/' . $relPath)),
+				'latteforms-macros-v2|' . TestAdapter::accessor()->get()->family()->id(),
+			),
+		);
+		self::assertNull(
 			$cache->readContentAddressed(sha1(FileSystem::read($root . '/' . $relPath)), 'latteforms-macros-v2'),
 		);
 

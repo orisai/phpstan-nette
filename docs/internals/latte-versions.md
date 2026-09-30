@@ -150,7 +150,8 @@ Selection rules:
 
 Cache identity follows the family everywhere a family-specific shape is cached: the compile-cache key carries
 `family()->id() . '|' . <adapter class>`, `LatteCodeVersion` joins `ShapeFamily::id()` next to the raw versions, and
-facts are cached under the content-addressed `latte-facts|<family>` node id.
+facts are cached under the content-addressed `latte-facts|<family>` node id and the bridge's form sites
+(`FormMacroCollector`) under `latteforms-macros-v2|<family>`.
 
 ## Latte 3 compile
 
