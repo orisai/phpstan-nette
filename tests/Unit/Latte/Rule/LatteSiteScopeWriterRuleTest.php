@@ -54,6 +54,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, false),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 			$errors = $rule->processNode($this->collectedDataNode([
 				$this->entry('a.latte#2#new-target.latte#ctx1', 'sha-a2', ['z' => 'bool'], []),
@@ -80,6 +82,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 
 			$errors = $rule->processNode($this->collectedDataNode([
@@ -110,6 +114,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 
 			$errors = $rule->processNode($this->collectedDataNode([
@@ -165,6 +171,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 			$freshKey = 'a.latte#2#new-target.latte#ctx1';
 			$rule->processNode($this->collectedDataNode([
@@ -205,6 +213,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 
 			// a.latte was genuinely reanalyzed this run (e.g. a pipeline change that stopped
@@ -245,6 +255,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 
 			// Only a.latte is analyzed this run - b.latte appears in neither collector's output at all.
@@ -281,6 +293,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 			$key = 'a.latte#1#target.latte#ctx1';
 			$errors = $rule->processNode($this->collectedDataNode([
@@ -321,6 +335,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			))->processNode(
 				$data,
 				$this->scope(),
@@ -332,6 +348,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			))->processNode(
 				$data,
 				$this->scope(),
@@ -361,6 +379,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 					TestGuard::latte(true, true),
 					$storeDir,
 					new SiteScopeStore($storeDir),
+					[],
+					[],
 				);
 
 				$this->expectException(IOException::class);
@@ -393,6 +413,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 			$errors = $rule->processNode(new CollectedDataNode(
 				[
@@ -430,6 +452,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
+				[],
+				[],
 			);
 			$errors = $rule->processNode($this->collectedDataNode($captures), $this->scope());
 
@@ -464,12 +488,21 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 
 			putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE . '=1');
 			try {
-				$onlyFiles = $this->writer($storeDir)->processNode(new CollectedDataNode(
-					['/project/a.latte' => [LatteAnalyzedFileMarkerCollector::class => ['a.latte']]],
-					true,
-				), $this->scope());
-				self::assertSame([], $onlyFiles);
-				self::assertFileExists($orphan, 'a files-only run does not see the whole template set');
+				$subset = $this->writer($storeDir, ['/project/app/Admin'])->processNode($data, $this->scope());
+				$this->assertPruneRefused(
+					'The Latte narrowing store was not pruned: the run analysed other paths than the configured '
+						. 'ones. Prune with the paths your configuration analyses.',
+					$subset,
+				);
+				self::assertFileExists($orphan, 'a run over a subset of the paths does not see every template');
+
+				$nothing = $this->writer($storeDir)->processNode(new CollectedDataNode([], false), $this->scope());
+				$this->assertPruneRefused(
+					'The Latte narrowing store was not pruned: the run analysed no templates. '
+						. 'Prune with the paths your configuration analyses.',
+					$nothing,
+				);
+				self::assertFileExists($orphan, 'a run which analysed no template must not empty the store');
 
 				$errors = $this->writer($storeDir)->processNode($data, $this->scope());
 			} finally {
@@ -489,9 +522,65 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 		}
 	}
 
-	private function writer(string $storeDir): LatteSiteScopeWriterRule
+	public function testARefusedPruneIsNamedInTheStoreChange(): void
 	{
-		return new LatteSiteScopeWriterRule(TestGuard::latte(true, true), $storeDir, new SiteScopeStore($storeDir));
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, ['a.latte', 'gone.latte']);
+
+			putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE . '=1');
+			try {
+				$errors = $this->writer($storeDir, ['/project/app/Admin'])->processNode(
+					$this->collectedDataNode([$this->entry('a.latte#1#t.latte#ctx', 'sha', ['x' => 'int'], [])]),
+					$this->scope(),
+				);
+			} finally {
+				putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE);
+			}
+
+			$this->assertStoreChanged(
+				'The Latte narrowing store changed for 1 including template: a.latte. '
+					. 'Pruning was skipped: the run analysed other paths than the configured ones. '
+					. 'Run the analysis again until this error disappears, then commit the store.',
+				$storeDir . '/' . SliceClassName::forPath('a.latte') . '.php',
+				$errors,
+			);
+			self::assertFileExists($storeDir . '/' . SliceClassName::forPath('gone.latte') . '.php');
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	/**
+	 * @param list<string> $analysedPaths
+	 * @param list<string> $analysedPathsFromConfig
+	 */
+	private function writer(
+		string $storeDir,
+		array $analysedPaths = ['/project/app'],
+		array $analysedPathsFromConfig = ['/project/app/']
+	): LatteSiteScopeWriterRule
+	{
+		return new LatteSiteScopeWriterRule(
+			TestGuard::latte(true, true),
+			$storeDir,
+			new SiteScopeStore($storeDir),
+			$analysedPaths,
+			$analysedPathsFromConfig,
+		);
+	}
+
+	/**
+	 * @param list<IdentifierRuleError> $errors
+	 */
+	private function assertPruneRefused(string $message, array $errors): void
+	{
+		self::assertCount(1, $errors);
+		self::assertSame($message, $errors[0]->getMessage());
+		self::assertSame('orisai.nette.latte.narrowingPruneRefused', $errors[0]->getIdentifier());
+		self::assertInstanceOf(NonIgnorableRuleError::class, $errors[0]);
 	}
 
 	/**

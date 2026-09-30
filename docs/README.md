@@ -434,8 +434,8 @@ vendor/bin/latte-converge --prune analyse -c phpstan.neon
 ```
 
 It clears the result cache, analyses the whole project and removes every store file whose including template was not
-analysed; the removal is reported as a store change. Run it with the paths your configuration analyses, never with a
-subset of them. A run given only files, no directory, never prunes.
+analysed; the removal is reported as a store change. A run given other paths than the configured ones, or one which
+analysed no template, removes nothing and reports `narrowingPruneRefused` instead.
 
 ### Dead code detection
 
@@ -1037,6 +1037,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | `{control}`, `{link}`, `{snippet}`, … where no control renders the template | `orisai.nette.latte.providerUnavailable`       | needs discovery                                    |
 | Debugging function output                                                | `orisai.nette.latte.debugDump`                   | [debugging](#latte-debugging)                      |
 | Narrowing store rewritten by this run                                    | `orisai.nette.latte.narrowingStoreChanged`       | non-ignorable; [lifecycle](#narrowing-store-lifecycle) |
+| `latte-converge --prune` over a part of the configured paths             | `orisai.nette.latte.narrowingPruneRefused`       | non-ignorable; [pruning](#pruning-deleted-templates) |
 
 #### Latte limitations
 

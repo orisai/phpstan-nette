@@ -14,12 +14,17 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use function array_keys;
 use function array_slice;
+use function array_unique;
+use function array_values;
 use function count;
 use function getenv;
 use function implode;
 use function is_dir;
+use function realpath;
+use function rtrim;
 use function sort;
 use function sprintf;
+use function strtr;
 use const SORT_STRING;
 
 /**
@@ -27,6 +32,8 @@ use const SORT_STRING;
  */
 final class LatteSiteScopeWriterRule implements Rule
 {
+
+	public const PRUNE_REFUSED_IDENTIFIER = 'orisai.nette.latte.narrowingPruneRefused';
 
 	private const LISTED_MAX = 10;
 
@@ -36,12 +43,26 @@ final class LatteSiteScopeWriterRule implements Rule
 
 	private bool $enabled;
 
-	public function __construct(ConfigurationGuard $guard, string $storeDirPath, SiteScopeStore $store)
+	private bool $analysesConfiguredPaths;
+
+	/**
+	 * @param list<string> $analysedPaths
+	 * @param list<string> $analysedPathsFromConfig
+	 */
+	public function __construct(
+		ConfigurationGuard $guard,
+		string $storeDirPath,
+		SiteScopeStore $store,
+		array $analysedPaths,
+		array $analysedPathsFromConfig
+	)
 	{
 		$guard->validate();
 		$this->storeDirPath = $storeDirPath;
 		$this->store = $store;
 		$this->enabled = $guard->isLatteNarrowingEnabled();
+		$this->analysesConfiguredPaths = self::normalisePaths($analysedPaths)
+			=== self::normalisePaths($analysedPathsFromConfig);
 	}
 
 	public function getNodeType(): string
@@ -63,8 +84,8 @@ final class LatteSiteScopeWriterRule implements Rule
 		}
 
 		// This rule must stay inert on every gate run until the store directory exists, so it
-		// never writes into one that does not already exist. Bootstrap: `make phpstan-narrowing-init`
-		// creates the initial (slice-per-includer) directory this gate checks for.
+		// never writes into one that does not already exist: the consumer creates the directory at
+		// orisai.nette.latte.narrowing.storePath.
 		if (!is_dir($this->storeDirPath)) {
 			return [];
 		}
@@ -73,16 +94,26 @@ final class LatteSiteScopeWriterRule implements Rule
 		// CollectedDataNode rule in try/catch (Throwable) - rethrowing under --debug, else
 		// recording an InternalError and continuing - so a write failure here is never fatal to
 		// the run but stays diagnosable, instead of vanishing into a silent catch.
-		[$analysed, $changed, $pruned] = $this->write($node);
+		[$analysed, $changed, $pruned, $pruneRefusal] = $this->write($node);
 		if ($changed === [] && $pruned === []) {
-			return [];
-		}
+			if ($pruneRefusal === null) {
+				return [];
+			}
 
-		// Non-ignorable: a baseline or ignoreErrors entry would hide a stale store from CI for good.
-		$builder = RuleErrorBuilder::message($this->changedMessage($changed, $pruned))
-			->identifier(StoreChangeSignal::IDENTIFIER)
-			->line(1)
-			->nonIgnorable();
+			$builder = RuleErrorBuilder::message(sprintf(
+				'The Latte narrowing store was not pruned: %s. Prune with the paths your configuration analyses.',
+				$pruneRefusal,
+			))
+				->identifier(self::PRUNE_REFUSED_IDENTIFIER)
+				->line(1)
+				->nonIgnorable();
+		} else {
+			// Non-ignorable: a baseline or ignoreErrors entry would hide a stale store from CI for good.
+			$builder = RuleErrorBuilder::message($this->changedMessage($changed, $pruned, $pruneRefusal))
+				->identifier(StoreChangeSignal::IDENTIFIER)
+				->line(1)
+				->nonIgnorable();
+		}
 
 		$anchor = $changed[0] ?? $analysed[0] ?? null;
 		if ($anchor !== null) {
@@ -93,7 +124,7 @@ final class LatteSiteScopeWriterRule implements Rule
 	}
 
 	/**
-	 * @return array{list<string>, list<string>, list<string>}
+	 * @return array{list<string>, list<string>, list<string>, string|null}
 	 */
 	private function write(CollectedDataNode $node): array
 	{
@@ -134,20 +165,28 @@ final class LatteSiteScopeWriterRule implements Rule
 		// one AnalyserResult - so this write is never concurrent with another worker's write.
 		$includerRels = array_keys($includers);
 		$changed = $this->store->replaceForIncluders($includerRels, $entries);
-		$pruned = getenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE) === '1' && !$node->isOnlyFilesAnalysis()
-			? $this->store->pruneExcept($includerRels)
-			: [];
+		$pruned = [];
+		$pruneRefusal = null;
+		if (getenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE) === '1') {
+			if (!$this->analysesConfiguredPaths) {
+				$pruneRefusal = 'the run analysed other paths than the configured ones';
+			} elseif ($includerRels === []) {
+				$pruneRefusal = 'the run analysed no templates';
+			} else {
+				$pruned = $this->store->pruneExcept($includerRels);
+			}
+		}
 
 		sort($includerRels, SORT_STRING);
 
-		return [$includerRels, $changed, $pruned];
+		return [$includerRels, $changed, $pruned, $pruneRefusal];
 	}
 
 	/**
 	 * @param list<string> $changed
 	 * @param list<string> $pruned
 	 */
-	private function changedMessage(array $changed, array $pruned): string
+	private function changedMessage(array $changed, array $pruned, ?string $pruneRefusal): string
 	{
 		$parts = [];
 		if ($changed !== []) {
@@ -168,6 +207,10 @@ final class LatteSiteScopeWriterRule implements Rule
 			);
 		}
 
+		if ($pruneRefusal !== null) {
+			$parts[] = sprintf('Pruning was skipped: %s.', $pruneRefusal);
+		}
+
 		$parts[] = 'Run the analysis again until this error disappears, then commit the store.';
 
 		return implode(' ', $parts);
@@ -182,6 +225,24 @@ final class LatteSiteScopeWriterRule implements Rule
 		$more = count($items) - self::LISTED_MAX;
 
 		return $more > 0 ? sprintf('%s (+%d more)', $listed, $more) : $listed;
+	}
+
+	/**
+	 * @param list<string> $paths
+	 * @return list<string>
+	 */
+	private static function normalisePaths(array $paths): array
+	{
+		$normalised = [];
+		foreach ($paths as $path) {
+			$real = realpath($path);
+			$normalised[] = rtrim(strtr($real !== false ? $real : $path, '\\', '/'), '/');
+		}
+
+		$normalised = array_values(array_unique($normalised));
+		sort($normalised, SORT_STRING);
+
+		return $normalised;
 	}
 
 	private function includerRel(string $key): ?string

@@ -535,6 +535,8 @@ services:
 			guard: @orisai.nette.configurationGuard
 			storeDirPath: @orisai.nette.configuration::get(latte.narrowing.storePath)
 			store: @latteSiteScopeStore
+			analysedPaths: %analysedPaths%
+			analysedPathsFromConfig: %analysedPathsFromConfig%
 		tags: [phpstan.rules.rule]
 
 	# The phar's original class reflector under a delegate-able name (same pattern as

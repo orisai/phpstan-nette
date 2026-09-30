@@ -683,8 +683,10 @@ it take longer than a warm analysis.
 Slices of deleted includers are never pruned by ordinary runs: a run over a subset of the paths sees
 only part of the includers, and nothing tells it apart from a deletion. `latte-converge --prune` clears
 the result cache and sets `ORISAI_NETTE_LATTE_NARROWING_PRUNE=1` for its first run; the writer then deletes
-every `LatteSlice_*.php` not named for an includer analysed in that run, unless the run analysed files only
-(`CollectedDataNode::isOnlyFilesAnalysis()`), and reports the deletion as a store change.
+every `LatteSlice_*.php` not named for an includer analysed in that run and reports the deletion as a store
+change. It refuses (`orisai.nette.latte.narrowingPruneRefused`) when the normalised `%analysedPaths%`
+differ from `%analysedPathsFromConfig%` or when no includer was analysed, since either would delete slices of
+templates the run never saw.
 
 ### Where captures are taken
 
