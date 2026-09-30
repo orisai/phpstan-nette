@@ -2,9 +2,11 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
+use Closure;
 use LogicException;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use Throwable;
 use function array_key_first;
@@ -151,9 +153,9 @@ final class FunctionTable
 		return [$fallback[0], $fallback[1], true];
 	}
 
-	// Same degrade as FilterTable::registerHarvested() - an unrepresentable harvested callable
-	// shape stays unknown rather than crashing or guessing; a built-in of the same lowercase name
-	// always wins.
+	// Same degrade as FilterTable::registerHarvested() - a Closure without a declaration is known but
+	// untyped (Helpers::untypedFunction()), another unrepresentable harvested callable shape stays
+	// unknown rather than crashing or guessing; a built-in of the same lowercase name always wins.
 
 	/**
 	 * @param callable(mixed...): mixed $callable
@@ -169,6 +171,10 @@ final class FunctionTable
 		try {
 			$target = $this->resolveHarvestedTarget($callable, $extensionHarvest);
 			if ($target === null) {
+				if ($callable instanceof Closure) {
+					$this->table[$key] = [Helpers::class, 'untypedFunction', false];
+				}
+
 				return;
 			}
 

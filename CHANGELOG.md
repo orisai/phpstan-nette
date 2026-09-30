@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Latte 3: a filter or function spelled in another case than registered is `orisaiNette.latte.filterCaseMismatch` or
   `orisaiNette.latte.functionCaseMismatch` naming the registered spelling, as Latte 3 resolves names case-sensitively,
   instead of being typed as the registered one
+- Latte: a filter or function registered as an anonymous closure is known but untyped instead of
+  `orisaiNette.latte.unknownFilter`
 
 ### Fixed
 

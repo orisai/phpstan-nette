@@ -837,8 +837,8 @@ goes to the harvested engine's filter loaders, the way the runtime asks them on 
 call. The engine reader hands `HarvestedCustoms` a `FilterLoaderProbe` (none when the engine has no
 loaders, so without an engine loader this is a no-op); `FilterTable::resolveForTemplate()` asks it
 on a miss and reflects the answered callable exactly like a harvested extension callable
-(`resolveDefaultTarget()`: static, instance-bound or named-method; an anonymous closure stays
-unknown), and a decline stays `orisaiNette.latte.unknownFilter`. Latte 3 asks
+(`resolveDefaultTarget()`: static, instance-bound or named-method; an anonymous closure is known but
+untyped, `Helpers::untypedFilter()`), and a decline stays `orisaiNette.latte.unknownFilter`. Latte 3 asks
 `FilterExecutor::__get()`, which consults the loaders in registration order (newest first) and
 throws `LogicException` on a decline; the answered callable is read back from the executor's
 `_static` because `__get()` wraps a FilterInfo-aware one. Latte 2's `__get()` only returns a lazy
@@ -2041,10 +2041,12 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   systematic false `Undefined variable`. The cost is a missed report when a presenter never assigns the property.
 - **Latte 3 compile limitations** — textual pairing of unknown tags, the `getFile()` origin check of vendor
   throwables, unmodelled sandbox policies — are listed in [latte-versions.md](latte-versions.md#known-limitations).
-- **Latte 3 filters and functions registered as anonymous closures stay unknown.**
-  `CallableTargetResolution` resolves a named-method or plain-function closure to its declaration; an anonymous
-  closure (`{closure}`) has none, so a call through it reports `orisaiNette.latte.unknownFilter` ("Unknown Latte
-  filter" or "Unknown Latte function"), like a name nothing registers.
+- **Filters and functions registered as anonymous closures are untyped.** `CallableTargetResolution` resolves a
+  named-method or plain-function closure to its declaration; an anonymous closure (`{closure}`, and on a Latte 2
+  harvest any closure) has none PHPStan could reflect — the harvested `Closure` is a runtime value only. The tables
+  register `Helpers::untypedFilter()`/`Helpers::untypedFunction()` (`mixed ...$args`, returns `mixed`) for it, a
+  closure a filter loader answers included: the call is known, never `orisaiNette.latte.unknownFilter`, but neither
+  its arguments nor its result are checked.
 - **A purely virtual `@property` tag on a `{templateType}` class contributes no parameter.** The
   declared surface is `ReflectionClass::getProperties(IS_PUBLIC)` — native reflection — so a
   class-level `@property Foo $x` with no backing property statement is invisible and `$x` is

@@ -68,11 +68,12 @@ final class FunctionTableTest extends BaseTestCase
 		);
 	}
 
-	public function testHarvestedFunctionWithClosureDegradesToUnknownRatherThanCrashing(): void
+	// An anonymous closure has no declaration to reference: known, untyped, never argument-checked.
+	public function testHarvestedAnonymousClosureFunctionIsKnownButUntyped(): void
 	{
 		$harvested = self::harvestedWithFunction('myFunction', static fn (int $n = 0): int => $n);
 
-		self::assertNull(self::table($harvested)->resolve('myfunction'));
+		self::assertSame([Helpers::class, 'untypedFunction', false], self::table($harvested)->resolve('myfunction'));
 	}
 
 	// Latte 3: an entry matches only a spelling the engine registers; a spelling differing in case

@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
+use Closure;
 use LogicException;
 use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
@@ -166,7 +167,7 @@ final class FilterTable
 		try {
 			$target = $this->resolveDefaultTarget($callable);
 			if ($target === null) {
-				return null;
+				return $callable instanceof Closure ? [Helpers::class, 'untypedFilter', false, true] : null;
 			}
 
 			[$class, $method, $isStatic] = $target;
@@ -199,9 +200,10 @@ final class FilterTable
 	// isContentAware() never throw for on the stock domain but aren't representable as a static
 	// "Class::method"/plain-function AST reference at all - a Closure, an invokable object, and on a
 	// Latte 2 harvest an instance-bound [$object, 'method'] array (a Latte 3 extension harvest
-	// resolves those and named-method closures to an instance dispatch) - those degrade to "stays
-	// unknown" here rather than crashing or guessing; a built-in of the same lowercase name always
-	// wins (register() above runs first).
+	// resolves those and named-method closures to an instance dispatch). A Closure without a
+	// declaration to reference is known but untyped (Helpers::untypedFilter()); the other shapes stay
+	// unknown rather than crashing or guessing. A built-in of the same lowercase name always wins
+	// (register() above runs first).
 
 	/**
 	 * @param callable(mixed...): mixed $callable
@@ -217,6 +219,10 @@ final class FilterTable
 		try {
 			$target = $this->resolveHarvestedTarget($callable, $extensionHarvest);
 			if ($target === null) {
+				if ($callable instanceof Closure) {
+					$this->table[$key] = [Helpers::class, 'untypedFilter', false];
+				}
+
 				return;
 			}
 

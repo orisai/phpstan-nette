@@ -237,6 +237,24 @@ final class Helpers
 	}
 
 	/**
+	 * @param mixed ...$args
+	 * @return mixed
+	 */
+	public static function untypedFilter(...$args)
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param mixed ...$args
+	 * @return mixed
+	 */
+	public static function untypedFunction(...$args)
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
 	 * @template T of object
 	 * @param class-string<T> $class
 	 * @return T

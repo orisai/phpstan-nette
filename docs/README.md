@@ -716,8 +716,9 @@ Filter loaders (`addFilterLoader()`) are asked for every filter name your templa
 register, the way Latte asks them at runtime; a filter a loader returns is checked like a registered one. A change of
 what the loaders answer invalidates the analysis.
 
-A filter or function registered as an anonymous closure (`fn ($s) => …`) has no declaration to check against and is
-reported as unknown. Register a method or a named function instead.
+A filter or function registered as an anonymous closure (`fn ($s) => …`) has no declaration to check against: it is
+known, but neither its arguments nor its result are checked (`mixed`). Register a method or a named function to have
+them checked.
 
 Extensions are identified by their code: an extension from a Composer package by the package version, your own by
 every PHP file in its class's directory and below, so editing one of its node classes invalidates the analysis. Declare

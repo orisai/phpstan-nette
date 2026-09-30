@@ -2,6 +2,8 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
+use Closure;
+use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FilterTable;
@@ -161,11 +163,25 @@ final class FilterTableTest extends BaseTestCase
 		);
 	}
 
-	public function testHarvestedFilterWithClosureDegradesToUnknownRatherThanCrashing(): void
+	// An anonymous closure has no declaration to reference: known, untyped, never argument-checked.
+	public function testHarvestedAnonymousClosureFilterIsKnownButUntyped(): void
 	{
 		$harvested = self::harvestedWithFilter('myFilter', static fn (string $s = ''): string => $s);
 
-		self::assertNull(self::table($harvested)->resolve('myfilter'));
+		self::assertSame([Helpers::class, 'untypedFilter', false], self::table($harvested)->resolve('myfilter'));
+	}
+
+	public function testAnonymousClosureALoaderAnswersIsKnownButUntyped(): void
+	{
+		$harvested = HarvestedCustoms::empty()->withFilterLoaders(new FilterLoaderProbe(
+			static fn (string $name): ?Closure => $name === 'dyn' ? static fn (string $s): string => $s : null,
+			false,
+		));
+
+		self::assertSame(
+			[Helpers::class, 'untypedFilter', false, false, true],
+			self::table($harvested)->resolveForTemplate('dyn', null, null, 'dyn'),
+		);
 	}
 
 	// Latte 3: an entry matches only a spelling the engine registers; a spelling differing in case
