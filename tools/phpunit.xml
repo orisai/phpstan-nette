@@ -25,7 +25,7 @@
 		</testsuite>
 	</testsuites>
 
-	<coverage cacheDirectory="../var/tools/PHPUnit/coverage" processUncoveredFiles="true">
+	<coverage cacheDirectory="../var/tools/PHPUnit/coverage" processUncoveredFiles="false">
 		<include>
 			<directory suffix=".php">../src</directory>
 		</include>
