@@ -148,8 +148,9 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   `($ʟ_label = …->getLabel())?->startTag()` — and `BaseControl::getLabel()` returns
   `Html|string|null`, so both become one `$latteLabel = Helpers::formLabel('x')` statement (an
   analysis-only `Nette\Utils\Html` stand-in, what the vendor macro assumes at runtime) followed by
-  plain `startTag()`/`endTag()` echoes; a self-closing `{label x /}` keeps its
-  `formField('x')->getLabel()` read. `{input x, attrs}` chains `addAttributes()` onto
+  plain `startTag()`/`endTag()` echoes, and a self-closing `{label x, attrs /}` (which chains
+  `addAttributes()` onto the label the same way) binds the same stand-in; a bare `{label x /}`
+  keeps its `formField('x')->getLabel()` read. `{input x, attrs}` chains `addAttributes()` onto
   `getControl()`/`getControlPart('part')`, declared `Html|string` on `BaseControl`, and reduces the
   read to the same kind of stand-in, `Helpers::formInput('x'[, 'part'])`; a plain `{input x}` keeps
   `formField('x')->getControl()`.

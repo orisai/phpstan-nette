@@ -433,6 +433,61 @@ PHP);
 PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), $php));
 	}
 
+	// A self-closing label with attributes chains addAttributes() onto the label like a paired
+	// label's opening does, and binds the same stand-in; a bare {label x /} keeps its read.
+	public function testAttributedSelfClosingLabelBindsTheHtmlStandInOnTheMacrosShape(): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		if ($ʟ_label = end($this->global->formsStack)["x"]->getLabel()) echo $ʟ_label->addAttributes(['class' => 'c']);
+		if ($ʟ_label = end($this->global->formsStack)["x"]->getLabelPart("part")) echo $ʟ_label->addAttributes(['class' => 'c']);
+		if ($ʟ_label = end($this->global->formsStack)["y"]->getLabel()) echo $ʟ_label;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
+        echo $latteLabel->addAttributes(['class' => 'c']);
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
+        echo $latteLabel->addAttributes(['class' => 'c']);
+        if ($latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getLabel()) {
+            echo $latteLabel;
+        }
+PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
+	}
+
+	/**
+	 * @dataProvider provideLatte3Lines
+	 */
+	public function testAttributedSelfClosingLabelBindsTheHtmlStandInOnTheItemShape(string $latteLine): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		echo ($ʟ_label = Nette\Bridges\FormsLatte\Runtime::item('x', $this->global)->getLabel())?->addAttributes(['class' => 'c']) /* line 2 */;
+		echo ($ʟ_label = Nette\Bridges\FormsLatte\Runtime::item('y', $this->global)->getLabel()) /* line 4 */;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
+        echo $latteLabel->addAttributes(['class' => 'c']);
+        echo $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getLabel();
+PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_ITEM), $php));
+	}
+
+	/**
+	 * @dataProvider provideLatte3Lines
+	 */
+	public function testAttributedSelfClosingLabelBindsTheHtmlStandInOnTheProviderShape(string $latteLine): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		echo ($ʟ_label = $this->global->forms->get('x')->getLabelPart('part'))?->addAttributes(['class' => 'c']) /* pos 3:1 */;
+		echo ($ʟ_label = $this->global->forms->get('y')->getLabel()) /* pos 4:1 */;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
+        echo $latteLabel->addAttributes(['class' => 'c']);
+        echo $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getLabel();
+PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), $php));
+	}
+
 	public function testEveryBridgeDescribesItsOwnShape(): void
 	{
 		$macros = (new FormsMacroEliminator(EliminatorRun::family(ShapeFamily::LATTE_2)))->describePattern();

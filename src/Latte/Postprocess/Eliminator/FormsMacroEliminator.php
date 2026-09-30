@@ -100,6 +100,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 	private const LABEL_END = 'endTag';
 
+	private const LABEL_ATTRIBUTES = 'addAttributes';
+
 	private const CONTAINER_VAR = 'formContainer';
 
 	private const DYNAMIC_TEMP = "\u{29F}_tmp";
@@ -355,7 +357,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		}
 
 		$name = $this->matchLabelAssign($node->cond, $label);
-		if ($name === null || $this->matchLabelChain($echo->exprs[0], self::LABEL_START, $label) === null) {
+		if ($name === null || $this->matchLabelOpening($echo->exprs[0], $label) === null) {
 			$this->noteUnboundLabel($node->cond, $label);
 
 			return null;
@@ -364,6 +366,18 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		$this->labelBound = true;
 
 		return [$this->labelAssign($name, $node->cond, $node), $echo];
+	}
+
+	// The opening of a paired label or a self-closing label with attributes: both chain onto the
+	// label the vendor macro assumes to be Html (`{label x /}` alone echoes it and keeps its read).
+
+	/**
+	 * @return array{Expr, MethodCall}|null
+	 */
+	private function matchLabelOpening(Expr $expr, string $label): ?array
+	{
+		return $this->matchLabelChain($expr, self::LABEL_START, $label)
+			?? $this->matchLabelChain($expr, self::LABEL_ATTRIBUTES, $label);
 	}
 
 	/**
@@ -382,7 +396,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return $this->labelBound ? new Echo_([$end[1]], $node->getAttributes()) : null;
 		}
 
-		$start = $this->matchLabelChain($expr, self::LABEL_START, $label);
+		$start = $this->matchLabelOpening($expr, $label);
 		if ($start === null) {
 			return null;
 		}

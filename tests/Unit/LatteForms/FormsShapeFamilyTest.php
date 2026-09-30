@@ -72,6 +72,7 @@ final class FormsShapeFamilyTest extends BaseTestCase
 			. "\t{label name}Name{/label}\n"
 			. "\t{label name /}\n"
 			. "\t{label name:part /}\n"
+			. "\t{label name, class => 'c' /}\n"
 			. "\t{inputError name}\n"
 			. "\t<label n:name=\"name\">L</label>\n"
 			. "\t<select n:name=\"sel\"></select>\n"
@@ -96,19 +97,20 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				[3, "formField('name')"],
 				[4, "formInput('name')"],
 				[5, "formInput('name', 'part')"],
-				[self::labelLine(6, 9), "formLabel('name')"],
-				[self::labelLine(7, 9), "formField('name')"],
-				[self::labelLine(8, 9), "formField('name')"],
-				[9, "formField('name')"],
+				[self::labelLine(6, 10), "formLabel('name')"],
+				[self::labelLine(7, 10), "formField('name')"],
+				[self::labelLine(8, 10), "formField('name')"],
+				[self::labelLine(9, 10), "formLabel('name')"],
 				[10, "formField('name')"],
-				[11, "formField('sel')"],
-				[12, "formField('send')"],
-				[13, "formContainer('address')"],
-				[14, "formField('street')"],
-				[17, "form('other')"],
-				[18, "formField('x')"],
-				[20, "form('attrForm')"],
-				[21, "formField('y')"],
+				[11, "formField('name')"],
+				[12, "formField('sel')"],
+				[13, "formField('send')"],
+				[14, "formContainer('address')"],
+				[15, "formField('street')"],
+				[18, "form('other')"],
+				[19, "formField('x')"],
+				[21, "form('attrForm')"],
+				[22, "formField('y')"],
 			],
 			$calls,
 		);
