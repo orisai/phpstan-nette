@@ -390,7 +390,7 @@ Checks beyond the schema run when the first file is analysed. Each rejection is 
 - `Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed <v>.` — the Latte 3 rows are checked only with
   `orisaiNette.latte.enabled` on and Latte 3 installed
 - `Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed <v>.`
-- `Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed <v>/<v>.`
+- `Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed <v>/<v>.`
 - `orisaiNette.dic.containerLoader "<path>" is not a readable file.` — the same for `orisaiNette.latte.engineLoader`
   and `orisaiNette.latte.templateFactoryContainerLoader`
 - `orisaiNette.forms.catalogs: class "<name>" does not exist.`

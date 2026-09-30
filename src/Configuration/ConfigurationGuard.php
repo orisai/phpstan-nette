@@ -182,7 +182,7 @@ final class ConfigurationGuard
 	}
 
 	// UIExtension exists from nette/application 3.1.6 and FormsExtension from nette/forms 3.1.7;
-	// application 3.2.0-3.2.9 and forms 3.2.0-3.2.6 declare a conflict with Latte 3.1.
+	// application 3.2.0-3.2.6 and forms 3.2.0-3.2.6 declare a conflict with Latte 3.1.
 	private function validateLatteVersionPairs(): void
 	{
 		$latte = $this->installedVersions->getVersion('latte/latte') ?? Engine::VERSION;
@@ -222,11 +222,11 @@ final class ConfigurationGuard
 			!self::isBelow($latte, '3.1.0')
 			&& (
 				($forms !== null && self::isBelow($forms, '3.2.7'))
-				|| ($application !== null && self::isBelow($application, '3.2.10'))
+				|| ($application !== null && self::isBelow($application, '3.2.7'))
 			)
 		) {
 			throw new InvalidConfiguration(sprintf(
-				'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed %s/%s.',
+				'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed %s/%s.',
 				$this->prettyVersion('nette/forms') ?? $forms ?? 'none',
 				$this->prettyVersion('nette/application') ?? $application ?? 'none',
 			));

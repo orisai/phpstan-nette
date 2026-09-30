@@ -59,22 +59,22 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 
 		yield 'latte 3.1 with the conflicting forms 3.2 line' => [
 			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.6.0', 'nette/application' => '3.2.12.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed v3.2.6/v3.2.12.',
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed v3.2.6/v3.2.12.',
 		];
 
 		yield 'latte 3.1 with the conflicting application 3.2 line' => [
-			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.9.0', 'nette/application' => '3.2.9.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed v3.2.9/v3.2.9.',
+			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.9.0', 'nette/application' => '3.2.6.0'],
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed v3.2.9/v3.2.6.',
 		];
 
 		yield 'latte 3.1 with forms 3.1 (never allowed Latte 3.1)' => [
 			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.1.15.0', 'nette/application' => '3.3.0.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed v3.1.15/v3.3.0.',
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed v3.1.15/v3.3.0.',
 		];
 
 		yield 'latte 3.1 without forms but old application' => [
-			['latte/latte' => '3.1.6.0', 'nette/application' => '3.2.9.0'],
-			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.10; installed none/v3.2.9.',
+			['latte/latte' => '3.1.6.0', 'nette/application' => '3.2.6.0'],
+			'Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed none/v3.2.6.',
 		];
 	}
 
@@ -122,7 +122,7 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 
 		yield 'latte 3.1 with the first allowing 3.2 releases' => [
 			true,
-			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.7.0', 'nette/application' => '3.2.10.0'],
+			['latte/latte' => '3.1.6.0', 'nette/forms' => '3.2.7.0', 'nette/application' => '3.2.7.0'],
 		];
 
 		yield 'latte 3.1 with the 3.3 lines' => [
