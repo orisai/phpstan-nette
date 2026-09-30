@@ -141,10 +141,10 @@ Selection rules:
   `orisaiNette.installedVersions` service is overridden through `ProjectInstalledVersions::fromRawData()`.
 - The Latte 3 classes (`src/Latte/Version/Latte3/`) are never referenced by a type: the factory constructs them by
   reflection from the class-name constants `LATTE3_ADAPTER_CLASS` and `LATTE3_ENGINE_READER_CLASS`
-  (`Latte3Adapter::create(ShapeFamily, AdapterCollaborators)`, `Latte3EngineReader::create()`). The default PHPStan
-  config excludes the directory; `tools/phpstan.latte3.neon` analyses it on the Latte 3 profiles.
-- `src/Latte/Version/Latte3/**` must still **parse on PHP 7.4**: the default-profile factory tests autoload it. `make
-  lint` (CI job `lint`) runs `php -l` over `src/` on PHP 7.4. PHP 8 syntax is allowed only under `tests/**/Latte3/`.
+  (`Latte3Adapter::create(ShapeFamily, AdapterCollaborators)`, `Latte3EngineReader::create()`). The primary PHPStan
+  config (`tools/phpstan.neon`) analyses the directory against Latte 3; `tools/phpstan.latte2.neon` excludes it.
+- `src/Latte/Version/Latte3/**` may use PHP 8 syntax: it is loaded only with Latte 3 installed, which requires PHP 8.
+  `make lint` leaves it out, and the factory tests which construct its classes on any install require PHP 8.
 - A Latte 3 class must not extend or implement a Latte 3 type if anything calls `class_exists()` on it while Latte 2 is
   installed.
 
@@ -266,8 +266,8 @@ per template with a committed manifest, so any change in what compiles is a visi
   outcome goes to the entry the call renders (`PhptTemplateExtractor::renderedLoaderEntry()`): the entry of the
   nearest preceding loader containing the key. The heuristic can misattribute when a later `setLoader()` lacks the
   key or a different engine variable renders it; sibling entries of the rendered one stay `null`.
-- **Manifest.** `tests/Corpus/manifest.<profile>.json` (profiles `default`, `latte2-nette32`, `latte30`, `latte31`)
-  holds a header with the pretty versions of latte/latte, nette/application and nette/forms, and per template
+- **Manifest.** `tests/Corpus/manifest.<profile>.json` (`default` for the primary set in `vendor/`, and the profiles
+  `latte2`, `latte2-nette32`, `latte30`; the test takes the profile from `COMPOSER_VENDOR_DIR`) holds a header with the pretty versions of latte/latte, nette/application and nette/forms, and per template
   `"analysed"`, `"compileError"` (an `orisaiNette.latte.parseError` on the file) or `{"expectedFail": "<reason>"}`
   (a compile error the analysis accepts, with a reason kept across regenerations). The test fails on any
   `orisaiNette.latte.internalError` or `phpstan.parse` finding, any run-level internal error, any finding outside the
@@ -300,8 +300,9 @@ When a new Latte line (e.g. 3.2) or forms bridge shape appears:
 2. `composer.json`: lift the `latte/latte` conflict to the next unsupported line.
 3. `ConfigurationGuard`: the supported-version message and the version-pair rows for the bridges the line needs.
 4. A profile (`tools/profiles/<name>.json`), a version group in `InstalledVersionsGuard`, the CI rows
-   (`tests-profile`, `static-analysis-profile`, `corpus`), the profile in `CorpusManifestTest`, a harvested and
-   reviewed `tests/Corpus/manifest.<name>.json`.
+   (`tests-profile`, `static-analysis-profile`, `corpus`), a harvested and reviewed
+   `tests/Corpus/manifest.<name>.json`. When the new line becomes the newest one, the primary set moves to it: the
+   former primary set becomes a profile and the manifests are re-keyed accordingly.
 5. Compile the fixtures on the new line and diff the raw snapshots against the previous line's; every new shape gets a
    `FamilyPatterns` table (`FamilyCoverageTest` lists the missing ones), `DeclarationInjector` and `LineMapper` follow
    a new method layout or marker, and the processed snapshots must come out equal to the other lines'.

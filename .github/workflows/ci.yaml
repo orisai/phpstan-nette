@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           - operating-system: "ubuntu-latest"
-            php-version: "8.3"
+            php-version: "8.4"
 
     steps:
       - name: "Checkout"
@@ -50,7 +50,7 @@ jobs:
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
         with:
-          command: "make install-default PRE_PHP=php"
+          command: "make update PRE_PHP=php"
 
       - name: "PHP_CodeSniffer"
         uses: "orisai/github-workflows/.github/actions/php-codesniffer@v1"
@@ -66,7 +66,7 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
-    # src/ must parse on the oldest supported PHP, Latte 3 adapter included.
+    # src/ must parse on the oldest supported PHP, except the Latte 3 adapter: Latte 3 needs PHP 8.
     strategy:
       matrix:
         include:
@@ -94,12 +94,12 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
-    # PHP 7.4: tools/phpstan.neon analyses for PHP 7.4 up and misreads the PHP 8 vendor releases PHP 8 resolves.
+    # The newest dependency set on the highest supported PHP; tools/phpstan.neon fixes phpVersion to 8.4.
     strategy:
       matrix:
         include:
           - operating-system: "ubuntu-latest"
-            php-version: "7.4"
+            php-version: "8.4"
 
     steps:
       - name: "Checkout"
@@ -114,7 +114,7 @@ jobs:
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
         with:
-          command: "make install-default PRE_PHP=php"
+          command: "make update PRE_PHP=php"
 
       - name: "PHPStan"
         uses: "orisai/github-workflows/.github/actions/phpstan@v1"
@@ -130,15 +130,19 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
+    # Each profile on its highest compatible PHP; the Latte 2 profiles analyse with tools/phpstan.latte2.neon.
     strategy:
       matrix:
         include:
           - operating-system: "ubuntu-latest"
-            profile: "latte30"
+            profile: "latte2"
             php-version: "8.3"
           - operating-system: "ubuntu-latest"
-            profile: "latte31"
-            php-version: "8.4"
+            profile: "latte2-nette32"
+            php-version: "8.3"
+          - operating-system: "ubuntu-latest"
+            profile: "latte30"
+            php-version: "8.3"
 
     steps:
       - name: "Checkout"
@@ -170,17 +174,12 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
+    # The newest dependency set; the lowest set and the other profiles run in tests-profile.
     strategy:
       matrix:
         operating-system: [ "ubuntu-latest" ]
-        php-version: [ "7.4", "8.0", "8.1", "8.2", "8.3" ]
-        composer-flags: [ "" ]
+        php-version: [ "8.3", "8.4" ]
         experimental: [ false ]
-        include:
-          - operating-system: "ubuntu-latest"
-            php-version: "7.4"
-            composer-flags: "--prefer-lowest --prefer-stable"
-            experimental: false
 
     steps:
       - name: "Checkout"
@@ -196,7 +195,7 @@ jobs:
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
         with:
-          command: "make install-default PRE_PHP=php ARGS='${{ matrix.composer-flags }}'"
+          command: "make update PRE_PHP=php"
 
       - name: "PHPUnit"
         uses: "orisai/github-workflows/.github/actions/phpunit@v1"
@@ -213,7 +212,7 @@ jobs:
       - name: "Upload logs"
         uses: "actions/upload-artifact@v4"
         with:
-          name: "Logs - Tests (${{ matrix.operating-system }}, ${{ matrix.php-version }}, ${{ matrix.composer-flags }})"
+          name: "Logs - Tests (${{ matrix.operating-system }}, ${{ matrix.php-version }})"
           path: "var/log"
           if-no-files-found: "ignore"
 
@@ -226,9 +225,18 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
+    # lowest: composer.json's lowest dependencies (--prefer-lowest --prefer-stable) on the lowest PHP.
     strategy:
       matrix:
         include:
+          - operating-system: "ubuntu-latest"
+            profile: "lowest"
+            php-version: "7.4"
+            experimental: false
+          - operating-system: "ubuntu-latest"
+            profile: "latte2"
+            php-version: "8.3"
+            experimental: false
           - operating-system: "ubuntu-latest"
             profile: "latte2-nette32"
             php-version: "8.3"
@@ -240,14 +248,6 @@ jobs:
           - operating-system: "ubuntu-latest"
             profile: "latte30"
             php-version: "8.3"
-            experimental: false
-          - operating-system: "ubuntu-latest"
-            profile: "latte31"
-            php-version: "8.3"
-            experimental: false
-          - operating-system: "ubuntu-latest"
-            profile: "latte31"
-            php-version: "8.4"
             experimental: false
 
     steps:
@@ -292,16 +292,16 @@ jobs:
         include:
           - operating-system: "ubuntu-latest"
             profile: ""
-            php-version: "7.4"
+            php-version: "8.4"
+          - operating-system: "ubuntu-latest"
+            profile: "latte2"
+            php-version: "8.3"
           - operating-system: "ubuntu-latest"
             profile: "latte2-nette32"
             php-version: "8.3"
           - operating-system: "ubuntu-latest"
             profile: "latte30"
             php-version: "8.3"
-          - operating-system: "ubuntu-latest"
-            profile: "latte31"
-            php-version: "8.4"
 
     steps:
       - name: "Checkout"

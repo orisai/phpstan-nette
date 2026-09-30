@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - `symfony/polyfill-php80` is required: the extension calls `str_starts_with()` and names `Stringable` on PHP 7.4
+- Development: the primary dependency set (`composer update`) is the newest one — Latte 3.1 with nette/application and
+  nette/forms 3.3 — and PHPStan analyses it for PHP 8.4; the former default set is the `latte2` profile, the `latte31`
+  profile is gone and a `lowest` profile installs the lowest dependencies on PHP 7.4
+- `src/Latte/Version/Latte3/` no longer has to parse on PHP 7.4: it is loaded only with Latte 3, which requires PHP 8
 - Latte 3: tags Latte 3 dropped (`{includeblock}`, `{status}`, `{use}`, and `{ifCurrent}` with nette/application 3.3)
   are reported as `orisaiNette.latte.parseError`, never passed through as unknown macros
 - Latte 2: a repeated unpaired unknown tag with no closing tag compiles and reports `orisaiNette.latte.unknownMacro`

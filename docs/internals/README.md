@@ -15,7 +15,7 @@ Architecture, invariants, cache design, test layout and known limitations, for s
 - [latte-forms.md](latte-forms.md) – the bridge checking form control names in templates
 
 The [library-wide notes](#library-wide-notes) below cover the configuration guard, result-cache meta services, test
-layout, dependency profiles and running the gates.
+layout, dependency profiles, static analysis and running the gates.
 
 ## Library-wide notes
 
@@ -57,11 +57,14 @@ breaks that fixture, not users.
 - `tests/Unit/<Area>/` and `tests/Integration/<Area>/`, where an area is `Component`, `Configuration`, `Dic`, `Forms`,
   `Latte` or `LatteForms`.
 - Fixtures are colocated in a `Fixtures/` directory next to the tests using them, and every such directory is listed in
-  `excludePaths` of `tools/phpstan.neon`.
+  `excludePaths` of `tools/phpstan.common.neon`.
 - Test code that needs Latte 3 (or nette/application 3.3) at class-load time lives in a `Latte3/` directory
-  (`tests/**/Latte3/`, e.g. `tests/Toolkit/Latte3/`): `tools/phpstan.neon` scans but does not analyse it, and
-  `tools/phpstan.latte3.neon` lists each such directory in `paths` (by hand — the list does not glob); callers reach
-  it only behind an `InstalledVersionsGuard` check. Only there may test code use PHP 8 syntax.
+  (`tests/**/Latte3/`, e.g. `tests/Toolkit/Latte3/`), test code built on Latte-2-only symbols (`Latte\Parser`,
+  `Latte\MacroTokens`, `Latte\Macros\*`, …) in a `Latte2/` directory (`tests/**/Latte2/`). Each config scans the
+  other line's directories but does not analyse them (see [static analysis](#static-analysis)); callers reach them
+  only behind an `InstalledVersionsGuard` check.
+- A test which loads `src/Latte/Version/Latte3/` without Latte 3 installed (the adapter factory tests construct the
+  Latte 3 adapter by class name) requires PHP 8 (`@requires PHP >= 8.0`): those sources need not parse on PHP 7.4.
 - Tests are gated by version groups (see [dependency profiles](#dependency-profiles)); a test exercising the Latte 2
   path carries `@group latte2`.
 - `tests/Doubles/` holds only doubles shared across areas (e.g. the `ApplicationForm`/`FormContainer` family the Forms
@@ -74,68 +77,88 @@ breaks that fixture, not users.
 
 ### Dependency profiles
 
-The default set is Latte 2.11 with nette/application and nette/forms 3.1 and kdyby/forms-replicator 2, on PHP 7.4–8.3.
-`composer.json` alone does not pin it — on PHP 8 its constraints also resolve Latte 3 — so `make install-default`
-(also `make update`) runs `composer update` with `--with latte/latte:^2.11.6 --with nette/application:~3.1.15 --with
-nette/forms:~3.1.11 --with kdyby/forms-replicator:^2.0.0` (`DEFAULT_SET` in the `Makefile`), and the CI `tests`,
-`static-analysis` and `coding-standard` jobs install through it. The other supported sets are profiles in
-`tools/profiles/<name>.json`, each a set of constraint overrides:
+The primary set is the newest one `composer.json` allows: `make update` (a plain `composer update`) installs Latte 3.1
+with nette/application and nette/forms 3.3, nette/caching 3.4 and kdyby/forms-replicator 3 into `vendor/`, on PHP 8.3
+or 8.4. The CI `coding-standard`, `static-analysis` and `tests` jobs install it the same way. The other supported sets
+are profiles in `tools/profiles/<name>.json`, each a set of constraint overrides, Composer update flags
+(`update-flags`) and ignored platform requirements (`ignore-platform-req`):
 
-| Profile          | Installs                                                              | PHP (CI)                         |
-|------------------|-----------------------------------------------------------------------|----------------------------------|
-| (default)        | Latte 2.11, nette/application and nette/forms 3.1, forms-replicator 2 | 7.4–8.3                          |
-| `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2                    | 8.3                              |
-| `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                     | 8.2, 8.3                         |
-| `latte31`        | Latte 3.1, nette/application 3.3, nette/forms 3.3, nette/caching 3.4  | 8.3, 8.4                         |
-| —                | Latte 3.0, nette/application and nette/forms 3.1                      | guard-allowed, not covered by CI |
+| Profile          | Installs                                                                   | PHP (CI)         |
+|------------------|----------------------------------------------------------------------------|------------------|
+| (primary)        | Latte 3.1, nette/application and nette/forms 3.3, nette/caching 3.4        | 8.3, 8.4         |
+| `lowest`         | the lowest dependencies (`--prefer-lowest --prefer-stable`): Latte 2.11.6  | 7.4              |
+| `latte2`         | Latte 2.11, nette/application and nette/forms 3.1, forms-replicator 2      | 8.3              |
+| `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2                         | 8.3              |
+| `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                          | 8.2, 8.3         |
+| —                | Latte 3.0, nette/application and nette/forms 3.1                           | guard-allowed, not covered by CI |
 
-All three profiles install kdyby/forms-replicator 3. `make profile PROFILE=<name>` writes the git-ignored
+The primary set, `latte2-nette32` and `latte30` install kdyby/forms-replicator 3. The Latte 2 sets cap at PHP 8.3
+(Latte 2.11.7, nette/forms 3.1.15 and nette/utils 3.2 do); `latte2` and `latte2-nette32` ignore the `php` platform
+requirement, so they also install on PHP 8.4 locally. `make profile PROFILE=<name>` writes the git-ignored
 `composer.<name>.json` (`tools/profile.php`) and runs `composer update` into `vendor-<name>/`; every other target takes
-the same `PROFILE=` and runs against that vendor directory (`COMPOSER` and `COMPOSER_VENDOR_DIR` set). A Latte 3
-profile analyses with `tools/phpstan.latte3.neon`: `src/Latte/Version/` (without `Latte2/`) and the `tests/**/Latte3/`
-directories only.
+the same `PROFILE=` and runs against that vendor directory (`COMPOSER` and `COMPOSER_VENDOR_DIR` set).
 
 Version groups gate tests at runtime (`VersionGroupGate`, `InstalledVersionsGuard::GROUPS`): `latte2`, `latte3`,
 `latte30`, `latte31`, `nette32`, `nette33`. A test carrying a group is skipped, visibly, when the installed versions do
-not match it, so each suite runs everything its versions support — a Latte 3 profile skips about 760 tests. An unknown
+not match it, so each suite runs everything its versions support — the primary set skips about 760 tests. An unknown
 group name throws.
 
-CI runs cs (PHP 8.3) and phpstan (PHP 7.4: `tools/phpstan.neon` analyses for PHP 7.4 up, and on PHP 8 the default set
-resolves vendor releases with PHP 8 native types, e.g. nette/neon's `mixed`, which that floor reads as class names) on
-the default set, phpstan on `latte30` and `latte31`, the tests on every row above, the
-corpus gate per profile (see [latte-versions.md](latte-versions.md#upstream-template-corpus)) and `make lint`.
+### Static analysis
+
+PHPStan analyses for one fixed PHP version per config, the highest the analysed set supports, so it sees every feature
+the code and the vendor it calls use; PHP 7.4 compatibility is covered by the `lowest` tests, not by PHPStan.
+
+- `tools/phpstan.neon` (primary, `phpVersion` 8.4, `make phpstan` and `make phpstan PROFILE=latte30`) analyses
+  `src tests tools/corpus` and the smoke scripts against Latte 3. It excludes from analysis (still scanned)
+  `src/Latte/Version/Latte2/`, the `tests/**/Latte2/` directories and the version-neutral classes built on Latte 2
+  internals: `LatteCompiler`, `DeterministicCacheMacro`, `PassthroughMacro`, `DeclarationScanner`, `MacroPairing`,
+  `TemplateFactExtractor` and `CaseMismatchScanner`.
+- `tools/phpstan.latte2.neon` (`phpVersion` 8.3, `make phpstan PROFILE=latte2|latte2-nette32`) analyses the same
+  paths against Latte 2 and excludes `src/Latte/Version/Latte3/` and the `tests/**/Latte3/` directories.
+- Both include `tools/phpstan.common.neon` (level, excluded fixtures, shared ignores) and their own baseline
+  (`phpstan.baseline.neon`, `phpstan.latte2.baseline.neon`; `make phpstan-baseline [PROFILE=…]` writes the matching
+  one). A finding only one set of a config reports (e.g. a deprecation only nette/forms 3.3 declares) is an ignore with
+  `reportUnmatched: false` in the config, not a baseline entry.
+
+CI runs cs, phpstan and the tests on the primary set, phpstan on `latte2`, `latte2-nette32` and `latte30`, the tests on
+every profile row above, the corpus gate per profile (see
+[latte-versions.md](latte-versions.md#upstream-template-corpus)) and `make lint`.
 
 ### PHP 7.4 syntax
 
-`src/` must parse on PHP 7.4, including `src/Latte/Version/Latte3/` (the default-profile factory tests autoload it).
-PHPStan and phpcs cannot tell — they accept PHP 8 syntax which is a fatal error on 7.4 — so `make lint` runs
-`php -l` over `src/` with `LINT_PHP` (default `php7.4`; the CI `lint` job runs it on PHP 7.4). PHP 8 syntax is
-allowed only under `tests/**/Latte3/`.
+`src/` must parse on PHP 7.4, except `src/Latte/Version/Latte3/`, which is loaded only with Latte 3 installed and so
+only on PHP 8. PHPStan and phpcs cannot tell — they accept PHP 8 syntax which is a fatal error on 7.4 — so `make lint`
+runs `php -l` over the rest of `src/` with `LINT_PHP` (default `php7.4`; the CI `lint` job runs it on PHP 7.4). Test
+code runs on PHP 7.4 in the `lowest` suite, which is what catches a test loading PHP 8-only code there.
 
 ### Running the gates
 
-The default set develops on PHP 7.4–8.3: Latte 2.11 does not install on 8.4, although consumers may run 7.4–8.4. The
-Latte 3 profiles need PHP 8.2 or newer.
+The primary set develops on PHP 8.4; the `lowest` profile on PHP 7.4; the Latte 2 profiles on PHP 8.3, or on PHP 8.4
+with their platform requirement ignored.
 
 ```
-make install-default PRE_PHP="php7.4"
-make PRE_PHP="XDEBUG_MODE=off php7.4" cs
-make PRE_PHP="XDEBUG_MODE=off php7.4" phpstan
+make update PRE_PHP="php8.4"
+make PRE_PHP="XDEBUG_MODE=off php8.4" cs
+make PRE_PHP="XDEBUG_MODE=off php8.4" phpstan
 make lint LINT_PHP=php7.4
-env -u CLAUDECODE -u AI_AGENT make PRE_PHP="XDEBUG_MODE=off php7.4" tests
+env -u CLAUDECODE -u AI_AGENT make PRE_PHP="XDEBUG_MODE=off php8.4" tests
 
-make profile PROFILE=latte31 PRE_PHP="php8.4"
-make phpstan PROFILE=latte31 PRE_PHP="XDEBUG_MODE=off php8.4"
-env -u CLAUDECODE -u AI_AGENT make tests PROFILE=latte31 PRE_PHP="XDEBUG_MODE=off php8.4"
+make profile PROFILE=lowest PRE_PHP="php7.4"
+env -u CLAUDECODE -u AI_AGENT make tests PROFILE=lowest PRE_PHP="XDEBUG_MODE=off php7.4"
 
-make corpus-harvest PROFILE=latte31 PRE_PHP="php8.4"
-make corpus-manifest PROFILE=latte31 PRE_PHP="XDEBUG_MODE=off php8.4"
+make profile PROFILE=latte2 PRE_PHP="php8.4"
+make phpstan PROFILE=latte2 PRE_PHP="XDEBUG_MODE=off php8.4"
+env -u CLAUDECODE -u AI_AGENT make tests PROFILE=latte2 PRE_PHP="XDEBUG_MODE=off php8.4"
+
+make corpus-harvest PROFILE=latte2 PRE_PHP="php8.4"
+make corpus-manifest PROFILE=latte2 PRE_PHP="XDEBUG_MODE=off php8.4"
 make smoke-dmonitor PRE_PHP="XDEBUG_MODE=off php8.4"
 ```
 
 Run one suite at a time: the performance-budget tests are timed and flake under a concurrent suite.
 
-Run a single test class through make, e.g. `make tests PROFILE=latte31 ARGS=tests/Unit/Toolkit/ScratchProjectVendorTest.php`:
+Run a single test class through make, e.g. `make tests ARGS=tests/Unit/Toolkit/ScratchProjectVendorTest.php`, or
+`make tests PROFILE=latte2 ARGS=tests/Unit/Toolkit/ScratchProjectVendorTest.php` for a profile:
 the target sets `COMPOSER` and `COMPOSER_VENDOR_DIR` for the profile. `tests/autoload.php` stops a PHPUnit started
 from a `vendor-<profile>/` directory without `COMPOSER_VENDOR_DIR`, which would otherwise load `vendor/`, and
 `ScratchProject` hands spawned analyses the profile's `composer.<profile>.json` (`VendorDirectory::composerFile()`), so
