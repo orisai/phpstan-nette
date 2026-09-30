@@ -131,8 +131,8 @@ services:
 	latteCustomsEngineSource:
 		class: OriPhpstan\Nette\Latte\Customs\EngineSource
 		arguments:
-			containerLoader: %orisai.nette.dic.containerLoader%
-			latteEngineLoaderFile: %orisai.nette.latte.engineLoader%
+			containerLoader: @orisai.nette.configuration::get(dic.containerLoader)
+			latteEngineLoaderFile: @orisai.nette.configuration::get(latte.engineLoader)
 		autowired: false
 
 	# The engine reader is version-selected inside harvest() (first use, outside the containment
@@ -156,8 +156,8 @@ services:
 			projectRoot: %currentWorkingDirectory%
 			installed: @orisai.nette.installedVersions
 			storePaths:
-				- %orisai.nette.latte.discovery.storePath%
-				- %orisai.nette.latte.narrowing.storePath%
+				- @orisai.nette.configuration::get(latte.discovery.storePath)
+				- @orisai.nette.configuration::get(latte.narrowing.storePath)
 		autowired: false
 
 	# Per-{templateType} filter/function entries - modelled off the
@@ -193,7 +193,7 @@ services:
 			cache: @latteAnalysisCache
 			harvester: @latteCustomsHarvester
 			discoveryStore: @latteDiscoveryStore
-			discoveryStoreEnabled: %orisai.nette.latte.discovery.enabled%
+			discoveryStoreEnabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
 	latteVersionAdapterAccessor:
@@ -229,14 +229,14 @@ services:
 			edgeIndex: @latteTemplateEdgeIndex
 			universe: @latteUniverse
 			capturedOverlay: @latteCapturedOverlay
-			narrowingEnabled: %orisai.nette.latte.narrowing.enabled%
+			narrowingEnabled: @orisai.nette.configuration::get(latte.narrowing.enabled)
 			harvester: @latteCustomsHarvester
 			templateTypeCustoms: @latteTemplateTypeCustoms
-			includeIsolation: %orisai.nette.latte.includeIsolation%
+			includeIsolation: @orisai.nette.configuration::get(latte.includeIsolation)
 			# Same opt-in precedent as narrowingEnabled above: latteProviderAvailabilityChecker below is
 			# always wired but only ever claims anything under this same flag (its own `enabled`
 			# argument), so a scan whose only consumer is dormant is pure NodeFinder-walk waste.
-			providerScanEnabled: %orisai.nette.latte.discovery.enabled%
+			providerScanEnabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
 	# Runs the same tagged visitor suite RichParser::parseString runs (ParentStmtTypesVisitor,
@@ -261,8 +261,8 @@ services:
 			richAttributeDecorator: @latteRichAttributeDecorator
 			projectRoot: %currentWorkingDirectory%
 			# Plain flags, not the guard: the guard needs the reflection provider, whose source locators parse through here.
-			enabled: %orisai.nette.latte.enabled%
-			narrowingEnabled: %orisai.nette.latte.narrowing.enabled%
+			enabled: @orisai.nette.configuration::get(latte.enabled)
+			narrowingEnabled: @orisai.nette.configuration::get(latte.narrowing.enabled)
 			discoveryRefResolver: @latteDiscoveryRefResolver
 			factoryProvidedVars: @latteFactoryProvidedVars
 			providerAvailabilityChecker: @latteProviderAvailabilityChecker
@@ -318,8 +318,8 @@ services:
 	latteVarTypeExpressionChecker:
 		class: OriPhpstan\Nette\Latte\Rule\VarTypeExpressionChecker
 		arguments:
-			checkTypeAgainstPhpDocType: %orisai.nette.latte.reportWrongPhpDocTypeInVarType%
-			strictWideningCheck: %orisai.nette.latte.reportAnyTypeWideningInVarType%
+			checkTypeAgainstPhpDocType: @orisai.nette.configuration::get(latte.reportWrongPhpDocTypeInVarType)
+			strictWideningCheck: @orisai.nette.configuration::get(latte.reportAnyTypeWideningInVarType)
 		autowired: false
 
 	# Self-gated on the `.latte` file check like latteDiagnosticRule/latteInternalAccessRule above,
@@ -362,7 +362,7 @@ services:
 	latteTemplateFactoryDefaultResolver:
 		class: OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver
 		arguments:
-			containerLoaderFile: %orisai.nette.latte.templateFactoryContainerLoader%
+			containerLoaderFile: @orisai.nette.configuration::get(latte.templateFactoryContainerLoader)
 		autowired: false
 
 	# Template-file discovery (SP3): presenter-name inverse over the compiled container's
@@ -373,8 +373,8 @@ services:
 	latteDiscoveryResolver:
 		class: OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryResolver
 		arguments:
-			containerLoaderFile: %orisai.nette.latte.templateFactoryContainerLoader%
-			formulas: %orisai.nette.latte.discovery.formulas%
+			containerLoaderFile: @orisai.nette.configuration::get(latte.templateFactoryContainerLoader)
+			formulas: @orisai.nette.configuration::get(latte.discovery.formulas)
 			projectRootPath: %currentWorkingDirectory%
 		autowired: false
 
@@ -385,7 +385,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk
 		arguments:
 			parser: @currentPhpVersionRichParser
-			firstPartyPaths: %orisai.nette.latte.firstPartyPaths%
+			firstPartyPaths: @orisai.nette.configuration::get(latte.firstPartyPaths)
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
 			discoveryResolver: @latteDiscoveryResolver
 		autowired: false
@@ -400,7 +400,7 @@ services:
 			discoveryResolver: @latteDiscoveryResolver
 			# The same boundary lattePhpRenderWalk reads: it decides which classes qualify, so it is part
 			# of the envelope identity, not of any read-set file.
-			firstPartyPaths: %orisai.nette.latte.firstPartyPaths%
+			firstPartyPaths: @orisai.nette.configuration::get(latte.firstPartyPaths)
 		autowired: false
 
 	# Per-run pure verdict component (see PairingJudge's own class doc); reflectionProvider is left
@@ -466,7 +466,7 @@ services:
 	latteDiscoveryStore:
 		class: OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore
 		arguments:
-			storeDirPath: %orisai.nette.latte.discovery.storePath%
+			storeDirPath: @orisai.nette.configuration::get(latte.discovery.storePath)
 		autowired: false
 
 	# The one shared facts seam for every discovery-store consumer - reads go through
@@ -510,13 +510,13 @@ services:
 		class: OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryRefResolver
 		arguments:
 			store: @latteDiscoveryStore
-			enabled: %orisai.nette.latte.discovery.enabled%
+			enabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
 	latteSiteScopeStore:
 		class: OriPhpstan\Nette\Latte\Includes\SiteScopeStore
 		arguments:
-			storeDirPath: %orisai.nette.latte.narrowing.storePath%
+			storeDirPath: @orisai.nette.configuration::get(latte.narrowing.storePath)
 		autowired: false
 
 	# Single shared instance so every consumer (ContextResolver, IncludeContractChecker,
@@ -526,14 +526,14 @@ services:
 		class: OriPhpstan\Nette\Latte\Includes\CapturedOverlay
 		arguments:
 			store: @latteSiteScopeStore
-			enabled: %orisai.nette.latte.narrowing.enabled%
+			enabled: @orisai.nette.configuration::get(latte.narrowing.enabled)
 		autowired: false
 
 	latteSiteScopeWriterRule:
 		class: OriPhpstan\Nette\Latte\Rule\LatteSiteScopeWriterRule
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			storeDirPath: %orisai.nette.latte.narrowing.storePath%
+			storeDirPath: @orisai.nette.configuration::get(latte.narrowing.storePath)
 			store: @latteSiteScopeStore
 		tags: [phpstan.rules.rule]
 
@@ -573,10 +573,10 @@ services:
 		class: OriPhpstan\Nette\Latte\Reflection\LatteTemplateSourceLocator
 		arguments:
 			universe: @latteUniverse
-			sliceStoreDirPath: %orisai.nette.latte.narrowing.storePath%
+			sliceStoreDirPath: @orisai.nette.configuration::get(latte.narrowing.storePath)
 			# A plain flag, not the guard: the guard needs the reflection provider this locator feeds.
-			enabled: %orisai.nette.latte.enabled%
-			discoveryStoreDirPath: %orisai.nette.latte.discovery.storePath%
+			enabled: @orisai.nette.configuration::get(latte.enabled)
+			discoveryStoreDirPath: @orisai.nette.configuration::get(latte.discovery.storePath)
 		autowired: false
 
 	latteTemplateEdgeIndex:
@@ -586,7 +586,7 @@ services:
 			adapterAccessor: @latteVersionAdapterAccessor
 			cache: @latteAnalysisCache
 			discoveryStore: @latteDiscoveryStore
-			discoveryStoreEnabled: %orisai.nette.latte.discovery.enabled%
+			discoveryStoreEnabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
 	latteResultCacheMeta:
@@ -597,10 +597,10 @@ services:
 			# The config's declared paths, not the CLI-narrowed %analysedPaths% - see the class's
 			# own note on why the store-directory regime must not depend on how phpstan was invoked.
 			analysedPaths: %paths%
-			discoveryStoreDirPath: %orisai.nette.latte.discovery.storePath%
+			discoveryStoreDirPath: @orisai.nette.configuration::get(latte.discovery.storePath)
 			harvester: @latteCustomsHarvester
 			discoveryStore: @latteDiscoveryStore
-			coarseInvalidationAccepted: %orisai.nette.latte.discovery.coarseInvalidationAccepted%
+			coarseInvalidationAccepted: @orisai.nette.configuration::get(latte.discovery.coarseInvalidationAccepted)
 			# The live-container inputs FactoryProvidedVars reads: no analysed file's hash and no
 			# discovery record reflects them, so this coarse salt is their only channel.
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
@@ -625,7 +625,7 @@ services:
 		arguments:
 			store: @latteDiscoveryStore
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
-			enabled: %orisai.nette.latte.discovery.enabled%
+			enabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
 	# orisaiNette.latte.providerUnavailable: a uiControl/uiPresenter/snippetBridge-requiring macro in a template
@@ -639,7 +639,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Includes\ProviderAvailabilityChecker
 		arguments:
 			store: @latteDiscoveryStore
-			enabled: %orisai.nette.latte.discovery.enabled%
+			enabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
 	latteContextResolver:
@@ -648,7 +648,7 @@ services:
 			index: @latteTemplateEdgeIndex
 			universe: @latteUniverse
 			capturedOverlay: @latteCapturedOverlay
-			includeIsolation: %orisai.nette.latte.includeIsolation%
+			includeIsolation: @orisai.nette.configuration::get(latte.includeIsolation)
 			factoryProvidedVars: @latteFactoryProvidedVars
 		autowired: false
 
@@ -662,7 +662,7 @@ services:
 			universe: @latteUniverse
 			contextResolver: @latteContextResolver
 			capturedOverlay: @latteCapturedOverlay
-			includeIsolation: %orisai.nette.latte.includeIsolation%
+			includeIsolation: @orisai.nette.configuration::get(latte.includeIsolation)
 		autowired: false
 
 	# typeStringResolver is deliberately not listed - see latteIncludeContractChecker's own note.
@@ -670,7 +670,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Includes\DeclarationConsistencyChecker
 		arguments:
 			index: @latteTemplateEdgeIndex
-			allowNarrowingOverride: %orisai.nette.latte.allowNarrowingOverride%
+			allowNarrowingOverride: @orisai.nette.configuration::get(latte.allowNarrowingOverride)
 		autowired: false
 
 	# The Latte-side consumer of the discovery store's class->file links (SP3): the
@@ -688,10 +688,10 @@ services:
 			store: @latteDiscoveryStore
 			index: @latteTemplateEdgeIndex
 			universe: @latteUniverse
-			firstPartyPaths: %orisai.nette.latte.firstPartyPaths%
-			enabled: %orisai.nette.latte.enabled%
-			discoveryStoreEnabled: %orisai.nette.latte.discovery.enabled%
-			templateTypeRequired: %orisai.nette.latte.templateTypeRequired%
+			firstPartyPaths: @orisai.nette.configuration::get(latte.firstPartyPaths)
+			enabled: @orisai.nette.configuration::get(latte.enabled)
+			discoveryStoreEnabled: @orisai.nette.configuration::get(latte.discovery.enabled)
+			templateTypeRequired: @orisai.nette.configuration::get(latte.templateTypeRequired)
 		autowired: false
 
 	# Convention-name (`$this->file`) writes made from outside the receiving class - the one
@@ -710,7 +710,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Rule\LatteTerminatingRenderCollector
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			firstPartyPaths: %orisai.nette.latte.firstPartyPaths%
+			firstPartyPaths: @orisai.nette.configuration::get(latte.firstPartyPaths)
 		tags: [phpstan.collector]
 
 	# Each analysed template's own {templateType} declaration, the one aggregate-stage input that is

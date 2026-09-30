@@ -34,7 +34,7 @@ services:
 		class: OriPhpstan\Nette\Component\Attachment\ParentAccessorReturnTypeExtension
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			enabled: %orisai.nette.component.enabled%
+			enabled: @orisai.nette.configuration::get(component.enabled)
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
@@ -42,7 +42,7 @@ services:
 		class: OriPhpstan\Nette\Component\UnattachedParentAccessRule
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			enabled: %orisai.nette.component.enabled%
+			enabled: @orisai.nette.configuration::get(component.enabled)
 		tags:
 			- phpstan.rules.rule
 
@@ -50,6 +50,6 @@ services:
 		class: OriPhpstan\Nette\Component\MagicMethodReturnTypeRule
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			enabled: %orisai.nette.component.enabled%
+			enabled: @orisai.nette.configuration::get(component.enabled)
 		tags:
 			- phpstan.rules.rule

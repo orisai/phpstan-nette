@@ -21,10 +21,19 @@ layout, dependency profiles, static analysis and running the gates.
 
 The notes below concern every area.
 
+### Configuration
+
+`extension.neon` declares only the loose `orisai: arrayOf(array(), string())` schema every orisai extension shares, so
+PHPStan does not check the `orisai.nette` subtree. `Configuration` (`src/Configuration/`, service
+`orisai.nette.configuration`) validates it against the strict schema in `Configuration::schema()` with nette/schema, the
+same way PHPStan validates `parametersSchema`. Services read options through it
+(`@orisai.nette.configuration::get(latte.enabled)`), never through `%orisai.nette.…%`, so the first service built rejects
+an invalid subtree before any value is used. Defaults stay in the `parameters:` blocks of `config/*.neon`.
+
 ### Configuration guard
 
 `ConfigurationGuard` (`src/Configuration/`, service `orisai.nette.configurationGuard`) holds the cross-field checks the
-schema in `extension.neon` cannot express; the user guide lists their messages. It is also the one place services ask
+schema cannot express; the user guide lists their messages. It is also the one place services ask
 whether an area is on (`isFormsEnabled()`, `isLatteDiscoveryEnabled()`, `isBridgeEnabled()`, …), so a new switch
 belongs there rather than in a service argument.
 
@@ -40,7 +49,7 @@ belongs there rather than in a service argument.
   and 3.1 need) run only with `orisai.nette.latte.enabled` on and read the installed versions through
   `ProjectInstalledVersions` (service `orisai.nette.installedVersions`), which tests override with
   `ProjectInstalledVersions::fromRawData()`.
-- The routing parser and the template source locator take plain `%orisai.nette.latte.*%` parameters instead of the guard.
+- The routing parser and the template source locator take plain `orisai.nette.latte.*` options instead of the guard.
   Injecting the guard there created a DI cycle through the reflection provider.
 
 ### Result-cache meta services

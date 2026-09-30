@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Integration\LatteForms;
 
+use Nette\Neon\Entity;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta;
@@ -300,8 +301,8 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 			self::SALT_SERVICE . ' no longer builds ' . FormsResultCacheMeta::class . $consequence,
 		);
 		self::assertIsArray($service['arguments'] ?? null);
-		self::assertSame(
-			'%orisai.nette.forms.enabled%',
+		self::assertEquals(
+			new Entity('@orisai.nette.configuration::get', ['forms.enabled']),
 			$service['arguments'][self::SALT_ARGUMENT] ?? null,
 			'the ' . self::SALT_ARGUMENT . ' argument of ' . FormsResultCacheMeta::class . ' is no longer '
 				. 'the Forms switch' . $consequence,

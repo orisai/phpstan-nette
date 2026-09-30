@@ -760,7 +760,7 @@ only — today's behavior) whenever a step is unavailable, never erroring:
 
 1. `orisai.nette.dic.containerLoader` (the loader the DI extension uses) — load the compiled container,
    `getByType(Nette\Bridges\ApplicationLatte\ILatteFactory::class)`, `create()`. `EngineSource` reads
-   the same `%orisai.nette.dic.containerLoader%` parameter, so one loader serves both extensions.
+   the same `orisai.nette.dic.containerLoader` option, so one loader serves both extensions.
 2. `orisai.nette.latte.engineLoader` (optional, default `null`) — a PHP file path returning a bare
    `Latte\Engine` directly, for consumers without `nette/application` (mirrors PHPStan's own
    `symfony.consoleApplicationLoader` shape):

@@ -2,8 +2,10 @@
 
 namespace Tests\OriPhpstan\Nette\Integration\Configuration;
 
-use Nette\Neon\Entity;
 use Nette\Neon\Neon;
+use Nette\Schema\Elements\Structure;
+use OriPhpstan\Nette\Configuration\Configuration;
+use ReflectionProperty;
 use RuntimeException;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_diff;
@@ -53,13 +55,7 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 	public function testDocumentedKeysMatchSchema(): void
 	{
 		$root = dirname(__DIR__, 3);
-		$extension = Neon::decode(self::read($root . '/extension.neon'));
-		$orisai = $extension['parametersSchema']['orisai'];
-		self::assertInstanceOf(Entity::class, $orisai);
-		$schema = $orisai->attributes[0]['nette'];
-		self::assertInstanceOf(Entity::class, $schema);
-
-		$schemaPaths = self::schemaPaths($schema, '');
+		$schemaPaths = self::schemaPaths(Configuration::schema(), '');
 		$schemaLeaves = self::leaves($schemaPaths);
 		self::assertSame(self::SCHEMA_LEAVES, $schemaLeaves);
 
@@ -89,14 +85,17 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 	/**
 	 * @return array<string, bool>
 	 */
-	private static function schemaPaths(Entity $structure, string $prefix): array
+	private static function schemaPaths(Structure $structure, string $prefix): array
 	{
-		$paths = [];
-		$fields = $structure->attributes[0];
+		$items = new ReflectionProperty(Structure::class, 'items');
+		$items->setAccessible(true);
+		$fields = $items->getValue($structure);
 		self::assertIsArray($fields);
+
+		$paths = [];
 		foreach ($fields as $key => $field) {
 			$path = $prefix . $key;
-			$isStructure = $field instanceof Entity && $field->value === 'structure';
+			$isStructure = $field instanceof Structure;
 			$paths[$path] = !$isStructure;
 			if ($isStructure) {
 				$paths = array_merge($paths, self::schemaPaths($field, $path . '.'));

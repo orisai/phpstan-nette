@@ -31,7 +31,7 @@ final class PipelineFactory
 	// against narrowing-live behaviour (pre-flag); callers pinning the opt-in flag itself pass
 	// false explicitly. $providerScanEnabled defaults true for the identical reason: every
 	// pre-existing caller was written against AnalysisPipeline's own unconditional-scan behaviour
-	// (pre-flag) - production wiring is the only caller that pins it to %orisai.nette.latte.discovery.enabled%
+	// (pre-flag) - production wiring is the only caller that pins it to orisai.nette.latte.discovery.enabled
 	// explicitly (see Latte/wiring.neon's latteAnalysisPipeline service).
 	public static function create(
 		?string $projectRoot = null,

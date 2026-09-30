@@ -339,3 +339,7 @@ parameters:
 		-
 			identifier: shipmonk.deadMethod
 			path: ../tests/Toolkit/TemplateFactories.php
+		# Constructed by the container of the PHPStan the test spawns.
+		-
+			identifier: shipmonk.deadMethod
+			path: ../tests/Integration/Configuration/ParameterProbeRule.php

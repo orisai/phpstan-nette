@@ -250,8 +250,13 @@ Good to go!
 
 ## Configuration
 
-All options live under the `orisai.nette` key. Defaults are shown in each block. Unknown keys and values of a wrong
-type are rejected by PHPStan when the config is loaded.
+All options live under the `orisai.nette` key. Defaults are shown in each block. Unknown keys, missing keys and values
+of a wrong type under `orisai.nette` are rejected before the analysis starts.
+
+Other orisai PHPStan extensions keep their options next to it, under their own key in `orisai`. Every such extension
+declares the same loose schema for `orisai` (`orisai: arrayOf(array(), string())`) and validates only its own key, so
+the extensions can be installed together. A key directly under `orisai` which no installed extension owns is therefore
+not reported.
 
 ### DI options
 

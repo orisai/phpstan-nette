@@ -20,35 +20,7 @@ use function strtolower;
 use function version_compare;
 
 /**
- * @phpstan-type OrisaiNetteConfig array{
- *     forms: array{
- *         enabled: bool,
- *         defaultContainerClass: string,
- *         reportUnannotatedRegistrars: bool,
- *         catalogs: list<string>,
- *         internals: array{indexShadowCompare: bool},
- *     },
- *     component: array{enabled: bool},
- *     latte: array{
- *         enabled: bool,
- *         narrowing: array{enabled: bool, storePath: string},
- *         discovery: array{
- *             enabled: bool,
- *             storePath: string,
- *             coarseInvalidationAccepted: bool,
- *             formulas: array<string, string|array<string, string>>,
- *         },
- *         engineLoader: string|null,
- *         templateFactoryContainerLoader: string|null,
- *         firstPartyPaths: list<string>,
- *         templateTypeRequired: bool,
- *         includeIsolation: bool,
- *         allowNarrowingOverride: bool,
- *         reportWrongPhpDocTypeInVarType: bool,
- *         reportAnyTypeWideningInVarType: bool,
- *     },
- *     dic: array{containerLoader: string|null},
- * }
+ * @phpstan-import-type OrisaiNetteConfig from Configuration
  */
 final class ConfigurationGuard
 {
@@ -90,17 +62,16 @@ final class ConfigurationGuard
 	private bool $validated = false;
 
 	/**
-	 * @param OrisaiNetteConfig $orisaiNette
 	 * @param list<string> $fileExtensions
 	 */
 	public function __construct(
-		array $orisaiNette,
+		Configuration $configuration,
 		array $fileExtensions,
 		ReflectionProvider $reflectionProvider,
 		ProjectInstalledVersions $installedVersions
 	)
 	{
-		$this->config = $orisaiNette;
+		$this->config = $configuration->toArray();
 		$this->fileExtensions = $fileExtensions;
 		$this->reflectionProvider = $reflectionProvider;
 		$this->installedVersions = $installedVersions;

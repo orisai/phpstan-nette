@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Toolkit;
 
+use OriPhpstan\Nette\Configuration\Configuration;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use PHPStan\DependencyInjection\Container;
@@ -11,7 +12,7 @@ use function assert;
 use function is_array;
 
 /**
- * @phpstan-import-type OrisaiNetteConfig from ConfigurationGuard
+ * @phpstan-import-type OrisaiNetteConfig from Configuration
  */
 final class TestGuard
 {
@@ -26,15 +27,16 @@ final class TestGuard
 
 	public static function withContainerLoader(Container $container, string $loaderFile): ConfigurationGuard
 	{
-		$config = $container->getParameter('orisai')['nette'];
-		assert(is_array($config));
+		$configuration = $container->getService('orisai.nette.configuration');
+		assert($configuration instanceof Configuration);
+		$config = $configuration->toArray();
 		$config['dic']['containerLoader'] = $loaderFile;
 
 		$fileExtensions = $container->getParameter('fileExtensions');
 		assert(is_array($fileExtensions));
 
 		return new ConfigurationGuard(
-			$config, // @phpstan-ignore argument.type
+			new Configuration($config),
 			$fileExtensions, // @phpstan-ignore argument.type
 			$container->getByType(ReflectionProvider::class),
 			ProjectInstalledVersions::get(),
@@ -79,7 +81,7 @@ final class TestGuard
 	): ConfigurationGuard
 	{
 		return new ConfigurationGuard(
-			$config,
+			new Configuration($config),
 			['php', 'latte'],
 			PHPStanTestCase::getContainer()->getByType(ReflectionProvider::class),
 			$installedVersions ?? ProjectInstalledVersions::get(),
@@ -89,7 +91,7 @@ final class TestGuard
 	/**
 	 * @return OrisaiNetteConfig
 	 */
-	private static function defaults(): array
+	public static function defaults(): array
 	{
 		return [
 			'forms' => [

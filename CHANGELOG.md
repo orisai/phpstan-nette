@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Parameters are nested under `orisai: nette:` instead of `orisaiNette:`, and the services are named `orisai.nette.*`
+- `orisai.nette` is validated by the extension (nette/schema is required) rather than by PHPStan, so other orisai
+  extensions can keep their options under `orisai` too; a key directly under `orisai` which no installed extension owns
+  is not reported
 - `symfony/polyfill-php80` is required: the extension calls `str_starts_with()` and names `Stringable` on PHP 7.4
 - Development: the primary dependency set (`composer update`) is the newest one — Latte 3.1 with nette/application and
   nette/forms 3.3 — and PHPStan analyses it for PHP 8.4; the former default set is the `latte2` profile, the `latte31`
