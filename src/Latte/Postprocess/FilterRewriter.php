@@ -166,11 +166,19 @@ final class FilterRewriter extends NodeVisitorAbstract
 		if ($node instanceof FuncCall && $node->name instanceof Name) {
 			$literalName = $node->name->toString();
 			$known = $this->functionTable !== null
-				&& $this->functionTable->resolveForTemplate(
-					strtolower($literalName),
-					$this->templateTypeClass,
-					$this->templateTypeCustoms,
-				) !== null;
+				&& (
+					$this->functionTable->resolveForTemplate(
+						strtolower($literalName),
+						$this->templateTypeClass,
+						$this->templateTypeCustoms,
+						$literalName,
+					) !== null
+					|| $this->functionTable->registeredSpelling(
+						$literalName,
+						$this->templateTypeClass,
+						$this->templateTypeCustoms,
+					) !== null
+				);
 
 			if ($known) {
 				return $this->rewriteResolvedCall($literalName, $node->args, $node->getStartLine(), 'function');
@@ -393,6 +401,7 @@ final class FilterRewriter extends NodeVisitorAbstract
 					strtolower($name),
 					$this->templateTypeClass,
 					$this->templateTypeCustoms,
+					$name,
 				)
 				: null;
 		}
@@ -403,11 +412,7 @@ final class FilterRewriter extends NodeVisitorAbstract
 		$attributes = ['startLine' => $line, 'endLine' => $line];
 
 		if ($resolved === null) {
-			$this->diagnostics[] = new Diagnostic(
-				'orisaiNette.latte.unknownFilter',
-				$kind === 'filter' ? "Unknown Latte filter '$name'." : "Unknown Latte function '$name'.",
-				$line,
-			);
+			$this->diagnostics[] = $this->unresolvedDiagnostic($name, $line, $kind);
 
 			$unknownCall = new StaticCall(
 				new FullyQualified(Helpers::class),
@@ -445,6 +450,29 @@ final class FilterRewriter extends NodeVisitorAbstract
 		}
 
 		return $call;
+	}
+
+	private function unresolvedDiagnostic(string $name, int $line, string $kind): Diagnostic
+	{
+		$table = $kind === 'filter' ? $this->filterTable : $this->functionTable;
+		$spelling = $table !== null
+			? $table->registeredSpelling($name, $this->templateTypeClass, $this->templateTypeCustoms)
+			: null;
+
+		if ($spelling !== null) {
+			return new Diagnostic(
+				$kind === 'filter' ? 'orisaiNette.latte.filterCaseMismatch' : 'orisaiNette.latte.functionCaseMismatch',
+				"Latte $kind '$name' differs in case from the registered '$spelling' - Latte 3 resolves $kind names "
+				. 'case-sensitively.',
+				$line,
+			);
+		}
+
+		return new Diagnostic(
+			'orisaiNette.latte.unknownFilter',
+			$kind === 'filter' ? "Unknown Latte filter '$name'." : "Unknown Latte function '$name'.",
+			$line,
+		);
 	}
 
 	/**

@@ -75,6 +75,66 @@ final class FunctionTableTest extends BaseTestCase
 		self::assertNull(self::table($harvested)->resolve('myfunction'));
 	}
 
+	// Latte 3: an entry matches only a spelling the engine registers; a spelling differing in case
+	// names the registered one.
+	public function testCaseSensitiveNamesMatchOnlyARegisteredSpelling(): void
+	{
+		$table = new FunctionTable(
+			self::defaults(),
+			self::harvestedWithFunction('myFunction', [self::class, 'fixtureFunctionMethod']),
+			true,
+		);
+
+		self::assertSame(
+			[self::class, 'fixtureFunctionMethod', false, false, true],
+			$table->resolveForTemplate('myfunction', null, null, 'myFunction'),
+		);
+		self::assertNull($table->resolveForTemplate('myfunction', null, null, 'MyFunction'));
+		self::assertSame('myFunction', $table->registeredSpelling('MyFunction', null, null));
+		self::assertNull($table->registeredSpelling('myFunction', null, null));
+		self::assertNull($table->registeredSpelling('definitelyNotAFunction', null, null));
+	}
+
+	public function testCaseSensitivePerTemplateFunctionMatchesItsMethodName(): void
+	{
+		$table = new FunctionTable(self::defaults(), null, true);
+		$customs = $this->templateTypeCustoms();
+
+		self::assertSame(
+			[ProcessParamsQualificationFixture::class, 'docFunction', false, true, false],
+			$table->resolveForTemplate(
+				'docfunction',
+				ProcessParamsQualificationFixture::class,
+				$customs,
+				'docFunction',
+			),
+		);
+		self::assertNull(
+			$table->resolveForTemplate(
+				'docfunction',
+				ProcessParamsQualificationFixture::class,
+				$customs,
+				'DocFunction',
+			),
+		);
+		self::assertSame(
+			'docFunction',
+			$table->registeredSpelling('DocFunction', ProcessParamsQualificationFixture::class, $customs),
+		);
+	}
+
+	// Latte 2 resolves every spelling and never names a registered one.
+	public function testCaseInsensitiveNamesMatchEverySpelling(): void
+	{
+		$table = self::table(self::harvestedWithFunction('myFunction', [self::class, 'fixtureFunctionMethod']));
+
+		self::assertSame(
+			[self::class, 'fixtureFunctionMethod', false, false, true],
+			$table->resolveForTemplate('myfunction', null, null, 'MYfunction'),
+		);
+		self::assertNull($table->registeredSpelling('MYfunction', null, null));
+	}
+
 	public function testBuiltInFunctionWinsOverAHarvestedNameCollision(): void
 	{
 		$harvested = self::harvestedWithFunction('clamp', [self::class, 'fixtureFunctionMethod']);

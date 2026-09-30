@@ -23,6 +23,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
@@ -191,7 +192,12 @@ final class AnalysisPipeline
 	private function filterTable(): FilterTable
 	{
 		if ($this->filterTable === null) {
-			$this->filterTable = new FilterTable($this->adapterAccessor->get()->defaultCallables(), $this->harvested());
+			$adapter = $this->adapterAccessor->get();
+			$this->filterTable = new FilterTable(
+				$adapter->defaultCallables(),
+				$this->harvested(),
+				$adapter->family()->latteLine !== ShapeFamily::LATTE_2,
+			);
 		}
 
 		return $this->filterTable;
@@ -200,9 +206,11 @@ final class AnalysisPipeline
 	private function functionTable(): FunctionTable
 	{
 		if ($this->functionTable === null) {
+			$adapter = $this->adapterAccessor->get();
 			$this->functionTable = new FunctionTable(
-				$this->adapterAccessor->get()->defaultCallables(),
+				$adapter->defaultCallables(),
 				$this->harvested(),
+				$adapter->family()->latteLine !== ShapeFamily::LATTE_2,
 			);
 		}
 

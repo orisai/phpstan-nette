@@ -3,6 +3,10 @@
 namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
 use Latte\CompileException;
+use Latte\Compiler\Node;
+use Latte\Compiler\Nodes\Php\Expression\FunctionCallNode;
+use Latte\Compiler\Nodes\Php\NameNode;
+use Latte\Compiler\NodeTraverser;
 use Latte\Engine;
 use Latte\Essential\TranslatorExtension;
 use Latte\Extension;
@@ -23,6 +27,7 @@ use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use ReflectionProperty;
 use Throwable;
 use function array_merge;
+use function array_shift;
 use function class_exists;
 use function get_class;
 use function preg_match;
@@ -30,6 +35,7 @@ use function preg_quote;
 use function str_replace;
 use function strpos;
 use const E_USER_DEPRECATED;
+use const E_USER_WARNING;
 
 // Engine::parse() -> applyPasses() -> generate(), the same three steps Engine::compile() runs, over
 // the harvested engine's extensions and features (or, with nothing harvested, a fixed extension
@@ -43,6 +49,8 @@ final class Latte3Compiler
 	private const MAX_UNKNOWN_TAG_RETRIES = 20;
 
 	private const FIXED_SET_SALT = 'fixed-set';
+
+	private const FUNCTION_CASE_MISMATCH_PATTERN = "~^Case mismatch on function name '([^']+)', correct name is '([^']+)'\\.$~";
 
 	// Latte 2 core/bridge tags Latte 3 dropped: their "Unexpected tag" is a migration error, never a
 	// custom tag worth a passthrough.
@@ -178,6 +186,7 @@ final class Latte3Compiler
 		}
 
 		$deprecations = [];
+		$functionCallLines = self::functionCallLines($node);
 
 		try {
 			$code = VendorErrorContainment::run(
@@ -186,12 +195,22 @@ final class Latte3Compiler
 
 					return $engine->generate($node, $templateName);
 				},
-				static function (int $severity, string $message) use (&$deprecations): void {
+				static function (int $severity, string $message) use (&$deprecations, &$functionCallLines): void {
 					if ($severity === E_USER_DEPRECATED) {
 						$deprecations[] = new Diagnostic(
 							'orisaiNette.latte.deprecated',
 							$message,
 							self::lineOf($message),
+						);
+					} elseif (
+						$severity === E_USER_WARNING
+						&& preg_match(self::FUNCTION_CASE_MISMATCH_PATTERN, $message, $m) === 1
+					) {
+						$deprecations[] = new Diagnostic(
+							'orisaiNette.latte.functionCaseMismatch',
+							"Latte function '$m[1]' differs in case from the registered '$m[2]' - Latte 3.0 resolves it "
+							. 'with a warning, Latte 3.1 does not resolve it.',
+							array_shift($functionCallLines[$m[1]]) ?? 1,
 						);
 					}
 				},
@@ -393,6 +412,25 @@ final class Latte3Compiler
 	private function hasClosingTag(string $source, string $name): bool
 	{
 		return preg_match('~\{/(?:' . preg_quote($name, '~') . ')?\s*\}~', $source) === 1;
+	}
+
+	// Latte 3.0's customFunctionsPass resolves a function spelled in another case than registered and
+	// warns once per call, in traversal order, without a line; the calls' lines are read before the
+	// pass replaces them.
+
+	/**
+	 * @return array<string, list<int>>
+	 */
+	private static function functionCallLines(Node $node): array
+	{
+		$lines = [];
+		(new NodeTraverser())->traverse($node, static function (Node $node) use (&$lines): void {
+			if ($node instanceof FunctionCallNode && $node->name instanceof NameNode && $node->position !== null) {
+				$lines[(string) $node->name][] = $node->position->line;
+			}
+		});
+
+		return $lines;
 	}
 
 	private static function lineOf(string $message): int

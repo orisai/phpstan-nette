@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use Throwable;
+use function array_key_first;
 use function ksort;
 use function strtolower;
 
@@ -24,8 +25,18 @@ final class FunctionTable
 	/** @var array<string, true> */
 	private array $templateAware = [];
 
-	public function __construct(DefaultCallables $defaults, ?HarvestedCustoms $harvested = null)
+	/** @var array<string, array<string, true>> */
+	private array $spellings = [];
+
+	private bool $caseSensitive;
+
+	public function __construct(
+		DefaultCallables $defaults,
+		?HarvestedCustoms $harvested = null,
+		bool $caseSensitive = false
+	)
 	{
+		$this->caseSensitive = $caseSensitive;
 		foreach ($defaults->getFunctions() as $name => $callable) {
 			$this->register($name, $callable, $defaults);
 		}
@@ -62,21 +73,50 @@ final class FunctionTable
 	public function resolveForTemplate(
 		string $lowerName,
 		?string $templateTypeClass,
-		?TemplateTypeCustoms $templateTypeCustoms
+		?TemplateTypeCustoms $templateTypeCustoms,
+		?string $writtenName = null
 	): ?array
 	{
+		$exact = $this->caseSensitive ? $writtenName : null;
 		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
 			$scoped = $templateTypeCustoms->functionsFor($templateTypeClass)[$lowerName] ?? null;
-			if ($scoped !== null) {
+			if ($scoped !== null && ($exact === null || $scoped[1] === $exact)) {
 				return [$scoped[0], $scoped[1], $scoped[2], true, $scoped[3]];
 			}
 		}
 
 		$base = $this->resolve($lowerName);
 
-		return $base === null
+		return $base === null || ($exact !== null && !isset($this->spellings[$lowerName][$exact]))
 			? null
 			: [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
+	}
+
+	// See FilterTable::registeredSpelling().
+	public function registeredSpelling(
+		string $writtenName,
+		?string $templateTypeClass,
+		?TemplateTypeCustoms $templateTypeCustoms
+	): ?string
+	{
+		if (!$this->caseSensitive) {
+			return null;
+		}
+
+		$lowerName = strtolower($writtenName);
+		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
+			$scoped = $templateTypeCustoms->functionsFor($templateTypeClass)[$lowerName] ?? null;
+			if ($scoped !== null && $scoped[1] !== $writtenName) {
+				return $scoped[1];
+			}
+		}
+
+		$spellings = $this->spellings[$lowerName] ?? [];
+		if (!isset($this->table[$lowerName]) || $spellings === [] || isset($spellings[$writtenName])) {
+			return null;
+		}
+
+		return (string) array_key_first($spellings);
 	}
 
 	/**
@@ -85,6 +125,7 @@ final class FunctionTable
 	private function register(string $name, callable $callable, DefaultCallables $defaults): void
 	{
 		$key = strtolower($name);
+		$this->spellings[$key][$name] = true;
 		if (isset($this->table[$key])) {
 			return;
 		}
@@ -120,6 +161,7 @@ final class FunctionTable
 	private function registerHarvested(string $name, callable $callable, bool $extensionHarvest): void
 	{
 		$key = strtolower($name);
+		$this->spellings[$key][$name] = true;
 		if (isset($this->table[$key])) {
 			return;
 		}

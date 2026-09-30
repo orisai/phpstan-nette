@@ -168,6 +168,62 @@ final class FilterTableTest extends BaseTestCase
 		self::assertNull(self::table($harvested)->resolve('myfilter'));
 	}
 
+	// Latte 3: an entry matches only a spelling the engine registers; a spelling differing in case
+	// names the registered one.
+	public function testCaseSensitiveNamesMatchOnlyARegisteredSpelling(): void
+	{
+		$table = new FilterTable(
+			self::defaults(),
+			new HarvestedCustoms(['myFilter' => [self::class, 'fixtureFilterMethod']], [], [], [], [], []),
+			true,
+		);
+
+		self::assertNotNull($table->resolveForTemplate('firstupper', null, null, 'firstUpper'));
+		self::assertNull($table->resolveForTemplate('firstupper', null, null, 'firstupper'));
+		self::assertSame('firstUpper', $table->registeredSpelling('firstupper', null, null));
+		self::assertNull($table->registeredSpelling('firstUpper', null, null));
+		self::assertNotNull($table->resolveForTemplate('modifydate', null, null, 'modifyDate'));
+		self::assertSame('modifyDate', $table->registeredSpelling('modifydate', null, null));
+		self::assertSame(
+			[self::class, 'fixtureFilterMethod', false, false, true],
+			$table->resolveForTemplate('myfilter', null, null, 'myFilter'),
+		);
+		self::assertNull($table->resolveForTemplate('myfilter', null, null, 'MyFilter'));
+		self::assertSame('myFilter', $table->registeredSpelling('MyFilter', null, null));
+		self::assertNull($table->registeredSpelling('definitelyNotAFilter', null, null));
+	}
+
+	public function testCaseSensitivePerTemplateFilterMatchesItsMethodName(): void
+	{
+		$table = new FilterTable(self::defaults(), null, true);
+		$customs = $this->templateTypeCustoms();
+
+		self::assertSame(
+			[ProcessParamsQualificationFixture::class, 'docFilter', false, true, false],
+			$table->resolveForTemplate('docfilter', ProcessParamsQualificationFixture::class, $customs, 'docFilter'),
+		);
+		self::assertNull(
+			$table->resolveForTemplate('docfilter', ProcessParamsQualificationFixture::class, $customs, 'docfilter'),
+		);
+		self::assertSame(
+			'docFilter',
+			$table->registeredSpelling('docfilter', ProcessParamsQualificationFixture::class, $customs),
+		);
+	}
+
+	// Latte 2 resolves every spelling and never names a registered one.
+	public function testCaseInsensitiveNamesMatchEverySpelling(): void
+	{
+		$table = self::table();
+
+		self::assertSame(
+			$table->resolveForTemplate('firstupper', null, null, 'firstUpper'),
+			$table->resolveForTemplate('firstupper', null, null, 'FIRSTupper'),
+		);
+		self::assertNotNull($table->resolveForTemplate('firstupper', null, null, 'FIRSTupper'));
+		self::assertNull($table->registeredSpelling('FIRSTupper', null, null));
+	}
+
 	public function testBuiltInFilterWinsOverAHarvestedNameCollision(): void
 	{
 		// A harvested filter sharing a built-in's lowercase name (e.g. an app override of |upper)

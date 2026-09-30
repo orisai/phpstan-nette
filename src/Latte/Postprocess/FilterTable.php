@@ -10,6 +10,7 @@ use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use Throwable;
 use function array_key_exists;
+use function array_key_first;
 use function ksort;
 use function strtolower;
 
@@ -20,6 +21,11 @@ final class FilterTable
 
 	/** @var array<string, array{string, string, bool}> */
 	private array $table = [];
+
+	/** @var array<string, array<string, true>> */
+	private array $spellings = [];
+
+	private bool $caseSensitive;
 
 	/** @var array<string, true> */
 	private array $instanceDispatch = [];
@@ -32,12 +38,19 @@ final class FilterTable
 	// The bridge entries come first: the runtime bridges (nette/application's |modifyDate, the
 	// translator's |translate) register them as closures the tables cannot reference, and |slice is
 	// redirected to a typed helper whose return follows the input. testResolvesEveryDefaultFilter
-	// guards drift between the installed defaults and the fallbacks.
-	public function __construct(DefaultCallables $defaults, ?HarvestedCustoms $harvested = null)
+	// guards drift between the installed defaults and the fallbacks. Latte 3 resolves filter names
+	// case-sensitively ($caseSensitive): every registered spelling is kept next to the entry.
+	public function __construct(
+		DefaultCallables $defaults,
+		?HarvestedCustoms $harvested = null,
+		bool $caseSensitive = false
+	)
 	{
-		$this->table['translate'] = [Helpers::class, 'translate', false];
-		$this->table['modifydate'] = [Helpers::class, 'modifyDate', false];
-		$this->table['slice'] = [Helpers::class, 'slice', false];
+		$this->caseSensitive = $caseSensitive;
+		foreach (['translate', 'modifyDate', 'slice'] as $bridged) {
+			$this->table[strtolower($bridged)] = [Helpers::class, $bridged, false];
+			$this->spellings[strtolower($bridged)][$bridged] = true;
+		}
 
 		foreach ($defaults->getFilters() as $name => $callable) {
 			$this->register($name, $callable, $defaults);
@@ -68,7 +81,8 @@ final class FilterTable
 	// no real instance at analysis time, see the helper's own docblock).
 
 	// A name neither table knows goes to the harvested engine's filter loaders, asked with the name as
-	// written ($writtenName; see FilterLoaderProbe for Latte 2's lowercase fallback).
+	// written ($writtenName; see FilterLoaderProbe for Latte 2's lowercase fallback). With case-sensitive
+	// names, an entry matches only a registered spelling of $writtenName.
 
 	/**
 	 * @return array{string, string, bool, bool, bool}|null
@@ -80,21 +94,49 @@ final class FilterTable
 		?string $writtenName = null
 	): ?array
 	{
+		$exact = $this->caseSensitive ? $writtenName : null;
 		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
 			$scoped = $templateTypeCustoms->filtersFor($templateTypeClass)[$lowerName] ?? null;
-			if ($scoped !== null) {
+			if ($scoped !== null && ($exact === null || $scoped[1] === $exact)) {
 				return [$scoped[0], $scoped[1], $scoped[2], true, $scoped[3]];
 			}
 		}
 
 		$base = $this->resolve($lowerName);
-		if ($base !== null) {
+		if ($base !== null && ($exact === null || isset($this->spellings[$lowerName][$exact]))) {
 			return [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
 		}
 
 		$loaded = $this->resolveFromLoaders($writtenName ?? $lowerName);
 
 		return $loaded === null ? null : [$loaded[0], $loaded[1], $loaded[2], false, $loaded[3]];
+	}
+
+	// The registered spelling a case-sensitive miss differs from only in case, if any.
+	public function registeredSpelling(
+		string $writtenName,
+		?string $templateTypeClass,
+		?TemplateTypeCustoms $templateTypeCustoms
+	): ?string
+	{
+		if (!$this->caseSensitive) {
+			return null;
+		}
+
+		$lowerName = strtolower($writtenName);
+		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
+			$scoped = $templateTypeCustoms->filtersFor($templateTypeClass)[$lowerName] ?? null;
+			if ($scoped !== null && $scoped[1] !== $writtenName) {
+				return $scoped[1];
+			}
+		}
+
+		$spellings = $this->spellings[$lowerName] ?? [];
+		if (!isset($this->table[$lowerName]) || $spellings === [] || isset($spellings[$writtenName])) {
+			return null;
+		}
+
+		return (string) array_key_first($spellings);
 	}
 
 	/**
@@ -141,6 +183,7 @@ final class FilterTable
 	private function register(string $name, callable $callable, DefaultCallables $defaults): void
 	{
 		$key = strtolower($name);
+		$this->spellings[$key][$name] = true;
 		if (isset($this->table[$key])) {
 			return;
 		}
@@ -166,6 +209,7 @@ final class FilterTable
 	private function registerHarvested(string $name, callable $callable, bool $extensionHarvest): void
 	{
 		$key = strtolower($name);
+		$this->spellings[$key][$name] = true;
 		if (isset($this->table[$key])) {
 			return;
 		}

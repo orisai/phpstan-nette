@@ -897,10 +897,26 @@ they differ:
 > Latte filter 'Webalize' differs in case from the registered 'webalize' - Latte 2.x resolves this
 > case-insensitively, but Latte 3 makes filter resolution case-sensitive and will break on upgrade.
 
-The scan runs on Latte 2 only (`LatteCompiler`); on an installed Latte 3 it does not run. There a
-mis-cased tag (`{IF}…{/IF}`) is `orisaiNette.latte.unknownMacro`, but a mis-cased filter or function
-(`{$s|Upper}`, `{$s|upPer}`, `{=cLamp(1, 2, 3)}`) is reported by nothing: the filter and function
-tables match names case-insensitively, while the Latte 3 runtime throws (probed on 3.0.26 and 3.1.6).
+The scan runs on Latte 2 only (`LatteCompiler`). On Latte 3 the filter and function tables are
+case-sensitive (`FilterTable`/`FunctionTable` built with `$caseSensitive`): next to each entry they
+keep every registered spelling — the stock names, the bridge entries, the harvested names — and a
+`{templateType}` entry matches its method name only; a loader is asked with the name as written
+anyway. A call matches a registered spelling only. A spelling that differs in case alone
+(`{$s|upPer}`, `{=cLamp(1, 2, 3)}` on 3.1) is reported by `FilterRewriter` with the same identifiers,
+naming the registered spelling, and typed through the `Helpers::unknownFilter()` stand-in like an
+unknown name:
+
+> Latte filter 'upPer' differs in case from the registered 'upper' - Latte 3 resolves filter names
+> case-sensitively.
+
+Latte 3.0 still resolves a function spelled in another case in its `customFunctionsPass`, with a
+compile warning that carries no line, and compiles the registered spelling: `Latte3Compiler` turns the
+warning into `orisaiNette.latte.functionCaseMismatch` ("… - Latte 3.0 resolves it with a warning,
+Latte 3.1 does not resolve it.") on the call's line, read from the node tree before the pass, and the
+call keeps the registered function's signature. Probed on 3.0.26 and 3.1.6: a mis-cased filter throws
+`LogicException` at render time on both, a mis-cased function is an undefined PHP function on 3.1. A
+mis-cased tag (`{IF}…{/IF}`) is `orisaiNette.latte.unknownMacro`; a name after `|` which starts
+uppercase (`{$s|Upper}`) is no filter call on Latte 3 (see *Loader-provided filters* above).
 
 Latte's own `Defaults` deliberately double-registers some names under two valid spellings
 (`dataStream`/`datastream`, `stripTags`/`striptags`, `breakLines`/`breaklines`,
@@ -1660,8 +1676,8 @@ Latte-specific identifiers (all ordinary, ignorable, baselinable, reported on `.
 | `orisaiNette.latte.varTypeVariableNotFound` | mid-file `{varType}` names a variable none of its anchor's several bindings match | `{varType}` site |
 | `orisaiNette.latte.varTypeNativeType` | `{varType}` conflicts with the native type of the expression its anchor assigns | `{varType}` site |
 | `orisaiNette.latte.varTypeType` | `{varType}` conflicts with the PHPDoc type of that expression (`orisaiNette.latte.reportWrongPhpDocTypeInVarType`) | `{varType}` site |
-| `orisaiNette.latte.filterCaseMismatch` | called filter spelling differs in case from the registered one (Latte-3 breakage; Latte 2 only) | filter site |
-| `orisaiNette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte-3 breakage; Latte 2 only) | function call site |
+| `orisaiNette.latte.filterCaseMismatch` | called filter spelling differs in case from the registered one (Latte 2: token scan, breaks on Latte 3; Latte 3: `FilterRewriter`, throws at runtime) | filter site |
+| `orisaiNette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte 2: token scan; Latte 3.0: the compile warning; Latte 3.1: `FilterRewriter`) | function call site |
 | `orisaiNette.latte.deprecated` | vendor `E_USER_DEPRECATED` captured during compilation (see *Vendor error containment*) | compiler's current line (fallback line 1) |
 | `orisaiNette.latte.internalError` | the analysis pipeline's own diagnostic-materialization invariant was violated | offending node |
 | `orisaiNette.latte.customsHarvest` | a directory under a harvested Latte 3 extension could not be read for the harvest salt (see *Invalidation*); the path is relative to `%currentWorkingDirectory%` when inside it | line 1 of the universe's first template (sorted) |

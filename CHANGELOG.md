@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   workers again — the behaviour PHPStan 2.2's deferred bootstrap removed
 - DI: service types are read from the container's `$wiring` (nette/di 3.2 removed `$types`); on nette/di 3.1 an
   imported service whose type is not exported is known by name only
+- Latte 3: a filter or function spelled in another case than registered is `orisaiNette.latte.filterCaseMismatch` or
+  `orisaiNette.latte.functionCaseMismatch` naming the registered spelling, as Latte 3 resolves names case-sensitively,
+  instead of being typed as the registered one
 
 ### Fixed
 
