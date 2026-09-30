@@ -92,6 +92,78 @@ final class Latte3CompileTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @return iterable<string, array{string, string}>
+	 */
+	public static function provideMisplacedKnownNames(): iterable
+	{
+		yield 'intermediate tag outside its pair' => ["{else}\n", 'Unexpected tag {else} (on line 1 at column 1)'];
+		yield 'intermediate tag after its last place' => [
+			"{if 1}{else}{elseif \$a}{/if}\n",
+			'Unexpected tag {elseif} (on line 1 at column 13)',
+		];
+
+		yield 'case outside switch' => ["{case}\n", 'Unexpected tag {case} (on line 1 at column 1)'];
+		yield 'attribute-only name as a tag' => ["<html>{ifcontent}\n", 'Unexpected tag {ifcontent} (on line 1 at column 7)'];
+		yield 'known attribute with a prefix it does not support' => [
+			"<form n:inner-name></form>\n",
+			'Unexpected attribute n:inner-name, did you mean n:inner-label? (on line 1 at column 7)',
+		];
+
+		yield 'brace in a script' => [
+			"<script>if (true) {return}</script>\n",
+			'Unexpected tag {return} (in JavaScript or CSS, try to put a space after bracket or use n:syntax=off) (on line 1 at column 19)',
+		];
+	}
+
+	/**
+	 * @dataProvider provideMisplacedKnownNames
+	 */
+	public function testMisplacedKnownNameIsAParseErrorNotAPassthrough(string $source, string $message): void
+	{
+		$result = $this->compile($source);
+
+		self::assertNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.parseError', $message, 1]],
+			self::describe($result->getDiagnostics()),
+		);
+	}
+
+	public function testUnknownNameUsedAsTagAndAttributeIsPassedThroughBoth(): void
+	{
+		$result = $this->compile("<p n:foo=\"\$a\">x</p>\n{foo \$b}y{/foo}\n");
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			self::describe($result->getDiagnostics()),
+		);
+	}
+
+	public function testUnknownTagClosedByTheGenericClosingTagIsPaired(): void
+	{
+		$result = $this->compile("{foo \$a}\n{\$inner}\n{/}\n");
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertStringContainsString('($inner)', $result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			self::describe($result->getDiagnostics()),
+		);
+	}
+
+	public function testThrowableFromAVendorTagParserIsAParseErrorAtItsTag(): void
+	{
+		$result = $this->compile("a\n\n{snippet UnknownClass::Name}x{/snippet}\n");
+
+		self::assertNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.parseError', "Thrown exception 'Class \"UnknownClass\" not found'", 3]],
+			self::describe($result->getDiagnostics()),
+		);
+	}
+
 	public function testClosingTagWithoutOpenerIsAParseError(): void
 	{
 		$result = $this->compile("x\n{/foo}\n");

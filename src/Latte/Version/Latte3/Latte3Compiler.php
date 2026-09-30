@@ -14,12 +14,14 @@ use Nette\Bridges\FormsLatte\FormsExtension;
 use Nette\Caching\Storages\DevNullStorage;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
+use OriPhpstan\Nette\Latte\Compile\VendorCompileFailure;
 use OriPhpstan\Nette\Latte\Compile\VendorErrorContainment;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use ReflectionProperty;
+use Throwable;
 use function array_merge;
 use function class_exists;
 use function get_class;
@@ -49,6 +51,14 @@ final class Latte3Compiler
 		'ifCurrent' => true,
 		'status' => true,
 		'use' => true,
+	];
+
+	// Tags only a paired parser asks for; no extension registers them on their own.
+	private const INTERMEDIATE_TAGS = [
+		'else' => true,
+		'elseif' => true,
+		'elseifset' => true,
+		'case' => true,
 	];
 
 	private ?CustomsHarvester $harvester;
@@ -122,7 +132,7 @@ final class Latte3Compiler
 					continue;
 				}
 
-				$unknown = $this->matchUnknown($message);
+				$unknown = $this->matchUnknown($message, $engine);
 				if ($unknown === null) {
 					return ParsedTemplate::failed(new Diagnostic('orisaiNette.latte.parseError', $message, $line));
 				}
@@ -142,6 +152,12 @@ final class Latte3Compiler
 						$line,
 					);
 				}
+			} catch (Throwable $e) {
+				return ParsedTemplate::failed(new Diagnostic(
+					'orisaiNette.latte.parseError',
+					VendorCompileFailure::message($e),
+					$recorder->lastTagLine() ?? 1,
+				));
 			}
 		}
 
@@ -188,6 +204,11 @@ final class Latte3Compiler
 					$e->getMessage(),
 					$e->position !== null ? $e->position->line : 1,
 				),
+			);
+		} catch (Throwable $e) {
+			return CompileResult::failure(
+				$className,
+				new Diagnostic('orisaiNette.latte.parseError', VendorCompileFailure::message($e), 1),
 			);
 		}
 
@@ -323,30 +344,55 @@ final class Latte3Compiler
 		return $this->harvester !== null ? $this->harvester->harvest() : HarvestedCustoms::empty();
 	}
 
+	// Only a name the engine has never heard of is a custom tag worth a passthrough: a known tag or
+	// attribute reported as unexpected is misplaced ({else} outside {if}, {ifcontent} for
+	// n:ifcontent, n:inner-name), and one in a <script> or <style> is an unescaped brace.
+
 	/**
 	 * @return array{string, bool}|null
 	 */
-	private function matchUnknown(string $message): ?array
+	private function matchUnknown(string $message, Engine $engine): ?array
 	{
+		if (strpos($message, '(in JavaScript or CSS') !== false) {
+			return null;
+		}
+
 		if (preg_match('~^Unexpected tag \{([\w:.-]+)~', $message, $m) === 1) {
-			return isset(self::LATTE2_ONLY_TAGS[$m[1]]) ? null : [$m[1], false];
+			$isAttribute = false;
+		} elseif (preg_match('~^Unexpected attribute n:(?:inner-|tag-)?([\w:.-]+)~', $message, $m) === 1) {
+			$isAttribute = true;
+		} else {
+			return null;
 		}
 
-		if (preg_match('~^Unexpected attribute n:(?:inner-|tag-)?([\w:.-]+)~', $message, $m) === 1) {
-			return isset(self::LATTE2_ONLY_TAGS[$m[1]]) ? null : [$m[1], true];
+		$name = $m[1];
+		if (isset(self::LATTE2_ONLY_TAGS[$name]) || isset(self::INTERMEDIATE_TAGS[$name])) {
+			return null;
 		}
 
-		return null;
+		foreach ($engine->getExtensions() as $extension) {
+			if ($extension instanceof AnalysisExtension) {
+				continue;
+			}
+
+			$tags = $extension->getTags();
+			if (isset($tags[$name]) || isset($tags['n:' . $name])) {
+				return null;
+			}
+		}
+
+		return [$name, $isAttribute];
 	}
 
-	// Latte 2's PassthroughMacro was AUTO_CLOSE: paired when a closing tag exists, void otherwise.
+	// Latte 2's PassthroughMacro was AUTO_CLOSE: paired when a closing tag exists - its own or the
+	// generic {/} - and void otherwise.
 	// A Latte 3 parser is one or the other (a generator expects its closing tag), so the source
 	// decides - textually, so a {/foo} inside a {* comment *} or a string also pairs the name, the
 	// same way a name used both paired and unpaired in one template falls back to Latte's own
 	// parse error.
 	private function hasClosingTag(string $source, string $name): bool
 	{
-		return preg_match('~\{/' . preg_quote($name, '~') . '\s*\}~', $source) === 1;
+		return preg_match('~\{/(?:' . preg_quote($name, '~') . ')?\s*\}~', $source) === 1;
 	}
 
 	private static function lineOf(string $message): int

@@ -28,6 +28,8 @@ final class TagRecorder
 	/** @var SplObjectStorage<Tag, Node> */
 	private SplObjectStorage $nodesByTag;
 
+	private ?int $lastTagLine = null;
+
 	public function __construct()
 	{
 		$this->records = new SplObjectStorage();
@@ -54,6 +56,11 @@ final class TagRecorder
 		}
 
 		return $wrapped;
+	}
+
+	public function lastTagLine(): ?int
+	{
+		return $this->lastTagLine;
 	}
 
 	public function recordFor(Node $node): ?TagRecord
@@ -84,6 +91,7 @@ final class TagRecorder
 	private function wrapGenerator(callable $inner): Closure
 	{
 		return function (Tag $tag, TemplateParser $parser) use ($inner): Generator {
+			$this->enter($tag);
 			$generator = $inner($tag, $parser);
 			if (!$generator instanceof Generator) {
 				throw new LogicException("Tag parser for {$tag->name} was expected to return a Generator.");
@@ -117,6 +125,7 @@ final class TagRecorder
 	private function wrapPlain(callable $inner): Closure
 	{
 		return function (Tag $tag, TemplateParser $parser) use ($inner): ?Node {
+			$this->enter($tag);
 			$node = $inner($tag, $parser);
 			if (!$node instanceof Node) {
 				return null;
@@ -126,6 +135,11 @@ final class TagRecorder
 
 			return $node;
 		};
+	}
+
+	private function enter(Tag $tag): void
+	{
+		$this->lastTagLine = $tag->position->line;
 	}
 
 	private function attach(Node $node, Tag $tag, TagRecord $record): void
