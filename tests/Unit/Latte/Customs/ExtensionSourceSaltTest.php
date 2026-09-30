@@ -103,6 +103,29 @@ final class ExtensionSourceSaltTest extends BaseTestCase
 		);
 	}
 
+	public function testTheDiscoveryStoreInsideTheTreeIsLeftOut(): void
+	{
+		$class = $this->extension('ext');
+		$this->write('ext/store/LatteDiscovery_a.php', 1);
+		$salt = fn (): ExtensionSourceSalt => new ExtensionSourceSalt(
+			null,
+			null,
+			ProjectInstalledVersions::get(),
+			$this->root . '/ext/store',
+		);
+
+		$before = $salt()->describe($class);
+		$this->write('ext/store/LatteDiscovery_a.php', 2);
+		$this->write('ext/store/LatteDiscovery_b.php', 1);
+		$after = $salt()->describe($class);
+
+		self::assertFalse($before['shallow']);
+		self::assertSame($before['salt'], $after['salt']);
+
+		$this->write('ext/Nodes/HelloNode.php', 1);
+		self::assertNotSame($before['salt'], $salt()->describe($class)['salt']);
+	}
+
 	public function testProjectRootIsSaltedShallowly(): void
 	{
 		$class = $this->extension('ext');

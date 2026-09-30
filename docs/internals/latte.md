@@ -1087,7 +1087,8 @@ name, version and reference; a first-party extension by the relative path and `s
 every `*.php` file under its class's directory, recursively — so an edited node class beside or
 below the extension changes the salt even when no class or tag name does (`ExtensionSourceSalt`,
 applied by `CustomsHarvester` through `HarvestedCustoms::withExtensionSources()`). The walk leaves
-out PHPStan's `%tmpDir%`, installed package roots, Composer vendor directories (a
+out PHPStan's `%tmpDir%`, the discovery store (`discovery.storePath`, rewritten by every run), installed package
+roots, Composer vendor directories (a
 `composer/installed.json` inside) and a `composer` directory itself, dot-directories, symlinked
 directories and nested projects (a `composer.json` of their own). When the extension's directory is
 the project root (`%currentWorkingDirectory%`) or holds the `%tmpDir%`, or the walk passes

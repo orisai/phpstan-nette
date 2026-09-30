@@ -23,7 +23,7 @@ use function substr_compare;
 // What identifies a harvested Latte 3 extension's code: its generated PHP lives in its node classes
 // as much as in the extension. An extension inside an installed package is its package version; a
 // first-party one every PHP file under its class's directory. The walk leaves out PHPStan's tmpDir,
-// Composer vendor directories, installed packages, dot-directories and nested projects (a
+// the discovery store (rewritten by every run), Composer vendor directories, installed packages, dot-directories and nested projects (a
 // composer.json of their own). An extension whose directory is the project root, holds the tmpDir
 // or exceeds MAX_FILES is salted shallowly - its own directory's PHP files only. An unreadable
 // directory is salted as such and reported, never fatal.
@@ -38,17 +38,27 @@ final class ExtensionSourceSalt
 
 	private ProjectInstalledVersions $installed;
 
+	private ?string $discoveryStorePath;
+
 	private bool $resolved = false;
 
 	private ?string $realTmpDir = null;
 
+	private ?string $realDiscoveryStorePath = null;
+
 	private ?string $realProjectRoot = null;
 
-	public function __construct(?string $tmpDir, ?string $projectRoot, ProjectInstalledVersions $installed)
+	public function __construct(
+		?string $tmpDir,
+		?string $projectRoot,
+		ProjectInstalledVersions $installed,
+		?string $discoveryStorePath = null
+	)
 	{
 		$this->tmpDir = $tmpDir;
 		$this->projectRoot = $projectRoot;
 		$this->installed = $installed;
+		$this->discoveryStorePath = $discoveryStorePath;
 	}
 
 	/**
@@ -227,7 +237,7 @@ final class ExtensionSourceSalt
 			return false;
 		}
 
-		if ($this->realTmpDir !== null && $real === $this->realTmpDir) {
+		if ($real === $this->realTmpDir || $real === $this->realDiscoveryStorePath) {
 			return true;
 		}
 
@@ -245,6 +255,8 @@ final class ExtensionSourceSalt
 		$this->realTmpDir = $tmpDir !== false ? $tmpDir : null;
 		$projectRoot = $this->projectRoot !== null ? realpath($this->projectRoot) : false;
 		$this->realProjectRoot = $projectRoot !== false ? $projectRoot : null;
+		$discoveryStorePath = $this->discoveryStorePath !== null ? realpath($this->discoveryStorePath) : false;
+		$this->realDiscoveryStorePath = $discoveryStorePath !== false ? $discoveryStorePath : null;
 	}
 
 	private static function isWithin(string $path, string $directory): bool
