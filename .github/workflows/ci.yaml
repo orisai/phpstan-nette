@@ -245,6 +245,56 @@ jobs:
           path: "var/log"
           if-no-files-found: "ignore"
 
+  corpus:
+    name: "Corpus - ${{ matrix.profile || 'default' }}"
+    runs-on: "${{ matrix.operating-system }}"
+
+    if: |
+      github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    # The committed manifests record the locked versions, so this job installs from the locks.
+    strategy:
+      matrix:
+        include:
+          - operating-system: "ubuntu-latest"
+            profile: ""
+            php-version: "7.4"
+            install: "composer install --no-interaction --no-progress --prefer-dist"
+          - operating-system: "ubuntu-latest"
+            profile: "latte2-nette32"
+            php-version: "8.3"
+            install: "COMPOSER=composer.latte2-nette32.json COMPOSER_VENDOR_DIR=vendor-latte2-nette32 composer install --no-interaction --no-progress --prefer-dist"
+          - operating-system: "ubuntu-latest"
+            profile: "latte30"
+            php-version: "8.3"
+            install: "COMPOSER=composer.latte30.json COMPOSER_VENDOR_DIR=vendor-latte30 composer install --no-interaction --no-progress --prefer-dist"
+          - operating-system: "ubuntu-latest"
+            profile: "latte31"
+            php-version: "8.4"
+            install: "COMPOSER=composer.latte31.json COMPOSER_VENDOR_DIR=vendor-latte31 composer install --no-interaction --no-progress --prefer-dist"
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "PHP"
+        uses: "orisai/github-workflows/.github/actions/setup-php@v1"
+        with:
+          version: "${{ matrix.php-version }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: "Composer"
+        uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
+        with:
+          command: "${{ matrix.install }}"
+
+      - name: "Harvest"
+        run: "make corpus-harvest PROFILE=${{ matrix.profile }} PRE_PHP=php"
+
+      - name: "PHPUnit"
+        run: "make tests PROFILE=${{ matrix.profile }} ARGS=tests/Corpus"
+
   coverage-finish:
     name: "Code coverage finish"
     needs: "tests"
@@ -269,7 +319,7 @@ jobs:
   status-check:
     name: "Status check - ${{ github.workflow }}"
     runs-on: "ubuntu-latest"
-    needs: [ "coding-standard", "static-analysis", "static-analysis-profile", "tests", "tests-profile" ]
+    needs: [ "coding-standard", "static-analysis", "static-analysis-profile", "tests", "tests-profile", "corpus" ]
 
     if: "${{ always() }}"
 
