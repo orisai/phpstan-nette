@@ -56,10 +56,10 @@ final class ConvergeRunnerTest extends BaseTestCase
 		);
 		$json = ['analyse', '-c', 'phpstan.neon', 'src', '--error-format=json'];
 		self::assertSame([
-			['arguments' => $json],
-			['arguments' => $json],
-			['arguments' => $json],
-			['arguments' => ['analyse', '-c', 'phpstan.neon', '--error-format=table', 'src']],
+			['arguments' => $json, 'prune' => false],
+			['arguments' => $json, 'prune' => false],
+			['arguments' => $json, 'prune' => false],
+			['arguments' => ['analyse', '-c', 'phpstan.neon', '--error-format=table', 'src'], 'prune' => false],
 		], $this->calls());
 	}
 
@@ -136,6 +136,39 @@ final class ConvergeRunnerTest extends BaseTestCase
 		self::assertCount(1, $this->calls());
 	}
 
+	public function testPruneClearsTheResultCacheAndPrunesOnTheFirstRunOnly(): void
+	{
+		$this->responses([
+			['exitCode' => 0, 'stdout' => "cleared\n", 'stderr' => ''],
+			$this->json(1, [$this->storeChanged()]),
+			$this->json(0, []),
+			['exitCode' => 0, 'stdout' => "[OK] No errors\n", 'stderr' => ''],
+		]);
+
+		$result = $this->converge([
+			'--prune',
+			'analyse',
+			'-c',
+			'phpstan.neon',
+			'--memory-limit=2G',
+			'-afile.php',
+			'--level=8',
+			'src',
+		]);
+
+		self::assertSame(0, $result['exitCode']);
+		self::assertSame("[OK] No errors\n", $result['stdout']);
+		self::assertStringStartsWith("cleared\n", $result['stderr']);
+		$calls = $this->calls();
+		self::assertSame(
+			['arguments' => ['clear-result-cache', '-c', 'phpstan.neon', '--memory-limit=2G', '-afile.php'], 'prune' => false],
+			$calls[0],
+		);
+		self::assertSame('1', $calls[1]['prune']);
+		self::assertFalse($calls[2]['prune']);
+		self::assertFalse($calls[3]['prune']);
+	}
+
 	public function testPhpstanPathCanBeOverridden(): void
 	{
 		$this->responses([$this->json(0, []), ['exitCode' => 0, 'stdout' => 'ok', 'stderr' => '']]);
@@ -202,7 +235,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 	}
 
 	/**
-	 * @return list<array{arguments: list<string>}>
+	 * @return list<array{arguments: list<string>, prune: string|false}>
 	 */
 	private function calls(): array
 	{

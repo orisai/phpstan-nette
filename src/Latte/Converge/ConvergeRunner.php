@@ -8,6 +8,7 @@ use function fclose;
 use function feof;
 use function fread;
 use function fwrite;
+use function getenv;
 use function is_array;
 use function is_resource;
 use function is_string;
@@ -31,7 +32,9 @@ final class ConvergeRunner
 
 	private const STDOUT_FORWARD = 2;
 
-	private const USAGE = 'Usage: latte-converge [--max-runs=<n>] [--phpstan=<path>] analyse [<phpstan options and paths>]';
+	private const STDOUT_TO_STDERR = 3;
+
+	private const USAGE = 'Usage: latte-converge [--max-runs=<n>] [--prune] [--phpstan=<path>] analyse [<phpstan options and paths>]';
 
 	private string $php;
 
@@ -61,9 +64,12 @@ final class ConvergeRunner
 	public function run(array $arguments): int
 	{
 		$maxRuns = self::DEFAULT_MAX_RUNS;
+		$prune = false;
 		$phpstanArguments = [];
 		foreach ($arguments as $argument) {
-			if (strncmp($argument, '--max-runs=', 11) === 0) {
+			if ($argument === '--prune') {
+				$prune = true;
+			} elseif (strncmp($argument, '--max-runs=', 11) === 0) {
 				$value = substr($argument, 11);
 				if (preg_match('~^[1-9][0-9]*$~', $value) !== 1) {
 					return $this->usageError(sprintf('--max-runs expects a positive integer, "%s" given.', $value));
@@ -83,10 +89,22 @@ final class ConvergeRunner
 
 		[$format, $jsonArguments] = self::withJsonFormat($phpstanArguments);
 
+		if ($prune) {
+			$clear = $this->execute(
+				array_merge(['clear-result-cache'], self::configurationOptions($phpstanArguments)),
+				[],
+				self::STDOUT_TO_STDERR,
+			);
+			if ($clear['exitCode'] !== 0) {
+				return $clear['exitCode'];
+			}
+		}
+
 		$run = 0;
 		while (true) {
 			$run++;
-			$result = $this->execute($jsonArguments, self::STDOUT_CAPTURE);
+			$environment = $prune && $run === 1 ? [StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE => '1'] : [];
+			$result = $this->execute($jsonArguments, $environment, self::STDOUT_CAPTURE);
 
 			$decoded = json_decode($result['stdout'], true);
 			if (!is_array($decoded)) {
@@ -123,7 +141,7 @@ final class ConvergeRunner
 			return $result['exitCode'];
 		}
 
-		return $this->execute($phpstanArguments, self::STDOUT_FORWARD)['exitCode'];
+		return $this->execute($phpstanArguments, [], self::STDOUT_FORWARD)['exitCode'];
 	}
 
 	private static function isAnalyseCommand(string $argument): bool
@@ -162,6 +180,35 @@ final class ConvergeRunner
 	}
 
 	/**
+	 * @param list<string> $arguments
+	 * @return list<string>
+	 */
+	private static function configurationOptions(array $arguments): array
+	{
+		$options = [];
+		for ($i = 0; $i < count($arguments); $i++) {
+			$argument = $arguments[$i];
+			if (preg_match('~^(-c|--configuration|-a|--autoload-file|--memory-limit)$~', $argument) === 1) {
+				if (isset($arguments[$i + 1])) {
+					$options[] = $argument;
+					$options[] = $arguments[++$i];
+				}
+
+				continue;
+			}
+
+			if (preg_match(
+				'~^(-c.+|-a.+|--configuration=.*|--autoload-file=.*|--memory-limit=.*|--debug)$~',
+				$argument,
+			) === 1) {
+				$options[] = $argument;
+			}
+		}
+
+		return $options;
+	}
+
+	/**
 	 * @param array<mixed> $decoded
 	 */
 	private static function storeChangedMessage(array $decoded): ?string
@@ -191,15 +238,19 @@ final class ConvergeRunner
 
 	/**
 	 * @param list<string> $arguments
+	 * @param array<string, string> $environment
 	 * @param self::STDOUT_* $stdoutMode
 	 * @return array{exitCode: int, stdout: string}
 	 */
-	private function execute(array $arguments, int $stdoutMode): array
+	private function execute(array $arguments, array $environment, int $stdoutMode): array
 	{
+		$inherited = getenv();
 		$process = proc_open(
 			array_merge([$this->php, $this->phpstan], $arguments),
 			[0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
 			$pipes,
+			null,
+			$environment === [] ? null : array_merge($inherited, $environment),
 		);
 		if (!is_resource($process)) {
 			fwrite($this->stderr, "Cannot start PHPStan.\n");
@@ -226,7 +277,7 @@ final class ConvergeRunner
 				if ($chunk !== false && strlen($chunk) > 0) {
 					if ($pipe === $pipes[1] && $stdoutMode === self::STDOUT_CAPTURE) {
 						$stdout .= $chunk;
-					} elseif ($pipe === $pipes[1]) {
+					} elseif ($pipe === $pipes[1] && $stdoutMode === self::STDOUT_FORWARD) {
 						fwrite($this->stdout, $chunk);
 					} else {
 						fwrite($this->stderr, $chunk);

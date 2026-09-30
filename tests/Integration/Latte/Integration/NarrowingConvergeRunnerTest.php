@@ -103,6 +103,24 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 		self::assertStringContainsString('Call to an undefined method Exception::nope().', $converge['output']);
 	}
 
+	public function testPruneRemovesSlicesOfDeletedTemplatesOnly(): void
+	{
+		$this->writeChain("{\$x->getMessage()}\n");
+		SiteScopeStore::bootstrap($this->storeDir, [$this->relSrc() . '/Deleted.latte']);
+		$orphan = (new SiteScopeStore($this->storeDir))->slicePath($this->relSrc() . '/Deleted.latte');
+
+		$converge = $this->converge();
+		self::assertSame(0, $converge['exitCode'], $converge['output'] . $converge['stderr']);
+		self::assertFileExists($orphan);
+
+		$prune = $this->converge(['--prune']);
+		self::assertSame(0, $prune['exitCode'], $prune['output'] . $prune['stderr']);
+		self::assertSame("(no errors)\n", $prune['output']);
+		self::assertSame(['2'], $this->reruns($prune['stderr']), $prune['stderr']);
+		self::assertFileDoesNotExist($orphan);
+		self::assertCount(3, $this->snapshotStore());
+	}
+
 	private function writeChain(string $leaf): void
 	{
 		FileSystem::write(
@@ -122,14 +140,16 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 	}
 
 	/**
+	 * @param list<string> $options
 	 * @return array{exitCode: int, output: string, stderr: string}
 	 */
-	private function converge(): array
+	private function converge(array $options = []): array
 	{
 		return $this->spawn([
 			PHP_BINARY,
 			$this->projectRoot . '/bin/latte-converge',
 			'--phpstan=' . $this->phpstanBinary(),
+			...$options,
 		]);
 	}
 

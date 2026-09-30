@@ -6,6 +6,7 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use Throwable;
 use function array_values;
+use function basename;
 use function glob;
 use function implode;
 use function is_array;
@@ -14,6 +15,7 @@ use function is_file;
 use function is_string;
 use function ksort;
 use function sha1;
+use function sort;
 use function str_repeat;
 use function strlen;
 use function strncmp;
@@ -119,6 +121,35 @@ final class SiteScopeStore
 		ksort($changed, SORT_STRING);
 
 		return array_values($changed);
+	}
+
+	/**
+	 * @param list<string> $includerRels
+	 * @return list<string>
+	 */
+	public function pruneExcept(array $includerRels): array
+	{
+		$kept = [];
+		foreach ($includerRels as $rel) {
+			$kept[SliceClassName::forPath($rel) . '.php'] = true;
+		}
+
+		$pruned = [];
+		$files = glob($this->storeDirPath . '/LatteSlice_*.php');
+		foreach ($files === false ? [] : $files as $file) {
+			$name = basename($file);
+			if (isset($kept[$name])) {
+				continue;
+			}
+
+			FileSystem::delete($file);
+			$pruned[] = $name;
+		}
+
+		$this->loadedEntries = null;
+		sort($pruned, SORT_STRING);
+
+		return $pruned;
 	}
 
 	// Two sites sharing includer/line/target/context (e.g. two identical {include} tags written on

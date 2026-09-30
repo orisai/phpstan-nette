@@ -417,6 +417,35 @@ final class SiteScopeStoreTest extends BaseTestCase
 		}
 	}
 
+	public function testPruneExceptDeletesOnlySlicesOfIncludersOutsideTheGivenSet(): void
+	{
+		$dir = $this->scratchDir();
+		FileSystem::createDir($dir);
+
+		try {
+			$path = $dir . '/store';
+			SiteScopeStore::bootstrap($path, ['a.latte', 'gone.latte', 'also-gone.latte']);
+			FileSystem::write($path . '/README', 'kept');
+
+			$store = new SiteScopeStore($path);
+			self::assertSame(
+				[
+					SliceClassName::forPath('also-gone.latte') . '.php',
+					SliceClassName::forPath('gone.latte') . '.php',
+				],
+				$store->pruneExcept(['a.latte', 'new.latte']),
+			);
+
+			self::assertFileExists($this->sliceFile($path, 'a.latte'));
+			self::assertFileDoesNotExist($this->sliceFile($path, 'gone.latte'));
+			self::assertFileDoesNotExist($this->sliceFile($path, 'also-gone.latte'));
+			self::assertFileExists($path . '/README');
+			self::assertSame([], $store->pruneExcept(['a.latte']));
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
 	/**
 	 * @param array<string, string> $vars
 	 * @param array<string, string> $args

@@ -413,9 +413,23 @@ which still changes after `--max-runs` (default 6) runs fails with the last stor
 
 - `--max-runs=<n>` – runs at most `n` analyses
 - `--phpstan=<path>` – the PHPStan executable; defaults to `phpstan` next to `latte-converge` in `vendor/bin`
+- `--prune` – see below
 
 The command reads PHPStan's JSON output of its own runs; when you ask for another error format, it runs the settled
 state once more in that format, which is answered from the result cache.
+
+#### Pruning deleted templates
+
+The file of a deleted including template is not removed by ordinary runs, because a run analysing only part of the
+project cannot tell a deleted template from one outside its paths. Remove such files occasionally:
+
+```shell
+vendor/bin/latte-converge --prune analyse -c phpstan.neon
+```
+
+It clears the result cache, analyses the whole project and removes every store file whose including template was not
+analysed; the removal is reported as a store change. Run it with the paths your configuration analyses, never with a
+subset of them. A run given only files, no directory, never prunes.
 
 ### Dead code detection
 

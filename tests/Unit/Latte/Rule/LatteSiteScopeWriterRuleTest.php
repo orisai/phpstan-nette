@@ -5,6 +5,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Rule;
 use Nette\IOException;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
+use OriPhpstan\Nette\Latte\Converge\StoreChangeSignal;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
 use OriPhpstan\Nette\Latte\Rule\LatteEdgeScopeCollector;
@@ -22,6 +23,7 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use function chmod;
 use function getmypid;
+use function putenv;
 use function sys_get_temp_dir;
 use function uniqid;
 
@@ -441,6 +443,55 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 		} finally {
 			FileSystem::delete($dir);
 		}
+	}
+
+	public function testPrunesOrphanedSlicesOnlyWhenRequested(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, ['a.latte', 'gone.latte']);
+			$orphan = $storeDir . '/' . SliceClassName::forPath('gone.latte') . '.php';
+			$data = new CollectedDataNode(
+				['/project/a.latte' => [LatteAnalyzedFileMarkerCollector::class => ['a.latte']]],
+				false,
+			);
+
+			$errors = $this->writer($storeDir)->processNode($data, $this->scope());
+			self::assertSame([], $errors);
+			self::assertFileExists($orphan, 'pruning is opt-in');
+
+			putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE . '=1');
+			try {
+				$onlyFiles = $this->writer($storeDir)->processNode(new CollectedDataNode(
+					['/project/a.latte' => [LatteAnalyzedFileMarkerCollector::class => ['a.latte']]],
+					true,
+				), $this->scope());
+				self::assertSame([], $onlyFiles);
+				self::assertFileExists($orphan, 'a files-only run does not see the whole template set');
+
+				$errors = $this->writer($storeDir)->processNode($data, $this->scope());
+			} finally {
+				putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE);
+			}
+
+			self::assertFileDoesNotExist($orphan);
+			self::assertFileExists($storeDir . '/' . SliceClassName::forPath('a.latte') . '.php');
+			$this->assertStoreChanged(
+				'The Latte narrowing store pruned 1 orphaned slice: ' . SliceClassName::forPath('gone.latte') . '.php. '
+					. 'Run the analysis again until this error disappears, then commit the store.',
+				$storeDir . '/' . SliceClassName::forPath('a.latte') . '.php',
+				$errors,
+			);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	private function writer(string $storeDir): LatteSiteScopeWriterRule
+	{
+		return new LatteSiteScopeWriterRule(TestGuard::latte(true, true), $storeDir, new SiteScopeStore($storeDir));
 	}
 
 	/**

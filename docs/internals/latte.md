@@ -672,6 +672,12 @@ never stored in the result cache, so cold and warm runs agree on it. It is non-i
 baseline entry would silence a stale store for good. `bin/latte-converge` (`Latte\Converge\ConvergeRunner`)
 reruns `phpstan analyse` while its JSON output carries the identifier; it never writes the store itself.
 
+Slices of deleted includers are never pruned by ordinary runs: a run over a subset of the paths sees
+only part of the includers, and nothing tells it apart from a deletion. `latte-converge --prune` clears
+the result cache and sets `ORISAI_NETTE_LATTE_NARROWING_PRUNE=1` for its first run; the writer then deletes
+every `LatteSlice_*.php` not named for an includer analysed in that run, unless the run analysed files only
+(`CollectedDataNode::isOnlyFilesAnalysis()`), and reports the deletion as a store change.
+
 ### Where captures are taken
 
 An edge anchor is a statement `EdgeAnchorInjector` splices right before the include's own

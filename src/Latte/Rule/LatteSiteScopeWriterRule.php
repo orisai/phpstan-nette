@@ -15,9 +15,12 @@ use PHPStan\Rules\RuleErrorBuilder;
 use function array_keys;
 use function array_slice;
 use function count;
+use function getenv;
 use function implode;
 use function is_dir;
+use function sort;
 use function sprintf;
+use const SORT_STRING;
 
 /**
  * @implements Rule<CollectedDataNode>
@@ -70,24 +73,27 @@ final class LatteSiteScopeWriterRule implements Rule
 		// CollectedDataNode rule in try/catch (Throwable) - rethrowing under --debug, else
 		// recording an InternalError and continuing - so a write failure here is never fatal to
 		// the run but stays diagnosable, instead of vanishing into a silent catch.
-		$changed = $this->write($node);
-		if ($changed === []) {
+		[$analysed, $changed, $pruned] = $this->write($node);
+		if ($changed === [] && $pruned === []) {
 			return [];
 		}
 
 		// Non-ignorable: a baseline or ignoreErrors entry would hide a stale store from CI for good.
-		return [
-			RuleErrorBuilder::message($this->changedMessage($changed))
-				->identifier(StoreChangeSignal::IDENTIFIER)
-				->file($this->store->slicePath($changed[0]))
-				->line(1)
-				->nonIgnorable()
-				->build(),
-		];
+		$builder = RuleErrorBuilder::message($this->changedMessage($changed, $pruned))
+			->identifier(StoreChangeSignal::IDENTIFIER)
+			->line(1)
+			->nonIgnorable();
+
+		$anchor = $changed[0] ?? $analysed[0] ?? null;
+		if ($anchor !== null) {
+			$builder->file($this->store->slicePath($anchor));
+		}
+
+		return [$builder->build()];
 	}
 
 	/**
-	 * @return list<string>
+	 * @return array{list<string>, list<string>, list<string>}
 	 */
 	private function write(CollectedDataNode $node): array
 	{
@@ -126,21 +132,45 @@ final class LatteSiteScopeWriterRule implements Rule
 		// AnalyserResultFinalizer::finalize() constructs exactly once - in the parent/coordinator
 		// process, only after every parallel worker's collected data has already been merged into
 		// one AnalyserResult - so this write is never concurrent with another worker's write.
-		return $this->store->replaceForIncluders(array_keys($includers), $entries);
+		$includerRels = array_keys($includers);
+		$changed = $this->store->replaceForIncluders($includerRels, $entries);
+		$pruned = getenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE) === '1' && !$node->isOnlyFilesAnalysis()
+			? $this->store->pruneExcept($includerRels)
+			: [];
+
+		sort($includerRels, SORT_STRING);
+
+		return [$includerRels, $changed, $pruned];
 	}
 
 	/**
 	 * @param list<string> $changed
+	 * @param list<string> $pruned
 	 */
-	private function changedMessage(array $changed): string
+	private function changedMessage(array $changed, array $pruned): string
 	{
-		return sprintf(
-			'The Latte narrowing store changed for %d including %s: %s. '
-				. 'Run the analysis again until this error disappears, then commit the store.',
-			count($changed),
-			count($changed) === 1 ? 'template' : 'templates',
-			$this->capped($changed),
-		);
+		$parts = [];
+		if ($changed !== []) {
+			$parts[] = sprintf(
+				'The Latte narrowing store changed for %d including %s: %s.',
+				count($changed),
+				count($changed) === 1 ? 'template' : 'templates',
+				$this->capped($changed),
+			);
+		}
+
+		if ($pruned !== []) {
+			$parts[] = sprintf(
+				'The Latte narrowing store pruned %d orphaned %s: %s.',
+				count($pruned),
+				count($pruned) === 1 ? 'slice' : 'slices',
+				$this->capped($pruned),
+			);
+		}
+
+		$parts[] = 'Run the analysis again until this error disappears, then commit the store.';
+
+		return implode(' ', $parts);
 	}
 
 	/**
