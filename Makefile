@@ -76,6 +76,9 @@ coverage-html: ## Generate code coverage in HTML format
 corpus-harvest: ## Harvest upstream Latte test templates of the installed versions into var/corpus/templates/<profile>
 	$(PROFILE_ENV) $(PRE_PHP) tools/corpus/harvest.php $(or $(PROFILE),default)
 
+corpus-manifest: ## Rewrite tests/Corpus/manifest.<profile>.json from a corpus analysis and print the state diff
+	CORPUS_MANIFEST_WRITE=1 $(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpunit" -c $(PHPUNIT_CONFIG) tests/Corpus $(ARGS)
+
 ## Utilities
 
 .SILENT: $(shell grep -h -E '^[a-zA-Z_-]+:.*?$$' $(MAKEFILE_LIST) | sort -u | awk 'BEGIN {FS = ":.*?"}; {printf "%s ", $$1}')

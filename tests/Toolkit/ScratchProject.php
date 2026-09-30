@@ -10,6 +10,7 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use function array_map;
+use function array_merge;
 use function array_replace;
 use function bin2hex;
 use function dirname;
@@ -70,9 +71,10 @@ final class ScratchProject
 	 * @param array<string, mixed> $neonParameters
 	 * @param list<string> $paths
 	 * @param array<string, mixed> $neonServices
+	 * @param list<string> $arguments
 	 * @return array{exitCode: int, messages: list<array{file: string, line: int, message: string, identifier: string|null}>, errors: list<string>, stderr: string}
 	 */
-	public function analyse(array $neonParameters, array $paths, array $neonServices = []): array
+	public function analyse(array $neonParameters, array $paths, array $neonServices = [], array $arguments = []): array
 	{
 		$parameters = array_replace(
 			[
@@ -95,15 +97,18 @@ final class ScratchProject
 		$this->write('phpstan.neon', Neon::encode($neon, true));
 
 		$process = new Process(
-			[
-				PHP_BINARY,
-				$this->libraryRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
-				'analyse',
-				'--error-format=json',
-				'--no-progress',
-				'-c',
-				$config,
-			],
+			array_merge(
+				[
+					PHP_BINARY,
+					$this->libraryRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
+					'analyse',
+					'--error-format=json',
+					'--no-progress',
+					'-c',
+					$config,
+				],
+				$arguments,
+			),
 			// The project's own root, as a real consumer runs it: Latte relativizes templates against the cwd.
 			$this->path(''),
 			// A dependency profile's COMPOSER=composer.<profile>.json must not reach the spawn: PHPStan
