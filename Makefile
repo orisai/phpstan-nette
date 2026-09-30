@@ -24,7 +24,7 @@ PHPSTAN_PATHS=
 else
 PHPSTAN_CONFIG=tools/phpstan.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
-PHPSTAN_PATHS=src tests
+PHPSTAN_PATHS=src tests tools/corpus
 endif
 
 ## Install
@@ -45,12 +45,12 @@ profile: ## Install a dependency profile into vendor-<name>: make profile PROFIL
 cs: ## Check PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
 	$(PHPCS_PREPARE)
-	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcs" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcs" src tests tools/corpus --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 csf: ## Fix PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
 	$(PHPCS_PREPARE)
-	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests tools/corpus --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 phpstan: ## Analyse code with PHPStan
 	mkdir -p var/tools
@@ -70,6 +70,11 @@ coverage-clover: ## Generate code coverage in XML format
 
 coverage-html: ## Generate code coverage in HTML format
 	$(PROFILE_ENV) $(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-html=var/coverage/html $(ARGS)
+
+## Corpus
+
+corpus-harvest: ## Harvest upstream Latte test templates of the installed versions into var/corpus/templates/<profile>
+	$(PROFILE_ENV) $(PRE_PHP) tools/corpus/harvest.php $(or $(PROFILE),default)
 
 ## Utilities
 

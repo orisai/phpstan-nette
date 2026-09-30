@@ -1,0 +1,114 @@
+{
+    "packages": {
+        "latte/latte": {
+            "version": "v3.1.6",
+            "checkout": "checkout",
+            "testDirectories": [
+                "tests"
+            ],
+            "inline": 8,
+            "files": 1
+        }
+    },
+    "templates": {
+        "latte/tests/calls.phpt#1.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "inline",
+            "line": 8,
+            "call": "compile",
+            "callLine": 8,
+            "loaderKey": null,
+            "variable": null,
+            "expectsException": false
+        },
+        "latte/tests/calls.phpt#2.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "inline",
+            "line": 10,
+            "call": "renderToString",
+            "callLine": 10,
+            "loaderKey": null,
+            "variable": null,
+            "expectsException": false
+        },
+        "latte/tests/calls.phpt#3.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "inline",
+            "line": 16,
+            "call": "render",
+            "callLine": 20,
+            "loaderKey": null,
+            "variable": "$template",
+            "expectsException": false
+        },
+        "latte/tests/calls.phpt#4.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "inline",
+            "line": 24,
+            "call": "compile",
+            "callLine": 24,
+            "loaderKey": null,
+            "variable": null,
+            "expectsException": true
+        },
+        "latte/tests/calls.phpt#5.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "inline",
+            "line": 28,
+            "call": "createTemplate",
+            "callLine": 28,
+            "loaderKey": null,
+            "variable": null,
+            "expectsException": false
+        },
+        "latte/tests/calls.phpt#6.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "loader",
+            "line": 35,
+            "call": "StringLoader",
+            "callLine": 34,
+            "loaderKey": "a.latte",
+            "variable": null,
+            "expectsException": false
+        },
+        "latte/tests/calls.phpt#7.latte": {
+            "package": "latte/latte",
+            "source": "tests/calls.phpt",
+            "kind": "loader",
+            "line": 36,
+            "call": "StringLoader",
+            "callLine": 34,
+            "loaderKey": "b.latte",
+            "variable": null,
+            "expectsException": false
+        },
+        "latte/tests/loops.phpt#1.latte": {
+            "package": "latte/latte",
+            "source": "tests/loops.phpt",
+            "kind": "loader",
+            "line": 13,
+            "call": "StringLoader",
+            "callLine": 13,
+            "loaderKey": "main",
+            "variable": null,
+            "expectsException": false
+        },
+        "latte/tests/templates/page.latte": {
+            "package": "latte/latte",
+            "source": "tests/templates/page.latte",
+            "kind": "file",
+            "line": 1,
+            "call": null,
+            "callLine": null,
+            "loaderKey": null,
+            "variable": null,
+            "expectsException": false
+        }
+    }
+}

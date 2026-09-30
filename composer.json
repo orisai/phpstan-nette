@@ -62,6 +62,7 @@
 	},
 	"autoload-dev": {
 		"psr-4": {
+			"OriPhpstan\\Nette\\Tools\\Corpus\\": "tools/corpus",
 			"Tests\\OriPhpstan\\Nette\\": "tests"
 		}
 	},

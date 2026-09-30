@@ -32,6 +32,7 @@
 			<property name="rootNamespaces" type="array">
 				<element key="src" value="OriPhpstan\Nette"/>
 				<element key="tests" value="Tests\OriPhpstan\Nette"/>
+				<element key="tools/corpus" value="OriPhpstan\Nette\Tools\Corpus"/>
 			</property>
 		</properties>
 	</rule>

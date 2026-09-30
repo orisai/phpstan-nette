@@ -13,12 +13,15 @@
 	<testsuites>
 		<testsuite name="unit">
 			<directory>../tests/Unit</directory>
+			<!-- Upstream-shaped .phpt corpus fixtures, not PHPT tests. -->
+			<exclude>../tests/Unit/Tools/Fixtures</exclude>
 		</testsuite>
 		<testsuite name="integration">
 			<directory>../tests/Integration</directory>
 		</testsuite>
 		<testsuite name="all">
 			<directory>../tests</directory>
+			<exclude>../tests/Unit/Tools/Fixtures</exclude>
 		</testsuite>
 	</testsuites>
 
