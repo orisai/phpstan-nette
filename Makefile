@@ -7,6 +7,8 @@ SMOKE_PATHS=tools/smoke/dmonitor.php tools/smoke/dmonitor-bootstrap.php
 
 PHPUNIT_CONFIG=tools/phpunit.xml
 
+LINT_PHP ?= php7.4
+
 PROFILE ?=
 ifeq ($(PROFILE),)
 VENDOR_DIR=vendor
@@ -54,6 +56,9 @@ csf: ## Fix PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
 	$(PHPCS_PREPARE)
 	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests tools/corpus $(SMOKE_PATHS) --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+
+lint: ## Check src parses on PHP 7.4, the oldest supported version: make lint LINT_PHP=php7.4
+	find src -name '*.php' -print0 | xargs -0 -n1 -P$(LOGICAL_CORES) $(LINT_PHP) -d display_errors=stderr -l > /dev/null
 
 phpstan: ## Analyse code with PHPStan
 	mkdir -p var/tools

@@ -56,6 +56,34 @@ jobs:
           command: "make cs ARGS='--report=checkstyle -q | vendor/bin/cs2pr'"
           cache-path: "var/tools/PHP_CodeSniffer"
 
+  lint:
+    name: "Lint - PHP ${{ matrix.php-version }}"
+    runs-on: "${{ matrix.operating-system }}"
+
+    if: |
+      github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    # src/ must parse on the oldest supported PHP, Latte 3 adapter included.
+    strategy:
+      matrix:
+        include:
+          - operating-system: "ubuntu-latest"
+            php-version: "7.4"
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "PHP"
+        uses: "orisai/github-workflows/.github/actions/setup-php@v1"
+        with:
+          version: "${{ matrix.php-version }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: "Lint"
+        run: "make lint LINT_PHP=php"
+
   static-analysis:
     name: "Static analysis"
     runs-on: "${{ matrix.operating-system }}"
@@ -315,7 +343,7 @@ jobs:
   status-check:
     name: "Status check - ${{ github.workflow }}"
     runs-on: "ubuntu-latest"
-    needs: [ "coding-standard", "static-analysis", "static-analysis-profile", "tests", "tests-profile", "corpus" ]
+    needs: [ "coding-standard", "lint", "static-analysis", "static-analysis-profile", "tests", "tests-profile", "corpus" ]
 
     if: "${{ always() }}"
 
