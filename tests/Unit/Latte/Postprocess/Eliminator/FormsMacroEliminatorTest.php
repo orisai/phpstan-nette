@@ -380,6 +380,59 @@ PHP);
 PHP), self::eliminate(EliminatorRun::family($latteLine), $php));
 	}
 
+	// {input x, attrs} types through the Html stand-in on every bridge; a plain {input x} keeps its
+	// formField('x')->getControl() read.
+	public function testAttributedInputBindsTheHtmlStandInOnTheMacrosShape(): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		echo end($this->global->formsStack)["x"]->getControl()->addAttributes(['class' => 'c']) /* line 2 */;
+		echo end($this->global->formsStack)["x"]->getControlPart("part")->addAttributes(['class' => 'c']) /* line 3 */;
+		echo end($this->global->formsStack)["y"]->getControl() /* line 4 */;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('x')->addAttributes(['class' => 'c']);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('x', 'part')->addAttributes(['class' => 'c']);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getControl();
+PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
+	}
+
+	/**
+	 * @dataProvider provideLatte3Lines
+	 */
+	public function testAttributedInputBindsTheHtmlStandInOnTheItemShape(string $latteLine): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		echo Nette\Bridges\FormsLatte\Runtime::item('x', $this->global)->getControl()->addAttributes(['class' => 'c']) /* line 2 */;
+		echo Nette\Bridges\FormsLatte\Runtime::item('x', $this->global)->getControlPart('part')->addAttributes(['class' => 'c']) /* line 3 */;
+		echo Nette\Bridges\FormsLatte\Runtime::item('y', $this->global)->getControl() /* line 4 */;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('x')->addAttributes(['class' => 'c']);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('x', 'part')->addAttributes(['class' => 'c']);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getControl();
+PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_ITEM), $php));
+	}
+
+	/**
+	 * @dataProvider provideLatte3Lines
+	 */
+	public function testAttributedInputBindsTheHtmlStandInOnTheProviderShape(string $latteLine): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		echo $this->global->forms->get('x')->getControl()->addAttributes(['class' => 'c']) /* pos 2:1 */;
+		echo $this->global->forms->get('x')->getControlPart('part')->addAttributes(['class' => 'c']) /* pos 3:1 */;
+		echo $this->global->forms->get('y')->getControl() /* pos 4:1 */;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('x')->addAttributes(['class' => 'c']);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('x', 'part')->addAttributes(['class' => 'c']);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getControl();
+PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), $php));
+	}
+
 	public function testEveryBridgeDescribesItsOwnShape(): void
 	{
 		$macros = (new FormsMacroEliminator(EliminatorRun::family(ShapeFamily::LATTE_2)))->describePattern();

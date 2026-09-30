@@ -203,7 +203,7 @@ reduces all three to the same `Helpers::formField(X)`:
 
 | Macro | compiles to | so it needs |
 |---|---|---|
-| `{input X}` | `<X>->getControl()` (`->getControlPart(…)` with a `:`-part) | a control |
+| `{input X}` | `<X>->getControl()` (`->getControlPart(…)` with a `:`-part; with attributes `->addAttributes([…])` follows and the control read reduces to `Helpers::formInput(X[, part])`) | a control |
 | `{label X}` / `n:label` | `if ($l = <X>->getLabel()) echo $l` (Latte 3: `($ʟ_label = <X>->getLabel())?->startTag()`; a paired label reduces to `$latteLabel = Helpers::formLabel(X)`) | a control **that renders a label** |
 | `{inputError X}` | `<X>->getError()` | a control |
 | `<el n:name="X">` | `<X>->getControlPart()->attributes()` | a control |

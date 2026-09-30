@@ -67,6 +67,8 @@ final class FormsShapeFamilyTest extends BaseTestCase
 			"{form myForm}\n"
 			. "\t{input name}\n"
 			. "\t{input name:part}\n"
+			. "\t{input name, class => 'c'}\n"
+			. "\t{input name:part, class => 'c'}\n"
 			. "\t{label name}Name{/label}\n"
 			. "\t{label name /}\n"
 			. "\t{label name:part /}\n"
@@ -92,19 +94,21 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				[1, "form('myForm')"],
 				[2, "formField('name')"],
 				[3, "formField('name')"],
-				[self::labelLine(4, 7), "formLabel('name')"],
-				[self::labelLine(5, 7), "formField('name')"],
-				[self::labelLine(6, 7), "formField('name')"],
-				[7, "formField('name')"],
-				[8, "formField('name')"],
-				[9, "formField('sel')"],
-				[10, "formField('send')"],
-				[11, "formContainer('address')"],
-				[12, "formField('street')"],
-				[15, "form('other')"],
-				[16, "formField('x')"],
-				[18, "form('attrForm')"],
-				[19, "formField('y')"],
+				[4, "formInput('name')"],
+				[5, "formInput('name', 'part')"],
+				[self::labelLine(6, 9), "formLabel('name')"],
+				[self::labelLine(7, 9), "formField('name')"],
+				[self::labelLine(8, 9), "formField('name')"],
+				[9, "formField('name')"],
+				[10, "formField('name')"],
+				[11, "formField('sel')"],
+				[12, "formField('send')"],
+				[13, "formContainer('address')"],
+				[14, "formField('street')"],
+				[17, "form('other')"],
+				[18, "formField('x')"],
+				[20, "form('attrForm')"],
+				[21, "formField('y')"],
 			],
 			$calls,
 		);
@@ -156,7 +160,7 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				|| !$call->name instanceof Node\Identifier
 				|| !in_array(
 					$call->name->toString(),
-					['form', 'formObject', 'formContainer', 'formField', 'formLabel'],
+					['form', 'formObject', 'formContainer', 'formField', 'formLabel', 'formInput'],
 					true,
 				)
 			) {

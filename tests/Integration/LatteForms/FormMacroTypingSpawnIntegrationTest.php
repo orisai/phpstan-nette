@@ -221,6 +221,7 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 			. "\t{foreach ['years', 'years2'] as \$n}{var \$items = \$form[\$n]->getItems()}{/foreach}\n"
 			. "\t{var \$token = \$form['_token_']->getControl()}\n"
 			. "\t{label name}L{/label}\n"
+			. "\t{input name, class => 'c'}\n"
 			. "{/form}\n",
 		);
 		FileSystem::write(

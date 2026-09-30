@@ -104,6 +104,14 @@ final class Helpers
 		throw new LogicException('never executed');
 	}
 
+	/**
+	 * @param string|int|object $name
+	 */
+	public static function formInput($name, ?string $part = null): NetteHtml
+	{
+		throw new LogicException('never executed');
+	}
+
 	public static function filterInfo(): FilterInfo
 	{
 		throw new LogicException('never executed');

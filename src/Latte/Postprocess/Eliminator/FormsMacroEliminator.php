@@ -26,9 +26,11 @@ use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
+use function array_map;
 use function array_reverse;
 use function count;
 use function in_array;
+use function is_array;
 use function is_string;
 
 // The three generations of nette/forms' Latte bridge render a control reference three ways, and all
@@ -91,6 +93,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	private const PROVIDER_NESTED = 'isNested';
 
 	private const LABEL_GETTERS = ['getLabel', 'getLabelPart'];
+
+	private const CONTROL_GETTERS = ['getControl', 'getControlPart'];
 
 	private const LABEL_START = 'startTag';
 
@@ -161,6 +165,11 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 		if (!$node instanceof Expr) {
 			return null;
+		}
+
+		$input = $this->rebuildAttributedInput($node);
+		if ($input !== null) {
+			return $input;
 		}
 
 		$lookup = $this->matchFieldLookup($node);
@@ -682,7 +691,55 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		return $arg instanceof Arg ? $arg->value : null;
 	}
 
-	private function helperCall(string $method, Expr $arg, Node $replaced): StaticCall
+	// {input x, attrs} chains addAttributes() onto the control the vendor macro assumes to be Html,
+	// which BaseControl::getControl()/getControlPart() declare Html|string: the same analysis-only
+	// stand-in as a paired label, a typed alias of formField('x')->getControl(Part)().
+	private function rebuildAttributedInput(Expr $expr): ?MethodCall
+	{
+		if (
+			!$expr instanceof MethodCall
+			|| !$expr->name instanceof Identifier
+			|| $expr->name->toString() !== 'addAttributes'
+		) {
+			return null;
+		}
+
+		$control = $expr->var;
+		if (
+			!$control instanceof MethodCall
+			|| !$control->name instanceof Identifier
+			|| !in_array($control->name->toString(), self::CONTROL_GETTERS, true)
+			|| count($control->args) !== ($control->name->toString() === 'getControl' ? 0 : 1)
+		) {
+			return null;
+		}
+
+		$name = $this->matchHelperCall($control->var, 'formField');
+		if ($name === null) {
+			return null;
+		}
+
+		$args = [$name];
+		foreach ($control->args as $arg) {
+			if (!$arg instanceof Arg) {
+				return null;
+			}
+
+			$args[] = $arg->value instanceof String_ ? new String_($arg->value->value) : $arg->value;
+		}
+
+		return new MethodCall(
+			$this->helperCall('formInput', $args, $control),
+			$expr->name,
+			$expr->args,
+			$expr->getAttributes(),
+		);
+	}
+
+	/**
+	 * @param Expr|list<Expr> $args
+	 */
+	private function helperCall(string $method, $args, Node $replaced): StaticCall
 	{
 		$attributes = [];
 		if ($replaced->hasAttribute('startLine')) {
@@ -693,7 +750,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		return new StaticCall(
 			new FullyQualified(self::HELPERS_CLASS),
 			new Identifier($method),
-			[new Arg($arg)],
+			array_map(static fn (Expr $arg): Arg => new Arg($arg), is_array($args) ? $args : [$args]),
 			$attributes,
 		);
 	}
