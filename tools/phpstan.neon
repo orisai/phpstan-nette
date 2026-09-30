@@ -44,11 +44,7 @@ parameters:
 			message: '#^Access to undefined constant Latte\\Feature::ScopedLoopVariables\.$#'
 			path: ../tests/Unit/Latte/Customs/Latte3/Fixtures/engine-loader-scoped-loops.php
 			reportUnmatched: false
-		# Deprecated by Latte 3.1 and nette/forms 3.3 only; the latte30 profile analyses these files too.
-		-
-			identifier: classConstant.deprecated
-			message: '#^Fetching deprecated class constant CONTENT_TEXT of class Latte\\Engine:#'
-			path: ../tests/Integration/Latte/RuntimeParity/RuntimeParityTest.php
+		# Deprecated by nette/forms 3.3 only; the latte30 profile analyses these files too.
 		-
 			identifier: classConstant.deprecatedClass
 			message: '#^Access to constant on deprecated class Nette\\Forms\\Controls\\CsrfProtection:#'

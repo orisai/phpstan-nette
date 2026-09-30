@@ -124,7 +124,7 @@ parameters:
 			path: ../src/Latte/Version/LatteVersionAdapterFactory.php
 
 		-
-			rawMessage: 'AnonymousClass0bced098c264b8adb58da0bd9f26e17a::__construct() does not call parent constructor from Nette\Security\User.'
+			message: '#^AnonymousClass[0-9a-f]+\:\:__construct\(\) does not call parent constructor from Nette\\Security\\User\.$#'
 			identifier: constructor.missingParentCall
 			count: 1
 			path: ../tests/Integration/Latte/Parity/Factory/TemplateFactoryInjectionParityTest.php

@@ -55,7 +55,108 @@ parameters:
 		# returns '', and ReflectionProperty has no getAttributes().
 		-
 			identifier: cast.useless
-			message: '#^Casting to string something that''s already string\.$#'
+			count: 1
+			path: ../src/Forms/Analyzer/FormShapeAnalyzer.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Forms/Cache/DependencyRecorder.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Forms/Catalog/ControlAcceptedTypeResolver.php
+		-
+			identifier: cast.useless
+			count: 2
+			path: ../src/Forms/Catalog/Stub/ControlAnnotationValueTypeReader.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Forms/Catalog/Stub/VendorCatalogFreshness.php
+		-
+			identifier: cast.useless
+			count: 2
+			path: ../src/Forms/Component/ContainerModel.php
+		-
+			identifier: cast.useless
+			count: 2
+			path: ../src/Forms/Component/FormOriginTracer.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Forms/Index/IndexShapeResolver.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Forms/Type/FormValuesObjectShapeType.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Bridge/Discovery/DiscoveryResolver.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Bridge/Discovery/FormulaVocabulary.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Bridge/PhpRenderWalk.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Customs/ExtensionSourceSalt.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Forms/ComponentNameSyntax.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Forms/ExistenceGuard.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Includes/TemplateEdgeIndex.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Includes/TemplateTypeChecker.php
+		-
+			identifier: cast.useless
+			count: 6
+			path: ../src/Latte/Postprocess/CallableTargetResolution.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../tests/Corpus/CorpusManifestTest.php
+		-
+			identifier: cast.useless
+			count: 2
+			path: ../tests/Integration/Configuration/ConfigReferenceCoverageTest.php
+		-
+			identifier: cast.useless
+			count: 2
+			path: ../tests/Integration/Configuration/ConfigurationCorpus.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../tests/Integration/Configuration/FormsOffSwitchTest.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../tests/Integration/Latte/Integration/DiscoveryStoreSelfSufficiencyTest.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../tests/Integration/Latte/PerfBudgetTest.php
+		-
+			identifier: cast.useless
+			count: 2
+			path: ../tests/Toolkit/FactsFixtures.php
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../tools/smoke/dmonitor-bootstrap.php
 		-
 			identifier: function.alreadyNarrowedType
 			message: '#^Call to function method_exists\(\) with ReflectionProperty and ''getAttributes'' will always evaluate to true\.$#'

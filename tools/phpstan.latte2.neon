@@ -15,6 +15,11 @@ parameters:
 			- ../src/Latte/Version/Latte3 (?)
 
 	ignoreErrors:
+		# (string) substr() for PHP 7.4, see phpstan.common.neon.
+		-
+			identifier: cast.useless
+			count: 1
+			path: ../src/Latte/Version/Latte2/TemplateFactExtractor.php
 		# The extension-harvest accessors are called from the Latte 3 seam and its tests, which phpstan.neon analyses.
 		-
 			identifier: shipmonk.deadMethod

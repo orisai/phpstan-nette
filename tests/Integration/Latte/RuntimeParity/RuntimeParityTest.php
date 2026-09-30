@@ -123,7 +123,7 @@ final class RuntimeParityTest extends BaseTestCase
 		// macroCaptureEnd()'s ternary only applies when the surrounding context is HTML/XHTML;
 		// other content types (text, js, css, ...) always compile to a bare ob_get_clean(), so a
 		// captured variable there stays a plain string even for non-empty content.
-		self::assertSame('string', $this->render('capture-text-context.latte', [], Engine::CONTENT_TEXT));
+		self::assertSame('string', $this->render('capture-text-context.latte', [], 'text'));
 	}
 
 	public function testCapturedHtmlObjectSurvivesUpperFilter(): void
