@@ -159,7 +159,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 		], $this->argumentVectors());
 	}
 
-	public function testPruneClearsTheResultCacheAndPrunesOnTheFirstRun(): void
+	public function testPruneClearsTheResultCacheAndPrunesOnEveryRun(): void
 	{
 		$this->scenario([
 			['exitCode' => 1, 'stdout' => "1\n", 'report' => self::CHANGED, 'pruneEvaluated' => true],
@@ -180,7 +180,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 			['arguments' => $calls[0]['arguments'], 'prune' => $calls[0]['prune']],
 		);
 		self::assertSame('1', $calls[1]['prune']);
-		self::assertFalse($calls[2]['prune']);
+		self::assertSame('1', $calls[2]['prune']);
 		self::assertCount(3, $calls);
 	}
 

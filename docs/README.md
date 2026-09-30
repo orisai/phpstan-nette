@@ -431,7 +431,8 @@ vendor/bin/latte-converge --prune analyse -c phpstan.neon
 
 It clears the result cache, analyses the whole project and removes every store file whose including template was not
 analysed; the removal is reported as a store change and the removed files are listed on stderr. A run given other paths
-than the configured ones, or one which analysed no template, removes nothing and reports `narrowingPruneRefused`. Without narrowing or without the store directory, the command says that nothing was
+than the configured ones, or one which analysed no template, removes nothing and ends with `narrowingPruneRefused`
+once the store has settled. Without narrowing or without the store directory, the command says that nothing was
 pruned.
 
 ### Dead code detection

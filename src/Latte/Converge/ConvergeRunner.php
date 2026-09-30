@@ -125,7 +125,7 @@ final class ConvergeRunner
 
 			self::remove($report);
 			$environment = [StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE => $report];
-			if ($prune && $run === 1) {
+			if ($prune) {
 				$environment[StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE] = '1';
 			}
 

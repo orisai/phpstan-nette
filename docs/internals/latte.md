@@ -680,11 +680,12 @@ and the run is forwarded as it is.
 
 Slices of deleted includers are never pruned by ordinary runs: a run over a subset of the paths sees
 only part of the includers, and nothing tells it apart from a deletion. `latte-converge --prune` clears
-the result cache and sets `ORISAI_NETTE_LATTE_NARROWING_PRUNE=1` for its first run; the writer then deletes
+the result cache and sets `ORISAI_NETTE_LATTE_NARROWING_PRUNE=1` for every run; the writer then deletes
 every `LatteSlice_*.php` not named for an includer analysed in that run and reports the deletion as a store
 change. It refuses (`orisai.nette.latte.narrowingPruneRefused`) when the normalised `%analysedPaths%`
 differ from `%analysedPathsFromConfig%` or when no includer was analysed, since either would delete slices of
-templates the run never saw. A refusal moves no bytes, so it writes no marker. Whenever the writer evaluated a prune it also creates `<report>.prune`, which is how the
+templates the run never saw. A refusal moves no bytes, so it writes no marker: it repeats on every run and the
+settled run reports it. Whenever the writer evaluated a prune it also creates `<report>.prune`, which is how the
 runner tells "nothing to prune" from "narrowing off or store missing".
 
 ### Where captures are taken

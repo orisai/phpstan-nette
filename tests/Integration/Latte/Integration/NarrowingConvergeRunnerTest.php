@@ -142,6 +142,29 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 		self::assertSame(['analyse'], $this->invocations());
 	}
 
+	public function testAPruneOverAPartOfThePathsEndsWithTheRefusalAfterTheStoreSettles(): void
+	{
+		$this->writeChain("{\$x->getMessage()}\n");
+		SiteScopeStore::bootstrap($this->storeDir, [$this->relSrc() . '/Deleted.latte']);
+		$orphan = (new SiteScopeStore($this->storeDir))->slicePath($this->relSrc() . '/Deleted.latte');
+
+		$prune = $this->converge(
+			['--prune'],
+			'raw',
+			[],
+			[$this->srcDir . '/A.latte', $this->srcDir . '/B.latte', $this->srcDir . '/C.latte'],
+		);
+
+		self::assertSame(1, $prune['exitCode'], $prune['output'] . $prune['stderr']);
+		self::assertSame(['2', '3'], $this->reruns($prune['stderr']), $prune['stderr']);
+		self::assertStringContainsString(
+			'The Latte narrowing store was not pruned: the run analysed other paths than the configured ones.',
+			$prune['output'],
+		);
+		self::assertStringNotContainsString(self::STORE_CHANGED, $prune['output']);
+		self::assertFileExists($orphan);
+	}
+
 	public function testAPlainRunOnAStaleStoreFailsWithTheStoreChange(): void
 	{
 		$this->writeChain("{\$x->getMessage()}\n");
