@@ -280,11 +280,10 @@ per template with a committed manifest, so any change in what compiles is a visi
   committed.
 - **Install.** CI does not float the corpus versions: `make corpus-install [PROFILE=…]` runs
   `tools/corpus/manifest-composer.php`, which writes the git-ignored `composer.corpus-<profile>.json` with every
-  package of the manifest header pinned to its recorded version, and installs it. The `corpus` CI job runs
-  `corpus-install`, `corpus-harvest` and `make tests PROFILE=… ARGS=tests/Corpus` per profile. A CI corpus row has
-  no `composer.<profile>.json`, so its PHPStan spawn reflects vendor classes through the autoloader (`vendor-<p>`),
-  while a local `make corpus-manifest` uses the Composer locator of `composer.<profile>.json`; both read the installed
-  profile vendor, so the results are equivalent today.
+  package of the manifest header pinned to its recorded version, and installs it. With a profile it first writes
+  `composer.<profile>.json` (`tools/profile.php`), so a CI corpus row's PHPStan spawn locates vendor classes through
+  the same Composer file as a local `make corpus-manifest`. The `corpus` CI job runs `corpus-install`,
+  `corpus-harvest` and `make tests PROFILE=… ARGS=tests/Corpus` per profile.
 - **Refresh rule.** Refreshing a profile's corpus is `make profile` (floating) + `make corpus-harvest` +
   `make corpus-manifest`, committed together in **one** commit; otherwise the manifest header no longer matches what
   `corpus-install` pins.

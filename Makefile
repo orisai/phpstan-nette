@@ -83,6 +83,7 @@ coverage-html: ## Generate code coverage in HTML format
 
 # Refreshing a profile's corpus = make profile (floating) + make corpus-harvest + make corpus-manifest, in ONE commit.
 corpus-install: ## Install the versions tests/Corpus/manifest.<profile>.json records (CI)
+	$(if $(PROFILE),$(PRE_PHP) tools/profile.php $(PROFILE))
 	$(PRE_PHP) tools/corpus/manifest-composer.php $(or $(PROFILE),default)
 	COMPOSER=composer.corpus-$(or $(PROFILE),default).json COMPOSER_VENDOR_DIR=$(VENDOR_DIR) $(PRE_PHP) "$(shell command -v composer)" update --no-interaction --no-progress --prefer-dist $(if $(PROFILE),$$($(PRE_PHP) tools/profile.php $(PROFILE) --flags)) $(ARGS)
 
