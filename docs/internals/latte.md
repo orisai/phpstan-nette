@@ -721,15 +721,21 @@ The error is an ordinary ignorable/baselinable finding: every deliberate use of 
 internal from template code is meant to surface once, get a conscious ignore/baseline entry (or
 get removed), and any *new* use warns immediately instead of blending into normal template code.
 
-The scaffolding itself is ignored by `config/latte.neon`, per Latte line and every entry
-`reportUnmatched: false`, so a project on either line runs with PHPStan's default
-`reportUnmatchedIgnoredErrors` and never sees an unmatched-ignore error for the other line's
-entries: Latte 2's `UIRuntime::initialize()` prologue (`method.internal`) and its private
-`Template::$blocks` read; Latte 3's public `Blocks`/`Source`/`ContentType` template-class constants
-(`shipmonk.deadConstant`, read by Latte's runtime through `static::`) and Latte 3.1's
-`Template::$parentArgs` assignment from `{extends file, args}` (`property.notFound`, a protected
-property PHPStan's reflection of Latte 3.1 does not expose). `RuntimeInternalsIgnoreSpawnTest`
-spawns each line's corpus with unmatched reporting on.
+The scaffolding itself is ignored by `config/latte.neon`, every entry `reportUnmatched: false`, so
+a project on either line runs with PHPStan's default `reportUnmatchedIgnoredErrors` and never sees
+an unmatched-ignore error: Latte 2's `UIRuntime::initialize()` prologue (`method.internal`) and its
+private `Template::$blocks` read. Latte 3 needs no entry of its own: its `Blocks`/`Source`/
+`ContentType` template-class constants override the vendor `Template`'s, which shipmonk's vendor
+usage provider counts as used, and 3.1's `$parentArgs` is declared on `Template`.
+`RuntimeInternalsIgnoreSpawnTest` spawns each line's corpus with unmatched reporting on, with and
+without the entries.
+
+A spawned PHPStan runs from the library's own vendor directory, so it takes the library root as the
+Composer project and reflects vendor classes through the composer file `COMPOSER` names. The profile
+test runs keep `COMPOSER=composer.<profile>.json` in the spawn (`ScratchProject`); without it the
+spawn reflects vendor classes from the default `vendor/` — Latte 2.11 while Latte 3 runs — which is
+where earlier Latte 3 ignore entries for those constants and `$parentArgs` came from
+(`ScratchProjectVendorTest` pins it).
 
 ## Custom filters, functions and macros
 

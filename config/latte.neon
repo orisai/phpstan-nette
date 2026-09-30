@@ -103,24 +103,6 @@ parameters:
 			message: '#^Static property LatteTpl_[a-zA-Z0-9_]+::\$prop_\d+_\w+ is never written, only read\.$#'
 			path: '*.latte'
 			reportUnmatched: false
-		# Latte 3 runtime internals (the entries above are Latte 2's and stay as they are; every entry
-		# in this block is reportUnmatched: false so a project on the other line never sees an
-		# unmatched-ignore error for it). A Latte 3 template class declares its blocks, source and
-		# content type as public constants Latte's own runtime reads through static:: - Blocks on 3.0
-		# and 3.1, Source on 3.0, ContentType wherever {contentType} is used - which shipmonk's
-		# dead-code-detector cannot trace, like LATTE_EDGE_FINGERPRINT above.
-		-
-			identifier: shipmonk.deadConstant
-			message: '#^Unused LatteTpl_[a-zA-Z0-9_]+::(Blocks|Source|ContentType)$#'
-			path: '*.latte'
-			reportUnmatched: false
-		# Latte 3.1's {extends file, args} assigns Template::$parentArgs, a protected property PHPStan's
-		# reflection of Latte 3.1 does not expose (its @var docblock carries a trailing @internal).
-		-
-			identifier: property.notFound
-			message: '#^Access to an undefined property LatteTpl_[a-zA-Z0-9_]+::\$parentArgs\.$#'
-			path: '*.latte'
-			reportUnmatched: false
 	stubFiles:
 		- ../stubs/latte-runtime.stub
 	scanFiles:
