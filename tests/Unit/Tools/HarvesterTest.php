@@ -40,7 +40,7 @@ final class HarvesterTest extends BaseTestCase
 			new HarvestSource('latte/latte', 'v3.1.6', __DIR__ . '/Fixtures/checkout', ['tests']),
 		]);
 
-		self::assertSame(['latte/latte' => ['inline' => 8, 'files' => 1]], $counts);
+		self::assertSame(['latte/latte' => ['inline' => 12, 'files' => 1]], $counts);
 		self::assertSame(
 			[
 				'latte/tests/calls.phpt#1.latte' => '<p>{=1}</p>',
@@ -51,6 +51,10 @@ final class HarvesterTest extends BaseTestCase
 				'latte/tests/calls.phpt#6.latte' => '{include "b.latte"}',
 				'latte/tests/calls.phpt#7.latte' => '{$b}',
 				'latte/tests/loops.phpt#1.latte' => '{embed "embed"}{/embed}',
+				'latte/tests/outcomes.phpt#1.latte' => '{foreach}',
+				'latte/tests/outcomes.phpt#2.latte' => "{=1}\n",
+				'latte/tests/outcomes.phpt#3.latte' => '{include "inc"}',
+				'latte/tests/outcomes.phpt#4.latte' => '{sandbox "x"}',
 				'latte/tests/templates/page.latte' => "{block content}\n\t<h1>{\$title}</h1>\n{/block}\n",
 			],
 			$this->readOutput(),

@@ -17,8 +17,12 @@ final class ExtractedTemplate
 
 	public ?string $variable;
 
-	public bool $expectsException;
+	/** @var array{assertion: string, class: string|null, message: string|null}|null */
+	public ?array $expects;
 
+	/**
+	 * @param array{assertion: string, class: string|null, message: string|null}|null $expects
+	 */
 	public function __construct(
 		string $content,
 		int $line,
@@ -26,7 +30,7 @@ final class ExtractedTemplate
 		string $call,
 		?string $loaderKey,
 		?string $variable,
-		bool $expectsException
+		?array $expects
 	)
 	{
 		$this->content = $content;
@@ -35,7 +39,7 @@ final class ExtractedTemplate
 		$this->call = $call;
 		$this->loaderKey = $loaderKey;
 		$this->variable = $variable;
-		$this->expectsException = $expectsException;
+		$this->expects = $expects;
 	}
 
 }

@@ -6,8 +6,6 @@ use FilesystemIterator;
 use Nette\Utils\FileSystem;
 use SplFileInfo;
 use function basename;
-use function explode;
-use function in_array;
 use function json_encode;
 use function pathinfo;
 use function preg_match;
@@ -59,7 +57,7 @@ final class Harvester
 						'callLine' => null,
 						'loaderKey' => null,
 						'variable' => null,
-						'expectsException' => false,
+						'expects' => null,
 					];
 					$files++;
 
@@ -78,7 +76,7 @@ final class Harvester
 						'callLine' => $template->callLine,
 						'loaderKey' => $template->loaderKey,
 						'variable' => $template->variable,
-						'expectsException' => $template->expectsException,
+						'expects' => $template->expects,
 					];
 					$inline++;
 				}
@@ -142,15 +140,9 @@ final class Harvester
 	private function isHarvested(string $relativePath): bool
 	{
 		$extension = pathinfo($relativePath, PATHINFO_EXTENSION);
-		if ($extension === 'latte') {
-			return true;
-		}
 
-		if ($extension === 'phpt') {
-			return preg_match('~\.nodes\.phpt$~', $relativePath) !== 1;
-		}
-
-		return $extension === 'php' && !in_array('expected', explode('/', $relativePath), true);
+		return $extension === 'latte'
+			|| ($extension === 'phpt' && preg_match('~\.nodes\.phpt$~', $relativePath) !== 1);
 	}
 
 }

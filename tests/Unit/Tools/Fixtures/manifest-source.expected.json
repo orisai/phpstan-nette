@@ -6,7 +6,7 @@
             "testDirectories": [
                 "tests"
             ],
-            "inline": 8,
+            "inline": 12,
             "files": 1
         }
     },
@@ -20,7 +20,7 @@
             "callLine": 8,
             "loaderKey": null,
             "variable": null,
-            "expectsException": false
+            "expects": null
         },
         "latte/tests/calls.phpt#2.latte": {
             "package": "latte/latte",
@@ -31,7 +31,7 @@
             "callLine": 10,
             "loaderKey": null,
             "variable": null,
-            "expectsException": false
+            "expects": null
         },
         "latte/tests/calls.phpt#3.latte": {
             "package": "latte/latte",
@@ -42,7 +42,7 @@
             "callLine": 20,
             "loaderKey": null,
             "variable": "$template",
-            "expectsException": false
+            "expects": null
         },
         "latte/tests/calls.phpt#4.latte": {
             "package": "latte/latte",
@@ -53,7 +53,11 @@
             "callLine": 24,
             "loaderKey": null,
             "variable": null,
-            "expectsException": true
+            "expects": {
+                "assertion": "exception",
+                "class": "Latte\\CompileException",
+                "message": null
+            }
         },
         "latte/tests/calls.phpt#5.latte": {
             "package": "latte/latte",
@@ -64,7 +68,7 @@
             "callLine": 28,
             "loaderKey": null,
             "variable": null,
-            "expectsException": false
+            "expects": null
         },
         "latte/tests/calls.phpt#6.latte": {
             "package": "latte/latte",
@@ -75,7 +79,7 @@
             "callLine": 34,
             "loaderKey": "a.latte",
             "variable": null,
-            "expectsException": false
+            "expects": null
         },
         "latte/tests/calls.phpt#7.latte": {
             "package": "latte/latte",
@@ -86,7 +90,7 @@
             "callLine": 34,
             "loaderKey": "b.latte",
             "variable": null,
-            "expectsException": false
+            "expects": null
         },
         "latte/tests/loops.phpt#1.latte": {
             "package": "latte/latte",
@@ -97,7 +101,63 @@
             "callLine": 13,
             "loaderKey": "main",
             "variable": null,
-            "expectsException": false
+            "expects": null
+        },
+        "latte/tests/outcomes.phpt#1.latte": {
+            "package": "latte/latte",
+            "source": "tests/outcomes.phpt",
+            "kind": "inline",
+            "line": 9,
+            "call": "compile",
+            "callLine": 9,
+            "loaderKey": null,
+            "variable": null,
+            "expects": {
+                "assertion": "exception",
+                "class": "Latte\\CompileException",
+                "message": "Missing arguments in {foreach}"
+            }
+        },
+        "latte/tests/outcomes.phpt#2.latte": {
+            "package": "latte/latte",
+            "source": "tests/outcomes.phpt",
+            "kind": "inline",
+            "line": 15,
+            "call": "renderToString",
+            "callLine": 15,
+            "loaderKey": null,
+            "variable": null,
+            "expects": {
+                "assertion": "error",
+                "class": "E_USER_DEPRECATED",
+                "message": null
+            }
+        },
+        "latte/tests/outcomes.phpt#3.latte": {
+            "package": "latte/latte",
+            "source": "tests/outcomes.phpt",
+            "kind": "loader",
+            "line": 20,
+            "call": "StringLoader",
+            "callLine": 19,
+            "loaderKey": "main",
+            "variable": null,
+            "expects": {
+                "assertion": "throws",
+                "class": "Latte\\SecurityViolationException",
+                "message": null
+            }
+        },
+        "latte/tests/outcomes.phpt#4.latte": {
+            "package": "latte/latte",
+            "source": "tests/outcomes.phpt",
+            "kind": "loader",
+            "line": 21,
+            "call": "StringLoader",
+            "callLine": 19,
+            "loaderKey": "inc",
+            "variable": null,
+            "expects": null
         },
         "latte/tests/templates/page.latte": {
             "package": "latte/latte",
@@ -108,7 +168,7 @@
             "callLine": null,
             "loaderKey": null,
             "variable": null,
-            "expectsException": false
+            "expects": null
         }
     }
 }

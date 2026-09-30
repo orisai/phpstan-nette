@@ -8,7 +8,9 @@ use function in_array;
 use function is_array;
 use function is_string;
 use function ksort;
+use function ltrim;
 use function preg_match;
+use function preg_replace;
 use function strrpos;
 use function substr;
 use function substr_count;
@@ -75,25 +77,13 @@ final class PhptTemplateExtractor
 		$tokens = $this->tokenize($code);
 		$bindings = $this->collectBindings($tokens);
 
+		$scopes = $this->assertionScopes($tokens);
+
 		/** @var array<int, ExtractedTemplate> $found */
 		$found = [];
-		$loaderKeys = $this->collectLoaderEntries($tokens, $bindings, $found);
+		$loaderEntries = $this->collectLoaderEntries($tokens, $bindings, $scopes, $found);
 
-		/** @var list<bool> $exceptionScopes */
-		$exceptionScopes = [];
 		foreach ($tokens as $i => [$id, $text, $line]) {
-			if ($text === '(') {
-				$exceptionScopes[] = $this->opensExceptionAssertion($tokens, $i);
-
-				continue;
-			}
-
-			if ($text === ')') {
-				array_pop($exceptionScopes);
-
-				continue;
-			}
-
 			if (
 				$id !== T_STRING
 				|| !in_array($text, self::CALLS, true)
@@ -110,14 +100,23 @@ final class PhptTemplateExtractor
 
 			$end = $this->expressionEnd($tokens, $start);
 			$resolved = $this->resolve($tokens, $bindings, $start, $end);
-			if ($resolved === null || isset($loaderKeys[$resolved['content']])) {
+			if ($resolved === null) {
 				continue;
 			}
 
-			$expectsException = in_array(true, $exceptionScopes, true);
+			$expects = $scopes[$i];
+			if (isset($loaderEntries[$resolved['content']])) {
+				$rendered = $this->renderedLoaderEntry($loaderEntries[$resolved['content']], $i);
+				if ($rendered !== null && $found[$rendered]->expects === null) {
+					$found[$rendered]->expects = $expects;
+				}
+
+				continue;
+			}
+
 			$position = $resolved['position'];
 			if (isset($found[$position])) {
-				$found[$position]->expectsException = $found[$position]->expectsException || $expectsException;
+				$found[$position]->expects ??= $expects;
 
 				continue;
 			}
@@ -129,7 +128,7 @@ final class PhptTemplateExtractor
 				$text,
 				null,
 				$resolved['variable'],
-				$expectsException,
+				$expects,
 			);
 		}
 
@@ -225,12 +224,13 @@ final class PhptTemplateExtractor
 	/**
 	 * @param list<array{int|null, string, int}> $tokens
 	 * @param array<string, list<array{index: int, value: array{content: string, position: int, line: int}|null}>> $bindings
+	 * @param array<int, array{assertion: string, class: string|null, message: string|null}|null> $scopes
 	 * @param array<int, ExtractedTemplate> $found
-	 * @return array<string, true>
+	 * @return array<string, list<array{loader: int|null, position: int|null}>>
 	 */
-	private function collectLoaderEntries(array $tokens, array $bindings, array &$found): array
+	private function collectLoaderEntries(array $tokens, array $bindings, array $scopes, array &$found): array
 	{
-		$keys = [];
+		$entries = [];
 		$dynamic = false;
 		foreach ($tokens as $i => [, $text, $line]) {
 			$separator = strrpos($text, '\\');
@@ -253,7 +253,7 @@ final class PhptTemplateExtractor
 				$end = $this->expressionEnd($tokens, $start);
 				$arrow = $this->arrowIn($tokens, $start, $end);
 				if ($arrow !== null) {
-					$this->addLoaderEntry($tokens, $bindings, $found, $keys, $start, $arrow, $end, $line);
+					$this->addLoaderEntry($tokens, $bindings, $scopes, $found, $entries, $i, $start, $arrow, $end);
 				}
 
 				if (($tokens[$end][1] ?? null) !== ',') {
@@ -265,7 +265,7 @@ final class PhptTemplateExtractor
 		}
 
 		if (!$dynamic) {
-			return $keys;
+			return $entries;
 		}
 
 		foreach ($tokens as $arrow => [$id]) {
@@ -280,28 +280,30 @@ final class PhptTemplateExtractor
 			$end = $this->expressionEnd($tokens, $arrow + 1);
 			$value = $this->literal($tokens, $arrow + 1, $end);
 			if ($value !== null && preg_match('~\{|n:~', $value) === 1) {
-				$this->addLoaderEntry($tokens, $bindings, $found, $keys, $arrow - 1, $arrow, $end, $tokens[$arrow][2]);
+				$this->addLoaderEntry($tokens, $bindings, $scopes, $found, $entries, null, $arrow - 1, $arrow, $end);
 			}
 		}
 
-		return $keys;
+		return $entries;
 	}
 
 	/**
 	 * @param list<array{int|null, string, int}> $tokens
 	 * @param array<string, list<array{index: int, value: array{content: string, position: int, line: int}|null}>> $bindings
+	 * @param array<int, array{assertion: string, class: string|null, message: string|null}|null> $scopes
 	 * @param array<int, ExtractedTemplate> $found
-	 * @param array<string, true> $keys
+	 * @param array<string, list<array{loader: int|null, position: int|null}>> $entries
 	 */
 	private function addLoaderEntry(
 		array $tokens,
 		array $bindings,
+		array $scopes,
 		array &$found,
-		array &$keys,
+		array &$entries,
+		?int $loader,
 		int $start,
 		int $arrow,
-		int $end,
-		int $line
+		int $end
 	): void
 	{
 		$key = $this->literal($tokens, $start, $arrow);
@@ -309,8 +311,8 @@ final class PhptTemplateExtractor
 			return;
 		}
 
-		$keys[$key] = true;
 		$resolved = $this->resolve($tokens, $bindings, $arrow + 1, $end);
+		$entries[$key][] = ['loader' => $loader, 'position' => $resolved === null ? null : $resolved['position']];
 		if ($resolved === null || isset($found[$resolved['position']])) {
 			return;
 		}
@@ -318,12 +320,31 @@ final class PhptTemplateExtractor
 		$found[$resolved['position']] = new ExtractedTemplate(
 			$resolved['content'],
 			$resolved['line'],
-			$line,
+			$tokens[$loader ?? $arrow][2],
 			'StringLoader',
 			$key,
 			$resolved['variable'],
-			false,
+			$scopes[$arrow],
 		);
+	}
+
+	/**
+	 * @param list<array{loader: int|null, position: int|null}> $entries
+	 */
+	private function renderedLoaderEntry(array $entries, int $call): ?int
+	{
+		$rendered = null;
+		foreach ($entries as $entry) {
+			if (
+				$entry['loader'] !== null
+				&& $entry['loader'] < $call
+				&& ($rendered === null || $entry['loader'] > $rendered['loader'])
+			) {
+				$rendered = $entry;
+			}
+		}
+
+		return $rendered === null ? null : $rendered['position'];
 	}
 
 	/**
@@ -466,8 +487,30 @@ final class PhptTemplateExtractor
 
 	/**
 	 * @param list<array{int|null, string, int}> $tokens
+	 * @return array<int, array{assertion: string, class: string|null, message: string|null}|null>
 	 */
-	private function opensExceptionAssertion(array $tokens, int $paren): bool
+	private function assertionScopes(array $tokens): array
+	{
+		$scopes = [];
+		$stack = [];
+		foreach ($tokens as $i => [, $text]) {
+			$current = $stack === [] ? null : $stack[count($stack) - 1];
+			$scopes[$i] = $current;
+			if ($text === '(') {
+				$stack[] = $this->assertionAt($tokens, $i) ?? $current;
+			} elseif ($text === ')') {
+				array_pop($stack);
+			}
+		}
+
+		return $scopes;
+	}
+
+	/**
+	 * @param list<array{int|null, string, int}> $tokens
+	 * @return array{assertion: string, class: string|null, message: string|null}|null
+	 */
+	private function assertionAt(array $tokens, int $paren): ?array
 	{
 		$method = $tokens[$paren - 1] ?? null;
 		$class = $tokens[$paren - 3] ?? null;
@@ -478,12 +521,36 @@ final class PhptTemplateExtractor
 			|| ($tokens[$paren - 2][0] ?? null) !== T_DOUBLE_COLON
 			|| !in_array($method[1], self::EXCEPTION_ASSERTIONS, true)
 		) {
-			return false;
+			return null;
 		}
 
 		$separator = strrpos($class[1], '\\');
+		if (($separator === false ? $class[1] : substr($class[1], $separator + 1)) !== 'Assert') {
+			return null;
+		}
 
-		return ($separator === false ? $class[1] : substr($class[1], $separator + 1)) === 'Assert';
+		$expects = ['assertion' => $method[1], 'class' => null, 'message' => null];
+		$callableEnd = $this->expressionEnd($tokens, $paren + 1);
+		if (($tokens[$callableEnd][1] ?? null) !== ',') {
+			return $expects;
+		}
+
+		$classEnd = $this->expressionEnd($tokens, $callableEnd + 1);
+		$raw = $this->literal($tokens, $callableEnd + 1, $classEnd);
+		if ($raw === null) {
+			$raw = '';
+			for ($i = $callableEnd + 1; $i < $classEnd; $i++) {
+				$raw .= $tokens[$i][1];
+			}
+		}
+
+		$raw = ltrim(preg_replace('~::class$~', '', $raw) ?? $raw, '\\');
+		$expects['class'] = $raw === '' ? null : $raw;
+		if (($tokens[$classEnd][1] ?? null) === ',') {
+			$expects['message'] = $this->literal($tokens, $classEnd + 1, $this->expressionEnd($tokens, $classEnd + 1));
+		}
+
+		return $expects;
 	}
 
 }
