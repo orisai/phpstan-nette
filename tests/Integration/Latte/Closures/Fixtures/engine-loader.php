@@ -2,7 +2,7 @@
 
 use Latte\Engine;
 
-require_once __DIR__ . '/../../../../../../tests/autoload.php';
+require_once __DIR__ . '/../../../../../tests/autoload.php';
 
 $engine = new Engine();
 $engine->addFilter('wrapped', static function (string $s): string {

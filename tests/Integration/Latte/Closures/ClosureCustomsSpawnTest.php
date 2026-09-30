@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace Tests\OriPhpstan\Nette\Integration\Latte\Integration;
+namespace Tests\OriPhpstan\Nette\Integration\Latte\Closures;
 
 use Nette\Utils\FileSystem;
 use Tests\OriPhpstan\Nette\Integration\Configuration\ConfigurationCorpus;
@@ -30,7 +30,7 @@ final class ClosureCustomsSpawnTest extends BaseTestCase
 	{
 		$this->project->write(
 			'src/closures.latte',
-			FileSystem::read(__DIR__ . '/Fixtures/closure-customs/closures.latte'),
+			FileSystem::read(__DIR__ . '/Fixtures/closures.latte'),
 		);
 
 		$result = $this->project->analyse(
@@ -38,7 +38,7 @@ final class ClosureCustomsSpawnTest extends BaseTestCase
 				'fileExtensions' => ['php', 'latte'],
 				'orisaiNette' => ['latte' => [
 					'enabled' => true,
-					'engineLoader' => __DIR__ . '/Fixtures/closure-customs/engine-loader.php',
+					'engineLoader' => __DIR__ . '/Fixtures/engine-loader.php',
 				]],
 			],
 			['src'],
