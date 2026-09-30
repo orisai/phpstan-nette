@@ -13,6 +13,10 @@ use PHPStan\Analyser\CollectedDataEmitter;
 use PHPStan\Analyser\NodeCallbackInvoker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
+use PHPStan\Rules\FileRuleError;
+use PHPStan\Rules\IdentifierRuleError;
+use PHPStan\Rules\LineRuleError;
+use PHPStan\Rules\NonIgnorableRuleError;
 use PHPUnit\Framework\MockObject\Stub;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
@@ -111,7 +115,12 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				$this->entry($keyB, 'sha-b', [], ['item' => 'string']),
 			]), $this->scope());
 
-			self::assertSame([], $errors);
+			$this->assertStoreChanged(
+				'The Latte narrowing store changed for 2 including templates: a.latte, b.latte. '
+					. 'Run the analysis again until this error disappears, then commit the store.',
+				$storeDir . '/' . SliceClassName::forPath('a.latte') . '.php',
+				$errors,
+			);
 
 			// assertEquals, not assertSame: the store canonicalizes (ksorts) entry key order by
 			// design, so the returned array's key order need not match the caller's insertion order.
@@ -276,7 +285,12 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				$this->entry($key, 'sha-a', ['x' => 'string'], []),
 			]), $this->scope());
 
-			self::assertSame([], $errors);
+			$this->assertStoreChanged(
+				'The Latte narrowing store changed for 1 including template: a.latte. '
+					. 'Run the analysis again until this error disappears, then commit the store.',
+				$storeDir . '/' . SliceClassName::forPath('a.latte') . '.php',
+				$errors,
+			);
 			$fresh = new SiteScopeStore($storeDir);
 			self::assertEquals(
 				['sha' => 'sha-a', 'vars' => ['x' => 'string'], 'args' => []],
@@ -312,7 +326,7 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 			$sliceFile = $storeDir . '/' . SliceClassName::forPath('a.latte') . '.php';
 			$afterFirstRun = FileSystem::read($sliceFile);
 
-			(new LatteSiteScopeWriterRule(
+			$secondErrors = (new LatteSiteScopeWriterRule(
 				TestGuard::latte(true, true),
 				$storeDir,
 				new SiteScopeStore($storeDir),
@@ -321,6 +335,8 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				$this->scope(),
 			);
 			$afterSecondRun = FileSystem::read($sliceFile);
+
+			self::assertSame([], $secondErrors, 'an unchanged store must not be reported');
 
 			self::assertSame($afterFirstRun, $afterSecondRun, 'value-equal write must leave the slice file untouched');
 		} finally {
@@ -356,6 +372,91 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 		} finally {
 			FileSystem::delete($dir);
 		}
+	}
+
+	public function testReportsAnIncluderReanalysedWithZeroCapturesWhoseSliceChanged(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, ['b.latte']);
+
+			$seed = new SiteScopeStore($storeDir);
+			$seed->replaceForIncluders(['a.latte'], [
+				'a.latte#1#old-target.latte#ctx1' => ['sha' => 'sha-a', 'vars' => ['x' => 'string'], 'args' => []],
+			]);
+
+			$rule = new LatteSiteScopeWriterRule(
+				TestGuard::latte(true, true),
+				$storeDir,
+				new SiteScopeStore($storeDir),
+			);
+			$errors = $rule->processNode(new CollectedDataNode(
+				[
+					'/project/a.latte' => [LatteAnalyzedFileMarkerCollector::class => ['a.latte']],
+					'/project/b.latte' => [LatteAnalyzedFileMarkerCollector::class => ['b.latte']],
+				],
+				false,
+			), $this->scope());
+
+			$this->assertStoreChanged(
+				'The Latte narrowing store changed for 1 including template: a.latte. '
+					. 'Run the analysis again until this error disappears, then commit the store.',
+				$storeDir . '/' . SliceClassName::forPath('a.latte') . '.php',
+				$errors,
+			);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testCapsTheListedIncluders(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, []);
+
+			$captures = [];
+			for ($i = 10; $i < 23; $i++) {
+				$captures[] = $this->entry('t' . $i . '.latte#1#target.latte#ctx', 'sha', ['x' => 'string'], []);
+			}
+
+			$rule = new LatteSiteScopeWriterRule(
+				TestGuard::latte(true, true),
+				$storeDir,
+				new SiteScopeStore($storeDir),
+			);
+			$errors = $rule->processNode($this->collectedDataNode($captures), $this->scope());
+
+			$this->assertStoreChanged(
+				'The Latte narrowing store changed for 13 including templates: t10.latte, t11.latte, t12.latte, '
+					. 't13.latte, t14.latte, t15.latte, t16.latte, t17.latte, t18.latte, t19.latte (+3 more). '
+					. 'Run the analysis again until this error disappears, then commit the store.',
+				$storeDir . '/' . SliceClassName::forPath('t10.latte') . '.php',
+				$errors,
+			);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	/**
+	 * @param list<IdentifierRuleError> $errors
+	 */
+	private function assertStoreChanged(string $message, string $file, array $errors): void
+	{
+		self::assertCount(1, $errors);
+		$error = $errors[0];
+		self::assertSame($message, $error->getMessage());
+		self::assertSame('orisai.nette.latte.narrowingStoreChanged', $error->getIdentifier());
+		self::assertInstanceOf(NonIgnorableRuleError::class, $error);
+		self::assertInstanceOf(FileRuleError::class, $error);
+		self::assertSame($file, $error->getFile());
+		self::assertInstanceOf(LineRuleError::class, $error);
+		self::assertSame(1, $error->getLine());
 	}
 
 	/**

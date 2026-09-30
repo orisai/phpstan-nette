@@ -184,7 +184,7 @@ final class NarrowingDegradationTest extends BaseTestCase
 		$process->run();
 
 		return [
-			'output' => $this->normalize($process->getOutput(), $projectRoot),
+			'output' => $this->normalize(str_replace($storeDir . '/', '<store>/', $process->getOutput()), $projectRoot),
 			'diagnostics' => $process->getErrorOutput(),
 			'exitCode' => (int) $process->getExitCode(),
 		];

@@ -152,7 +152,7 @@ final class SiteScopeStoreTest extends BaseTestCase
 			$store = new SiteScopeStore($path);
 			$changed = $store->replaceForIncluders(['a.latte'], [$key => $entry]);
 
-			self::assertTrue($changed);
+			self::assertSame(['a.latte'], $changed);
 			// assertEquals, not assertSame: the store canonicalizes (ksorts) entry key order by
 			// design, so the returned array's key order need not match the caller's insertion order.
 			self::assertEquals($entry, $store->get($key, 'sha-a'));
@@ -264,7 +264,7 @@ final class SiteScopeStoreTest extends BaseTestCase
 				$keyA1New => $this->entry('sha-a-new', ['x' => 'string'], []),
 			]);
 
-			self::assertTrue($changed);
+			self::assertSame(['a.latte'], $changed);
 			self::assertNull($store->get($keyA2, 'sha-a-old'), 'stale site of an analyzed includer must be dropped');
 			self::assertEquals(
 				$this->entry('sha-a-new', ['x' => 'string'], []),
@@ -280,7 +280,7 @@ final class SiteScopeStoreTest extends BaseTestCase
 		}
 	}
 
-	public function testReplaceForIncludersReturnsFalseAndSkipsWriteWhenLogicallyUnchanged(): void
+	public function testReplaceForIncludersReportsNothingAndSkipsWriteWhenLogicallyUnchanged(): void
 	{
 		$dir = $this->scratchDir();
 		FileSystem::createDir($dir);
@@ -303,7 +303,7 @@ final class SiteScopeStoreTest extends BaseTestCase
 				$key1 => $this->entry('sha-a', ['x' => 'string'], []),
 			]);
 
-			self::assertFalse($changed);
+			self::assertSame([], $changed);
 			self::assertSame($bytesAfterFirstWrite, FileSystem::read($path));
 		} finally {
 			FileSystem::delete($dir);
@@ -382,6 +382,36 @@ final class SiteScopeStoreTest extends BaseTestCase
 			]);
 
 			self::assertNotSame($storeA->sliceHash('a.latte', 'sha-a'), $storeB->sliceHash('a.latte', 'sha-a'));
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testReplaceForIncludersListsOnlyTheIncludersWhoseSliceChangedSorted(): void
+	{
+		$dir = $this->scratchDir();
+		FileSystem::createDir($dir);
+
+		try {
+			$path = $dir . '/store';
+			$keyA = SiteScopeStore::key('a.latte', 1, 'x.latte', 'ctx1');
+			$keyB = SiteScopeStore::key('b.latte', 1, 'x.latte', 'ctx1');
+			$keyC = SiteScopeStore::key('c.latte', 1, 'x.latte', 'ctx1');
+
+			$store = new SiteScopeStore($path);
+			self::assertSame(
+				['a.latte', 'b.latte', 'c.latte'],
+				$store->replaceForIncluders(['c.latte', 'a.latte', 'b.latte'], [
+					$keyA => $this->entry('sha-a', ['x' => 'string'], []),
+					$keyB => $this->entry('sha-b', ['x' => 'string'], []),
+					$keyC => $this->entry('sha-c', ['x' => 'string'], []),
+				]),
+			);
+
+			self::assertSame(['c.latte', 'd.latte'], $store->replaceForIncluders(['d.latte', 'c.latte', 'a.latte'], [
+				$keyA => $this->entry('sha-a', ['x' => 'string'], []),
+				$keyC => $this->entry('sha-c', ['x' => 'int'], []),
+			]));
 		} finally {
 			FileSystem::delete($dir);
 		}

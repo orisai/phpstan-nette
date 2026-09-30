@@ -4,20 +4,28 @@ namespace OriPhpstan\Nette\Latte\Rule;
 
 use Nette\Utils\Strings;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
+use OriPhpstan\Nette\Latte\Converge\StoreChangeSignal;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
+use PHPStan\Rules\RuleErrorBuilder;
 use function array_keys;
+use function array_slice;
+use function count;
+use function implode;
 use function is_dir;
+use function sprintf;
 
 /**
  * @implements Rule<CollectedDataNode>
  */
 final class LatteSiteScopeWriterRule implements Rule
 {
+
+	private const LISTED_MAX = 10;
 
 	private string $storeDirPath;
 
@@ -62,12 +70,26 @@ final class LatteSiteScopeWriterRule implements Rule
 		// CollectedDataNode rule in try/catch (Throwable) - rethrowing under --debug, else
 		// recording an InternalError and continuing - so a write failure here is never fatal to
 		// the run but stays diagnosable, instead of vanishing into a silent catch.
-		$this->write($node);
+		$changed = $this->write($node);
+		if ($changed === []) {
+			return [];
+		}
 
-		return [];
+		// Non-ignorable: a baseline or ignoreErrors entry would hide a stale store from CI for good.
+		return [
+			RuleErrorBuilder::message($this->changedMessage($changed))
+				->identifier(StoreChangeSignal::IDENTIFIER)
+				->file($this->store->slicePath($changed[0]))
+				->line(1)
+				->nonIgnorable()
+				->build(),
+		];
 	}
 
-	private function write(CollectedDataNode $node): void
+	/**
+	 * @return list<string>
+	 */
+	private function write(CollectedDataNode $node): array
 	{
 		$includers = [];
 		$entries = [];
@@ -104,7 +126,32 @@ final class LatteSiteScopeWriterRule implements Rule
 		// AnalyserResultFinalizer::finalize() constructs exactly once - in the parent/coordinator
 		// process, only after every parallel worker's collected data has already been merged into
 		// one AnalyserResult - so this write is never concurrent with another worker's write.
-		$this->store->replaceForIncluders(array_keys($includers), $entries);
+		return $this->store->replaceForIncluders(array_keys($includers), $entries);
+	}
+
+	/**
+	 * @param list<string> $changed
+	 */
+	private function changedMessage(array $changed): string
+	{
+		return sprintf(
+			'The Latte narrowing store changed for %d including %s: %s. '
+				. 'Run the analysis again until this error disappears, then commit the store.',
+			count($changed),
+			count($changed) === 1 ? 'template' : 'templates',
+			$this->capped($changed),
+		);
+	}
+
+	/**
+	 * @param list<string> $items
+	 */
+	private function capped(array $items): string
+	{
+		$listed = implode(', ', array_slice($items, 0, self::LISTED_MAX));
+		$more = count($items) - self::LISTED_MAX;
+
+		return $more > 0 ? sprintf('%s (+%d more)', $listed, $more) : $listed;
 	}
 
 	private function includerRel(string $key): ?string

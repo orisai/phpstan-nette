@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Includes;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use Throwable;
+use function array_values;
 use function glob;
 use function implode;
 use function is_array;
@@ -77,11 +78,17 @@ final class SiteScopeStore
 		return is_file(self::sliceFilePath($this->storeDirPath, $includerRel));
 	}
 
+	public function slicePath(string $includerRel): string
+	{
+		return self::sliceFilePath($this->storeDirPath, $includerRel);
+	}
+
 	/**
 	 * @param list<string> $analyzedIncluderRels
 	 * @param array<string, array{sha: string, vars: array<string, string>, args: array<string, string>}> $entries
+	 * @return list<string>
 	 */
-	public function replaceForIncluders(array $analyzedIncluderRels, array $entries): bool
+	public function replaceForIncluders(array $analyzedIncluderRels, array $entries): array
 	{
 		$merged = $this->entries();
 
@@ -100,16 +107,18 @@ final class SiteScopeStore
 
 		self::deepKsort($merged);
 
-		$changed = false;
+		$changed = [];
 		foreach ($analyzedIncluderRels as $rel) {
 			if (self::writeSliceIfChanged($this->storeDirPath, $rel, $merged)) {
-				$changed = true;
+				$changed[$rel] = $rel;
 			}
 		}
 
 		$this->loadedEntries = $merged;
 
-		return $changed;
+		ksort($changed, SORT_STRING);
+
+		return array_values($changed);
 	}
 
 	// Two sites sharing includer/line/target/context (e.g. two identical {include} tags written on

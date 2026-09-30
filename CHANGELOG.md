@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Latte: a run which rewrites the narrowing store reports the non-ignorable `orisai.nette.latte.narrowingStoreChanged`,
+  so CI fails on an outdated store without comparing the git state
 - Parameters are nested under `orisai: nette:` instead of `orisaiNette:`, and the services are named `orisai.nette.*`
 - Error identifiers start with `orisai.nette.` instead of `orisaiNette.`
 - `orisai.nette` is validated by the extension (nette/schema is required) rather than by PHPStan, so other orisai

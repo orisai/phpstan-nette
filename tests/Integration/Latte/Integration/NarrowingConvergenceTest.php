@@ -18,6 +18,7 @@ use function preg_replace;
 use function rtrim;
 use function sort;
 use function str_replace;
+use function strpos;
 use function uniqid;
 use const PHP_BINARY;
 use const SORT_STRING;
@@ -69,8 +70,15 @@ final class NarrowingConvergenceTest extends BaseTestCase
 			$convergedAtRun = null;
 
 			for ($run = 1; $run <= self::MAX_RUNS; $run++) {
+				$before = $this->snapshotStore($storeDir);
 				$result = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);
 				$lastOutput = $result['output'];
+
+				self::assertSame(
+					$this->snapshotStore($storeDir) !== $before,
+					strpos($result['output'], 'The Latte narrowing store changed for ') !== false,
+					'a run reports narrowingStoreChanged exactly when it rewrote the store: ' . $result['output'],
+				);
 
 				if ($run > 1) {
 					$warmReanalysisCounts[] = $this->reanalysisCount($result['diagnostics']);

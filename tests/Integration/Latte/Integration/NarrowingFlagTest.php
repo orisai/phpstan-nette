@@ -132,6 +132,9 @@ final class NarrowingFlagTest extends BaseTestCase
 		$captureRun1 = $this->spawnWithStore($projectRoot, $srcDir, $captureTmp, $storeDir, true);
 		self::assertSame(
 			"$relSrc/narrow-target.latte:1:Cannot call method getMessage() on Exception|null.\n"
+			. "$relSrc/sitescope/" . SliceClassName::forPath("$relSrc/narrow-includer.latte") . '.php:1:'
+			. "The Latte narrowing store changed for 1 including template: $relSrc/narrow-includer.latte. "
+			. "Run the analysis again until this error disappears, then commit the store.\n"
 			. "$relSrc/unrelated.latte:1:Undefined variable: \$undefinedVar\n",
 			$captureRun1['output'],
 			'sanity check: run 1 (empty store) must report the wide error: ' . $captureRun1['diagnostics'],

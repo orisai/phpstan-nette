@@ -355,7 +355,10 @@ final class DeterminismTest extends BaseTestCase
 		);
 		$process->run();
 
-		return $this->normalizeSpawnOutput($process->getOutput(), $projectRoot);
+		return $this->normalizeSpawnOutput(
+			str_replace($storeDir . '/', '<store>/', $process->getOutput()),
+			$projectRoot,
+		);
 	}
 
 	private function normalizeSpawnOutput(string $raw, string $projectRoot): string
