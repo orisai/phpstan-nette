@@ -88,6 +88,7 @@ update flags (`update-flags`), ignored platform requirements (`ignore-platform-r
 |------------------|----------------------------------------------------------------------------|----------|
 | (primary)        | Latte 3.1, nette/application and nette/forms 3.3, nette/caching 3.4        | 8.3, 8.4 |
 | `lowest`         | the lowest dependencies (`--prefer-lowest --prefer-stable`)                | 7.4      |
+| `php74`          | the newest set PHP 7.4 resolves: Latte 2.11, nette 3.1, the newest PHPStan | 7.4      |
 | `latte2`         | Latte 2.11, nette/application and nette/forms 3.1, forms-replicator 2      | 8.3      |
 | `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2                         | 8.3      |
 | `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                          | 8.4      |
@@ -97,8 +98,9 @@ the floors `composer.json` declares — Latte 2.11.7, nette/application and nett
 PHP 7.4 — which are the lowest versions the suite passes on: raise a floor rather than let the `lowest` suite fail. A
 test whose expectation needs a newer PHPStan skips by capability (e.g.
 `BootstrapFilesRunner::mergeNewAutoloadFunctions()`, `decimal-int-string` typing) or by version
-(`InstalledVersionsGuard::requirePhpstan()`, e.g. the forms-helper string arguments printed differently before 2.2.9). The `nikic/php-parser` floor (require-dev) follows the php-parser the
-lowest PHPStan phar bundles, as PHPUnit loads the vendor copy first.
+(`InstalledVersionsGuard::requirePhpstan()`, e.g. the forms-helper string arguments printed differently before 2.2.9).
+The `nikic/php-parser` floor (require-dev) follows the php-parser the lowest PHPStan phar bundles, as PHPUnit loads the
+vendor copy first.
 
 The primary set, `latte2-nette32` and `latte30` install kdyby/forms-replicator 3. The Latte 2 sets cap at PHP 8.3
 (Latte 2.11.7, nette/forms 3.1.15 and nette/utils 3.2 do): their `php-ceiling` is 8.3, and `tools/profile.php --flags`
@@ -127,8 +129,9 @@ the code and the vendor it calls use; PHP 7.4 compatibility is covered by the `l
   Latte 2 compiler and its macros, `DeclarationScanner`, `TemplateFactExtractor`, `MacroPairing`,
   `CaseMismatchScanner`) lives in `src/Latte/Version/Latte2/`; what both lines share (`BlockBodyTracker`,
   `PairedTags`) stays outside it and is analysed by both configs.
-- `tools/phpstan.latte2.neon` (`phpVersion` 8.3, `make phpstan PROFILE=latte2|latte2-nette32`) analyses the same
-  paths against Latte 2 and excludes `src/Latte/Version/Latte3/` and the `tests/**/Latte3/` directories.
+- `tools/phpstan.latte2.neon` (`phpVersion` 8.3, `make phpstan PROFILE=latte2|latte2-nette32|php74`; CI analyses
+  `latte2` and `latte2-nette32` only) analyses the same paths against Latte 2 and excludes `src/Latte/Version/Latte3/`
+  and the `tests/**/Latte3/` directories.
 - Both include `tools/phpstan.common.neon` (level, excluded fixtures, shared ignores) and their own baseline
   (`phpstan.baseline.neon`, `phpstan.latte2.baseline.neon`; `make phpstan-baseline [PROFILE=…]` writes the matching
   one). A finding only one set of a config reports (e.g. a deprecation only nette/forms 3.3 declares) is an ignore with
@@ -138,8 +141,9 @@ the code and the vendor it calls use; PHP 7.4 compatibility is covered by the `l
   `tools/phpstan.cache.php` from `COMPOSER_VENDOR_DIR`, `vendor` without it), so the sets do not evict each other.
 
 CI runs cs, phpstan and the tests on the primary set, phpstan on `latte2`, `latte2-nette32` and `latte30`, the tests on
-every profile row above, the corpus gate per profile (see
-[latte-versions.md](latte-versions.md#upstream-template-corpus)) and `make lint`.
+every profile row above (`php74` is the one row running the newest PHPStan on PHP 7.4, where
+`MetaPhaseStubReflectionSpawnTest` pins the runtime-stub guard; elsewhere it skips visibly), the corpus gate per profile
+(see [latte-versions.md](latte-versions.md#upstream-template-corpus)) and `make lint`.
 
 ### PHP 7.4 syntax
 
@@ -151,9 +155,9 @@ there.
 
 ### Running the gates
 
-The primary set and `latte30` develop on PHP 8.4; the `lowest` profile on PHP 7.4; the Latte 2 profiles on PHP 8.3,
-or on PHP 8.4, above their ceiling, with the php platform requirement ignored. Coverage runs with pcov on the default
-`php`: `make coverage-clover ARGS=<test>`.
+The primary set and `latte30` develop on PHP 8.4; the `lowest` and `php74` profiles on PHP 7.4; the Latte 2 profiles on
+PHP 8.3, or on PHP 8.4, above their ceiling, with the php platform requirement ignored. Coverage runs with pcov on the
+default `php`: `make coverage-clover ARGS=<test>`.
 
 ```
 make update PRE_PHP="php8.4"
@@ -164,6 +168,8 @@ env -u CLAUDECODE -u AI_AGENT make PRE_PHP="XDEBUG_MODE=off php8.4" tests
 
 make profile PROFILE=lowest PRE_PHP="php7.4"
 env -u CLAUDECODE -u AI_AGENT make tests PROFILE=lowest PRE_PHP="XDEBUG_MODE=off php7.4"
+make profile PROFILE=php74 PRE_PHP="php7.4"
+env -u CLAUDECODE -u AI_AGENT make tests PROFILE=php74 PRE_PHP="XDEBUG_MODE=off php7.4"
 
 make profile PROFILE=latte2 PRE_PHP="php8.4"
 make phpstan PROFILE=latte2 PRE_PHP="XDEBUG_MODE=off php8.4"

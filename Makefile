@@ -22,7 +22,7 @@ PHPCS_CONFIG=var/tools/PHP_CodeSniffer/phpcs.$(PROFILE).xml
 PHPCS_PREPARE=sed -e 's\#\./\.\./vendor/\#$(CURDIR)/$(VENDOR_DIR)/\#g' -e 's\#\./\.\.\#$(CURDIR)\#g' tools/phpcs.xml > $(PHPCS_CONFIG)
 endif
 
-ifneq ($(filter latte2%,$(PROFILE)),)
+ifneq ($(filter latte2% php74,$(PROFILE)),)
 PHPSTAN_CONFIG=tools/phpstan.latte2.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.latte2.baseline.neon
 else
