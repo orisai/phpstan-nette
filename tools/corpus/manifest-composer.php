@@ -63,8 +63,12 @@ foreach ($manifest as $package => $version) {
 }
 
 $target = $root . '/composer.corpus-' . $profile . '.json';
-$encoded = json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
-if (file_put_contents($target, $encoded) === false) {
+$encoded = json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+if ($encoded === false) {
+	$fail(sprintf('Cannot encode the composer file of profile "%s": %s', $profile, json_last_error_msg()));
+}
+
+if (file_put_contents($target, $encoded . "\n") === false) {
 	$fail(sprintf('Cannot write "%s".', $target));
 }
 

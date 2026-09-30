@@ -933,16 +933,13 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 
 #### Latte limitations
 
-- Only Latte 2.11 is supported; Latte 3 is not (the package conflicts with `latte/latte >=3.0`). Latte 2.11 does not
-  install on PHP 8.4, so Latte analysis needs PHP 7.4 – 8.3, while DI and Forms run on PHP 7.4 – 8.4.
 - The `slice` filter keeps value types, but keys widen to `int|string`.
 - `{default $x = …}` is analysed as `$x ??= …`; at runtime an existing `null` variable keeps `null`.
 - Filters added at render time (`$template->addFilter()`) are not seen — they are reported as unknown.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - `orisaiNette.latte.templateMissing` is not reported for a renderer which links no template at all.
-- Latte 3: an unknown paired tag lets `{else}`, `{elseif}`, `{elseifset}` and `{case}` it lexically encloses pass
-  through with it (a custom conditional without an engine loader); once passed through, the same name is accepted
-  anywhere else in that template. Outside any unknown pair these tags stay a compile error.
+- Latte 3: `{else}`, `{elseif}`, `{elseifset}` and `{case}` directly inside an unknown paired tag pass through with
+  it, as the branches of a custom conditional registered without an engine loader.
 
 ### Bridges features
 

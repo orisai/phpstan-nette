@@ -142,6 +142,10 @@ final class Latte3CompileTest extends BaseTestCase
 		yield 'nested pair of the same name' => ["{ifAllowed \$x}{ifAllowed \$y}a{/ifAllowed}{else}b{/ifAllowed}\n"];
 
 		yield 'if owns its else inside the pair' => ["{ifAllowed \$x}{if \$a}a{else}b{/if}{/ifAllowed}\n"];
+
+		yield 'generic closer' => ["{ifAllowed \$x}a{else}b{/}\n"];
+
+		yield 'if with its own else after the pair' => ["{ifAllowed \$x}a{else}b{/ifAllowed}{if \$c}x{else}y{/if}\n"];
 	}
 
 	/**
@@ -152,19 +156,47 @@ final class Latte3CompileTest extends BaseTestCase
 		$result = $this->compile($source);
 
 		self::assertNotNull($result->getPhpSource());
+		self::assertMatchesRegularExpression("~echo '[^']*b~", $result->getPhpSource());
 		self::assertSame(
 			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'ifAllowed'.", 1]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
 
-	public function testIntermediateTagBetweenUnknownPairsIsAParseError(): void
+	/**
+	 * @return iterable<string, array{string, string, int}>
+	 */
+	public static function provideMisplacedIntermediateTags(): iterable
 	{
-		$result = $this->compile("{ifAllowed \$x}a{/ifAllowed}\n{else}\n{ifAllowed \$y}b{/ifAllowed}\n");
+		yield 'between unknown pairs' => [
+			"{ifAllowed \$x}a{/ifAllowed}\n{else}\n{ifAllowed \$y}b{/ifAllowed}\n",
+			'Unexpected tag {else} (on line 2 at column 1)',
+			2,
+		];
+
+		yield 'after an unknown pair that had one' => [
+			"{ifAllowed \$x}a{else}b{/ifAllowed}\n{else}\n",
+			'Unexpected tag {else} (on line 2 at column 1)',
+			2,
+		];
+
+		yield 'inside a known tag inside an unknown pair' => [
+			"{ifAllowed \$x}{block foo}a{else}b{/block}{/ifAllowed}\n",
+			'Unexpected tag {else} (on line 1 at column 27)',
+			1,
+		];
+	}
+
+	/**
+	 * @dataProvider provideMisplacedIntermediateTags
+	 */
+	public function testMisplacedIntermediateTagIsAParseError(string $source, string $message, int $line): void
+	{
+		$result = $this->compile($source);
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', 'Unexpected tag {else} (on line 2 at column 1)', 2]],
+			[['orisaiNette.latte.parseError', $message, $line]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
