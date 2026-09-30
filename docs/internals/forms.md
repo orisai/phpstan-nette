@@ -1067,7 +1067,9 @@ allowed `nette/forms` is what catches them:
 * `control-value-types.stub` redeclares vendor control classes, and a stub **replaces** the docblock it redeclares
   rather than merging with it, so a `@property`/`@method` tag Nette adds to a redeclared class is dropped unless the
   stub restates it. The gate reports every vendor member tag the stub does not restate — by **name** only, so the
-  deliberate retyping (`array<int|string, mixed>` where Nette writes a bare `array`) stays free;
+  deliberate retyping (`array<int|string, mixed>` where Nette writes a bare `array`) stays free. Nette's own
+  `@property-deprecated` (nette/forms 3.3 demotes `$selectedItem` and `$selectedItems` to it) is no PHPStan tag, so a
+  redeclaring stub drops nothing there and the gate ignores it;
 * the catalog is keyed by Nette's factory **method names**, and the control class is read off those methods' return
   types, so a factory Nette renames, drops, or stops giving a control return type turns its entry inert. The gate
   reports each one.
@@ -1204,7 +1206,9 @@ any class-level `@property` tag the vendor declares on that same class. `BaseCon
 `@property-read string $error` is unaffected (`BaseControl` isn't itself stubbed); only the two choice
 classes needed their vendor tags restored — semantically, not verbatim: the vendor declares plain
 `array $items` / `array $selectedItems`, and the stub types them `array<int|string, mixed>` instead,
-deliberately, so the property itself doesn't trip `missingType.iterableValue`. That restatement is what
+deliberately, so the property itself doesn't trip `missingType.iterableValue`. nette/forms 3.2 adds
+`@property bool|array<bool> $disabled` to both classes (a choice control disables single items); the stub restates
+it, which is accurate on nette/forms 3.1 too. That restatement is what
 [`VendorCatalogFreshnessTest`](#where-these-vendor-facts-live-and-how-they-are-kept-fresh) gates: a
 `@property` Nette adds to a redeclared class later would otherwise be dropped as silently as these were.
 
@@ -1257,6 +1261,11 @@ $form['rep']->createOne();     // => Tests\OriPhpstan\Nette\Doubles\Forms\Form\F
 $form['rep']->getContainers(); // => Iterator<int, Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer{x: string}>
 $form->getValues()->rep;       // => array<int, Nette\Utils\ArrayHash{x: string}>
 ```
+
+`getContainers()` follows the installed kdyby/forms-replicator: version 2 declares `getContainers(): Iterator` and
+gets `Iterator<int, Row>`, version 3 declares `: array` and gets `array<int, Row>`
+(`ReplicatorMethodReturnTypeExtension` reads the native return type of the `Kdyby\Replicator\Container` ancestor
+through PHPStan's reflection, memoised; any other declared type falls back to `Iterator`).
 
 Instantiating the replicator container directly — by offset assignment or `addComponent()` — is equivalent; the factory
 closure is read from the constructor:

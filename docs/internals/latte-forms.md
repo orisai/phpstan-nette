@@ -507,6 +507,11 @@ And from the type checks in particular:
 - **A `{define}` block inside `{form a}` that is `{include}`d from `{form b}` is attributed
   lexically to form a.** This was already true of the diagnostics; the typing path now reads the same
   attribution.
+- **A paired label with a non-literal part (`{label x:$part}…{/label}`) drops the part expression.** The
+  `Helpers::formLabel()` stand-in takes the control name only, so the `$part` expression is not analysed.
+- **nette/forms 3.3 deprecates `CsrfProtection`.** A typed read of the `addProtection()` control
+  (`$form['_token_']`) is reported by a deprecation rule such as phpstan-deprecation-rules; that is vendor truth, not
+  a bridge finding.
 
 ## Not shipped (recorded, not dropped)
 

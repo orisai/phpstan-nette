@@ -21,9 +21,10 @@ parallelism, the result cache, and the baseline all apply uniformly. The library
 
 Every parameter this extension declares is namespaced under `orisaiNette.latte`.
 
-Everything that reads Latte's own API or depends on the shape of its generated code sits behind
-`LatteVersionAdapter` (`src/Latte/Version/`): `compile()` returns a `CompiledTemplate` — the
-generated code and the `ExtractedFacts` (declarations, include edges, form-macro sites) from the
+Latte 2.11, 3.0 and 3.1 are supported; [latte-versions.md](latte-versions.md) describes the version seam, the shape
+families, the Latte 3 compile and the upstream template corpus. In short: everything that reads Latte's own API or
+depends on the shape of its generated code sits behind `LatteVersionAdapter` (`src/Latte/Version/`):
+`compile()` returns a `CompiledTemplate` — the generated code and the `ExtractedFacts` (declarations, include edges, form-macro sites) from the
 same parse — `extractFacts()` is the facts-only path, plus the line-marker pattern and the
 `ShapeFamily` (Latte line + forms bridge, e.g. `2/macros`). The engine harvest is the sibling
 `LatteEngineReader` (`Latte2EngineReader`, `Latte3\Latte3EngineReader`), whose `read()`
@@ -82,11 +83,13 @@ of its own: the method and its prologue take the body's first marker, or the tag
 body has none, and the comment is a barrier the back-fill below never crosses, so a method's
 trailing statements never borrow the next block's line.
 
-For each `.latte` file, `LatteCompiler` (`src/Latte/Compile/`) runs the real
-`Latte\Parser`/`Latte\Compiler` (Latte 2.11 — no `Engine::compile`, no engine cache, no
+For each `.latte` file on Latte 2, `LatteCompiler` (`src/Latte/Compile/`) runs the real
+`Latte\Parser`/`Latte\Compiler` (no `Engine::compile`, no engine cache, no
 application boot) with the five built-in macro sets (`CoreMacros`,
 `BlockMacros`, `UIMacros`, `FormMacros`, `CacheMacro`), plus any macro sets harvested from the application's
-real Latte engine (see *Custom filters, functions and macros* below). Macros
+real Latte engine (see *Custom filters, functions and macros* below). On Latte 3, `Latte3Compiler` calls the engine's
+own `parse()` and `generate()` with the fixed or harvested extensions and `AnalysisExtension` (see
+[latte-versions.md](latte-versions.md#latte-3-compile)). Macros
 generate code, so compiling for real gives ground-truth semantics instead of a hand-maintained
 re-implementation. The compiled class name is derived from the file path, never from content —
 deterministic across runs, no efabrica-style non-determinism.
@@ -529,6 +532,10 @@ Both directions of that asymmetry are pinned as runtime probes against the real 
 **fail** on a Latte 3 upgrade: a red probe there is the signal that the compiled include semantics
 moved, not a nuisance.
 
+The installed Latte line does not decide this: with Latte 3 installed, the flag still defaults to `false`, so the
+file-form include/embed scope stays the Latte 2 union — an over-approximation of Latte 3's isolated scope which can
+miss findings, never invent them.
+
 `orisaiNette.latte.includeIsolation` (bool, default `false`) switches `EdgeScope::resolve()`'s file-form
 include/embed branch to the isolated shape — the one seam every consumer already routes through.
 Turning it on reports, through the existing `orisaiNette.latte.includeMissingVariable` machinery, every edge
@@ -835,14 +842,17 @@ closure that would call the filter itself, so the Latte 2 reader calls the loade
 order); a bare `addFilter(null, ...)` dynamic filter computes the filtered value itself, is no
 loader and is ignored. Case: both lines ask with the name as written, as the runtime does (a
 filter name must start lowercase on Latte 3 or it parses as a constant). Latte 3 is case-sensitive
-and stops there. Latte 2 files the answer under the lowercase name, after which every spelling
-reaches it, so a spelling the loaders decline is asked once more in lowercase: at runtime that
-spelling works only once another spelling has loaded the filter (and throws while none has), an
-order the analysis cannot know, so it types it. Answers are memoised per written name for the
-process. Limitation (Latte 2): a
-loader filter used only as a block filter (`{block|name}`) goes through `filterContent()`, which on
-Latte 2 never asks the loaders, so it works at runtime only when an earlier `{$x|name}` loaded it;
-the analysis types it either way.
+and stops there. Latte 2 files a loaded filter under its lowercase name, so a spelling the loaders
+decline is asked once more, in lowercase only (`FilterLoaderProbe`'s `$lowercaseFallback`): at
+runtime that spelling works only once another spelling has loaded the filter (and throws while
+none has), an order the analysis cannot know, so it types it. The fallback is one-way — no other
+spelling is tried: when the loaders answer only `formatDyn`, a written `{$s|formatdyn}` stays
+`orisaiNette.latte.unknownFilter`, although at runtime it works once `{$s|formatDyn}` has loaded the
+filter. Answers are memoised per written name for the process.
+
+Limitation (Latte 2): a loader filter used only as a block filter (`{block|name}`) goes through
+`filterContent()`, which on Latte 2 never asks the loaders, so it works at runtime only when an
+earlier `{$x|name}` loaded it; the analysis types it either way.
 
 The answers are part of the harvest salt: `CustomsHarvester` scans the analysed templates
 (`LatteUniverse`) for every identifier after a `|` (`FilterNameScan`, a superset of the filter
@@ -1071,14 +1081,19 @@ out PHPStan's `%tmpDir%`, installed package roots, Composer vendor directories (
 `composer/installed.json` inside) and a `composer` directory itself, dot-directories, symlinked
 directories and nested projects (a `composer.json` of their own). When the extension's directory is
 the project root (`%currentWorkingDirectory%`) or holds the `%tmpDir%`, or the walk passes
-`ExtensionSourceSalt::MAX_FILES` (5000) files, the extension is salted shallowly: only its own
+`ExtensionSourceSalt::MAX_FILES` (5000) `*.php` files (other files are not counted, so a tree heavy in
+non-PHP files is still walked in full), the extension is salted shallowly: only its own
 directory's `*.php` files, with a `harvest note:` line in `dumpLatteCustoms()`. Limitation: node
 classes of such an extension in subdirectories do not invalidate the analysis — declare extensions
 in a directory of their own. An unreadable directory in the walk is salted as `<path> unreadable`
 (so a permission flip changes the salt), skipped, and reported once as
 `orisaiNette.latte.customsHarvest` on line 1 of the analysed universe's first template (sorted, the
 same file on every worker and run; `HarvestProblemReporter`) and as a `harvest problem:` dump line —
-the harvest itself is kept. The Latte 3 compile joins `LatteAnalysisCache` under
+the harvest itself is kept. The reported path is relative to `%currentWorkingDirectory%` when it lies
+inside it, so the message is stable in a baseline. A run which does not analyse that first template
+(a partial run over some paths) carries the dump line but not the finding.
+
+The Latte 3 compile joins `LatteAnalysisCache` under
 `Latte3Adapter::compile()` with the key `sha1($source)|$className|$relativePath|$engineSalt|
 $discoverySalt|$family|Latte3Adapter`, where `$engineSalt` is the harvest salt for an extension
 harvest and, for the fixed set, a constant plus whether nette/caching (its `CacheExtension`) is
@@ -1611,7 +1626,7 @@ Latte-specific identifiers (all ordinary, ignorable, baselinable, reported on `.
 
 | Identifier | Meaning | Reported at |
 |---|---|---|
-| `orisaiNette.latte.parseError` | template failed to tokenize/compile | offending line (file-level fallback line 1) |
+| `orisaiNette.latte.parseError` | template failed to tokenize/compile, a vendor throwable during the compile (`Thrown exception '…'`), or generated PHP which does not parse (`Error in template: …`) | offending line (file-level fallback line 1) |
 | `orisaiNette.latte.unknownMacro` | tag / n:attribute not in the registered set | tag site |
 | `orisaiNette.latte.unknownFilter` | filter name not in the known set | filter site |
 | `orisaiNette.latte.unknownType` | `{templateType}`/`{varType}` references an unknown class | declaration site |
@@ -1635,6 +1650,7 @@ Latte-specific identifiers (all ordinary, ignorable, baselinable, reported on `.
 | `orisaiNette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte-3 breakage) | function call site |
 | `orisaiNette.latte.deprecated` | vendor `E_USER_DEPRECATED` captured during compilation (see *Vendor error containment*) | compiler's current line (fallback line 1) |
 | `orisaiNette.latte.internalError` | the analysis pipeline's own diagnostic-materialization invariant was violated | offending node |
+| `orisaiNette.latte.customsHarvest` | a directory under a harvested Latte 3 extension could not be read for the harvest salt (see *Invalidation*); the path is relative to `%currentWorkingDirectory%` when inside it | line 1 of the universe's first template (sorted) |
 | `orisaiNette.latte.templateTypeMismatch` | `{templateType}` outside what a linked renderer pairs (see *Template-file discovery*) | `{templateType}` site |
 | `orisaiNette.latte.templateMissing` | a renderable view whose every candidate file is missing | renderer's first linked template, line 1 |
 | `orisaiNette.latte.templateTypeRequired` | linked template with no `{templateType}`, renderer pairs the default class (opt-in) | line 1 |
@@ -1987,6 +2003,18 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   `beforeRender()`, a trait), so that route would have to stay OPEN — never false-closing a
   property just because no renderer write was found. Neither is implemented; both are paths, not
   promises.
+- **An uninitialized `#[TemplateVariable]` presenter property is claimed present (ruling).**
+  nette/application 3.2's `Presenter::sendTemplate()` copies only initialized `#[TemplateVariable]` properties
+  (`ComponentReflection::getTemplateVariables()`); `FactoryProvidedVars` claims every public non-static attributed
+  property of the renderer and its parents as present, because initialization is runtime state and the canonical
+  `#[TemplateVariable] public string $title;` assigned in an `action*()`/`render*()` method would otherwise be a
+  systematic false `Undefined variable`. The cost is a missed report when a presenter never assigns the property.
+- **Latte 3 compile limitations** — textual pairing of unknown tags, the `getFile()` origin check of vendor
+  throwables, unmodelled sandbox policies — are listed in [latte-versions.md](latte-versions.md#known-limitations).
+- **Latte 3 filters and functions registered as anonymous closures stay unknown.**
+  `CallableTargetResolution` resolves a named-method or plain-function closure to its declaration; an anonymous
+  closure (`{closure}`) has none, so a call through it reports `orisaiNette.latte.unknownFilter` ("Unknown Latte
+  filter" or "Unknown Latte function"), like a name nothing registers.
 - **A purely virtual `@property` tag on a `{templateType}` class contributes no parameter.** The
   declared surface is `ReflectionClass::getProperties(IS_PUBLIC)` — native reflection — so a
   class-level `@property Foo $x` with no backing property statement is invisible and `$x` is

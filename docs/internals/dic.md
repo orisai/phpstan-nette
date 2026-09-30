@@ -55,7 +55,9 @@ stale-cache incident (a freshly registered service reported as `orisaiNette.dic.
   container content change invalidates the whole result cache — including files PHPStan would
   otherwise replay from cache (e.g. a service *removed* from NEON without touching any analysed
   PHP now re-flags its call sites). A NEON edit that recompiles to identical container code (e.g.
-  comment-only) produces the same hash and keeps the cache valid. The registry loads containers
+  comment-only on nette/di 3.1) produces the same hash and keeps the cache valid. nette/di 3.2 embeds a hash of the
+  config content in the compiled class name (`Container_3c4ef1ebb9_80c80a31`), so there even a comment-only edit
+  changes the container file and invalidates the cache. The registry loads containers
   lazily at meta-computation time — after the loader has rebuilt them — so the hash always
   reflects current config. With no loader configured (`orisaiNette.dic.containerLoader: null`) the hash is the
   constant `inactive`.
@@ -109,7 +111,8 @@ object class names into three categories:
    runtime such a handle always points at one of the generated containers.
 3. **Unknown container** — any proper subclass of `Nette\DI\Container` whose class name the
    registry doesn't know, whether it matches the generated naming pattern
-   (`Container_[0-9a-f]{10}`, i.e. a generated container from a *foreign* build) or is a
+   (`Container_<hex>`, or `Container_<hex>_<hex>` on nette/di 3.2, i.e. a generated container from a *foreign*
+   build) or is a
    hand-written subclass. The registry says nothing about its service universe: all rules bail
    (reporting registry facts against a foreign container would be a false positive), all
    registry-based type extensions defer to native types, and the `hasService()` specifier plants

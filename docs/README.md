@@ -74,8 +74,17 @@ composer require --dev orisai/phpstan-nette
 ```
 
 The package requires `nette/forms`, `nette/application`, `nette/di`, `nette/component-model`, `nette/utils` and
-`latte/latte` 2.11 — Composer installs them with it. The extensions load classes from all of them at start, whether the
+`latte/latte` — Composer installs them with it. The extensions load classes from all of them at start, whether the
 matching feature is on or off.
+
+Supported versions:
+
+- Latte 2.11, 3.0 and 3.1. The installed version is detected; there is nothing to configure. Latte 3.2 and newer
+  cannot be installed with this release.
+- nette/application and nette/forms 3.1, 3.2 and 3.3 (3.3 installs with Latte 3.1 only). Latte 3.1 needs nette/forms
+  and nette/application 3.2.7 or newer — older releases do not support it; an unsupported pair is rejected with a
+  [validation](#validation) message.
+- PHP 7.4 to 8.4, as far as the installed Latte line allows.
 
 With [phpstan/extension-installer](https://github.com/phpstan/extension-installer) the extension is registered
 automatically. Otherwise, include it in your PHPStan config:
@@ -324,8 +333,8 @@ parameters:
 - `firstPartyPaths` – classes and templates checked by the template-linking rules; code outside is used, never reported
 - `templateTypeRequired` – reports a linked template without `{templateType}` whose renderer uses the default template
   class
-- `includeIsolation` – analyses file includes with explicit arguments only, the way Latte 3 isolates them; a local
-  migration aid, not a gate
+- `includeIsolation` – analyses file includes with explicit arguments only, the way Latte 3 isolates them; on Latte 2
+  a local migration aid, not a gate; an installed Latte 3 does not switch it on
 - `allowNarrowingOverride` – allows a `{varType}` to narrow the template's native declaration of the same variable
 - `reportWrongPhpDocTypeInVarType` – compares a mid-file `{varType}` also with the PHPDoc type of the assigned
   expression
@@ -473,8 +482,9 @@ All of them report `orisaiNette.latte.debugDump`.
   current template, one per line with its number of contexts, e.g. `app/templates/Home/default.latte:12 (include) - 1 context(s)`
 - `dumpLatteVarOrigin($var)` – the variable's type in every context the template is analysed in and where it comes from
   (`declared`, `arg`, `captured`, `topLevel`, `default`), plus the union of all contexts
-- `dumpLatteCustoms()` – filters, functions and macros read from your engine, plus the current template's
-  `{templateType}` filters and functions — or a note that no engine source is configured
+- `dumpLatteCustoms()` – filters, functions and macros (tags on Latte 3) read from your engine, the filters its
+  filter loaders answered, plus the current template's `{templateType}` filters and functions — or a note that no
+  engine source is configured
 
 Three more describe a PHP class — a presenter or a control. The argument must be a `::class` constant:
 
@@ -696,6 +706,24 @@ parameters:
 With neither, only Latte's built-in filters, functions and macros are known. Filters added at render time
 (`$template->addFilter()`) are not seen.
 
+On Latte 3, everything the engine's extensions register is read: their tags (including the `n:` attributes Latte
+derives from a paired tag), filters, functions and providers, plus the functions added with `addFunction()` and the
+engine's features. Templates then compile as your engine compiles them — strict types and strict parsing follow its
+settings. Without an engine source, Latte's own extensions, the Nette UI, forms, translator and (with nette/caching
+installed) cache extensions are used, with strict types off.
+
+Filter loaders (`addFilterLoader()`) are asked for every filter name your templates use which the engine does not
+register, the way Latte asks them at runtime; a filter a loader returns is checked like a registered one. A change of
+what the loaders answer invalidates the analysis.
+
+A filter or function registered as an anonymous closure (`fn ($s) => …`) has no declaration to check against and is
+reported as unknown. Register a method or a named function instead.
+
+Extensions are identified by their code: an extension from a Composer package by the package version, your own by
+every PHP file in its class's directory and below, so editing one of its node classes invalidates the analysis. Declare
+your extensions in a directory of their own — an extension in the project root directory is identified by the files of
+that directory only. A directory which cannot be read is reported (`orisaiNette.latte.customsHarvest`) and left out.
+
 ### Latte template customs
 
 A template declaring `{templateType}` gets that class's public methods tagged `@filter` or `@function` as its own
@@ -720,8 +748,9 @@ final class ProductTemplate extends Template
 ```
 
 On PHP 8, the `#[TemplateFilter]` and `#[TemplateFunction]` attributes work too, if PHPStan's `phpVersion` is 8.0 or
-higher. The customs apply only to templates declaring that class — never to other templates, even though at runtime
-they may leak there depending on render order.
+higher. Each Latte line is followed as it registers them: Latte 3.0 reads the attributes and the (deprecated) tags,
+Latte 3.1 the attributes only. The customs apply only to templates declaring that class — never to other templates,
+even though at runtime they may leak there depending on render order.
 
 ### Latte discovery formulas
 
@@ -816,6 +845,8 @@ Service lookups on `Nette\DI\Container` are typed from your compiled containers:
 
 - Only direct calls on `Nette\DI\Container` are analysed — generated accessors and parametric service managers are not.
 - Services added or removed at runtime (`addService()`, `removeService()`) are not tracked.
+- On nette/di 3.1, an imported service whose type the container does not export (`di › export › types`) is known by
+  name only: `getService()` types it as `object`.
 - The analysis sees the containers your loader builds — local config files included, so results may differ between
   machines.
 - Guard-based reports (`serviceMissingInBranch`) may be lost in complex flows; they are never made up.
@@ -885,7 +916,10 @@ template's lines. PHPStan's own rules (`variable.undefined`, `method.notFound`, 
 - filters and functions are checked against their real signatures, including your own
   ([engine loader](#latte-engine-loader), [template customs](#latte-template-customs))
 - the template factory's variables (`$user`, `$baseUrl`, `$basePath`, `$flashes`) are provided where the factory
-  provides them
+  provides them, and so are a presenter's `#[TemplateVariable]` properties (nette/application 3.2)
+- templates are compiled by the installed Latte — 2.11, 3.0 or 3.1 — so Latte 3-only tags such as `{linkBase}` and
+  `{templatePrint}` work there, and Latte 2 tags Latte 3 dropped (`{includeblock}`, `{status}`, `{use}`, and
+  `{ifCurrent}` with nette/application 3.3) are reported as compile errors
 - templates are linked to the presenters and controls rendering them; each render method of a control links its own
   template
 
@@ -898,7 +932,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 |--------------------------------------------------------------------------|-------------------------------------------------|----------------------------------------------------|
 | Template which does not compile                                          | `orisaiNette.latte.parseError`                  |                                                    |
 | Unknown macro or `n:` attribute                                          | `orisaiNette.latte.unknownMacro`                |                                                    |
-| Unknown filter                                                           | `orisaiNette.latte.unknownFilter`               |                                                    |
+| Unknown filter, or engine function with no declaration to check          | `orisaiNette.latte.unknownFilter`               |                                                    |
 | Unknown class in `{templateType}` or `{varType}`                         | `orisaiNette.latte.unknownType`                 |                                                    |
 | Include target not statically known                                      | `orisaiNette.latte.dynamicInclude`              |                                                    |
 | Extends or layout target not statically known                            | `orisaiNette.latte.dynamicExtends`              |                                                    |
@@ -920,6 +954,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | Template writing `$this->…` of the compiled template class                | `orisaiNette.latte.internalAccess`              |                                                    |
 | Deprecation raised by Latte while compiling                              | `orisaiNette.latte.deprecated`                  |                                                    |
 | Invariant of the analysis itself broken                                  | `orisaiNette.latte.internalError`               | please report it                                   |
+| Engine extension directory which cannot be read                          | `orisaiNette.latte.customsHarvest`              | once, on line 1 of the first template              |
 | Template class conflict between declaration and creation (PHP side)      | `orisaiNette.latte.pairingConflict`             | reported on the class                              |
 | Template class not statically resolvable (PHP side)                      | `orisaiNette.latte.pairingOpaque`               | reported on the class                              |
 | Template file not resolvable (PHP side)                                  | `orisaiNette.latte.fileDiscoveryOpaque`         | e.g. an override without a [formula](#latte-discovery-formulas) |
@@ -938,8 +973,22 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - Filters added at render time (`$template->addFilter()`) are not seen — they are reported as unknown.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - `orisaiNette.latte.templateMissing` is not reported for a renderer which links no template at all.
-- Latte 3: `{else}`, `{elseif}`, `{elseifset}` and `{case}` directly inside an unknown paired tag pass through with
-  it, as the branches of a custom conditional registered without an engine loader.
+- The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
+- With `includeIsolation` off, a file `{include}` or `{embed}` target is analysed with the includer's variables as
+  on Latte 2, also on Latte 3, which passes the explicit arguments only. A variable the target reads from the includer
+  is then not reported as undefined; nothing false is reported.
+- Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.
+- A presenter's `#[TemplateVariable]` property counts as present even when it is never initialized; at runtime such a
+  variable is missing.
+- An unknown tag (one no engine registers) passes through and is reported as `orisaiNette.latte.unknownMacro`; its
+  arguments are not analysed. On Latte 3:
+  - it is paired when the template contains its closing tag anywhere — also inside a Latte comment — or any generic
+    `{/}`; using one unknown tag both paired and unpaired in one template is a compile error, and so is `{foo}` left
+    open when some `{/}` elsewhere closes another tag
+  - `{else}`, `{elseif}`, `{elseifset}` and `{case}` directly inside an unknown paired tag pass through with it, as the
+    branches of a custom conditional registered without an engine loader; their conditions are not analysed either
+- An error thrown inside Latte or a Latte extension while compiling a template is reported as
+  `orisaiNette.latte.parseError` (`Thrown exception '…'`).
 
 ### Bridges features
 
