@@ -106,6 +106,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		self::ROLE_ELEM_TEMP => 'latteElem',
 	];
 
+	private bool $labelBound = false;
+
 	public function describePattern(): string
 	{
 		return '{form x}/{form $var}/{formContext x}/<form n:name> $form = formsStack[] = uiControl["x"] '
@@ -340,13 +342,17 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		if ($this->isVariableNamed($node->cond, $label)) {
 			$chain = $this->matchLabelChain($echo->exprs[0], self::LABEL_END, $label);
 
-			return $chain === null ? null : $echo;
+			return $chain === null || !$this->labelBound ? null : $echo;
 		}
 
 		$name = $this->matchLabelAssign($node->cond, $label);
 		if ($name === null || $this->matchLabelChain($echo->exprs[0], self::LABEL_START, $label) === null) {
+			$this->noteUnboundLabel($node->cond, $label);
+
 			return null;
 		}
+
+		$this->labelBound = true;
 
 		return [$this->labelAssign($name, $node->cond, $node), $echo];
 	}
@@ -364,7 +370,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		$label = self::TEMP_RENAMES[self::ROLE_LABEL_TEMP];
 		$end = $this->matchLabelChain($expr, self::LABEL_END, $label);
 		if ($end !== null && $this->isVariableNamed($end[0], $label)) {
-			return new Echo_([$end[1]], $node->getAttributes());
+			return $this->labelBound ? new Echo_([$end[1]], $node->getAttributes()) : null;
 		}
 
 		$start = $this->matchLabelChain($expr, self::LABEL_START, $label);
@@ -374,10 +380,24 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 		$name = $this->matchLabelAssign($start[0], $label);
 		if ($name === null) {
+			$this->noteUnboundLabel($start[0], $label);
+
 			return null;
 		}
 
+		$this->labelBound = true;
+
 		return [$this->labelAssign($name, $start[0], $node), new Echo_([$start[1]], $node->getAttributes())];
+	}
+
+	// Only a label temp bound to Helpers::formLabel() is never null, so only then is the closing
+	// tag's own guard (`if`, `?->`) droppable; a dynamic reference keeps the bridge's getLabel()
+	// assignment and both guards with it.
+	private function noteUnboundLabel(Expr $expr, string $label): void
+	{
+		if ($expr instanceof Assign && $this->isVariableNamed($expr->var, $label)) {
+			$this->labelBound = false;
+		}
 	}
 
 	// The call chain of a label echo down to the label temp or its assignment, rebuilt without the

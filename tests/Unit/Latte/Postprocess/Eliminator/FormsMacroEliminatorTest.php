@@ -324,6 +324,62 @@ PHP);
 PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
 	}
 
+	// A dynamic reference keeps the bridge's getLabel() assignment, so the label temp may still be
+	// null at the closing tag: both of its guards stay. A static reference right after it binds the
+	// temp again and drops them.
+	public function testDynamicPairedLabelKeepsItsGuardsOnTheMacrosShape(): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		$ʟ_input = is_object($ʟ_tmp = $dyn) ? $ʟ_tmp : end($this->global->formsStack)[$ʟ_tmp];
+		if ($ʟ_label = $ʟ_input->getLabel()) echo $ʟ_label->addAttributes(['class' => "c"])->startTag();
+		echo 'L';
+		if ($ʟ_label) echo $ʟ_label->endTag();
+		if ($ʟ_label = end($this->global->formsStack)["x"]->getLabel()) echo $ʟ_label->startTag();
+		echo 'S';
+		if ($ʟ_label) echo $ʟ_label->endTag();
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        $latteInput = \is_object($ʟ_tmp = $dyn) ? $ʟ_tmp : \end($this->global->formsStack)[$ʟ_tmp];
+        if ($latteLabel = $latteInput->getLabel()) {
+            echo $latteLabel->addAttributes(['class' => "c"])->startTag();
+        }
+        echo 'L';
+        if ($latteLabel) {
+            echo $latteLabel->endTag();
+        }
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
+        echo $latteLabel->startTag();
+        echo 'S';
+        echo $latteLabel->endTag();
+PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
+	}
+
+	/**
+	 * @dataProvider provideLatte3Lines
+	 */
+	public function testUnboundPairedLabelKeepsItsNullsafeGuardOnTheLatte3Shapes(string $latteLine): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		echo ($ʟ_label = $control->getLabel())?->startTag();
+		echo 'L';
+		echo $ʟ_label?->endTag();
+		echo ($ʟ_label = Nette\Bridges\FormsLatte\Runtime::item('x', $this->global)->getLabel())?->startTag();
+		echo 'S';
+		echo $ʟ_label?->endTag();
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        echo ($latteLabel = $control->getLabel())?->startTag();
+        echo 'L';
+        echo $latteLabel?->endTag();
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
+        echo $latteLabel->startTag();
+        echo 'S';
+        echo $latteLabel->endTag();
+PHP), self::eliminate(EliminatorRun::family($latteLine), $php));
+	}
+
 	public function testEveryBridgeDescribesItsOwnShape(): void
 	{
 		$macros = (new FormsMacroEliminator(EliminatorRun::family(ShapeFamily::LATTE_2)))->describePattern();
