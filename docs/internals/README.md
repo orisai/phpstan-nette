@@ -101,7 +101,8 @@ not match it, so each suite runs everything its versions support — a Latte 3 p
 group name throws.
 
 CI runs cs (PHP 8.3) and phpstan (PHP 7.4: `tools/phpstan.neon` analyses for PHP 7.4 up, and on PHP 8 the default set
-installs no `symfony/polyfill-php80`) on the default set, phpstan on `latte30` and `latte31`, the tests on every row above, the
+resolves vendor releases with PHP 8 native types, e.g. nette/neon's `mixed`, which that floor reads as class names) on
+the default set, phpstan on `latte30` and `latte31`, the tests on every row above, the
 corpus gate per profile (see [latte-versions.md](latte-versions.md#upstream-template-corpus)) and `make lint`.
 
 ### PHP 7.4 syntax
