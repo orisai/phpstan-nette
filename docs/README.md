@@ -940,6 +940,9 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - Filters added at render time (`$template->addFilter()`) are not seen — they are reported as unknown.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - `orisaiNette.latte.templateMissing` is not reported for a renderer which links no template at all.
+- Latte 3: an unknown paired tag lets `{else}`, `{elseif}`, `{elseifset}` and `{case}` it lexically encloses pass
+  through with it (a custom conditional without an engine loader); once passed through, the same name is accepted
+  anywhere else in that template. Outside any unknown pair these tags stay a compile error.
 
 ### Bridges features
 

@@ -130,6 +130,45 @@ final class Latte3CompileTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @return iterable<string, array{string}>
+	 */
+	public static function provideIntermediateTagsInsideUnknownPairs(): iterable
+	{
+		yield 'else' => ["{ifAllowed \$x}\na\n{else}\nb\n{/ifAllowed}\n"];
+
+		yield 'elseif and else' => ["{ifAllowed \$x}a{elseif \$y}b{else}c{/ifAllowed}\n"];
+
+		yield 'nested pair of the same name' => ["{ifAllowed \$x}{ifAllowed \$y}a{/ifAllowed}{else}b{/ifAllowed}\n"];
+
+		yield 'if owns its else inside the pair' => ["{ifAllowed \$x}{if \$a}a{else}b{/if}{/ifAllowed}\n"];
+	}
+
+	/**
+	 * @dataProvider provideIntermediateTagsInsideUnknownPairs
+	 */
+	public function testIntermediateTagInsideAnUnknownPairIsPassedThrough(string $source): void
+	{
+		$result = $this->compile($source);
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'ifAllowed'.", 1]],
+			self::describe($result->getDiagnostics()),
+		);
+	}
+
+	public function testIntermediateTagBetweenUnknownPairsIsAParseError(): void
+	{
+		$result = $this->compile("{ifAllowed \$x}a{/ifAllowed}\n{else}\n{ifAllowed \$y}b{/ifAllowed}\n");
+
+		self::assertNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.parseError', 'Unexpected tag {else} (on line 2 at column 1)', 2]],
+			self::describe($result->getDiagnostics()),
+		);
+	}
+
 	public function testUnknownNameUsedAsTagAndAttributeIsPassedThroughBoth(): void
 	{
 		$result = $this->compile("<p n:foo=\"\$a\">x</p>\n{foo \$b}y{/foo}\n");

@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
 use Latte\CompileException;
+use Latte\Compiler\Position;
 use Latte\Engine;
 use Latte\Essential\TranslatorExtension;
 use Latte\Extension;
@@ -26,9 +27,11 @@ use function array_merge;
 use function class_exists;
 use function get_class;
 use function preg_match;
+use function preg_match_all;
 use function preg_quote;
 use function str_replace;
 use function strpos;
+use function substr;
 use const E_USER_DEPRECATED;
 
 // Engine::parse() -> applyPasses() -> generate(), the same three steps Engine::compile() runs, over
@@ -128,6 +131,13 @@ final class Latte3Compiler
 					&& isset($passthroughTags[$m[1]])
 				) {
 					$passthroughTags[$m[1]] = true;
+
+					continue;
+				}
+
+				$intermediate = self::matchEnclosedIntermediate($message, $e->position, $source, $passthroughTags);
+				if ($intermediate !== null) {
+					$passthroughTags[$intermediate] = false;
 
 					continue;
 				}
@@ -342,6 +352,44 @@ final class Latte3Compiler
 	private function harvested(): HarvestedCustoms
 	{
 		return $this->harvester !== null ? $this->harvester->harvest() : HarvestedCustoms::empty();
+	}
+
+	// An unknown paired tag may be a custom conditional with its own {else}: an intermediate tag
+	// lexically inside one passes through with it, anywhere else it stays misplaced.
+
+	/**
+	 * @param array<string, bool> $passthroughTags
+	 */
+	private static function matchEnclosedIntermediate(
+		string $message,
+		?Position $position,
+		string $source,
+		array $passthroughTags
+	): ?string
+	{
+		if (
+			$position === null
+			|| preg_match('~^Unexpected tag \{(else|elseif|elseifset|case)(?![\w:.-])~', $message, $m) !== 1
+		) {
+			return null;
+		}
+
+		$before = substr($source, 0, $position->offset);
+		$after = substr($source, $position->offset);
+		foreach ($passthroughTags as $name => $paired) {
+			if (!$paired) {
+				continue;
+			}
+
+			$quoted = preg_quote($name, '~');
+			$opened = preg_match_all('~\{' . $quoted . '(?![\w:.-])~', $before);
+			$closed = preg_match_all('~\{/' . $quoted . '\s*\}~', $before);
+			if ($opened > $closed && preg_match('~\{/' . $quoted . '\s*\}~', $after) === 1) {
+				return $m[1];
+			}
+		}
+
+		return null;
 	}
 
 	// Only a name the engine has never heard of is a custom tag worth a passthrough: a known tag or
