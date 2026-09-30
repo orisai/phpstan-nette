@@ -628,9 +628,12 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 					],
 				$contexts[0]->getVars(),
 			);
+			$factory = 'factory:' . DefaultTemplate::class;
 			self::assertSame(
-				'factory:' . DefaultTemplate::class,
-				$contexts[0]->getProvenance()['flashes'],
+				self::typedDefaultTemplate()
+					? ['flashes' => $factory]
+					: ['user' => $factory, 'baseUrl' => $factory, 'basePath' => $factory, 'flashes' => $factory],
+				$contexts[0]->getProvenance(),
 			);
 		} finally {
 			FileSystem::delete($dir);
