@@ -833,10 +833,13 @@ throws `LogicException` on a decline; the answered callable is read back from th
 closure that would call the filter itself, so the Latte 2 reader calls the loaders
 `Engine::addFilterLoader()` wrapped (the `callback` of each wrapper closure in `_dynamic`, same
 order); a bare `addFilter(null, ...)` dynamic filter computes the filtered value itself, is no
-loader and is ignored. Case: Latte 3 asks with the name as written (filter names are
-case-sensitive there, and a filter name must start lowercase or it parses as a constant); Latte 2
-asks in lowercase, the key it files the answer under - a Latte 2 loader that only answers another
-spelling is not seen. Answers are memoised per asked name for the process. Limitation (Latte 2): a
+loader and is ignored. Case: both lines ask with the name as written, as the runtime does (a
+filter name must start lowercase on Latte 3 or it parses as a constant). Latte 3 is case-sensitive
+and stops there. Latte 2 files the answer under the lowercase name, after which every spelling
+reaches it, so a spelling the loaders decline is asked once more in lowercase: at runtime that
+spelling works only once another spelling has loaded the filter (and throws while none has), an
+order the analysis cannot know, so it types it. Answers are memoised per written name for the
+process. Limitation (Latte 2): a
 loader filter used only as a block filter (`{block|name}`) goes through `filterContent()`, which on
 Latte 2 never asks the loaders, so it works at runtime only when an earlier `{$x|name}` loaded it;
 the analysis types it either way.
@@ -847,7 +850,10 @@ names), asks the probe for those the static filters lack, and `HarvestedCustoms:
 adds a `loaderFilter` line per answered name with the callable's descriptor and its declaring file's
 `sha1_file()` (a closure's file and lines). A loader that starts or stops answering a name the
 templates use therefore changes both the result-cache meta and the compile-cache key; the same
-memoised probe serves the analysis, so the salt and the findings agree. `dumpLatteCustoms()` lists
+memoised probe serves the analysis, so the salt and the findings agree. When the scan fails (a
+template outside the project root makes `LatteUniverse::files()` throw) the loaders are dropped
+instead - their filters report unknown rather than risk a stale cache - and `dumpLatteCustoms()`
+shows a `harvest note:` saying so. `dumpLatteCustoms()` lists
 those names under `loader filters:` when the engine has loaders.
 
 ### Typed filters and functions

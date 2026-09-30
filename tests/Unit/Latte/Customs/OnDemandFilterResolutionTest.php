@@ -49,7 +49,37 @@ final class OnDemandFilterResolutionTest extends BaseTestCase
 		self::assertNull($table->resolveForTemplate('nope', null, null, 'nope'));
 	}
 
-	public function testLoaderIsAskedWithTheCaseTheLatteLineUses(): void
+	public function testLoaderIsAskedWithTheNameAsWritten(): void
+	{
+		$table = $this->filterTable($this->harvest(self::ENGINE_LOADER, "{\$a|formatDyn}\n"));
+
+		self::assertSame(
+			[FixtureLoaderFilters::class, 'dyn', false, false, true],
+			$table->resolveForTemplate('formatdyn', null, null, 'formatDyn'),
+		);
+		self::assertSame(
+			['formatDyn'],
+			array_keys($this->harvest(self::ENGINE_LOADER, "{\$a|formatDyn}\n")->getLoaderFilters()),
+		);
+	}
+
+	// Latte 2 files a loader's answer under the lowercase name, so a spelling the loader declines
+	// works at runtime once another spelling has loaded the filter - and throws while none has. The
+	// analysis cannot know the render order and types it through the lowercase fallback; Latte 3 is
+	// case-sensitive and has no fallback.
+	public function testDeclinedSpellingFallsBackToLowercaseOnLatte2Only(): void
+	{
+		$table = $this->filterTable($this->harvest(self::ENGINE_LOADER, "{\$a|dYn}\n"));
+
+		$resolved = $table->resolveForTemplate('dyn', null, null, 'dYn');
+		if ($this->isLatte2()) {
+			self::assertSame([FixtureLoaderFilters::class, 'dyn', false, false, true], $resolved);
+		} else {
+			self::assertNull($resolved);
+		}
+	}
+
+	public function testDeclinedSpellingAfterTheLoadedOneFollowsTheLatteLine(): void
 	{
 		$table = $this->filterTable($this->harvest(self::ENGINE_LOADER, "{\$a|dyn}\n{\$a|dYn}\n"));
 
@@ -75,6 +105,24 @@ final class OnDemandFilterResolutionTest extends BaseTestCase
 			$this->harvest(self::ENGINE_LOADER, "{\$b|dyn}\n")->getSaltHash(),
 			$harvested->getSaltHash(),
 		);
+	}
+
+	public function testFailedTemplateScanDropsTheLoaders(): void
+	{
+		FileSystem::write($this->dir . '/outside/template.latte', "{\$a|dyn}\n");
+
+		$harvested = TestAdapter::harvester(
+			new EngineSource(null, self::ENGINE_LOADER),
+			new LatteUniverse([$this->dir . '/outside'], $this->dir . '/root'),
+		)->harvest();
+
+		self::assertNull($harvested->getFilterLoaders());
+		self::assertSame([], $harvested->getLoaderFilters());
+		self::assertSame(
+			['filter loaders are not asked - the analysed templates could not be scanned for filter names'],
+			$harvested->getSourceNotes(),
+		);
+		self::assertNull($this->filterTable($harvested)->resolveForTemplate('dyn', null, null, 'dyn'));
 	}
 
 	public function testNoLoaderKeepsTheStaticHarvest(): void

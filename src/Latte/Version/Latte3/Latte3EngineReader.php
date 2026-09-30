@@ -85,7 +85,7 @@ final class Latte3EngineReader implements LatteEngineReader
 
 				return $static[$name][0] ?? null;
 			},
-			true,
+			false,
 		);
 	}
 

@@ -10,7 +10,9 @@ use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureLoaderFilters;
 
 // A filter the engine's filter loader answers is checked against the callable it answers with, on
-// every Latte line; a name the loader declines stays unknown, and Latte 3 asks it case-sensitively.
+// every Latte line; a name the loader declines stays unknown. Loaders are asked with the name as
+// written (formatDyn is a camelCase map lookup). Latte 2 files an answer under the lowercase name,
+// so dYn after dyn works there at runtime (the lowercase fallback); Latte 3 is case-sensitive.
 final class OnDemandFilterSpawnTest extends BaseTestCase
 {
 
@@ -34,7 +36,7 @@ final class OnDemandFilterSpawnTest extends BaseTestCase
 	{
 		$this->project->write(
 			'src/filters.latte',
-			"{varType string \$s}\n{varType int \$i}\n{\$s|dyn}\n{\$i|dyn}\n{\$s|nope}\n{\$s|dYn}\n",
+			"{varType string \$s}\n{varType int \$i}\n{\$s|dyn}\n{\$i|dyn}\n{\$s|nope}\n{\$s|dYn}\n{\$s|formatDyn}\n",
 		);
 
 		$expected = [

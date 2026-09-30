@@ -7,8 +7,6 @@ use Latte\Macros\MacroSet;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
-use ReflectionFunctionAbstract;
-use ReflectionMethod;
 use Throwable;
 use function array_keys;
 use function get_class;
@@ -19,9 +17,7 @@ use function is_string;
 use function ksort;
 use function sha1;
 use function sha1_file;
-use function strpos;
 use function strtolower;
-use function substr;
 use const SORT_STRING;
 
 final class HarvestedCustoms
@@ -75,7 +71,7 @@ final class HarvestedCustoms
 	private ?FilterLoaderProbe $filterLoaders;
 
 	// The loader answers for the filter names the analysed templates use (withLoaderFilters()),
-	// keyed by the name the loaders were asked; they reach the salt with their declaring file's hash.
+	// keyed by the name as written; they reach the salt with their declaring file's hash.
 	/** @var array<string, callable(mixed...): mixed> */
 	private array $loaderFilters;
 
@@ -272,7 +268,7 @@ final class HarvestedCustoms
 
 			$callable = $filterLoaders->resolve($writtenName);
 			if ($callable !== null) {
-				$loaderFilters[$filterLoaders->queryName($writtenName)] = $callable;
+				$loaderFilters[$writtenName] = $callable;
 			}
 		}
 
@@ -293,6 +289,27 @@ final class HarvestedCustoms
 			$this->sourceProblems,
 			$filterLoaders,
 			$loaderFilters,
+		);
+	}
+
+	public function withoutFilterLoaders(string $note): self
+	{
+		$notes = $this->sourceNotes;
+		$notes[] = $note;
+
+		return new self(
+			$this->filters,
+			$this->functions,
+			$this->macroSets,
+			$this->macroClassesByName,
+			$this->filterOriginalNames,
+			$this->functionOriginalNames,
+			$this->extensions,
+			$this->features,
+			$this->providerTypes,
+			$this->extensionSources,
+			$notes,
+			$this->sourceProblems,
 		);
 	}
 
@@ -526,7 +543,7 @@ final class HarvestedCustoms
 	private static function describeCallableSource(callable $callable): string
 	{
 		try {
-			$fileName = self::callableReflection($callable)->getFileName();
+			$fileName = (new ReflectionFunction(Closure::fromCallable($callable)))->getFileName();
 		} catch (Throwable $e) {
 			return 'unreflectable';
 		}
@@ -538,39 +555,6 @@ final class HarvestedCustoms
 		$hash = sha1_file($fileName);
 
 		return $hash !== false ? $hash : 'unreadable';
-	}
-
-	/**
-	 * @param callable(mixed...): mixed $callable
-	 */
-	private static function callableReflection(callable $callable): ReflectionFunctionAbstract
-	{
-		if (is_array($callable)) {
-			[$objectOrClass, $method] = $callable;
-
-			return new ReflectionMethod($objectOrClass, $method);
-		}
-
-		if (is_string($callable)) {
-			$separator = strpos($callable, '::');
-
-			return $separator === false
-				? new ReflectionFunction($callable)
-				: new ReflectionMethod(
-					(string) substr($callable, 0, $separator),
-					(string) substr($callable, $separator + 2),
-				);
-		}
-
-		if ($callable instanceof Closure) {
-			return new ReflectionFunction($callable);
-		}
-
-		if (is_object($callable)) {
-			return new ReflectionMethod($callable, '__invoke');
-		}
-
-		throw new ReflectionException('Unsupported callable.');
 	}
 
 	/**

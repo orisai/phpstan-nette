@@ -48,7 +48,7 @@ final class Latte2EngineReader implements LatteEngineReader
 
 	// Engine::addFilterLoader() wraps its loader in a dynamic filter that adds the loader's answer as
 	// a static filter, which FilterExecutor then calls; the runtime asks those wrappers in _dynamic
-	// order and the first answer wins. A bare addFilter(null, ...) dynamic filter computes the
+	// order with the name as written and the first answer wins, filed under the lowercase name. A bare addFilter(null, ...) dynamic filter computes the
 	// filtered value itself instead of naming a callable, so it is no loader and is skipped.
 	private function filterLoaders(Engine $engine): ?FilterLoaderProbe
 	{
@@ -87,7 +87,7 @@ final class Latte2EngineReader implements LatteEngineReader
 
 				return null;
 			},
-			false,
+			true,
 		);
 	}
 

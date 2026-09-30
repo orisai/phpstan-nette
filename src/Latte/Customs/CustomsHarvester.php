@@ -80,11 +80,15 @@ final class CustomsHarvester
 			return $harvested;
 		}
 
+		// Without the salt lines a loader answer could change unseen by both caches, so a failed scan
+		// drops the loaders: their filters report unknown rather than serve a stale analysis.
 		return $this->contained(
 			static fn (): HarvestedCustoms => $harvested->withLoaderFilters(
 				FilterNameScan::scan($universe->files()),
 			),
-		) ?? $harvested;
+		) ?? $harvested->withoutFilterLoaders(
+			'filter loaders are not asked - the analysed templates could not be scanned for filter names',
+		);
 	}
 
 	// No per-template line exists here - harvest runs once per analysis, not once per compiled

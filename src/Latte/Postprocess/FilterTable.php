@@ -68,7 +68,7 @@ final class FilterTable
 	// no real instance at analysis time, see the helper's own docblock).
 
 	// A name neither table knows goes to the harvested engine's filter loaders, asked with the name as
-	// written ($writtenName; FilterLoaderProbe applies the Latte line's case rule).
+	// written ($writtenName; see FilterLoaderProbe for Latte 2's lowercase fallback).
 
 	/**
 	 * @return array{string, string, bool, bool, bool}|null
@@ -107,13 +107,12 @@ final class FilterTable
 			return null;
 		}
 
-		$key = $filterLoaders->queryName($writtenName);
-		if (!array_key_exists($key, $this->loaderEntries)) {
+		if (!array_key_exists($writtenName, $this->loaderEntries)) {
 			$callable = $filterLoaders->resolve($writtenName);
-			$this->loaderEntries[$key] = $callable !== null ? $this->loaderEntry($callable) : null;
+			$this->loaderEntries[$writtenName] = $callable !== null ? $this->loaderEntry($callable) : null;
 		}
 
-		return $this->loaderEntries[$key];
+		return $this->loaderEntries[$writtenName];
 	}
 
 	/**
