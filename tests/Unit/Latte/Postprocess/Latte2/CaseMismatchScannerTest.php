@@ -5,7 +5,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess\Latte2;
 use Latte\Parser;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
-use OriPhpstan\Nette\Latte\Postprocess\CaseMismatchScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\CaseMismatchScanner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
 /**

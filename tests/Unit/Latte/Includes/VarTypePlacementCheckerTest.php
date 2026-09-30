@@ -3,8 +3,8 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\VarTypePlacementChecker;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_map;
 

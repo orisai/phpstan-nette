@@ -4,7 +4,7 @@ namespace OriPhpstan\Nette\Latte\Customs;
 
 use function array_keys;
 
-// Shared by CustomsHarvester (harvested filters/functions) and Postprocess\CaseMismatchScanner
+// Shared by CustomsHarvester (harvested filters/functions) and Version\Latte2\CaseMismatchScanner
 // (built-in Defaults filters/functions): Latte's own Defaults deliberately registers some filters
 // under two spellings of the same lowercase name (dataStream/datastream, stripTags/striptags, ...)
 // - a naive lower-to-orig flip would pick one arbitrarily and false-positive a case-mismatch

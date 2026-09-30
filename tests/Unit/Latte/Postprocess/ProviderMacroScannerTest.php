@@ -2,9 +2,9 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Postprocess\ProviderMacroScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\PipelineFactory;

@@ -2,11 +2,11 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Postprocess\DependencyEdgeEmitter;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassMethod;

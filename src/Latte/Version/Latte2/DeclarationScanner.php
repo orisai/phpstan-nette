@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Declarations;
+namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use InvalidArgumentException;
 use Latte\CompileException;
@@ -8,8 +8,9 @@ use Latte\MacroTokens;
 use Latte\Parser;
 use Latte\RegexpException;
 use Latte\Token;
+use OriPhpstan\Nette\Latte\Declarations\Declarations;
+use OriPhpstan\Nette\Latte\Declarations\VarTypePlacement;
 use OriPhpstan\Nette\Latte\Includes\BlockBodyTracker;
-use OriPhpstan\Nette\Latte\Includes\MacroPairing;
 use function array_key_exists;
 use function array_keys;
 use function array_pop;

@@ -30,16 +30,16 @@ parameters:
 			path: ../tests/Unit/Latte/Version/Latte2/Latte2AdapterTest.php
 		-
 			identifiers: [new.internalClass, method.internalClass]
-			path: ../src/Latte/Postprocess/CaseMismatchScanner.php
+			path: ../src/Latte/Version/Latte2/CaseMismatchScanner.php
 		-
 			identifiers: [new.internalClass, method.internalClass]
-			path: ../src/Latte/Compile/LatteCompiler.php
+			path: ../src/Latte/Version/Latte2/LatteCompiler.php
 		-
 			identifier: method.internalClass
-			path: ../src/Latte/Declarations/DeclarationScanner.php
+			path: ../src/Latte/Version/Latte2/DeclarationScanner.php
 		-
 			identifier: method.internalClass
-			path: ../src/Latte/Includes/TemplateFactExtractor.php
+			path: ../src/Latte/Version/Latte2/TemplateFactExtractor.php
 		-
 			identifier: method.internalClass
 			path: ../src/Latte/Version/Latte2/MacroTokensArguments.php

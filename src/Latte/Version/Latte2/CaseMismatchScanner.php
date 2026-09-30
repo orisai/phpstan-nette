@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Postprocess;
+namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use Latte\Runtime\Defaults;
 use Latte\Token;

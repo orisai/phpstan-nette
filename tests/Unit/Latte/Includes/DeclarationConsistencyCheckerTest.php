@@ -4,10 +4,10 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\DeclarationConsistencyChecker;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;

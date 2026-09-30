@@ -12,7 +12,6 @@ use OriPhpstan\Nette\Latte\Forms\ComponentNameSyntax;
 use OriPhpstan\Nette\Latte\Forms\ControlReference;
 use OriPhpstan\Nette\Latte\Forms\ExistenceGuard;
 use OriPhpstan\Nette\Latte\Forms\FormSite;
-use OriPhpstan\Nette\Latte\Includes\MacroPairing;
 use function array_pop;
 use function array_reverse;
 use function array_splice;

@@ -2,10 +2,10 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Customs;
 
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;

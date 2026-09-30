@@ -5,7 +5,7 @@ namespace OriPhpstan\Nette\Latte\Version;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
 
 // The shared services an adapter is built from: the compiler's inputs and the one DeclarationScanner
 // instance whose memo every declaration consumer shares.

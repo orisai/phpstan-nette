@@ -3,10 +3,10 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Version;
 
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\TemplateFactExtractor;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
 /**

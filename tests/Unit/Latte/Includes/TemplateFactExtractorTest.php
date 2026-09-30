@@ -3,8 +3,8 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes;
 
 use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
+use OriPhpstan\Nette\Latte\Version\Latte2\TemplateFactExtractor;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
 /**
@@ -218,7 +218,7 @@ final class TemplateFactExtractorTest extends BaseTestCase
 	// g_/ng_/dg_/dng_ (h4kuna\Gettext\Macros\Gettext, installed natively as of the harvested-macros
 	// task) register with a single addMacro() argument ($end === null), so Latte always treats them
 	// as self-closing - unlike CoreMacros' own '_' (conditionally a pair tag when args are empty,
-	// see isGettextShorthand()). None of the four belong in PAIR_TAGS; this re-validates that a
+	// see isGettextShorthand()). None of the four belong in PairedTags::NAMES; this re-validates that a
 	// {var} right after one stays at depth 0 regardless, proving the rider needs no change for the
 	// wider family even though extraction never touches the compiler/installed macro sets at all.
 	public function testGettextFamilyShorthandNamesNeverOpenABodyRegardlessOfArgs(): void

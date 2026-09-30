@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Compile;
+namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use Latte\CompileException;
 use Latte\Compiler;
@@ -16,9 +16,13 @@ use Nette\Bridges\CacheLatte\CacheMacro;
 use Nette\Bridges\FormsLatte\FormMacros;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
+use OriPhpstan\Nette\Latte\Compile\CompileResult;
+use OriPhpstan\Nette\Latte\Compile\Diagnostic;
+use OriPhpstan\Nette\Latte\Compile\GeneratedSyntaxCheck;
+use OriPhpstan\Nette\Latte\Compile\VendorCompileFailure;
+use OriPhpstan\Nette\Latte\Compile\VendorErrorContainment;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
-use OriPhpstan\Nette\Latte\Postprocess\CaseMismatchScanner;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Throwable;
 use function array_keys;

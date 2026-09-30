@@ -10,7 +10,7 @@ use Latte\Compiler\Nodes\Html\ElementNode;
 use Latte\Compiler\Nodes\TemplateNode;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Essential\Nodes\ForeachNode;
-use OriPhpstan\Nette\Latte\Includes\MacroPairing;
+use OriPhpstan\Nette\Latte\Includes\PairedTags;
 use function count;
 use function in_array;
 use function max;
@@ -55,7 +55,7 @@ final class TemplateEventStream
 			$this->emit(TemplateEvent::tag(
 				$node,
 				$record,
-				$record->hasBody() && in_array($record->getName(), MacroPairing::PAIR_TAGS, true),
+				$record->hasBody() && in_array($record->getName(), PairedTags::NAMES, true),
 			));
 			foreach ($record->getIntermediateTags() as $tag) {
 				$this->emit(TemplateEvent::intermediate($tag));
@@ -95,7 +95,7 @@ final class TemplateEventStream
 			if (!$record->isAttribute() && $closing !== null) {
 				$this->emit(TemplateEvent::close(
 					$closing,
-					$closing->name === '' || in_array($closing->name, MacroPairing::PAIR_TAGS, true),
+					$closing->name === '' || in_array($closing->name, PairedTags::NAMES, true),
 				));
 			}
 

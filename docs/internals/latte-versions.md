@@ -194,7 +194,7 @@ facts are cached under the content-addressed `latte-facts|<family>` node id and 
   usage grew by `COLLECT_AFTER_BYTES` (64 MB) since the last collection; collecting after every parse is about eight
   times slower.
 
-Latte 2 (`Compile\LatteCompiler`) got the same treatment where it applies: throwables through
+Latte 2 (`Version\Latte2\LatteCompiler`) got the same treatment where it applies: throwables through
 `VendorCompileFailure`, `GeneratedSyntaxCheck` with the `/* line N */` pattern, textual pairing of passthrough tags,
 the JavaScript/CSS rule, and a token clone per retry (Latte 2's compiler rewrites tokens in place).
 

@@ -171,7 +171,7 @@ services:
 		autowired: false
 
 	latteDeclarationScanner:
-		class: OriPhpstan\Nette\Latte\Declarations\DeclarationScanner
+		class: OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner
 		autowired: false
 
 	# The one place that knows which Latte is installed: compile, token facts, engine harvest, line

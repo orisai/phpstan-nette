@@ -4,11 +4,11 @@ namespace OriPhpstan\Nette\Latte\Version;
 
 use Latte\Engine;
 use LogicException;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Includes\TemplateFactExtractor;
 use OriPhpstan\Nette\Latte\Version\Latte2\FormSiteScanner;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2Adapter;
 use OriPhpstan\Nette\Latte\Version\Latte2\Latte2EngineReader;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
+use OriPhpstan\Nette\Latte\Version\Latte2\TemplateFactExtractor;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use ReflectionMethod;
 

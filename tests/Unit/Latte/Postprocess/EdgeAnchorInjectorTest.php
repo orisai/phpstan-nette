@@ -3,11 +3,11 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
 use OriPhpstan\Nette\Latte\Postprocess\EdgeAnchorInjector;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\BinaryOp\Concat;

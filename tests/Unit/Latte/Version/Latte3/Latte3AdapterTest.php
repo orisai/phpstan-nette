@@ -2,9 +2,9 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Version\Latte3;
 
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Version\Latte3\Latte3Adapter;
 use OriPhpstan\Nette\Latte\Version\Latte3\Latte3Compiler;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;

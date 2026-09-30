@@ -1,8 +1,9 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Includes;
+namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use Latte\Token;
+use OriPhpstan\Nette\Latte\Includes\PairedTags;
 use function in_array;
 use function trim;
 
@@ -12,15 +13,6 @@ use function trim;
 // same answer, so it lives here once rather than in each walk.
 final class MacroPairing
 {
-
-	// Tags that always appear as {name}...{/name} pairs; a name missing here is treated as a
-	// single tag and never opens a nesting level, so {var} inside it would wrongly count as top-level.
-	public const PAIR_TAGS = [
-		'if', 'ifset', 'ifcontent', 'ifchanged', 'switch', 'foreach', 'iterateWhile',
-		'for', 'while', 'first', 'last', 'sep', 'try', '_', 'translate', 'capture',
-		'spaceless', 'tag', 'snippet', 'block', 'define', 'embed', 'snippetArea',
-		'ifCurrent', 'form', 'formContext', 'formContainer', 'label', 'name', 'cache',
-	];
 
 	// Tags registered with Macro::AUTO_EMPTY (vendor/nette/forms/src/Bridges/FormsLatte/FormMacros.php:37);
 	// resolved via forward lookahead by vendor Latte\Compiler\Compiler::processMacroTag().
@@ -41,7 +33,7 @@ final class MacroPairing
 		$token = $tokens[$index];
 
 		return !$token->empty
-			&& in_array($token->name, self::PAIR_TAGS, true)
+			&& in_array($token->name, PairedTags::NAMES, true)
 			&& !self::isGettextShorthand($token)
 			&& !(in_array($token->name, self::AUTO_EMPTY_TAGS, true) && self::isAutoEmptySelfClosing(
 				$tokens,
@@ -54,7 +46,7 @@ final class MacroPairing
 	// open pair tag regardless of its name.
 	public static function closesBody(Token $token): bool
 	{
-		return $token->name === '' || in_array($token->name, self::PAIR_TAGS, true);
+		return $token->name === '' || in_array($token->name, PairedTags::NAMES, true);
 	}
 
 	/**

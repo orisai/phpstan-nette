@@ -3,14 +3,14 @@
 namespace Tests\OriPhpstan\Nette\Integration\Latte;
 
 use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;

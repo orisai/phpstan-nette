@@ -2,7 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Declarations;
 
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
 /**

@@ -7,17 +7,10 @@ parameters:
 	phpVersion: 80400
 	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
 
-	# Code built on Latte 2 internals is analysed against Latte 2 by phpstan.latte2.neon.
+	# Latte-2-only code is analysed against Latte 2 by phpstan.latte2.neon.
 	excludePaths:
 		analyse:
 			- ../src/Latte/Version/Latte2
-			- ../src/Latte/Compile/DeterministicCacheMacro.php
-			- ../src/Latte/Compile/LatteCompiler.php
-			- ../src/Latte/Compile/PassthroughMacro.php
-			- ../src/Latte/Declarations/DeclarationScanner.php
-			- ../src/Latte/Includes/MacroPairing.php
-			- ../src/Latte/Includes/TemplateFactExtractor.php
-			- ../src/Latte/Postprocess/CaseMismatchScanner.php
 			- ../tests/*/Latte2/*
 
 	ignoreErrors:

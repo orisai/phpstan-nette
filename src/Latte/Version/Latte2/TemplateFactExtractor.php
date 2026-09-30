@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Includes;
+namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use InvalidArgumentException;
 use Latte\CompileException;
@@ -8,7 +8,10 @@ use Latte\MacroTokens;
 use Latte\Parser;
 use Latte\RegexpException;
 use Latte\Token;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Includes\BlockBodyTracker;
+use OriPhpstan\Nette\Latte\Includes\IncludePath;
+use OriPhpstan\Nette\Latte\Includes\IncludeTarget;
+use OriPhpstan\Nette\Latte\Includes\TemplateFacts;
 use function in_array;
 use function ltrim;
 use function preg_match;

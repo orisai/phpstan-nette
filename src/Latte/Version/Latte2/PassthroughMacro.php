@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Compile;
+namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
 use Latte;
 

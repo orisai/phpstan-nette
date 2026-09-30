@@ -4,10 +4,10 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
-use OriPhpstan\Nette\Latte\Compile\LatteCompiler;
-use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
+use OriPhpstan\Nette\Latte\Version\Latte2\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Version\Latte2\LatteCompiler;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
