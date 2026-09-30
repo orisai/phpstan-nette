@@ -3,18 +3,11 @@
 namespace OriPhpstan\Nette\Latte\Customs;
 
 use Closure;
-use FilesystemIterator;
 use Latte\Macros\MacroSet;
-use OriPhpstan\Nette\Support\ProjectInstalledVersions;
-use RecursiveCallbackFilterIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
-use SplFileInfo;
 use function array_keys;
-use function dirname;
 use function get_class;
 use function implode;
 use function is_array;
@@ -23,8 +16,6 @@ use function is_string;
 use function ksort;
 use function sha1;
 use function sha1_file;
-use function strlen;
-use function substr;
 use const SORT_STRING;
 
 final class HarvestedCustoms
@@ -64,6 +55,14 @@ final class HarvestedCustoms
 	/** @var array<string, string> */
 	private array $providerTypes;
 
+	// The salt walk's findings (ExtensionSourceSalt); the per-class sources it produced only reach the
+	// salt, where a class without one is identified by its declaring file.
+	/** @var list<string> */
+	private array $sourceNotes;
+
+	/** @var list<string> */
+	private array $sourceProblems;
+
 	private string $saltHash;
 
 	/**
@@ -76,6 +75,9 @@ final class HarvestedCustoms
 	 * @param list<object> $extensions
 	 * @param array<string, bool> $features
 	 * @param array<string, string> $providerTypes
+	 * @param array<string, string> $extensionSources
+	 * @param list<string> $sourceNotes
+	 * @param list<string> $sourceProblems
 	 */
 	public function __construct(
 		array $filters,
@@ -86,7 +88,10 @@ final class HarvestedCustoms
 		array $functionOriginalNames,
 		array $extensions = [],
 		array $features = [],
-		array $providerTypes = []
+		array $providerTypes = [],
+		array $extensionSources = [],
+		array $sourceNotes = [],
+		array $sourceProblems = []
 	)
 	{
 		$this->filters = $filters;
@@ -98,6 +103,8 @@ final class HarvestedCustoms
 		$this->extensions = $extensions;
 		$this->features = $features;
 		$this->providerTypes = $providerTypes;
+		$this->sourceNotes = $sourceNotes;
+		$this->sourceProblems = $sourceProblems;
 		$this->saltHash = self::computeSaltHash(
 			$filters,
 			$functions,
@@ -107,6 +114,7 @@ final class HarvestedCustoms
 			$extensions,
 			$features,
 			$providerTypes,
+			$extensionSources,
 		);
 	}
 
@@ -151,6 +159,61 @@ final class HarvestedCustoms
 			$features,
 			$providerTypes,
 		);
+	}
+
+	public function withExtensionSources(ExtensionSourceSalt $sourceSalt): self
+	{
+		$sources = [];
+		$notes = [];
+		$problems = [];
+		foreach ($this->extensions as $extension) {
+			$class = get_class($extension);
+			if (isset($sources[$class])) {
+				continue;
+			}
+
+			$source = $sourceSalt->describe($class);
+			$sources[$class] = $source['salt'];
+			if ($source['shallow']) {
+				$notes[] = "extension $class is salted shallowly (only its own directory's PHP files) - declare "
+					. 'extensions in a directory of their own, below the project root';
+			}
+
+			foreach ($source['unreadable'] as $directory) {
+				$problems[] = "directory $directory under extension $class is unreadable";
+			}
+		}
+
+		return new self(
+			$this->filters,
+			$this->functions,
+			$this->macroSets,
+			$this->macroClassesByName,
+			$this->filterOriginalNames,
+			$this->functionOriginalNames,
+			$this->extensions,
+			$this->features,
+			$this->providerTypes,
+			$sources,
+			$notes,
+			$problems,
+		);
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public function getSourceNotes(): array
+	{
+		return $this->sourceNotes;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public function getSourceProblems(): array
+	{
+		return $this->sourceProblems;
 	}
 
 	public function isExtensionHarvest(): bool
@@ -244,6 +307,7 @@ final class HarvestedCustoms
 	 * @param list<object> $extensions
 	 * @param array<string, bool> $features
 	 * @param array<string, string> $providerTypes
+	 * @param array<string, string> $extensionSources
 	 */
 	private static function computeSaltHash(
 		array $filters,
@@ -253,7 +317,8 @@ final class HarvestedCustoms
 		array $functionOriginalNames,
 		array $extensions,
 		array $features,
-		array $providerTypes
+		array $providerTypes,
+		array $extensionSources
 	): string
 	{
 		$lines = self::canonicalCallableLines('filter', $filters);
@@ -274,11 +339,10 @@ final class HarvestedCustoms
 			$lines[] = $line;
 		}
 
-		$descriptions = [];
 		foreach ($extensions as $index => $extension) {
 			$class = get_class($extension);
-			$descriptions[$class] ??= self::describeExtensionClass($class);
-			$lines[] = "extension\x1f" . $index . "\x1f" . $class . "\x1f" . $descriptions[$class];
+			$lines[] = "extension\x1f" . $index . "\x1f" . $class . "\x1f"
+				. ($extensionSources[$class] ?? self::describeMacroClass($class));
 		}
 
 		ksort($features, SORT_STRING);
@@ -338,67 +402,6 @@ final class HarvestedCustoms
 		$hash = sha1_file($fileName);
 
 		return $hash !== false ? $hash : 'unreadable';
-	}
-
-	// A Latte 3 extension's generated code lives in its node classes as much as in the extension
-	// itself. An installed package is identified by its version; a first-party extension by every
-	// PHP file under its class's directory, so an edited node next to it or below it changes the salt.
-
-	/**
-	 * @param class-string $class
-	 */
-	private static function describeExtensionClass(string $class): string
-	{
-		try {
-			$fileName = (new ReflectionClass($class))->getFileName();
-		} catch (ReflectionException $e) {
-			return 'unreflectable';
-		}
-
-		if ($fileName === false) {
-			return 'internal';
-		}
-
-		$installed = ProjectInstalledVersions::get();
-		$package = $installed->packageContaining($fileName);
-		if ($package !== null) {
-			return 'package:' . $package . '@' . ($installed->getVersion($package) ?? '?')
-				. '#' . ($installed->getReference($package) ?? '?');
-		}
-
-		return 'tree:' . self::describeDirectory(dirname($fileName), $installed);
-	}
-
-	// Installed packages nested in the tree (a vendor directory beside the extension) are left out;
-	// an extension from one of them is salted by its version instead.
-	private static function describeDirectory(string $directory, ProjectInstalledVersions $installed): string
-	{
-		$files = [];
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveCallbackFilterIterator(
-				new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
-				static fn (SplFileInfo $file): bool => !$file->isDir()
-					|| $installed->packageContaining($file->getPathname()) === null,
-			),
-		);
-		foreach ($iterator as $file) {
-			if (!$file instanceof SplFileInfo || !$file->isFile() || $file->getExtension() !== 'php') {
-				continue;
-			}
-
-			$path = $file->getPathname();
-			$hash = sha1_file($path);
-			$files[(string) substr($path, strlen($directory))] = $hash !== false ? $hash : 'unreadable';
-		}
-
-		ksort($files, SORT_STRING);
-
-		$lines = [];
-		foreach ($files as $relative => $hash) {
-			$lines[] = $relative . "\x1f" . $hash;
-		}
-
-		return sha1(implode("\n", $lines));
 	}
 
 	/**

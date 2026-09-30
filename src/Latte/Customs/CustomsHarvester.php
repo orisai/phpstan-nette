@@ -14,12 +14,19 @@ final class CustomsHarvester
 
 	private LatteVersionAdapterFactory $adapterFactory;
 
+	private ExtensionSourceSalt $extensionSourceSalt;
+
 	private ?HarvestedCustoms $harvested = null;
 
-	public function __construct(EngineSource $engineSource, LatteVersionAdapterFactory $adapterFactory)
+	public function __construct(
+		EngineSource $engineSource,
+		LatteVersionAdapterFactory $adapterFactory,
+		ExtensionSourceSalt $extensionSourceSalt
+	)
 	{
 		$this->engineSource = $engineSource;
 		$this->adapterFactory = $adapterFactory;
+		$this->extensionSourceSalt = $extensionSourceSalt;
 	}
 
 	public function harvest(): HarvestedCustoms
@@ -49,7 +56,11 @@ final class CustomsHarvester
 		// project's real customs.
 		$reader = $this->adapterFactory->createEngineReader();
 
-		return $this->contained(static fn (): HarvestedCustoms => $reader->read($engine)) ?? HarvestedCustoms::empty();
+		$sourceSalt = $this->extensionSourceSalt;
+
+		return $this->contained(
+			static fn (): HarvestedCustoms => $reader->read($engine)->withExtensionSources($sourceSalt),
+		) ?? HarvestedCustoms::empty();
 	}
 
 	// No per-template line exists here - harvest runs once per analysis, not once per compiled

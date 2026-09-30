@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Toolkit;
 
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
+use OriPhpstan\Nette\Latte\Customs\ExtensionSourceSalt;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
@@ -55,7 +56,11 @@ final class TestAdapter
 
 	public static function harvester(EngineSource $engineSource): CustomsHarvester
 	{
-		return new CustomsHarvester($engineSource, self::factory());
+		return new CustomsHarvester(
+			$engineSource,
+			self::factory(),
+			new ExtensionSourceSalt(null, null, ProjectInstalledVersions::get()),
+		);
 	}
 
 }

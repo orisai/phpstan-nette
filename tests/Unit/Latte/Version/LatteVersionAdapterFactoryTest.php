@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Version;
 
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
+use OriPhpstan\Nette\Latte\Customs\ExtensionSourceSalt;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
@@ -91,7 +92,11 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 	{
 		$factory = $this->factory(['latte/latte' => '3.1.6.0']);
 
-		$unconfigured = new CustomsHarvester(new EngineSource(null, null), $factory);
+		$unconfigured = new CustomsHarvester(
+			new EngineSource(null, null),
+			$factory,
+			new ExtensionSourceSalt(null, null, ProjectInstalledVersions::get()),
+		);
 
 		self::assertSame(HarvestedCustoms::empty()->getSaltHash(), $unconfigured->harvest()->getSaltHash());
 	}

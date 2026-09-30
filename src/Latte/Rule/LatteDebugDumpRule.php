@@ -258,6 +258,13 @@ final class LatteDebugDumpRule implements Rule
 				$harvested->getFunctionOriginalNames(),
 			);
 			$lines[] = 'global macros: ' . $this->describeNames($harvested->getMacroNames());
+			foreach ($harvested->getSourceNotes() as $note) {
+				$lines[] = 'harvest note: ' . $note;
+			}
+
+			foreach ($harvested->getSourceProblems() as $problem) {
+				$lines[] = 'harvest problem: ' . $problem;
+			}
 		} else {
 			$lines[] = 'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)';
 		}

@@ -159,6 +159,17 @@ services:
 		arguments:
 			engineSource: @latteCustomsEngineSource
 			adapterFactory: @latteVersionAdapterFactory
+			extensionSourceSalt: @latteExtensionSourceSalt
+		autowired: false
+
+	# What identifies a harvested Latte 3 extension's code in the harvest salt; the walk stays out of
+	# PHPStan's own tmpDir and treats the project root shallowly.
+	latteExtensionSourceSalt:
+		class: OriPhpstan\Nette\Latte\Customs\ExtensionSourceSalt
+		arguments:
+			tmpDir: %tmpDir%
+			projectRoot: %currentWorkingDirectory%
+			installed: @orisaiNette.installedVersions
 		autowired: false
 
 	# Per-{templateType} filter/function entries - modelled off the
@@ -268,6 +279,14 @@ services:
 			factoryProvidedVars: @latteFactoryProvidedVars
 			providerAvailabilityChecker: @latteProviderAvailabilityChecker
 			bootstrapFilesLoader: @latteBootstrapFilesLoader
+			harvestProblemReporter: @latteHarvestProblemReporter
+		autowired: false
+
+	latteHarvestProblemReporter:
+		class: OriPhpstan\Nette\Latte\Customs\HarvestProblemReporter
+		arguments:
+			harvester: @latteCustomsHarvester
+			universe: @latteUniverse
 		autowired: false
 
 	latteBootstrapFilesLoader:

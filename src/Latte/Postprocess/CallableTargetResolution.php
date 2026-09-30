@@ -46,7 +46,8 @@ trait CallableTargetResolution
 
 	// A stock entry as the installed Latte hands it out: Latte 2 lists "Class::method" arrays, Latte
 	// 3.0 [$filtersInstance, 'method'] arrays and Latte 3.1 first-class callables of both static and
-	// instance methods (a harvested extension also of plain functions, trim(...)). The third element says whether Class::method() is a valid dispatch.
+	// instance methods (a harvested extension also of plain functions, trim(...)). The third element
+	// says whether Class::method() is a valid dispatch.
 
 	/**
 	 * @param callable(mixed...): mixed $callable

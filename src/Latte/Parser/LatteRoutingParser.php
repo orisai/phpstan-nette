@@ -7,6 +7,7 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryRefResolver;
 use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
 use OriPhpstan\Nette\Latte\Compile\TemplateClassName;
+use OriPhpstan\Nette\Latte\Customs\HarvestProblemReporter;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
 use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use OriPhpstan\Nette\Latte\Includes\ContextResolver;
@@ -71,6 +72,8 @@ final class LatteRoutingParser implements Parser
 
 	private ?BootstrapFilesLoader $bootstrapFilesLoader;
 
+	private ?HarvestProblemReporter $harvestProblemReporter;
+
 	/** @var array<string, array<Stmt>> */
 	private array $parsedFiles = [];
 
@@ -123,7 +126,8 @@ final class LatteRoutingParser implements Parser
 		?DiscoveryRefResolver $discoveryRefResolver = null,
 		?FactoryProvidedVars $factoryProvidedVars = null,
 		?ProviderAvailabilityChecker $providerAvailabilityChecker = null,
-		?BootstrapFilesLoader $bootstrapFilesLoader = null
+		?BootstrapFilesLoader $bootstrapFilesLoader = null,
+		?HarvestProblemReporter $harvestProblemReporter = null
 	)
 	{
 		$this->delegate = $delegate;
@@ -142,6 +146,7 @@ final class LatteRoutingParser implements Parser
 		$this->factoryProvidedVars = $factoryProvidedVars;
 		$this->providerAvailabilityChecker = $providerAvailabilityChecker;
 		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
+		$this->harvestProblemReporter = $harvestProblemReporter;
 	}
 
 	/**
@@ -228,12 +233,16 @@ final class LatteRoutingParser implements Parser
 		// Dependency-free, like DiagnosticMaterializer below: mid-file {varType} placement is a
 		// property of this file's own token stream and nothing else.
 		$placementDiagnostics = (new VarTypePlacementChecker())->check($declarations);
+		$harvestDiagnostics = $this->harvestProblemReporter !== null
+			? $this->harvestProblemReporter->diagnosticsFor($relativePath)
+			: [];
 		$diagnostics = array_merge(
 			$this->pipeline->getDiagnostics(),
 			$edgeDiagnostics,
 			$consistencyDiagnostics,
 			$providerDiagnostics,
 			$placementDiagnostics,
+			$harvestDiagnostics,
 		);
 
 		$materialized = (new DiagnosticMaterializer())->materialize($stmts, $diagnostics, $className);
