@@ -949,8 +949,8 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | Mid-file `{varType}` naming none of the assigned variables               | `orisaiNette.latte.varTypeVariableNotFound`     |                                                    |
 | `{varType}` conflicting with the assigned expression's native type       | `orisaiNette.latte.varTypeNativeType`           | `latte.reportAnyTypeWideningInVarType`             |
 | `{varType}` conflicting with the assigned expression's PHPDoc type       | `orisaiNette.latte.varTypeType`                 | `latte.reportWrongPhpDocTypeInVarType`             |
-| Filter spelled in a different case than registered                       | `orisaiNette.latte.filterCaseMismatch`          | breaks in Latte 3                                  |
-| Function spelled in a different case than registered                     | `orisaiNette.latte.functionCaseMismatch`        | breaks in Latte 3                                  |
+| Filter spelled in a different case than registered                       | `orisaiNette.latte.filterCaseMismatch`          | Latte 2 only; breaks on Latte 3                    |
+| Function spelled in a different case than registered                     | `orisaiNette.latte.functionCaseMismatch`        | Latte 2 only; breaks on Latte 3                    |
 | Template writing `$this->…` of the compiled template class                | `orisaiNette.latte.internalAccess`              |                                                    |
 | Deprecation raised by Latte while compiling                              | `orisaiNette.latte.deprecated`                  |                                                    |
 | Invariant of the analysis itself broken                                  | `orisaiNette.latte.internalError`               | please report it                                   |
@@ -974,6 +974,8 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - `orisaiNette.latte.templateMissing` is not reported for a renderer which links no template at all.
 - The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
+- On Latte 3, a filter or function spelled in a different case than registered (`{$s|upPer}`) is not reported,
+  although Latte 3 throws for it at runtime; the case-mismatch checks run on Latte 2 only.
 - Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.
 - A presenter's `#[TemplateVariable]` property counts as present even when it is never initialized; at runtime such a
   variable is missing.

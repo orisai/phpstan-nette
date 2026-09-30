@@ -10,9 +10,8 @@ final class EdgeScope
 
 	private const LAYOUT_TAGS = ['layout', 'extends'];
 
-	// The tags Latte 3 isolates. {includeblock} is deliberately absent: it is a Latte-2-only
-	// deprecated alias that Latte 3 removed outright, so modelling it under Latte 3 semantics would
-	// describe a construct that cannot exist there.
+	// The tags orisaiNette.latte.includeIsolation restricts to their explicit args. {includeblock} is
+	// absent: a Latte-2-only alias Latte 3 removed.
 	private const ISOLATING_TAGS = ['include', 'embed'];
 
 	private function __construct()
@@ -71,14 +70,10 @@ final class EdgeScope
 			return ['vars' => $typed['vars'], 'namedKeys' => $typed['vars'], 'open' => $typed['open']];
 		}
 
-		// THE Latte-version-specific semantic, and the only place it is decided. Latte 2.11.7
-		// unions: CoreMacros::macroInclude emits `%node.array? + $this->params`, so a file include
-		// gives its target the includer's entire param set overlaid with the site's own explicit
-		// args (IncludeSemanticsParityTest pins it at runtime). Latte 3 isolates: explicit args
-		// only, which is what orisaiNette.latte.includeIsolation switches on - the same shape the sandbox branch
-		// above already returns. Restricted to the file form (a block dispatch keeps receiving the
-		// surrounding scope in both Latte versions) and to include/embed (layout/extends and import
-		// are separate mechanisms, unchanged by the Latte 3 isolation).
+		// On every supported Latte line a file {include} gives its target the includer's render params
+		// overlaid with the site's explicit args, never its {var} locals (IncludeSemanticsParityTest).
+		// orisaiNette.latte.includeIsolation is an opt-in stricter model: explicit args only, the sandbox
+		// shape. Block dispatch, layout/extends and import are separate mechanisms it leaves alone.
 		if (
 			$includeIsolation
 			&& in_array($tag, self::ISOLATING_TAGS, true)

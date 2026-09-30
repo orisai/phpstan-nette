@@ -23,11 +23,10 @@ use function getmypid;
 use function sys_get_temp_dir;
 use function uniqid;
 
-// orisaiNette.latte.includeIsolation, the Latte-3 forward-compatibility flag: EdgeScope::resolve()'s one seam
-// switched from Latte 2's union semantics (target scope = includer's scope + explicit args) to
-// Latte 3's isolated params (explicit args only). Every probe here fixes both what the flag DOES
-// change (file-form include/embed) and what it must NOT (block dispatch, layout/extends, import,
-// sandbox, namedKeys/open).
+// orisaiNette.latte.includeIsolation switches EdgeScope::resolve() from the union every Latte line runs
+// (includer's scope + explicit args) to explicit args only. The probes fix what the flag changes
+// (file-form include/embed) and what it must not (block dispatch, layout/extends, import, sandbox,
+// namedKeys/open).
 /**
  * @group latte2
  */
@@ -99,9 +98,6 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 		);
 	}
 
-	// Latte 3 isolates include/embed params; layout/extends inheritance is the separate
-	// `$this->params = $this->main()` mechanism (IncludeSemanticsParityTest pins both directions),
-	// and {import}/{sandbox} are their own branches. None of them may move with this flag.
 	public function testLayoutImportAndSandboxAreUnaffectedByIsolation(): void
 	{
 		$context = TemplateContext::root(['ambient' => 'string']);

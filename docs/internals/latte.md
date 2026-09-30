@@ -577,8 +577,8 @@ bare path as a file target (`{include parts/automatic-no-replay.latte}`), and
 `TemplateFactExtractor::extractIncludeTarget()` classifies an unmodified target `KIND_STATIC_FILE`
 whenever it fails `~^[\w-]+$~D` (a bare word is a *block* name, `parts/x.latte` is a file).
 
-One deliberate divergence the flag exposes: `{embed file}` is **already** isolated in Latte 2
-(`BlockMacros::macroEmbed` emits no `+ $this->params` term at all, like `{sandbox}`), but the
+One deliberate divergence the flag exposes: `{embed file}` is isolated on every line (Latte 2's
+`BlockMacros::macroEmbed` emits no `+ $this->params` term at all, like `{sandbox}`), but the
 analysis models it as include-like union. That over-approximates the embed target's scope, which
 can only *miss* findings, never invent them; with `orisaiNette.latte.includeIsolation` on, the embed edge
 matches the runtime exactly. The default stays a union because `{embed}` is rare; correcting the default matters only for a
@@ -730,8 +730,8 @@ usage provider counts as used, and 3.1's `$parentArgs` is declared on `Template`
 without the entries.
 
 A spawned PHPStan runs from the library's own vendor directory, so it takes the library root as the
-Composer project and reflects vendor classes through the composer file `COMPOSER` names. The profile
-test runs keep `COMPOSER=composer.<profile>.json` in the spawn (`ScratchProject`); without it the
+Composer project and reflects vendor classes through the composer file `COMPOSER` names. `ScratchProject`
+sets `COMPOSER=composer.<profile>.json` for the spawn (`VendorDirectory::composerFile()`); without it the
 spawn reflects vendor classes from the default `vendor/` — Latte 2.11 while Latte 3 runs — which is
 where earlier Latte 3 ignore entries for those constants and `$parentArgs` came from
 (`ScratchProjectVendorTest` pins it).
@@ -896,6 +896,11 @@ they differ:
 
 > Latte filter 'Webalize' differs in case from the registered 'webalize' - Latte 2.x resolves this
 > case-insensitively, but Latte 3 makes filter resolution case-sensitive and will break on upgrade.
+
+The scan runs on Latte 2 only (`LatteCompiler`); on an installed Latte 3 it does not run. There a
+mis-cased tag (`{IF}…{/IF}`) is `orisaiNette.latte.unknownMacro`, but a mis-cased filter or function
+(`{$s|Upper}`, `{$s|upPer}`, `{=cLamp(1, 2, 3)}`) is reported by nothing: the filter and function
+tables match names case-insensitively, while the Latte 3 runtime throws (probed on 3.0.26 and 3.1.6).
 
 Latte's own `Defaults` deliberately double-registers some names under two valid spellings
 (`dataStream`/`datastream`, `stripTags`/`striptags`, `breakLines`/`breaklines`,
@@ -1651,8 +1656,8 @@ Latte-specific identifiers (all ordinary, ignorable, baselinable, reported on `.
 | `orisaiNette.latte.varTypeVariableNotFound` | mid-file `{varType}` names a variable none of its anchor's several bindings match | `{varType}` site |
 | `orisaiNette.latte.varTypeNativeType` | `{varType}` conflicts with the native type of the expression its anchor assigns | `{varType}` site |
 | `orisaiNette.latte.varTypeType` | `{varType}` conflicts with the PHPDoc type of that expression (`orisaiNette.latte.reportWrongPhpDocTypeInVarType`) | `{varType}` site |
-| `orisaiNette.latte.filterCaseMismatch` | called filter spelling differs in case from the registered one (Latte-3 breakage) | filter site |
-| `orisaiNette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte-3 breakage) | function call site |
+| `orisaiNette.latte.filterCaseMismatch` | called filter spelling differs in case from the registered one (Latte-3 breakage; Latte 2 only) | filter site |
+| `orisaiNette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte-3 breakage; Latte 2 only) | function call site |
 | `orisaiNette.latte.deprecated` | vendor `E_USER_DEPRECATED` captured during compilation (see *Vendor error containment*) | compiler's current line (fallback line 1) |
 | `orisaiNette.latte.internalError` | the analysis pipeline's own diagnostic-materialization invariant was violated | offending node |
 | `orisaiNette.latte.customsHarvest` | a directory under a harvested Latte 3 extension could not be read for the harvest salt (see *Invalidation*); the path is relative to `%currentWorkingDirectory%` when inside it | line 1 of the universe's first template (sorted) |
@@ -2042,7 +2047,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   narrowing store pathway carries precise literals where captures exist.
 - **`(expand)`-splatted include arguments contribute `mixed`** to the target's context — they
   aren't destructured statically.
-- **`{embed file}` is modeled as an include-style union, but Latte 2 already isolates it** to the
+- **`{embed file}` is modeled as an include-style union, but every supported Latte line isolates it** to the
   tag's own explicit args (*Include isolation* above) — an over-approximation of the
   embed target's scope that can only miss findings, never invent them. It under-reports only for a
   project that uses the tag.
@@ -2164,7 +2169,7 @@ And the implementation-ledgered additions:
   because `orisaiNette.latte.includeMissingVariable` fires only when a *target declares* the variable
   (*Include isolation* above has the derivation). Re-run the flag after each declaration
   wave; its findings grow exactly as `{varType}`/`{parameters}` coverage on include targets grows.
-- **`{embed}` is modelled as a union although Latte 2 already isolates it** — the pre-existing
+- **`{embed}` is modelled as a union although every supported Latte line isolates it** — the pre-existing
   entry above; a real over-approximation for a project that uses the tag.
 - **A file reached from PHP *and* via layout stays ambiguous.** A discovery edge carries no
   variables (marker-only, by design), but a layout edge carries the child's finished main scope —

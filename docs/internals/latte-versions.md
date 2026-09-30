@@ -251,8 +251,11 @@ per template with a committed manifest, so any change in what compiles is a visi
 - **Harvest.** `make corpus-harvest [PROFILE=…]` (`tools/corpus/harvest.php`) clones the upstream repositories at the
   installed pretty versions (`git clone --depth 1 --branch <tag>`) and extracts every template the `.phpt` tests and
   template directories contain into `var/corpus/templates/<profile>/<repo>/<path>#<n>.latte`, plus
-  `manifest-source.json` with the package versions and, per template, `expects`. Templates wrapped in helpers
-  (`dedent()`, `exportTraversing()`, `testTemplate()`) are not extracted, and `*.nodes.phpt` files are skipped.
+  `manifest-source.json` with the package versions and, per template, `expects`. A template is extracted from a
+  method call `->compile()`, `->render()`, `->renderToString()`, `->parse()` or `->createTemplate()` whose first
+  argument is a string literal or a variable bound to one, and from `StringLoader` arrays. Templates handed to an
+  upstream test helper function instead (`exportTraversing()` from Latte 3's `tests/helpers.php`, the per-file
+  `testTemplate()` functions of the embed tests) are not extracted, and `*.nodes.phpt` files are skipped.
 - **`expects`** is `{assertion, class, message}` or `null`: the upstream assertion (`Assert::exception()`,
   `Assert::error()`, …) wrapping the call which renders or compiles the template, with the class and message as
   written. It records an error outcome the upstream test asserts, not necessarily a compile error — a runtime,
@@ -275,7 +278,10 @@ per template with a committed manifest, so any change in what compiles is a visi
 - **Install.** CI does not float the corpus versions: `make corpus-install [PROFILE=…]` runs
   `tools/corpus/manifest-composer.php`, which writes the git-ignored `composer.corpus-<profile>.json` with every
   package of the manifest header pinned to its recorded version, and installs it. The `corpus` CI job runs
-  `corpus-install`, `corpus-harvest` and `make tests PROFILE=… ARGS=tests/Corpus` per profile.
+  `corpus-install`, `corpus-harvest` and `make tests PROFILE=… ARGS=tests/Corpus` per profile. A CI corpus row has
+  no `composer.<profile>.json`, so its PHPStan spawn reflects vendor classes through the autoloader (`vendor-<p>`),
+  while a local `make corpus-manifest` uses the Composer locator of `composer.<profile>.json`; both read the installed
+  profile vendor, so the results are equivalent today.
 - **Refresh rule.** Refreshing a profile's corpus is `make profile` (floating) + `make corpus-harvest` +
   `make corpus-manifest`, committed together in **one** commit; otherwise the manifest header no longer matches what
   `corpus-install` pins.

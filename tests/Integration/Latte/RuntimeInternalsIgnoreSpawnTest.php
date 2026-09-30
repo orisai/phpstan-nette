@@ -11,9 +11,9 @@ use function basename;
 use function in_array;
 use function strpos;
 
-// config/latte.neon ignores the runtime internals every generated template class carries, per Latte
-// line: with reportUnmatchedIgnoredErrors on (PHPStan's default) the installed line's entries match
-// and the other line's entries stay silent, so a project never sees an unmatched-ignore error.
+// config/latte.neon ignores the Latte 2 runtime internals every generated template class carries: with
+// reportUnmatchedIgnoredErrors on (PHPStan's default) a Latte 3 project never sees an unmatched-ignore
+// error for them.
 final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 {
 
