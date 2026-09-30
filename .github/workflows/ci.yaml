@@ -253,26 +253,22 @@ jobs:
       github.event_name != 'pull_request'
       || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
 
-    # The committed manifests record the locked versions, so this job installs from the locks.
+    # Installs exactly the versions each committed manifest header records.
     strategy:
       matrix:
         include:
           - operating-system: "ubuntu-latest"
             profile: ""
             php-version: "7.4"
-            install: "composer install --no-interaction --no-progress --prefer-dist"
           - operating-system: "ubuntu-latest"
             profile: "latte2-nette32"
             php-version: "8.3"
-            install: "COMPOSER=composer.latte2-nette32.json COMPOSER_VENDOR_DIR=vendor-latte2-nette32 composer install --no-interaction --no-progress --prefer-dist"
           - operating-system: "ubuntu-latest"
             profile: "latte30"
             php-version: "8.3"
-            install: "COMPOSER=composer.latte30.json COMPOSER_VENDOR_DIR=vendor-latte30 composer install --no-interaction --no-progress --prefer-dist"
           - operating-system: "ubuntu-latest"
             profile: "latte31"
             php-version: "8.4"
-            install: "COMPOSER=composer.latte31.json COMPOSER_VENDOR_DIR=vendor-latte31 composer install --no-interaction --no-progress --prefer-dist"
 
     steps:
       - name: "Checkout"
@@ -287,7 +283,7 @@ jobs:
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
         with:
-          command: "${{ matrix.install }}"
+          command: "make corpus-install PROFILE=${{ matrix.profile }} PRE_PHP=php"
 
       - name: "Harvest"
         run: "make corpus-harvest PROFILE=${{ matrix.profile }} PRE_PHP=php"

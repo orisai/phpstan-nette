@@ -112,7 +112,7 @@ printf(
 	$findings,
 	$templateFindings,
 	$elapsed,
-	$process->getExitCode(),
+	(int) $process->getExitCode(),
 );
 foreach ($identifiers as $identifier => $count) {
 	printf("  %5d %s\n", $count, $identifier);

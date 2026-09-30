@@ -2,6 +2,9 @@ _: list
 
 ## Config
 
+# tools/smoke/dmonitor-engine.php is left out: it references dmonitor's own classes.
+SMOKE_PATHS=tools/smoke/dmonitor.php tools/smoke/dmonitor-bootstrap.php
+
 PHPUNIT_CONFIG=tools/phpunit.xml
 
 PROFILE ?=
@@ -24,7 +27,7 @@ PHPSTAN_PATHS=
 else
 PHPSTAN_CONFIG=tools/phpstan.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
-PHPSTAN_PATHS=src tests tools/corpus
+PHPSTAN_PATHS=src tests tools/corpus $(SMOKE_PATHS)
 endif
 
 ## Install
@@ -45,12 +48,12 @@ profile: ## Install a dependency profile into vendor-<name>: make profile PROFIL
 cs: ## Check PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
 	$(PHPCS_PREPARE)
-	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcs" src tests tools/corpus --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcs" src tests tools/corpus $(SMOKE_PATHS) --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 csf: ## Fix PHP files coding style
 	mkdir -p var/tools/PHP_CodeSniffer
 	$(PHPCS_PREPARE)
-	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests tools/corpus --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests tools/corpus $(SMOKE_PATHS) --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
 phpstan: ## Analyse code with PHPStan
 	mkdir -p var/tools
@@ -72,6 +75,11 @@ coverage-html: ## Generate code coverage in HTML format
 	$(PROFILE_ENV) $(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-html=var/coverage/html $(ARGS)
 
 ## Corpus
+
+# Refreshing a profile's corpus = make profile (floating) + make corpus-harvest + make corpus-manifest, in ONE commit.
+corpus-install: ## Install the versions tests/Corpus/manifest.<profile>.json records (CI)
+	$(PRE_PHP) tools/corpus/manifest-composer.php $(or $(PROFILE),default)
+	COMPOSER=composer.corpus-$(or $(PROFILE),default).json COMPOSER_VENDOR_DIR=$(VENDOR_DIR) $(PRE_PHP) "$(shell command -v composer)" update --no-interaction --no-progress --prefer-dist $(if $(PROFILE),$$($(PRE_PHP) tools/profile.php $(PROFILE) --flags)) $(ARGS)
 
 corpus-harvest: ## Harvest upstream Latte test templates of the installed versions into var/corpus/templates/<profile>
 	$(PROFILE_ENV) $(PRE_PHP) tools/corpus/harvest.php $(or $(PROFILE),default)
