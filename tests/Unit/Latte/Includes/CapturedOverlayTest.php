@@ -44,7 +44,7 @@ final class CapturedOverlayTest extends BaseTestCase
 		}
 	}
 
-	public function testCaptureEqualModuloLeadingBackslashNarrowsNothing(): void
+	public function testCaptureEqualModuloLeadingBackslashKeepsTheEdgeSpellingButCounts(): void
 	{
 		$dir = $this->scratchDir();
 
@@ -65,7 +65,7 @@ final class CapturedOverlayTest extends BaseTestCase
 			);
 
 			self::assertSame(['control' => '\\App\\UserPresenter', 'x' => 'Exception'], $result['vars']);
-			self::assertSame(['x' => true], $result['overlaidNames']);
+			self::assertSame(['control' => true, 'x' => true], $result['overlaidNames']);
 		} finally {
 			FileSystem::delete($dir);
 		}

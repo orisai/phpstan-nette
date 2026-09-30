@@ -60,16 +60,16 @@ final class CapturedOverlay
 		$overlaidNames = [];
 
 		foreach ($slice['vars'] as $name => $type) {
-			if (array_key_exists($name, $vars) && !self::sameType($vars[$name], $type)) {
-				$vars[$name] = $type;
+			if (array_key_exists($name, $vars)) {
+				$vars[$name] = self::sameType($vars[$name], $type) ? $vars[$name] : $type;
 				$overlaidNames[$name] = true;
 			}
 		}
 
 		foreach ($slice['args'] as $name => $type) {
-			if (array_key_exists($name, $namedKeys) && !self::sameType($namedKeys[$name], $type)) {
-				$vars[$name] = $type;
-				$namedKeys[$name] = $type;
+			if (array_key_exists($name, $namedKeys)) {
+				$vars[$name] = self::sameType($namedKeys[$name], $type) ? $namedKeys[$name] : $type;
+				$namedKeys[$name] = $vars[$name];
 				$overlaidNames[$name] = true;
 			}
 		}
@@ -79,8 +79,9 @@ final class CapturedOverlay
 
 	// A capture spells a class the way PHPStan describes it, an edge the way its producer wrote it
 	// (FactoryProvidedVars leads with a backslash): equal modulo that prefix, the capture narrows
-	// nothing and must not perturb the context's identity - a duplicate context would reach every
-	// layout the target extends.
+	// nothing and keeps the edge's spelling so the context's identity holds - a duplicate context
+	// would reach every layout the target extends. It still counts as captured: an observed
+	// renderer identity survives the edge's factory-value drop (ContextResolver::buildEdgeContext).
 	private static function sameType(string $provided, string $captured): bool
 	{
 		return ltrim($provided, '\\') === ltrim($captured, '\\');
