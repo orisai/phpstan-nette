@@ -212,7 +212,7 @@ final class PhpRenderWalk
 		$this->templateFactoryDefault = $templateFactoryDefault;
 		$this->discoveryResolver = $discoveryResolver;
 		$this->firstPartyPaths = new FirstPartyPaths($firstPartyPaths);
-		$this->vendorPaths = new VendorPaths();
+		$this->vendorPaths = new VendorPaths($this->firstPartyPaths);
 	}
 
 	public function factsFor(string $className): PhpRenderFacts

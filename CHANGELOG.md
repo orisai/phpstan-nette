@@ -72,3 +72,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `{cache}` code printed by the previous bridge
 - Latte 3: a `{cache}` tag whose bridge print carries no quoted key keeps the bridge's own print instead of failing the
   analysis with an internal error
+- Latte: a template surface declared inside `firstPartyPaths` stays a binding even when Composer installs it (a
+  path-repository package of a monorepo), instead of being treated as a vendor floor
