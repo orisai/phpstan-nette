@@ -68,6 +68,11 @@ final class InstalledVersionsGuard
 		self::requireVersion('latte/latte', '^' . $major . '.0', 'Latte ' . $major);
 	}
 
+	public static function requirePhpstan(string $constraint): void
+	{
+		self::requireVersion('phpstan/phpstan', $constraint, 'phpstan/phpstan ' . $constraint);
+	}
+
 	public static function requireNetteLine(string $package, string $constraint): void
 	{
 		self::requireVersion($package, $constraint, $package . ' ' . $constraint);

@@ -93,10 +93,12 @@ update flags (`update-flags`), ignored platform requirements (`ignore-platform-r
 | `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                          | 8.4      |
 
 Latte 3.0 with nette/application and nette/forms 3.1 is allowed by the guard but not covered by CI. `lowest` resolves
-the floors `composer.json` declares — Latte 2.11.7, nette/application and nette/forms 3.1.15, phpstan/phpstan 2.2.13 on
-PHP 7.4 — which are the lowest versions the suite passes on: raise a floor rather than let the `lowest` suite fail. Its
-`nikic/php-parser` floor (require-dev) follows the php-parser the lowest PHPStan phar bundles, as PHPUnit loads the
-vendor copy first.
+the floors `composer.json` declares — Latte 2.11.7, nette/application and nette/forms 3.1.15, phpstan/phpstan 2.2.0 on
+PHP 7.4 — which are the lowest versions the suite passes on: raise a floor rather than let the `lowest` suite fail. A
+test whose expectation needs a newer PHPStan skips by capability (e.g.
+`BootstrapFilesRunner::mergeNewAutoloadFunctions()`, `decimal-int-string` typing) or by version
+(`InstalledVersionsGuard::requirePhpstan()`, e.g. the forms-helper string arguments printed differently before 2.2.9). The `nikic/php-parser` floor (require-dev) follows the php-parser the
+lowest PHPStan phar bundles, as PHPUnit loads the vendor copy first.
 
 The primary set, `latte2-nette32` and `latte30` install kdyby/forms-replicator 3. The Latte 2 sets cap at PHP 8.3
 (Latte 2.11.7, nette/forms 3.1.15 and nette/utils 3.2 do): their `php-ceiling` is 8.3, and `tools/profile.php --flags`

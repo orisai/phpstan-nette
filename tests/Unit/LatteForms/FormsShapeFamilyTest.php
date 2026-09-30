@@ -42,6 +42,8 @@ final class FormsShapeFamilyTest extends BaseTestCase
 
 	public function testSharedFixtureReducesToTheSameHelperCallsOnEveryBridge(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		$fixture = dirname(__DIR__) . '/Latte/Fixtures/' . self::SHARED_FIXTURE;
 		[$calls, $php] = self::process(FileSystem::read($fixture), self::SHARED_FIXTURE);
 
@@ -63,6 +65,8 @@ final class FormsShapeFamilyTest extends BaseTestCase
 
 	public function testEveryReferenceKindReducesToTheSameHelperCallsOnEveryBridge(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		[$calls, $php] = self::process(
 			"{form myForm}\n"
 			. "\t{input name}\n"
@@ -121,6 +125,8 @@ final class FormsShapeFamilyTest extends BaseTestCase
 	// is the provider shape, and the resolver still needs the plain Helpers::form('x') to type $form['x'].
 	public function testFormInsideAnEmbedBlockLayer(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		[$calls, $php] = self::process(
 			"{embed 'layout.latte'}\n"
 			. "\t{block content}\n"

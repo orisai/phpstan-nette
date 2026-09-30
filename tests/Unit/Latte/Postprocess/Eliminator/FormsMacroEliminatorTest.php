@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FormsMacroEliminator;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\EliminatorRun;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 
 // Inputs are the three bridges' own compiled output: Latte 2 FormMacros (nette/forms 3.1-3.2),
 // Latte 3 FormsExtension with nette/forms 3.1.7-3.2 (identical on 3.0 and 3.1 up to line markers)
@@ -20,6 +21,8 @@ final class FormsMacroEliminatorTest extends BaseTestCase
 	 */
 	public function testItemShapeReducesToTheHelpers(string $latteLine): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		$php = EliminatorRun::template(<<<'PHP'
 		$form = $this->global->formsStack[] = $this->global->uiControl['f'] /* line 1 */;
 		Nette\Bridges\FormsLatte\Runtime::initializeForm($form);
@@ -246,6 +249,8 @@ PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), 
 
 	public function testMacrosShapeReducesToTheHelpers(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		$php = EliminatorRun::template(<<<'PHP'
 		$form = $this->global->formsStack[] = $this->global->uiControl["f"] /* line 1 */;
 		Nette\Bridges\FormsLatte\Runtime::initializeForm($form);
@@ -329,6 +334,8 @@ PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
 	// temp again and drops them.
 	public function testDynamicPairedLabelKeepsItsGuardsOnTheMacrosShape(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		$php = EliminatorRun::template(<<<'PHP'
 		$ʟ_input = is_object($ʟ_tmp = $dyn) ? $ʟ_tmp : end($this->global->formsStack)[$ʟ_tmp];
 		if ($ʟ_label = $ʟ_input->getLabel()) echo $ʟ_label->addAttributes(['class' => "c"])->startTag();
@@ -384,6 +391,8 @@ PHP), self::eliminate(EliminatorRun::family($latteLine), $php));
 	// formField('x')->getControl() read.
 	public function testAttributedInputBindsTheHtmlStandInOnTheMacrosShape(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		$php = EliminatorRun::template(<<<'PHP'
 		echo end($this->global->formsStack)["x"]->getControl()->addAttributes(['class' => 'c']) /* line 2 */;
 		echo end($this->global->formsStack)["x"]->getControlPart("part")->addAttributes(['class' => 'c']) /* line 3 */;
@@ -437,6 +446,8 @@ PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), 
 	// label's opening does, and binds the same stand-in; a bare {label x /} keeps its read.
 	public function testAttributedSelfClosingLabelBindsTheHtmlStandInOnTheMacrosShape(): void
 	{
+		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
 		$php = EliminatorRun::template(<<<'PHP'
 		if ($ʟ_label = end($this->global->formsStack)["x"]->getLabel()) echo $ʟ_label->addAttributes(['class' => 'c']);
 		if ($ʟ_label = end($this->global->formsStack)["x"]->getLabelPart("part")) echo $ʟ_label->addAttributes(['class' => 'c']);

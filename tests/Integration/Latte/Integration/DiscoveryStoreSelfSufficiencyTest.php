@@ -195,8 +195,8 @@ final class DiscoveryStoreSelfSufficiencyTest extends BaseTestCase
 		}
 	}
 
-	// PHPStan up to 2.2.x wrote a PHP array file; later releases write length-prefixed serialized
-	// frames behind a guard line, where the meta section is a plain `meta <length>` frame.
+	// PHPStan up to 2.2.12 wrote a PHP array file; later releases write length-prefixed serialized
+	// frames behind a `<?php return;` guard line, where the meta section is a plain `meta <length>` frame.
 
 	/**
 	 * @return array<mixed>
@@ -205,7 +205,7 @@ final class DiscoveryStoreSelfSufficiencyTest extends BaseTestCase
 	{
 		$contents = FileSystem::read($file);
 		$meta = null;
-		if (strncmp($contents, '<?php return [', 14) === 0 || strncmp($contents, '<?php return array', 18) === 0) {
+		if (strncmp($contents, '<?php return;', 13) !== 0) {
 			$data = require $file;
 			$meta = is_array($data) ? $data['meta'] ?? null : null;
 		} else {

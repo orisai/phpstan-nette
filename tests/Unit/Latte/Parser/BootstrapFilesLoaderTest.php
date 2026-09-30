@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Parser;
 
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
+use PHPStan\Command\BootstrapFilesRunner;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\Testing\PHPStanTestCase;
 use RuntimeException;
@@ -11,6 +12,7 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_filter;
 use function array_values;
 use function class_exists;
+use function method_exists;
 use function spl_autoload_unregister;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -85,6 +87,11 @@ PHP);
 
 	public function testCreatePublishesThroughPhpstansRunner(): void
 	{
+		// @phpstan-ignore phpstanApi.classConstant, function.alreadyNarrowedType
+		if (!method_exists(BootstrapFilesRunner::class, 'mergeNewAutoloadFunctions')) {
+			self::markTestSkipped('requires PHPStan with BootstrapFilesRunner::mergeNewAutoloadFunctions()');
+		}
+
 		$autoloaderClass = 'LatteBootstrapAutoloaded_' . uniqid();
 		$key = '__latteBootstrapLoaderAutoloader_' . uniqid();
 		FileSystem::write($this->dir . '/bootstrap.php', <<<PHP

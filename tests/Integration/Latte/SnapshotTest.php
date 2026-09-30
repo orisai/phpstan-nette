@@ -84,6 +84,11 @@ final class SnapshotTest extends BaseTestCase
 	public function testProcessedSnapshot(string $lattePath): void
 	{
 		self::requireFixtureTags($lattePath);
+		if (basename($lattePath) === 'forms-macros.latte') {
+			// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
+			InstalledVersionsGuard::requirePhpstan('>=2.2.9');
+		}
+
 		$relativePath = 'fixtures/' . basename($lattePath);
 		$className = TemplateClassName::forPath($relativePath);
 		$compiled = TestAdapter::create()->compile(FileSystem::read($lattePath), $className, $relativePath);

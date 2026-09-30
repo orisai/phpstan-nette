@@ -34,6 +34,11 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 
 	abstract protected static function configFile(): string;
 
+	protected static function skipReason(string $fixture): ?string
+	{
+		return null;
+	}
+
 	/** @return iterable<string, array{string}> */
 	public static function dataFixtures(): iterable
 	{
@@ -47,6 +52,11 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 	 */
 	public function testFixture(string $file): void
 	{
+		$skipReason = static::skipReason(basename($file));
+		if ($skipReason !== null) {
+			self::markTestSkipped($skipReason);
+		}
+
 		$source = FileSystem::read($file);
 		preg_match_all('~//\s*=>\s*(.+)$~m', $source, $m);
 		$expected = array_map('trim', $m[1]);
