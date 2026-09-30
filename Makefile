@@ -56,8 +56,8 @@ csf: ## Fix PHP files coding style
 	$(PHPCS_PREPARE)
 	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpcbf" src tests tools/corpus $(SMOKE_PATHS) --standard=$(PHPCS_CONFIG) --parallel=$(LOGICAL_CORES) $(ARGS)
 
-lint: ## Check src parses on PHP 7.4, the oldest supported version: make lint LINT_PHP=php7.4
-	find src -name '*.php' -print0 | xargs -0 -n1 -P$(LOGICAL_CORES) $(LINT_PHP) -d display_errors=stderr -l > /dev/null
+lint: ## Check src parses on PHP 7.4, the oldest supported version (the Latte 3 adapter needs PHP 8): make lint LINT_PHP=php7.4
+	find src -name '*.php' -not -path 'src/Latte/Version/Latte3/*' -print0 | xargs -0 -n1 -P$(LOGICAL_CORES) $(LINT_PHP) -d display_errors=stderr -l > /dev/null
 
 phpstan: ## Analyse code with PHPStan
 	mkdir -p var/tools

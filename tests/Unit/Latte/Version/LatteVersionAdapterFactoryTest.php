@@ -34,7 +34,11 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 	}
 
 	// The Latte 3 adapter is constructed by reflection and holds no Latte object of its own, so the
-	// selection itself can be pinned on any install; the adapter's behaviour is tested under Latte 3.
+	// selection itself can be pinned on any install running PHP 8; the adapter's behaviour is tested under Latte 3.
+
+	/**
+	 * @requires PHP >= 8.0
+	 */
 	public function testLatte3InstallGetsTheLatte3Adapter(): void
 	{
 		$factory = $this->factory(['latte/latte' => '3.1.6.0', 'nette/forms' => '3.3.0.0']);
@@ -49,6 +53,10 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 	}
 
 	// Constructed by class name like the adapter; it reads a Latte 3 engine only when asked to.
+
+	/**
+	 * @requires PHP >= 8.0
+	 */
 	public function testLatte3InstallGetsTheLatte3EngineReader(): void
 	{
 		$factory = $this->factory(['latte/latte' => '3.0.26.0']);
@@ -77,6 +85,9 @@ final class LatteVersionAdapterFactoryTest extends BaseTestCase
 		self::assertInstanceOf(Latte2EngineReader::class, TestAdapter::engineReader());
 	}
 
+	/**
+	 * @requires PHP >= 8.0
+	 */
 	public function testAccessorResolvesTheLatte3AdapterOnceWhenAsked(): void
 	{
 		$factory = $this->factory(['latte/latte' => '3.0.26.0', 'nette/forms' => '3.2.9.0']);
