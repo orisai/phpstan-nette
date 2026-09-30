@@ -40,6 +40,7 @@ final class HarvestSourceProblemsTest extends BaseTestCase
 	protected function tearDown(): void
 	{
 		@chmod($this->root . '/ext/Locked', 0755);
+		@chmod($this->root . '/ext', 0755);
 		FileSystem::delete($this->root);
 		parent::tearDown();
 	}
@@ -75,6 +76,24 @@ final class HarvestSourceProblemsTest extends BaseTestCase
 		);
 	}
 
+	public function testUnlistableShallowDirectoryIsReportedRelativeToTheProjectRoot(): void
+	{
+		if (DIRECTORY_SEPARATOR === '\\' || (function_exists('posix_geteuid') && posix_geteuid() === 0)) {
+			self::markTestSkipped('Needs a filesystem that can deny a directory to this user.');
+		}
+
+		$harvester = $this->harvester($this->root, $this->root . '/ext/tmp');
+		FileSystem::createDir($this->root . '/ext/tmp');
+		chmod($this->root . '/ext', 0311);
+
+		$harvested = $harvester->harvest();
+		self::assertCount(1, $harvested->getSourceNotes());
+		self::assertSame(
+			['directory ext under extension ' . $this->extensionClass() . ' is unreadable'],
+			$harvested->getSourceProblems(),
+		);
+	}
+
 	public function testProjectRootExtensionIsNotedAsShallow(): void
 	{
 		$harvested = $this->harvester($this->root . '/ext')->harvest();
@@ -89,7 +108,7 @@ final class HarvestSourceProblemsTest extends BaseTestCase
 		);
 	}
 
-	private function harvester(?string $projectRoot): CustomsHarvester
+	private function harvester(?string $projectRoot, ?string $tmpDir = null): CustomsHarvester
 	{
 		$class = $this->extensionClass();
 		FileSystem::write(
@@ -108,7 +127,7 @@ final class HarvestSourceProblemsTest extends BaseTestCase
 		return new CustomsHarvester(
 			new EngineSource(null, $this->root . '/engine-loader.php'),
 			TestAdapter::factory(),
-			new ExtensionSourceSalt(null, $projectRoot, ProjectInstalledVersions::get()),
+			new ExtensionSourceSalt($tmpDir, $projectRoot, ProjectInstalledVersions::get()),
 		);
 	}
 

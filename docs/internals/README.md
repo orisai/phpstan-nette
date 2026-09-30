@@ -127,6 +127,12 @@ make smoke-dmonitor PRE_PHP="XDEBUG_MODE=off php8.4"
 
 Run one suite at a time: the performance-budget tests are timed and flake under a concurrent suite.
 
+Run a single test class through make, e.g. `make tests PROFILE=latte31 ARGS=tests/Unit/Toolkit/ScratchProjectVendorTest.php`:
+the target sets `COMPOSER` and `COMPOSER_VENDOR_DIR` for the profile. `tests/autoload.php` stops a PHPUnit started
+from a `vendor-<profile>/` directory without `COMPOSER_VENDOR_DIR`, which would otherwise load `vendor/`, and
+`ScratchProject` hands spawned analyses the profile's `composer.<profile>.json` (`VendorDirectory::composerFile()`), so
+PHPStan reflects vendor classes from the profile's vendor directory.
+
 Run the tests with `CLAUDECODE` and `AI_AGENT` unset. PHPStan adds error identifiers to its raw output when either
 variable is set, and the snapshot tests (e.g. `tests/Integration/Latte/Integration/expected/integration.txt`) compare
 that raw output.
