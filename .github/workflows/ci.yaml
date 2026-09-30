@@ -142,7 +142,7 @@ jobs:
             php-version: "8.3"
           - operating-system: "ubuntu-latest"
             profile: "latte30"
-            php-version: "8.3"
+            php-version: "8.4"
 
     steps:
       - name: "Checkout"
@@ -243,11 +243,7 @@ jobs:
             experimental: false
           - operating-system: "ubuntu-latest"
             profile: "latte30"
-            php-version: "8.2"
-            experimental: false
-          - operating-system: "ubuntu-latest"
-            profile: "latte30"
-            php-version: "8.3"
+            php-version: "8.4"
             experimental: false
 
     steps:
@@ -301,7 +297,7 @@ jobs:
             php-version: "8.3"
           - operating-system: "ubuntu-latest"
             profile: "latte30"
-            php-version: "8.3"
+            php-version: "8.4"
 
     steps:
       - name: "Checkout"

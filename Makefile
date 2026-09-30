@@ -62,7 +62,7 @@ lint: ## Check src parses on PHP 7.4, the oldest supported version (the Latte 3 
 phpstan: ## Analyse code with PHPStan
 	test "$(PROFILE)" != lowest || { echo "The lowest profile has no static analysis; use PROFILE=latte2."; exit 1; }
 	mkdir -p var/tools
-	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpstan" analyse $(PHPSTAN_PATHS) -c $(PHPSTAN_CONFIG) $(ARGS)
+	COMPOSER_VENDOR_DIR=$(VENDOR_DIR) $(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpstan" analyse $(PHPSTAN_PATHS) -c $(PHPSTAN_CONFIG) $(ARGS)
 
 phpstan-baseline: ## Add PHPStan errors to baseline
 	make phpstan ARGS="-b $(PHPSTAN_BASELINE_CONFIG)"

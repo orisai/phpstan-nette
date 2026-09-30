@@ -5,7 +5,6 @@ includes:
 # The Latte 2 profiles (latte2, latte2-nette32), analysed for their highest compatible PHP.
 parameters:
 	phpVersion: 80300
-	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.latte2.php
 
 	# Latte-3-only code is analysed against Latte 3 by phpstan.neon; tests/**/Latte3/ stays scanned so the
 	# version-neutral tests calling into it resolve.

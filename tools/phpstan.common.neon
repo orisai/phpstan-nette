@@ -6,6 +6,8 @@ includes:
 parameters:
 	level: 8
 	tmpDir: ../var/tools/PHPStan
+	# One result cache per vendor directory (make phpstan sets COMPOSER_VENDOR_DIR), so the sets do not evict each other.
+	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.%env.COMPOSER_VENDOR_DIR%.php
 
 	excludePaths:
 		analyseAndScan:

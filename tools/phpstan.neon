@@ -5,7 +5,6 @@ includes:
 # Primary: the newest dependency set (Latte 3.1), analysed for the highest supported PHP.
 parameters:
 	phpVersion: 80400
-	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
 
 	# Latte-2-only code is analysed against Latte 2 by phpstan.latte2.neon.
 	excludePaths:
