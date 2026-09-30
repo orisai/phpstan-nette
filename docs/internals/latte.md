@@ -1116,7 +1116,8 @@ described above, not this salt.
 
 `LatteCodeVersion` digests every `.php` file under the packages listed in
 `LatteCodeVersion::SALTED_PACKAGES` (`['Latte', 'LatteForms']`, i.e. `src/Latte/` and `src/LatteForms/`)
-plus the installed `phpstan/phpstan`, `latte/latte`, `nette/application` and `nette/forms` versions.
+plus the installed `phpstan/phpstan`, `latte/latte`, `nette/application`, `nette/forms` and `nette/caching`
+(`absent` when not installed; its bridge prints the Latte 3 `{cache}` code) versions.
 Every package that writes into `LatteAnalysisCache` must be listed — the bridge's `FormMacroCollector`
 does — or its bug fixes never invalidate the entries it produced. A listed directory that does not
 exist throws rather than hashing to an empty digest, so a rename of `src/LatteForms/` cannot silently

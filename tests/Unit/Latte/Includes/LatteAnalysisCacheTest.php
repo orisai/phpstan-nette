@@ -157,26 +157,37 @@ final class LatteAnalysisCacheTest extends BaseTestCase
 	public function testCombineChangesWhenAnyTrackedPackageVersionInputChanges(): void
 	{
 		$family = (new ShapeFamily(ShapeFamily::LATTE_2, ShapeFamily::FORMS_MACROS))->id();
-		$base = LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', $family);
+		$base = LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', '5.0.0', $family);
 
 		self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $base);
 		self::assertNotSame(
 			$base,
-			LatteCodeVersion::combine('files-digest', '1.0.1', '2.0.0', '3.0.0', '4.0.0', $family),
+			LatteCodeVersion::combine('files-digest', '1.0.1', '2.0.0', '3.0.0', '4.0.0', '5.0.0', $family),
 		);
 		self::assertNotSame(
 			$base,
-			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.1', '3.0.0', '4.0.0', $family),
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.1', '3.0.0', '4.0.0', '5.0.0', $family),
 		);
 		self::assertNotSame(
 			$base,
-			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.1', '4.0.0', $family),
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.1', '4.0.0', '5.0.0', $family),
 		);
 		self::assertNotSame(
 			$base,
-			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.1', $family),
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.1', '5.0.0', $family),
 		);
-		self::assertSame($base, LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', $family));
+		self::assertNotSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', '5.0.1', $family),
+		);
+		self::assertNotSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', 'absent', $family),
+		);
+		self::assertSame(
+			$base,
+			LatteCodeVersion::combine('files-digest', '1.0.0', '2.0.0', '3.0.0', '4.0.0', '5.0.0', $family),
+		);
 	}
 
 	// Two lines with the same raw version inputs but a different shape family cache different code.
@@ -190,6 +201,7 @@ final class LatteAnalysisCacheTest extends BaseTestCase
 				'2.0.0',
 				'3.0.0',
 				'4.0.0',
+				'5.0.0',
 				$family->id(),
 			);
 		}

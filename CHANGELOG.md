@@ -68,3 +68,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Forms: replicator rows follow the installed kdyby/forms-replicator (`getContainers()` is an `array` on 3.x)
 - Forms: the stub restates the choice controls' `$disabled` property, and the vendor freshness gate ignores Nette's
   `@property-deprecated`
+- Latte 3: the template compile cache follows the installed nette/caching version, so an upgrade no longer serves
+  `{cache}` code printed by the previous bridge

@@ -42,6 +42,7 @@ final class LatteCodeVersion
 			$latteVersion,
 			$installed->getVersion('nette/application') ?? '',
 			$formsVersion ?? '',
+			$installed->getVersion('nette/caching') ?? 'absent',
 			self::familyId($latteVersion, $formsVersion),
 		);
 	}
@@ -52,6 +53,7 @@ final class LatteCodeVersion
 		string $latteVersion,
 		string $applicationVersion,
 		string $formsVersion,
+		string $cachingVersion,
 		string $familyId
 	): string
 	{
@@ -60,6 +62,7 @@ final class LatteCodeVersion
 			. 'latte:' . $latteVersion . '|'
 			. 'application:' . $applicationVersion . '|'
 			. 'forms:' . $formsVersion . '|'
+			. 'caching:' . $cachingVersion . '|'
 			. 'family:' . $familyId . '|';
 
 		return sha1($serialized);
