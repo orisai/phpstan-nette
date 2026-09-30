@@ -56,8 +56,8 @@ final class MatrixAssertTest extends BaseTestCase
 				foreach ($info['messages'] ?? [] as $message) {
 					$identifier = $message['identifier'] ?? '';
 					if (
-						$identifier === 'orisaiNette.forms.componentShapeAssert'
-						|| $identifier === 'orisaiNette.forms.formValuesAssert'
+						$identifier === 'orisai.nette.forms.componentShapeAssert'
+						|| $identifier === 'orisai.nette.forms.formValuesAssert'
 					) {
 						$mismatches[] = $file . ':' . $message['line'] . "\n" . $message['message'];
 					}

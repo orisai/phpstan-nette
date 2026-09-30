@@ -18,7 +18,7 @@ use function strpos;
 use function uniqid;
 use const PHP_BINARY;
 
-// The PER-FILE half of the discovery consumers - orisaiNette.latte.templateTypeMismatch is evaluated against
+// The PER-FILE half of the discovery consumers - orisai.nette.latte.templateTypeMismatch is evaluated against
 // EVERY renderer the store links to a template, so a SECOND renderer added later changes a verdict
 // the template's own bytes never reflect. Nothing PHPStan sees about the template changed: its
 // content hash is the same, its {templateType} is the same, the store's template-file SET is the

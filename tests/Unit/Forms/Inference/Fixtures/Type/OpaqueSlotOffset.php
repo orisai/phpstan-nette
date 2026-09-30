@@ -20,7 +20,7 @@ use function PHPStan\Testing\assertType;
  * builder.
  *
  * The value axis is unchanged and still unknown: FormShapeUnknownAccessRule reports
- * orisaiNette.forms.partiallyUnknown for these names (pinned by
+ * orisai.nette.forms.partiallyUnknown for these names (pinned by
  * InferenceUnknownRuleTest::testOpaqueSlotStillReportsAnUnknownValue()), and getValues() still
  * carries no readable type for them.
  */

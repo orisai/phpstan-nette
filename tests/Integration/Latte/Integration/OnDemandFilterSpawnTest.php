@@ -42,10 +42,10 @@ final class OnDemandFilterSpawnTest extends BaseTestCase
 		$expected = [
 			'4 argument.type Parameter #1 $s of static method ' . FixtureLoaderFilters::class
 				. '::dyn() expects string, int given.',
-			"5 orisaiNette.latte.unknownFilter Unknown Latte filter 'nope'.",
+			"5 orisai.nette.latte.unknownFilter Unknown Latte filter 'nope'.",
 		];
 		if (TestAdapter::factory()->family()->latteLine !== ShapeFamily::LATTE_2) {
-			$expected[] = "6 orisaiNette.latte.unknownFilter Unknown Latte filter 'dYn'.";
+			$expected[] = "6 orisai.nette.latte.unknownFilter Unknown Latte filter 'dYn'.";
 		}
 
 		self::assertSame($expected, $this->analyse(self::ENGINE_LOADER));
@@ -55,7 +55,7 @@ final class OnDemandFilterSpawnTest extends BaseTestCase
 	{
 		$this->project->write('src/filters.latte', "{varType string \$s}\n{\$s|dyn}\n");
 
-		self::assertSame(["2 orisaiNette.latte.unknownFilter Unknown Latte filter 'dyn'."], $this->analyse(null));
+		self::assertSame(["2 orisai.nette.latte.unknownFilter Unknown Latte filter 'dyn'."], $this->analyse(null));
 	}
 
 	/**

@@ -37,9 +37,9 @@ use function sprintf;
 final class VarTypeExpressionChecker
 {
 
-	public const NATIVE_TYPE_IDENTIFIER = 'orisaiNette.latte.varTypeNativeType';
+	public const NATIVE_TYPE_IDENTIFIER = 'orisai.nette.latte.varTypeNativeType';
 
-	public const TYPE_IDENTIFIER = 'orisaiNette.latte.varTypeType';
+	public const TYPE_IDENTIFIER = 'orisai.nette.latte.varTypeType';
 
 	private TypeNodeResolver $typeNodeResolver;
 

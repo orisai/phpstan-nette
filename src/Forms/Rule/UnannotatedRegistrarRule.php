@@ -127,7 +127,7 @@ final class UnannotatedRegistrarRule implements Rule
 					. ControlAnnotationValueTypeReader::ADDS_TAG_NAME . ' $' . $parameter
 					. '; the registration is then visible only while this class stays inside the analysed paths.',
 			)
-				->identifier('orisaiNette.forms.unannotatedRegistrar')
+				->identifier('orisai.nette.forms.unannotatedRegistrar')
 				->line($node->getStartLine())
 				->build(),
 		];

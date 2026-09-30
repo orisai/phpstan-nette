@@ -27,7 +27,7 @@ final class AliasedFormOpen
 		$form['b'];
 	}
 
-	// AO-03: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — read-only alias keeps the shape closed
+	// AO-03: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — read-only alias keeps the shape closed
 	public function ao03(): void
 	{
 		$form = new ApplicationForm();
@@ -66,7 +66,7 @@ final class AliasedFormOpen
 		$form['b'];
 	}
 
-	// AO-07: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — read-only destructuring alias keeps the shape closed
+	// AO-07: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — read-only destructuring alias keeps the shape closed
 	public function ao07(): void
 	{
 		$form = new ApplicationForm();
@@ -88,7 +88,7 @@ final class AliasedFormOpen
 		$form['fromClosure'];
 	}
 
-	// AO-09: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — an uninvoked, non-escaping by-ref closure adds nothing and keeps the shape closed
+	// AO-09: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — an uninvoked, non-escaping by-ref closure adds nothing and keeps the shape closed
 	public function ao09(): void
 	{
 		$form = new ApplicationForm();

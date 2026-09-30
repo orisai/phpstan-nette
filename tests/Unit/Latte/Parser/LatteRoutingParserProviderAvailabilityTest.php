@@ -57,7 +57,7 @@ final class LatteRoutingParserProviderAvailabilityTest extends PHPStanTestCase
 	{
 		$stmts = $this->parse("{control foo}\n", [FactoryVarsStandaloneControl::class]);
 
-		self::assertSame(['orisaiNette.latte.providerUnavailable'], $this->reportedIdentifiers($stmts));
+		self::assertSame(['orisai.nette.latte.providerUnavailable'], $this->reportedIdentifiers($stmts));
 	}
 
 	// CONTROL_SELF (this renderer's own instance really reaches the factory, inheriting the vendor

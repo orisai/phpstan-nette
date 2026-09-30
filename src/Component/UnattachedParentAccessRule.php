@@ -82,7 +82,7 @@ final class UnattachedParentAccessRule implements Rule
 			$method,
 			InvalidStateException::class,
 		))
-			->identifier('orisaiNette.component.unattachedParentAccess');
+			->identifier('orisai.nette.component.unattachedParentAccess');
 
 		$noThrow = ParentAccessors::noThrowSpelling($method);
 		$error->addTip(

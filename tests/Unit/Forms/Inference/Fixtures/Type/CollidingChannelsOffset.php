@@ -99,7 +99,7 @@ final class CollidingChannelsOffset
 	 * the channel that CAN name a carrier answers alone. It used to shadow the container instead and
 	 * hand back the control class, which is what the other channel already refused to do.
 	 *
-	 * The value axis is untouched: FormShapeUnknownAccessRule still reports orisaiNette.forms.partiallyUnknown
+	 * The value axis is untouched: FormShapeUnknownAccessRule still reports orisai.nette.forms.partiallyUnknown
 	 * for the same name.
 	 */
 	public function anOpaqueSlotDoesNotShadowTheContainer(bool $flag): void

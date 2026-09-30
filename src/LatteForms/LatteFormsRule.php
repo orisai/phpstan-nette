@@ -48,15 +48,15 @@ use const SORT_STRING;
 final class LatteFormsRule implements Rule
 {
 
-	public const UNKNOWN_CONTROL_IDENTIFIER = 'orisaiNette.latteForms.unknownControl';
+	public const UNKNOWN_CONTROL_IDENTIFIER = 'orisai.nette.latteForms.unknownControl';
 
-	public const UNKNOWN_FORM_IDENTIFIER = 'orisaiNette.latteForms.unknownForm';
+	public const UNKNOWN_FORM_IDENTIFIER = 'orisai.nette.latteForms.unknownForm';
 
-	public const CONTAINER_AS_CONTROL_IDENTIFIER = 'orisaiNette.latteForms.containerAsControl';
+	public const CONTAINER_AS_CONTROL_IDENTIFIER = 'orisai.nette.latteForms.containerAsControl';
 
-	public const CONTROL_AS_CONTAINER_IDENTIFIER = 'orisaiNette.latteForms.controlAsContainer';
+	public const CONTROL_AS_CONTAINER_IDENTIFIER = 'orisai.nette.latteForms.controlAsContainer';
 
-	public const LABELLESS_CONTROL_IDENTIFIER = 'orisaiNette.latteForms.labellessControl';
+	public const LABELLESS_CONTROL_IDENTIFIER = 'orisai.nette.latteForms.labellessControl';
 
 	private const MISMATCH_IDENTIFIERS = [
 		MacroSuitability::MISMATCH_CONTAINER_AS_CONTROL => self::CONTAINER_AS_CONTROL_IDENTIFIER,

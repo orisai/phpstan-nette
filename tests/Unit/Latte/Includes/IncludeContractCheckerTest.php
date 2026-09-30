@@ -49,7 +49,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		$diagnostics = $this->checker()->check($this->rel('other-root.latte'), $this->contextsFor('other-root.latte'));
 		$ids = array_map(static fn (Diagnostic $d): string => $d->getIdentifier(), $diagnostics);
 
-		self::assertContains('orisaiNette.latte.includeTypeMismatch', $ids);
+		self::assertContains('orisai.nette.latte.includeTypeMismatch', $ids);
 	}
 
 	public function testCompatibleEdgeClean(): void
@@ -59,14 +59,14 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 			$this->checker()->check($this->rel('root.latte'), $this->contextsFor('root.latte')),
 		);
 
-		self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
-		self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
+		self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
+		self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
 	}
 
 	public function testMissingDeclaredVariableReported(): void
 	{
 		self::assertContains(
-			'orisaiNette.latte.includeMissingVariable',
+			'orisai.nette.latte.includeMissingVariable',
 			$this->idsFor('strict-partial-includer.latte'),
 		);
 	}
@@ -74,23 +74,23 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	public function testDefaultSatisfiesMissingCheck(): void
 	{
 		self::assertNotContains(
-			'orisaiNette.latte.includeMissingVariable',
+			'orisai.nette.latte.includeMissingVariable',
 			$this->idsFor('strict-partial-with-default-includer.latte'),
 		);
 	}
 
 	public function testDynamicUnknownAndCycleDiagnostics(): void
 	{
-		self::assertContains('orisaiNette.latte.dynamicInclude', $this->idsFor('dynamic.latte'));
-		self::assertContains('orisaiNette.latte.unknownInclude', $this->idsFor('missing.latte'));
+		self::assertContains('orisai.nette.latte.dynamicInclude', $this->idsFor('dynamic.latte'));
+		self::assertContains('orisai.nette.latte.unknownInclude', $this->idsFor('missing.latte'));
 		self::assertContains(
-			'orisaiNette.latte.includeCycle',
+			'orisai.nette.latte.includeCycle',
 			array_merge($this->idsFor('cycle-a.latte'), $this->idsFor('cycle-b.latte')),
 		);
 	}
 
 	// A depth-cap cut (a straight, non-cyclic chain deeper than ContextResolver::DEPTH_CAP) must
-	// never surface as orisaiNette.latte.includeCycle from ANY member of the chain - only a true on-stack
+	// never surface as orisai.nette.latte.includeCycle from ANY member of the chain - only a true on-stack
 	// cycle cut may (see testDynamicUnknownAndCycleDiagnostics above for that case).
 	public function testDeepNonCyclicChainReportsNoIncludeCycleFromAnyMember(): void
 	{
@@ -133,7 +133,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 				);
 
 				self::assertNotContains(
-					'orisaiNette.latte.includeCycle',
+					'orisai.nette.latte.includeCycle',
 					$ids,
 					"$rel must not report includeCycle for a depth-cap cut",
 				);
@@ -145,15 +145,15 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 	public function testDynamicSandboxReportsDynamicInclude(): void
 	{
-		self::assertContains('orisaiNette.latte.dynamicInclude', $this->idsFor('dynamic-sandbox.latte'));
+		self::assertContains('orisai.nette.latte.dynamicInclude', $this->idsFor('dynamic-sandbox.latte'));
 	}
 
 	public function testDynamicExtendsReportsDynamicExtends(): void
 	{
 		$ids = $this->idsFor('dynamic-extends.latte');
 
-		self::assertContains('orisaiNette.latte.dynamicExtends', $ids);
-		self::assertNotContains('orisaiNette.latte.dynamicInclude', $ids);
+		self::assertContains('orisai.nette.latte.dynamicExtends', $ids);
+		self::assertNotContains('orisai.nette.latte.dynamicInclude', $ids);
 	}
 
 	public function testUnknownIncludeMessageDistinguishesMissingFromOutsidePaths(): void
@@ -177,17 +177,17 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		$diagnostics = $this->checker()->check($this->rel($basename), $this->contextsFor($basename));
 		$unknownInclude = array_values(array_filter(
 			$diagnostics,
-			static fn (Diagnostic $d): bool => $d->getIdentifier() === 'orisaiNette.latte.unknownInclude',
+			static fn (Diagnostic $d): bool => $d->getIdentifier() === 'orisai.nette.latte.unknownInclude',
 		));
 
-		self::assertCount(1, $unknownInclude, "expected exactly one orisaiNette.latte.unknownInclude for $basename");
+		self::assertCount(1, $unknownInclude, "expected exactly one orisai.nette.latte.unknownInclude for $basename");
 
 		return $unknownInclude[0]->getMessage();
 	}
 
 	public function testUnknownBlockReported(): void
 	{
-		self::assertContains('orisaiNette.latte.unknownBlock', $this->idsFor('unknown-block-includer.latte'));
+		self::assertContains('orisai.nette.latte.unknownBlock', $this->idsFor('unknown-block-includer.latte'));
 	}
 
 	// C3d: a file with zero modeled incoming edges cannot be proven standalone (Nette's
@@ -199,7 +199,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/orphan.latte', "{include #ghost}\n");
 
 		try {
-			self::assertNotContains('orisaiNette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'orphan.latte'));
+			self::assertNotContains('orisai.nette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'orphan.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -214,7 +214,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/connected-user.latte', "{include 'connected.latte'}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'connected.latte'));
+			self::assertContains('orisai.nette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'connected.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -230,7 +230,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{layout '@layout.latte'}\n");
 
 		try {
-			self::assertNotContains('orisaiNette.latte.unknownBlock', $this->isolatedIdsFor($dir, '@layout.latte'));
+			self::assertNotContains('orisai.nette.latte.unknownBlock', $this->isolatedIdsFor($dir, '@layout.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -245,14 +245,14 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{layout 'layout.latte'}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'layout.latte'));
+			self::assertContains('orisai.nette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'layout.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
 	}
 
 	// Layout-slot idiom, end to end: layout.latte's {ifset #slot}{include #slot}{/ifset} must not
-	// report orisaiNette.latte.unknownBlock once an extender (page.latte) declares {block slot}.
+	// report orisai.nette.latte.unknownBlock once an extender (page.latte) declares {block slot}.
 	public function testUnknownBlockNotReportedWhenExtenderDeclaresSlot(): void
 	{
 		$dir = $this->isolatedDir('latte-slot-checker');
@@ -260,7 +260,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{layout 'layout.latte'}\n{block slot}x{/block}\n");
 
 		try {
-			self::assertNotContains('orisaiNette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'layout.latte'));
+			self::assertNotContains('orisai.nette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'layout.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -275,7 +275,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{layout 'layout.latte'}\n{block other}x{/block}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'layout.latte'));
+			self::assertContains('orisai.nette.latte.unknownBlock', $this->isolatedIdsFor($dir, 'layout.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -289,7 +289,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		);
 		$unknownBlockDiagnostics = array_values(array_filter(
 			$diagnostics,
-			static fn (Diagnostic $d): bool => $d->getIdentifier() === 'orisaiNette.latte.unknownBlock',
+			static fn (Diagnostic $d): bool => $d->getIdentifier() === 'orisai.nette.latte.unknownBlock',
 		));
 
 		self::assertCount(1, $unknownBlockDiagnostics);
@@ -300,14 +300,14 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	{
 		$ids = $this->idsFor('malformed-type-includer.latte');
 
-		self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
-		self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
+		self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
+		self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
 	}
 
 	public function testMaybeAssignabilityIsNotReported(): void
 	{
 		self::assertNotContains(
-			'orisaiNette.latte.includeTypeMismatch',
+			'orisai.nette.latte.includeTypeMismatch',
 			$this->idsFor('maybe-mismatch-includer.latte'),
 		);
 	}
@@ -353,7 +353,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 				$checker->check($rel, $resolver->contextsFor($rel)),
 			);
 
-			self::assertContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($scratchDir);
 		}
@@ -371,8 +371,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	{
 		$ids = $this->idsFor('ambig-mid.latte');
 
-		self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
-		self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
+		self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
+		self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
 	}
 
 	// Control for the above: same shape, but ambig-mid-solo.latte has a SINGLE (non-passing)
@@ -380,7 +380,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	// and the earlier "not provided anywhere, no default" branch must still report.
 	public function testVarMissingInSingleNonPassingContextIsReported(): void
 	{
-		self::assertContains('orisaiNette.latte.includeMissingVariable', $this->idsFor('ambig-mid-solo.latte'));
+		self::assertContains('orisai.nette.latte.includeMissingVariable', $this->idsFor('ambig-mid-solo.latte'));
 	}
 
 	// Reproduces the checker/resolver per-tag scope drift: ContextResolver::buildEdgeContext
@@ -390,7 +390,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	// see EdgeScope, now the single source of per-tag provided-scope logic for both.
 	public function testLayoutSiteSeesIncluderTopLevelVars(): void
 	{
-		self::assertNotContains('orisaiNette.latte.includeMissingVariable', $this->idsFor('layout-drift-child.latte'));
+		self::assertNotContains('orisai.nette.latte.includeMissingVariable', $this->idsFor('layout-drift-child.latte'));
 	}
 
 	// Same drift, opposite direction: the old tag-blind checker code merged in the includer's OWN
@@ -398,7 +398,10 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	// false includeTypeMismatch against a var the target never actually receives from the includer.
 	public function testSandboxSiteStaysSilentOnIncluderOnlyTypeConflict(): void
 	{
-		self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $this->idsFor('sandbox-drift-includer.latte'));
+		self::assertNotContains(
+			'orisai.nette.latte.includeTypeMismatch',
+			$this->idsFor('sandbox-drift-includer.latte'),
+		);
 	}
 
 	// === Block input contracts (declared params without a default, union body {varType}s) ===
@@ -410,7 +413,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/user.latte', "{import 'target.latte'}\n\n{include item, label: 1}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.includeTypeMismatch', $this->isolatedIdsFor($dir, 'user.latte'));
+			self::assertContains('orisai.nette.latte.includeTypeMismatch', $this->isolatedIdsFor($dir, 'user.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -423,7 +426,10 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/user.latte', "{import 'target.latte'}\n\n{include item}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.includeMissingVariable', $this->isolatedIdsFor($dir, 'user.latte'));
+			self::assertContains(
+				'orisai.nette.latte.includeMissingVariable',
+				$this->isolatedIdsFor($dir, 'user.latte'),
+			);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -438,8 +444,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->isolatedIdsFor($dir, 'user.latte');
 
-			self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
-			self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
+			self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -463,8 +469,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->isolatedIdsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
-			self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
+			self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -484,7 +490,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		);
 
 		try {
-			self::assertContains('orisaiNette.latte.includeTypeMismatch', $this->isolatedIdsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.includeTypeMismatch', $this->isolatedIdsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -502,7 +508,10 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		);
 
 		try {
-			self::assertContains('orisaiNette.latte.includeMissingVariable', $this->isolatedIdsFor($dir, 'page.latte'));
+			self::assertContains(
+				'orisai.nette.latte.includeMissingVariable',
+				$this->isolatedIdsFor($dir, 'page.latte'),
+			);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -526,7 +535,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 			// {import} line, an unrelated pre-existing pathway) - proving the fixture is wired
 			// correctly and this isn't just silence because nothing ran at all.
 			self::assertContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				array_map(static fn (Diagnostic $d): string => $d->getIdentifier(), $diagnostics),
 			);
 
@@ -560,8 +569,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->isolatedIdsFor($dir, 'layout.latte');
 
-			self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
-			self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
+			self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -575,7 +584,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->isolatedIdsFor($dir, 'user.latte'),
 			);
 		} finally {
@@ -592,8 +601,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->isolatedIdsFor($dir, 'user.latte');
 
-			self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
-			self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
+			self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -611,7 +620,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->isolatedIdsFor($dir, 'user.latte'),
 			);
 		} finally {
@@ -623,7 +632,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 	// $paramContract with $bodyVarTypes, and the untyped-own-param + body-{varType} pairing this
 	// feature blesses (testBlockUntypedNativeParamIsNotReported) puts the SAME name into both, so
 	// the merge silently re-adds the name the guard just dropped. missingExempt stays empty here
-	// because $ownParams !== [], so the re-added name falsely reports orisaiNette.latte.includeMissingVariable
+	// because $ownParams !== [], so the re-added name falsely reports orisai.nette.latte.includeMissingVariable
 	// on a runtime-satisfied positional edge. The drop must apply to the MERGED contract.
 	public function testPositionalArgWithBodyVarTypeForOwnParamDoesNotFalselyReportMissingSameFile(): void
 	{
@@ -635,7 +644,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->isolatedIdsFor($dir, 'page.latte'),
 			);
 		} finally {
@@ -656,7 +665,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->isolatedIdsFor($dir, 'user.latte'),
 			);
 		} finally {
@@ -677,7 +686,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/user.latte', "{import 'target.latte'}\n\n{include greet, name: 123}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.includeTypeMismatch', $this->isolatedIdsFor($dir, 'user.latte'));
+			self::assertContains('orisai.nette.latte.includeTypeMismatch', $this->isolatedIdsFor($dir, 'user.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -700,8 +709,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->isolatedIdsFor($dir, 'user.latte');
 
-			self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
-			self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
+			self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -717,7 +726,10 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/parent.latte', "{include 'user.latte'}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.includeMissingVariable', $this->isolatedIdsFor($dir, 'user.latte'));
+			self::assertContains(
+				'orisai.nette.latte.includeMissingVariable',
+				$this->isolatedIdsFor($dir, 'user.latte'),
+			);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -744,7 +756,10 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		);
 
 		try {
-			self::assertContains('orisaiNette.latte.includeMissingVariable', $this->isolatedIdsFor($dir, 'user.latte'));
+			self::assertContains(
+				'orisai.nette.latte.includeMissingVariable',
+				$this->isolatedIdsFor($dir, 'user.latte'),
+			);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -763,8 +778,8 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->isolatedIdsFor($dir, 'user.latte');
 
-			self::assertNotContains('orisaiNette.latte.includeMissingVariable', $ids);
-			self::assertNotContains('orisaiNette.latte.includeTypeMismatch', $ids);
+			self::assertNotContains('orisai.nette.latte.includeMissingVariable', $ids);
+			self::assertNotContains('orisai.nette.latte.includeTypeMismatch', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -780,7 +795,7 @@ final class IncludeContractCheckerTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->isolatedIdsFor($dir, 'user.latte'),
 			);
 		} finally {

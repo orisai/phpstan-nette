@@ -64,7 +64,7 @@ final class LatteProvenanceTipRule implements Rule
 			return $errors;
 		}
 
-		// A dump call's own error (identifier orisaiNette.latte.debugDump) is a diagnostic the developer wrote
+		// A dump call's own error (identifier orisai.nette.latte.debugDump) is a diagnostic the developer wrote
 		// directly, not generated code - decorating it would misattribute it to whatever macro tag
 		// happens to share its line (every {do dumpLatteXxx()} call IS itself a `do` macro tag).
 		return array_map(

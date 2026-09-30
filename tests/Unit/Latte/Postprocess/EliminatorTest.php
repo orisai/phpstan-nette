@@ -615,7 +615,7 @@ final class EliminatorTest extends BaseTestCase
 		$diagnostics = $pipeline->getDiagnostics();
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.unknownFilter', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownFilter', $diagnostics[0]->getIdentifier());
 	}
 
 	public function testUnknownFilterDiagnosticIsCollectedOnEachParseOfByteIdenticalSource(): void
@@ -639,9 +639,9 @@ final class EliminatorTest extends BaseTestCase
 		$diagnosticsFromB = $pipelineB->getDiagnostics();
 
 		self::assertCount(1, $diagnosticsFromA);
-		self::assertSame('orisaiNette.latte.unknownFilter', $diagnosticsFromA[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownFilter', $diagnosticsFromA[0]->getIdentifier());
 		self::assertCount(1, $diagnosticsFromB);
-		self::assertSame('orisaiNette.latte.unknownFilter', $diagnosticsFromB[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownFilter', $diagnosticsFromB[0]->getIdentifier());
 
 		self::assertNotSame(
 			$stmtsFromA[0],

@@ -39,12 +39,12 @@ final class MinimalConfigurationTest extends BaseTestCase
 
 		self::assertSame(
 			[
-				'src/HomePresenter.php:18 orisaiNette.component.unattachedParentAccess',
-				'src/ProfileControl.php:28 orisaiNette.forms.noSuchComponent',
+				'src/HomePresenter.php:18 orisai.nette.component.unattachedParentAccess',
+				'src/ProfileControl.php:28 orisai.nette.forms.noSuchComponent',
 			],
 			[
-				...ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.component.'),
-				...ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.forms.'),
+				...ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.component.'),
+				...ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.forms.'),
 			],
 		);
 	}
@@ -55,8 +55,8 @@ final class MinimalConfigurationTest extends BaseTestCase
 		self::assertSame([], $result['errors'], $result['stderr']);
 
 		self::assertSame(
-			['src/tpl.latte:2 orisaiNette.latte.unknownFilter'],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'),
+			['src/tpl.latte:2 orisai.nette.latte.unknownFilter'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.latte.'),
 		);
 	}
 
@@ -68,8 +68,8 @@ final class MinimalConfigurationTest extends BaseTestCase
 		self::assertSame([], $result['errors'], $result['stderr']);
 
 		self::assertSame(
-			['src/tpl.latte:2 orisaiNette.latte.unknownFilter'],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'),
+			['src/tpl.latte:2 orisai.nette.latte.unknownFilter'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.latte.'),
 		);
 	}
 
@@ -86,18 +86,18 @@ final class MinimalConfigurationTest extends BaseTestCase
 		self::assertSame([], $enabled['errors'], $enabled['stderr']);
 		self::assertSame(
 			[
-				'src/HomePresenter.php:7 orisaiNette.latte.fileDiscoveryOpaque',
-				'src/tpl.latte:2 orisaiNette.latte.unknownFilter',
+				'src/HomePresenter.php:7 orisai.nette.latte.fileDiscoveryOpaque',
+				'src/tpl.latte:2 orisai.nette.latte.unknownFilter',
 			],
-			ConfigurationCorpus::findings($this->project, $enabled['messages'], 'orisaiNette.latte.'),
+			ConfigurationCorpus::findings($this->project, $enabled['messages'], 'orisai.nette.latte.'),
 		);
 
 		$parameters['orisai']['nette']['latte']['discovery'] = ['enabled' => false];
 		$disabled = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
 		self::assertSame([], $disabled['errors'], $disabled['stderr']);
 		self::assertSame(
-			['src/tpl.latte:2 orisaiNette.latte.unknownFilter'],
-			ConfigurationCorpus::findings($this->project, $disabled['messages'], 'orisaiNette.latte.'),
+			['src/tpl.latte:2 orisai.nette.latte.unknownFilter'],
+			ConfigurationCorpus::findings($this->project, $disabled['messages'], 'orisai.nette.latte.'),
 		);
 	}
 
@@ -114,8 +114,8 @@ final class MinimalConfigurationTest extends BaseTestCase
 			ConfigurationCorpus::dumpedTypes($this->project, $result['messages']),
 		);
 		self::assertSame(
-			['src/ContainerConsumer.php:18 orisaiNette.dic.serviceNotFound'],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.dic.'),
+			['src/ContainerConsumer.php:18 orisai.nette.dic.serviceNotFound'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.dic.'),
 		);
 	}
 
@@ -125,12 +125,12 @@ final class MinimalConfigurationTest extends BaseTestCase
 		self::assertSame([], $result['errors'], $result['stderr']);
 
 		self::assertSame(
-			['src/tpl.latte:1 orisaiNette.latteForms.unknownControl'],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latteForms.'),
+			['src/tpl.latte:1 orisai.nette.latteForms.unknownControl'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.latteForms.'),
 		);
 		self::assertContains(
 			"Control 'nope' does not exist on form 'form' (Corpus\\ProfileControl).",
-			ConfigurationCorpus::messages($result['messages'], 'orisaiNette.latteForms.'),
+			ConfigurationCorpus::messages($result['messages'], 'orisai.nette.latteForms.'),
 		);
 	}
 
@@ -143,7 +143,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 
 		self::assertSame(
 			[],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latteForms.'),
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.latteForms.'),
 		);
 	}
 

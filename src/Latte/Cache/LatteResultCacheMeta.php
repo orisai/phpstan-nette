@@ -66,7 +66,7 @@ final class LatteResultCacheMeta implements ResultCacheMetaExtension
 
 	// The meta key this extension's hash is stored under, published so a spawn test can read the
 	// value back out of a result cache file and assert the build never moved it.
-	public const KEY = 'orisaiNette.latte.edgeTopology';
+	public const KEY = 'orisai.nette.latte.edgeTopology';
 
 	private TemplateEdgeIndex $edgeIndex;
 
@@ -167,7 +167,7 @@ final class LatteResultCacheMeta implements ResultCacheMetaExtension
 		// file's changed RECORDS_HASH reaches its self-referencing template through PHPStan's own
 		// dependency machinery, which tracks nothing outside the analysed set. A consumer whose
 		// orisai.nette.latte.discovery.storePath sits outside %paths% therefore has no channel at all, and its
-		// per-file consumers (orisaiNette.latte.templateTypeMismatch/templateTypeRequired) would serve a
+		// per-file consumers (orisai.nette.latte.templateTypeMismatch/templateTypeRequired) would serve a
 		// verdict computed from records that have since moved - proven in task 7c, where a second
 		// renderer's mismatch never surfaced on any number of warm runs while a cold run reported
 		// it. The fallback is the whole-store content hash: coarse by necessity, never reached in

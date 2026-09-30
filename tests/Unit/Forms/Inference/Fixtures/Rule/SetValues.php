@@ -77,7 +77,7 @@ final class SetValues
 		$form->setValues($it);
 	}
 
-	// G9-09: Form values must be an array or Traversable, string given. [orisaiNette.forms.writeType]
+	// G9-09: Form values must be an array or Traversable, string given. [orisai.nette.forms.writeType]
 	public function g9_09(): void
 	{
 		$form = new ApplicationForm();

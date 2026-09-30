@@ -98,7 +98,7 @@ final class FormWriteAccessRule implements Rule
 				RuleErrorBuilder::message(
 					"setValue() on upload field '" . $name . "' has no effect.",
 				)
-					->identifier('orisaiNette.forms.writeNoEffect')
+					->identifier('orisai.nette.forms.writeNoEffect')
 					->line($node->getStartLine())
 					->build(),
 			];
@@ -116,7 +116,7 @@ final class FormWriteAccessRule implements Rule
 				. $this->resolver->acceptedLabel($spec) . ', '
 				. $this->describeGiven($argType) . ' given.',
 			)
-				->identifier('orisaiNette.forms.writeType')
+				->identifier('orisai.nette.forms.writeType')
 				->line($node->getStartLine())
 				->build(),
 		];
@@ -153,7 +153,7 @@ final class FormWriteAccessRule implements Rule
 				'Form values must be an array or Traversable, '
 				. $argType->describe(VerbosityLevel::typeOnly()) . ' given.',
 			)
-				->identifier('orisaiNette.forms.writeType')
+				->identifier('orisai.nette.forms.writeType')
 				->line($node->getStartLine())
 				->build(),
 		];
@@ -211,7 +211,7 @@ final class FormWriteAccessRule implements Rule
 				. $this->resolver->acceptedLabel($spec) . ', '
 				. $this->describeGiven($valueType) . ' given.',
 			)
-				->identifier('orisaiNette.forms.writeType')
+				->identifier('orisai.nette.forms.writeType')
 				->line($node->getStartLine())
 				->build();
 		}

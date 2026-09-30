@@ -37,10 +37,10 @@ final class CaseSensitiveNamesSpawnTest extends BaseTestCase
 	{
 		$this->project->write('src/names.latte', FileSystem::read(__DIR__ . '/Fixtures/case-sensitive/names.latte'));
 
-		$filter = static fn (string $written, string $registered): string => "orisaiNette.latte.filterCaseMismatch Latte filter '$written' differs in case from the registered '$registered' - Latte 3 resolves filter names case-sensitively.";
+		$filter = static fn (string $written, string $registered): string => "orisai.nette.latte.filterCaseMismatch Latte filter '$written' differs in case from the registered '$registered' - Latte 3 resolves filter names case-sensitively.";
 		$function = InstalledVersionsGuard::latteLine() === '3.0'
-			? static fn (string $written, string $registered): string => "orisaiNette.latte.functionCaseMismatch Latte function '$written' differs in case from the registered '$registered' - Latte 3.0 resolves it with a warning, Latte 3.1 does not resolve it."
-			: static fn (string $written, string $registered): string => "orisaiNette.latte.functionCaseMismatch Latte function '$written' differs in case from the registered '$registered' - Latte 3 resolves function names case-sensitively.";
+			? static fn (string $written, string $registered): string => "orisai.nette.latte.functionCaseMismatch Latte function '$written' differs in case from the registered '$registered' - Latte 3.0 resolves it with a warning, Latte 3.1 does not resolve it."
+			: static fn (string $written, string $registered): string => "orisai.nette.latte.functionCaseMismatch Latte function '$written' differs in case from the registered '$registered' - Latte 3 resolves function names case-sensitively.";
 
 		self::assertSame(
 			[
@@ -51,7 +51,7 @@ final class CaseSensitiveNamesSpawnTest extends BaseTestCase
 					? ['6 argument.type Parameter #1 $string of function strlen expects string, array given.']
 					: [],
 				'8 ' . $function('Repeated', 'repeated'),
-				"10 orisaiNette.latte.unknownFilter Unknown Latte filter 'nope'.",
+				"10 orisai.nette.latte.unknownFilter Unknown Latte filter 'nope'.",
 			],
 			$this->analyse(),
 		);
@@ -69,12 +69,12 @@ final class CaseSensitiveNamesSpawnTest extends BaseTestCase
 		self::assertSame(
 			InstalledVersionsGuard::latteLine() === '3.0'
 				? [
-					"1 orisaiNette.latte.parseError Thrown exception 'Latte\\Compiler\\Nodes\\Php\\Expression\\AuxiliaryNode::__construct(): "
+					"1 orisai.nette.latte.parseError Thrown exception 'Latte\\Compiler\\Nodes\\Php\\Expression\\AuxiliaryNode::__construct(): "
 					. 'Argument #2 ($nodes) must be of type array, null given, called in '
 					. realpath($latteDir) . "/src/Latte/Essential/Passes.php on line 55'",
 				]
 				: [
-					"1 orisaiNette.latte.functionCaseMismatch Latte function 'LengthOf' differs in case from the registered "
+					"1 orisai.nette.latte.functionCaseMismatch Latte function 'LengthOf' differs in case from the registered "
 					. "'lengthOf' - Latte 3 resolves function names case-sensitively.",
 				],
 			$this->analyse(),

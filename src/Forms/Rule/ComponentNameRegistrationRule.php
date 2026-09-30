@@ -124,7 +124,7 @@ final class ComponentNameRegistrationRule implements Rule
 				. 'non-empty name of [a-zA-Z0-9_] only, and throws otherwise.',
 				$name,
 			))
-				->identifier('orisaiNette.forms.invalidComponentName')
+				->identifier('orisai.nette.forms.invalidComponentName')
 				->build(),
 		];
 	}

@@ -128,7 +128,7 @@ final class SnapshotTest extends BaseTestCase
 	 */
 	private static function toleratedDiagnostics(string $lattePath): array
 	{
-		return basename($lattePath) === 'ifcurrent.latte' ? ['orisaiNette.latte.deprecated'] : [];
+		return basename($lattePath) === 'ifcurrent.latte' ? ['orisai.nette.latte.deprecated'] : [];
 	}
 
 	/**
@@ -260,7 +260,7 @@ final class SnapshotTest extends BaseTestCase
 				$stmts = $this->buildRouter($projectRoot)->parseFile($fixturePath);
 				$printed = (new Standard())->prettyPrintFile($stmts);
 
-				self::assertStringContainsString("Diag::report('orisaiNette.latte.unknownFilter'", $printed);
+				self::assertStringContainsString("Diag::report('orisai.nette.latte.unknownFilter'", $printed);
 			},
 		);
 	}
@@ -288,7 +288,7 @@ final class SnapshotTest extends BaseTestCase
 
 				foreach ([$stmtsA, $stmtsB] as $stmts) {
 					$printed = (new Standard())->prettyPrintFile($stmts);
-					self::assertStringContainsString("Diag::report('orisaiNette.latte.unknownFilter'", $printed);
+					self::assertStringContainsString("Diag::report('orisai.nette.latte.unknownFilter'", $printed);
 				}
 
 				self::assertSame($stmtsA, $stmtsB);

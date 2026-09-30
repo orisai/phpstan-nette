@@ -31,7 +31,7 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 		$main = new ClassMethod('latteMain', ['stmts' => [$existing]]);
 		$class = new Class_('LatteTpl_probe', ['stmts' => [$main]]);
 
-		$diagnostic = new Diagnostic('orisaiNette.latte.unknownFilter', "Unknown Latte filter 'x'.", 5);
+		$diagnostic = new Diagnostic('orisai.nette.latte.unknownFilter', "Unknown Latte filter 'x'.", 5);
 
 		$result = (new DiagnosticMaterializer())->materialize([$class], [$diagnostic], 'LatteTpl_probe');
 
@@ -54,7 +54,7 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 
 		$printed = (new Standard())->prettyPrint([$reportStmt]);
 		self::assertStringContainsString(
-			"Diag::report('orisaiNette.latte.unknownFilter', 'Unknown Latte filter \\'x\\'.')",
+			"Diag::report('orisai.nette.latte.unknownFilter', 'Unknown Latte filter \\'x\\'.')",
 			$printed,
 		);
 	}
@@ -90,7 +90,7 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 
 	public function testFailureResultBuildsMinimalClassWithDeterministicName(): void
 	{
-		$diagnostic = new Diagnostic('orisaiNette.latte.parseError', 'boom', 3);
+		$diagnostic = new Diagnostic('orisai.nette.latte.parseError', 'boom', 3);
 
 		$result = (new DiagnosticMaterializer())->materialize([], [$diagnostic], 'LatteTpl_failure_x');
 
@@ -119,7 +119,7 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 	public function testNonEmptyStmtsWithoutMainFallsBackToTopLevelStatements(): void
 	{
 		$original = new Nop();
-		$diagnostic = new Diagnostic('orisaiNette.latte.parseError', 'boom', 2);
+		$diagnostic = new Diagnostic('orisai.nette.latte.parseError', 'boom', 2);
 
 		$result = (new DiagnosticMaterializer())->materialize([$original], [$diagnostic], 'LatteTpl_unused');
 
@@ -137,7 +137,7 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 		$ctx1 = new ClassMethod('latteMain_ctx1', ['stmts' => []]);
 		$class = new Class_('LatteTpl_probe', ['stmts' => [$ctx0, $ctx1]]);
 
-		$diagnostic = new Diagnostic('orisaiNette.latte.unknownFilter', "Unknown Latte filter 'x'.", 5);
+		$diagnostic = new Diagnostic('orisai.nette.latte.unknownFilter', "Unknown Latte filter 'x'.", 5);
 
 		$result = (new DiagnosticMaterializer())->materialize([$class], [$diagnostic], 'LatteTpl_probe');
 
@@ -169,7 +169,7 @@ final class DiagnosticMaterializerTest extends BaseTestCase
 		$existing = new Nop();
 		$main = new ClassMethod('main', ['stmts' => [$existing]]);
 		$class = new Class_('LatteTpl_probe', ['stmts' => [$main]]);
-		$diagnostic = new Diagnostic('orisaiNette.latte.parseError', 'boom', 2);
+		$diagnostic = new Diagnostic('orisai.nette.latte.parseError', 'boom', 2);
 
 		$result = (new DiagnosticMaterializer())->materialize([$class], [$diagnostic], 'LatteTpl_probe');
 

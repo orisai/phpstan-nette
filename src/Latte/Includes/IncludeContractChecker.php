@@ -79,14 +79,14 @@ final class IncludeContractChecker
 
 		// cutCycleEdges() excludes depth-cap cuts by construction (see ContextResolver::
 		// depthCapCuts()) - a >DEPTH_CAP-deep non-cyclic chain's cut is DFS-order-dependent, so
-		// reporting it here would make orisaiNette.latte.includeCycle worker/traversal-order-dependent.
+		// reporting it here would make orisai.nette.latte.includeCycle worker/traversal-order-dependent.
 		foreach ($this->contextResolver->cutCycleEdges() as $cut) {
 			if ($cut['includer'] !== $projectRelativePath) {
 				continue;
 			}
 
 			$diagnostics[] = new Diagnostic(
-				'orisaiNette.latte.includeCycle',
+				'orisai.nette.latte.includeCycle',
 				sprintf(
 					"Include cycle detected: '%s' includes '%s', which cycles back to an includer already being resolved.",
 					$projectRelativePath,
@@ -119,7 +119,7 @@ final class IncludeContractChecker
 		if (!$this->index->targetExists($site)) {
 			return [
 				new Diagnostic(
-					'orisaiNette.latte.unknownInclude',
+					'orisai.nette.latte.unknownInclude',
 					$this->unknownIncludeMessage($site),
 					$site->getLatteLine(),
 				),
@@ -150,7 +150,7 @@ final class IncludeContractChecker
 		$isExtends = in_array($site->getTag(), self::DYNAMIC_EXTENDS_TAGS, true);
 
 		return new Diagnostic(
-			$isExtends ? 'orisaiNette.latte.dynamicExtends' : 'orisaiNette.latte.dynamicInclude',
+			$isExtends ? 'orisai.nette.latte.dynamicExtends' : 'orisai.nette.latte.dynamicInclude',
 			'Include target cannot be determined statically.',
 			$site->getLatteLine(),
 		);
@@ -182,7 +182,7 @@ final class IncludeContractChecker
 
 		return [
 			new Diagnostic(
-				'orisaiNette.latte.unknownBlock',
+				'orisai.nette.latte.unknownBlock',
 				sprintf(
 					"Block '%s' is not reachable from '%s'.",
 					$site->getRawTarget(),
@@ -454,7 +454,7 @@ final class IncludeContractChecker
 
 			return [
 				new Diagnostic(
-					'orisaiNette.latte.includeMissingVariable',
+					'orisai.nette.latte.includeMissingVariable',
 					sprintf(
 						"Include target '%s' requires variable \$%s (%s) that is not provided and has no default.",
 						$targetPath,
@@ -509,7 +509,7 @@ final class IncludeContractChecker
 
 		return [
 			new Diagnostic(
-				'orisaiNette.latte.includeTypeMismatch',
+				'orisai.nette.latte.includeTypeMismatch',
 				sprintf(
 					"Variable \$%s provided as %s does not match declared type %s in '%s'.",
 					$name,

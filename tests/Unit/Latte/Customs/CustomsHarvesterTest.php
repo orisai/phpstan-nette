@@ -221,12 +221,12 @@ final class CustomsHarvesterTest extends BaseTestCase
 	 */
 	public function testHarvestTriggerErrorNeverBecomesALatteDeprecatedDiagnosticDuringCompile(): void
 	{
-		// orisaiNette.latte.deprecated is compile-scoped: it only exists inside LatteCompiler::doCompile()'s
+		// orisai.nette.latte.deprecated is compile-scoped: it only exists inside LatteCompiler::doCompile()'s
 		// own VendorErrorContainment window around $compiler->compile(). Harvest-time
 		// trigger_error()s are contained by a wholly separate window (CustomsHarvester::doHarvest())
 		// that has no Diagnostic sink at all - even though CaseMismatchScanner's lazy harvest() call
 		// happens during this very compile(), a fresh (not yet memoized) harvester's fixture
-		// deprecation must never surface as a orisaiNette.latte.deprecated finding on the compiled template.
+		// deprecation must never surface as a orisai.nette.latte.deprecated finding on the compiled template.
 		$harvester = $this->harvester(null, self::EngineLoaderTriggerErrorFile);
 		$compiler = new LatteCompiler(null, $harvester);
 

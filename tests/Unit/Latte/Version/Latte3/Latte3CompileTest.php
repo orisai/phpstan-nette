@@ -43,10 +43,10 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertNotNull($code);
 		self::assertSame(
 			[
-				['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 2],
-				['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'bar'.", 3],
-				['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'baz'.", 4],
-				['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'qux'.", 5],
+				['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 2],
+				['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'bar'.", 3],
+				['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'baz'.", 4],
+				['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'qux'.", 5],
 			],
 			self::describe($result->getDiagnostics()),
 		);
@@ -64,7 +64,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', 'Unexpected {/if}, expecting {/foo} (on line 1 at column 13)', 1]],
+			[['orisai.nette.latte.parseError', 'Unexpected {/if}, expecting {/foo} (on line 1 at column 13)', 1]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -76,7 +76,7 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertNull($result->getPhpSource());
 		self::assertSame('LatteTpl_test', $result->getClassName());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', 'Unexpected tag {includeblock} (on line 2 at column 1)', 2]],
+			[['orisai.nette.latte.parseError', 'Unexpected tag {includeblock} (on line 2 at column 1)', 2]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -87,7 +87,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', 'Unexpected end (on line 2 at column 10)', 2]],
+			[['orisai.nette.latte.parseError', 'Unexpected end (on line 2 at column 10)', 2]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -125,7 +125,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', $message, 1]],
+			[['orisai.nette.latte.parseError', $message, 1]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -158,7 +158,7 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertNotNull($result->getPhpSource());
 		self::assertMatchesRegularExpression("~echo '[^']*b~", $result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'ifAllowed'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'ifAllowed'.", 1]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -196,7 +196,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', $message, $line]],
+			[['orisai.nette.latte.parseError', $message, $line]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -207,7 +207,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -219,7 +219,7 @@ final class Latte3CompileTest extends BaseTestCase
 		self::assertNotNull($result->getPhpSource());
 		self::assertStringContainsString('($inner)', $result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -230,7 +230,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', "Thrown exception 'Class \"UnknownClass\" not found'", 3]],
+			[['orisai.nette.latte.parseError', "Thrown exception 'Class \"UnknownClass\" not found'", 3]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -241,7 +241,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', "Unexpected '{' (on line 2 at column 1)", 2]],
+			[['orisai.nette.latte.parseError', "Unexpected '{' (on line 2 at column 1)", 2]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -292,7 +292,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', '{templateType} is allowed only in template header (on line 2 at column 1)', 2]],
+			[['orisai.nette.latte.parseError', '{templateType} is allowed only in template header (on line 2 at column 1)', 2]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
@@ -305,7 +305,7 @@ final class Latte3CompileTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.deprecated', 'Missing comma before arguments in {form} tag on line 2 at column 9.', 2]],
+			[['orisai.nette.latte.deprecated', 'Missing comma before arguments in {form} tag on line 2 at column 9.', 2]],
 			self::describe($result->getDiagnostics()),
 		);
 	}

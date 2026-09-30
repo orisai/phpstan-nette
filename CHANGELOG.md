@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Latte 3: `{linkBase}`, `{templatePrint}`, the 3.1 attribute formatters and `Feature::ScopedLoopVariables` loops are
   analysed
 - Latte: a harvested Latte 3 extension is identified by its package version or by every PHP file under its directory;
-  an unreadable directory there is reported as `orisaiNette.latte.customsHarvest`
+  an unreadable directory there is reported as `orisai.nette.latte.customsHarvest`
 - Validation: `orisai.nette.latte.enabled` rejects an unsupported `latte/latte` line and nette/forms or
   nette/application releases without the Latte 3 or 3.1 bridges
 - phpstan-nette patch verified against phpstan/phpstan-nette 2.0.8–2.0.12
@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Parameters are nested under `orisai: nette:` instead of `orisaiNette:`, and the services are named `orisai.nette.*`
+- Error identifiers start with `orisai.nette.` instead of `orisaiNette.`
 - `orisai.nette` is validated by the extension (nette/schema is required) rather than by PHPStan, so other orisai
   extensions can keep their options under `orisai` too; a key directly under `orisai` which no installed extension owns
   is not reported
@@ -43,15 +44,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   latte/latte 2.11.7, nette/forms 3.1.15 and nette/component-model 3.0.3 (the extension reads
   `IComponent::NameSeparator`)
 - Latte 3: tags Latte 3 dropped (`{includeblock}`, `{status}`, `{use}`, and `{ifCurrent}` with nette/application 3.3)
-  are reported as `orisaiNette.latte.parseError`, never passed through as unknown macros
-- Latte 2: a repeated unpaired unknown tag with no closing tag compiles and reports `orisaiNette.latte.unknownMacro`
+  are reported as `orisai.nette.latte.parseError`, never passed through as unknown macros
+- Latte 2: a repeated unpaired unknown tag with no closing tag compiles and reports `orisai.nette.latte.unknownMacro`
   instead of "Missing {/foo}"
-- Latte 2: `{name` inside `<script>`/`<style>` is `orisaiNette.latte.parseError` with Latte's "(in JavaScript or CSS
+- Latte 2: `{name` inside `<script>`/`<style>` is `orisai.nette.latte.parseError` with Latte's "(in JavaScript or CSS
   …)" message instead of an unknown-macro passthrough
-- Latte: generated PHP which does not parse is `orisaiNette.latte.parseError` "Error in template: …" on the template
+- Latte: generated PHP which does not parse is `orisai.nette.latte.parseError` "Error in template: …" on the template
   line, instead of a `phpstan.parse` error which hid every other finding of the run
 - Latte: a throwable raised by Latte or a Latte extension while compiling (e.g. `{block html|noescape}` on Latte 2) is
-  `orisaiNette.latte.parseError` "Thrown exception '…'" instead of an internal error
+  `orisai.nette.latte.parseError` "Thrown exception '…'" instead of an internal error
 - Latte 2: block, define and snippet method findings are reported on the `{block}` tag line (or the body's first line)
   instead of the last line of the template body
 - Latte: paired `{label}` and attributed `{input}`/`{label /}` are typed through an `Html` stand-in on every forms
@@ -61,18 +62,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   workers again — the behaviour PHPStan 2.2's deferred bootstrap removed
 - DI: service types are read from the container's `$wiring` (nette/di 3.2 removed `$types`); on nette/di 3.1 an
   imported service whose type is not exported is known by name only
-- Latte 3: a filter or function spelled in another case than registered is `orisaiNette.latte.filterCaseMismatch` or
-  `orisaiNette.latte.functionCaseMismatch` naming the registered spelling, as Latte 3 resolves names case-sensitively,
+- Latte 3: a filter or function spelled in another case than registered is `orisai.nette.latte.filterCaseMismatch` or
+  `orisai.nette.latte.functionCaseMismatch` naming the registered spelling, as Latte 3 resolves names case-sensitively,
   instead of being typed as the registered one
 - Latte: a filter or function registered as an anonymous closure is known but untyped instead of
-  `orisaiNette.latte.unknownFilter`
+  `orisai.nette.latte.unknownFilter`
 
 ### Fixed
 
 - PHP 7.4: no crash "Class 'ReflectionAttribute' not found" with PHPStan 2.2.10+, which runs result-cache meta
   extensions before the `bootstrapFiles` loading its PHP < 8 runtime polyfills; the Latte discovery index reflects
   methods there, and an attributed one needs the polyfills
-- Latte: a warm run no longer reports `orisaiNette.latte.unknownType` for a `{templateType}` class loadable only through
+- Latte: a warm run no longer reports `orisai.nette.latte.unknownType` for a `{templateType}` class loadable only through
   a `bootstrapFiles` autoloader (PHPStan 2.2 parses changed files before running them)
 - Latte: `LatteDiscovery_*`/`LatteSlice_*` store classes written after the first reflection lookup are located, so
   forked workers no longer report them as not found

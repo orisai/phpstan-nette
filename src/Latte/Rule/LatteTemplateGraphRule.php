@@ -11,8 +11,8 @@ use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
-// All four store-consuming Latte diagnostics (orisaiNette.latte.orphanTemplate, orisaiNette.latte.templateMissing,
-// orisaiNette.latte.templateTypeMismatch, orisai.nette.latte.templateTypeRequired), reported from the merged collected data
+// All four store-consuming Latte diagnostics (orisai.nette.latte.orphanTemplate, orisai.nette.latte.templateMissing,
+// orisai.nette.latte.templateTypeMismatch, orisai.nette.latte.templateTypeRequired), reported from the merged collected data
 // rather than from each template's own parse. That placement is the whole point: PHPStan runs
 // CollectedDataNode rules after the result cache has already been restored AND saved, over
 // cached-plus-fresh data for every analysed file, so the aggregation re-runs in full on every

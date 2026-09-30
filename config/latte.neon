@@ -628,7 +628,7 @@ services:
 			enabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 
-	# orisaiNette.latte.providerUnavailable: a uiControl/uiPresenter/snippetBridge-requiring macro in a template
+	# orisai.nette.latte.providerUnavailable: a uiControl/uiPresenter/snippetBridge-requiring macro in a template
 	# every linked renderer proves CONTROL_NONE for - see ProviderAvailabilityChecker's own class doc
 	# for the recorded axis this reads (the SAME one latteFactoryProvidedVars' `presenter` row
 	# consumes). Gated on the store flag alone, same precedent as latteFactoryProvidedVars: with no
@@ -705,7 +705,7 @@ services:
 		tags: [phpstan.collector]
 
 	# Always-terminating render<View> hooks (PHPStan's own earlyTerminatingMethodCalls vocabulary),
-	# the render-side half of orisaiNette.latte.templateMissing's evidence gate.
+	# the render-side half of orisai.nette.latte.templateMissing's evidence gate.
 	latteTerminatingRenderCollector:
 		class: OriPhpstan\Nette\Latte\Rule\LatteTerminatingRenderCollector
 		arguments:

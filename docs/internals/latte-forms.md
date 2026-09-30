@@ -58,11 +58,11 @@ any of the three off is byte-identical to the bridge being absent.
 
 | Identifier | Meaning | Reported at | Example message |
 |---|---|---|---|
-| `orisaiNette.latteForms.unknownControl` | the referenced control is absent from **every** linked renderer's form | the reference's own `.latte` line | `Control 'nope' does not exist on form 'simpleForm' (X).` |
-| `orisaiNette.latteForms.unknownForm` | `{form X}` names a component every linked renderer resolved, and none of them resolved to a form | the `{form}` opener's line | `Component 'grid' is not a form (X).` |
-| `orisaiNette.latteForms.containerAsControl` | `{input}` / `{label}` / `{inputError}` / `n:name` names a **container** (or a replicator) | the reference's line | `Component 'address' on form 'userForm' is a container, not a control (X).` |
-| `orisaiNette.latteForms.controlAsContainer` | `{formContainer}` / `n:formContainer` names a **control** | the reference's line | `Component 'email' on form 'userForm' is a control, not a container (X).` |
-| `orisaiNette.latteForms.labellessControl` | `{label}` / `n:label` names a control whose `getLabel()` is vendor's label-bypassing one | the reference's line | `Control 'save' on form 'userForm' is a Nette\Forms\Controls\SubmitButton, which renders no label (X).` |
+| `orisai.nette.latteForms.unknownControl` | the referenced control is absent from **every** linked renderer's form | the reference's own `.latte` line | `Control 'nope' does not exist on form 'simpleForm' (X).` |
+| `orisai.nette.latteForms.unknownForm` | `{form X}` names a component every linked renderer resolved, and none of them resolved to a form | the `{form}` opener's line | `Component 'grid' is not a form (X).` |
+| `orisai.nette.latteForms.containerAsControl` | `{input}` / `{label}` / `{inputError}` / `n:name` names a **container** (or a replicator) | the reference's line | `Component 'address' on form 'userForm' is a container, not a control (X).` |
+| `orisai.nette.latteForms.controlAsContainer` | `{formContainer}` / `n:formContainer` names a **control** | the reference's line | `Component 'email' on form 'userForm' is a control, not a container (X).` |
+| `orisai.nette.latteForms.labellessControl` | `{label}` / `n:label` names a control whose `getLabel()` is vendor's label-bypassing one | the reference's line | `Control 'save' on form 'userForm' is a Nette\Forms\Controls\SubmitButton, which renders no label (X).` |
 
 All five are ordinary, ignorable and baselinable, and all are reported on the `.latte` file and line —
 never on the PHP builder. `X` is the linked renderer class list, sorted and comma-separated; a
@@ -394,11 +394,11 @@ All five identifiers are ordinary PHPStan errors: ignorable, baselinable, report
 
 | Identifier | Reported at |
 |---|---|
-| `orisaiNette.latteForms.unknownControl` | the reference's line (`{input}`, `{label}` / `n:label`, `{inputError}`, `n:name`, `{formContainer}` / `n:formContainer`) |
-| `orisaiNette.latteForms.unknownForm` | the `{form}` / `{formContext}` / `<form n:name>` opener's line |
-| `orisaiNette.latteForms.containerAsControl` | the reference's line |
-| `orisaiNette.latteForms.controlAsContainer` | the reference's line |
-| `orisaiNette.latteForms.labellessControl` | the reference's line |
+| `orisai.nette.latteForms.unknownControl` | the reference's line (`{input}`, `{label}` / `n:label`, `{inputError}`, `n:name`, `{formContainer}` / `n:formContainer`) |
+| `orisai.nette.latteForms.unknownForm` | the `{form}` / `{formContext}` / `<form n:name>` opener's line |
+| `orisai.nette.latteForms.containerAsControl` | the reference's line |
+| `orisai.nette.latteForms.controlAsContainer` | the reference's line |
+| `orisai.nette.latteForms.labellessControl` | the reference's line |
 
 There is deliberately no auto-fix: the check under-detects by construction, so an automated edit
 would delete markup that is correct.
@@ -517,7 +517,7 @@ And from the type checks in particular:
 ## Not shipped (recorded, not dropped)
 
 - **Unrendered controls** — the reverse direction ("this control is built but no template renders
-  it"). Open-world, and needs the orphan-style care the Latte extension's `orisaiNette.latte.orphanTemplate`
+  it"). Open-world, and needs the orphan-style care the Latte extension's `orisai.nette.latte.orphanTemplate`
   took.
 - **`{formPrint}`** — not modelled; it renders no user-written control names.
 

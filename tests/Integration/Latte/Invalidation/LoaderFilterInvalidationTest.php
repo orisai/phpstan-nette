@@ -16,7 +16,7 @@ final class LoaderFilterInvalidationTest extends BaseTestCase
 
 	private const REAL_CONFIG_PATH = __DIR__ . '/../Integration/Fixtures/integration.neon';
 
-	private const UNKNOWN_ERROR = "filters.latte:2 :: orisaiNette.latte.unknownFilter :: Unknown Latte filter 'dyn'.";
+	private const UNKNOWN_ERROR = "filters.latte:2 :: orisai.nette.latte.unknownFilter :: Unknown Latte filter 'dyn'.";
 
 	private const ANSWERS_DYN = "\$name === 'dyn' ? ['ScratchLoaderFilters', 'dyn'] : null";
 

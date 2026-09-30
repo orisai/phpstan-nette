@@ -61,10 +61,10 @@ final class FormsOffSwitchTest extends BaseTestCase
 	{
 		return [
 			'src/Events.php:13 phpstan.dumpType Dumped type: array<int, callable(): mixed>',
-			'src/Fields.php:8 orisaiNette.forms.unannotatedRegistrar',
+			'src/Fields.php:8 orisai.nette.forms.unannotatedRegistrar',
 			'src/Rows.php:21 phpstan.dumpType Dumped type: Nette\Forms\Container{name: string}',
 			'src/Rows.php:29 phpstan.dumpType Dumped type: Nette\Forms\Container{name: string}',
-			'src/Signup.php:17 orisaiNette.forms.shadowDivergence',
+			'src/Signup.php:17 orisai.nette.forms.shadowDivergence',
 		];
 	}
 
@@ -96,7 +96,7 @@ final class FormsOffSwitchTest extends BaseTestCase
 			$file = (string) substr($message['file'], strlen($this->project->path('')));
 			if ($identifier === 'phpstan.dumpType') {
 				$findings[] = sprintf('%s:%d %s %s', $file, $message['line'], $identifier, $message['message']);
-			} elseif (strpos($identifier, 'orisaiNette.') === 0) {
+			} elseif (strpos($identifier, 'orisai.nette.') === 0) {
 				$findings[] = sprintf('%s:%d %s', $file, $message['line'], $identifier);
 			}
 		}

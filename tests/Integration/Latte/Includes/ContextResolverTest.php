@@ -150,7 +150,7 @@ final class ContextResolverTest extends BaseTestCase
 
 		self::assertNotSame([], $contexts);
 		// A straight, non-cyclic chain: the cut belongs in depthCapCuts(), never cutCycleEdges()
-		// (see Important 3 - a depth-cap cut reported as orisaiNette.latte.includeCycle would be
+		// (see Important 3 - a depth-cap cut reported as orisai.nette.latte.includeCycle would be
 		// worker/traversal-order-dependent).
 		self::assertNotSame([], $resolver->depthCapCuts());
 		self::assertSame([], $resolver->cutCycleEdges());
@@ -299,16 +299,16 @@ final class ContextResolverTest extends BaseTestCase
 
 	public function testIncluderOfUnknownTemplateTypeFileGetsNoUnknownTypeDiagnostic(): void
 	{
-		// orisaiNette.latte.unknownType belongs solely to the file that DECLARES the bad templateType, reported
+		// orisai.nette.latte.unknownType belongs solely to the file that DECLARES the bad templateType, reported
 		// when THAT file's own DeclarationInjector runs; a consumer only reaching the declaration
 		// through ContextResolver/DeclaredVarsResolver must never re-report it (see
 		// DeclaredVarsResolver::forFile()'s degrade-to-no-vars catch).
 		self::assertSame(
-			['orisaiNette.latte.unknownType'],
+			['orisai.nette.latte.unknownType'],
 			$this->diagnosticIdsFor('unknown-templatetype-target.latte'),
 		);
 		self::assertNotContains(
-			'orisaiNette.latte.unknownType',
+			'orisai.nette.latte.unknownType',
 			$this->diagnosticIdsFor('unknown-templatetype-includer.latte'),
 		);
 	}

@@ -38,7 +38,7 @@ final class Latte3FactsParityTest extends BaseTestCase
 			$parsed = (new Latte3Compiler())->parse($source);
 			$failure = $parsed->getFailure();
 			self::assertNotNull($failure, self::LATTE2_ONLY[$relativePath]);
-			self::assertSame('orisaiNette.latte.parseError', $failure->getIdentifier());
+			self::assertSame('orisai.nette.latte.parseError', $failure->getIdentifier());
 
 			return;
 		}

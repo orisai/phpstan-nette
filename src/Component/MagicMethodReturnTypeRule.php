@@ -81,7 +81,7 @@ final class MagicMethodReturnTypeRule implements Rule
 		$error = RuleErrorBuilder::message(
 			"Method $className::$methodName() must return void or never.",
 		)
-			->identifier('orisaiNette.component.magicMethodReturnType');
+			->identifier('orisai.nette.component.magicMethodReturnType');
 
 		if ($classReflection->getNativeMethod($formatMethod)->getDeclaringClass()->getName() !== $declaringClass) {
 			$error->addTip("$formatMethod() is overridden, this might be a false positive.");

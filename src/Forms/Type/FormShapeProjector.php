@@ -143,7 +143,7 @@ final class FormShapeProjector
 	 * which declines the slot for an opaque one and falls to componentTypes for exactly this reason,
 	 * so the two channels disagreed about real SelectBox/TextInput controls. The bare ObjectType is
 	 * the honest degrade: the class is known, the value shape is not, and FormShapeUnknownAccessRule
-	 * still reports orisaiNette.forms.partiallyUnknown for the value axis on the same name.
+	 * still reports orisai.nette.forms.partiallyUnknown for the value axis on the same name.
 	 *
 	 * The container and replicator arms both wrap a CHILD shape, and both ask isUsableInnerShape()
 	 * first for the same reason ContainerModel's leaf arm always did (containerChildType() below has

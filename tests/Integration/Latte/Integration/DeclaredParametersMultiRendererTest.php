@@ -71,7 +71,7 @@ final class DeclaredParametersMultiRendererTest extends BaseTestCase
 
 			$messages = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, $bootstrapFile);
 
-			$dumps = $this->filter($messages, 'orisaiNette.latte.debugDump');
+			$dumps = $this->filter($messages, 'orisai.nette.latte.debugDump');
 			self::assertCount(2, $dumps, 'both renderers must dump their facts: ' . Json::encode($messages));
 			self::assertSame(
 				'class: SpawnSilentControl'

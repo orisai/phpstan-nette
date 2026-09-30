@@ -10,7 +10,7 @@ template variables, wrong types passed into includes, calls to unknown macros/fi
 of anything PHP-visible inside a template are all caught statically instead of surfacing at
 render time. (One family-wide exception: vendor `@internal`-API errors are ignored on `.latte`
 paths, because generated template code necessarily calls internal Latte/Nette runtime APIs —
-`orisaiNette.latte.internalAccess` below covers the user-written side of that gap.)
+`orisai.nette.latte.internalAccess` below covers the user-written side of that gap.)
 
 ## What is analysed
 
@@ -191,7 +191,7 @@ Latte 2.11 erases all type declarations at compile time, so the analysis reads t
 undefined — that is the intended, fully-strict default, not a bug.
 
 - **`{templateType C}`** (head-only) — the declared parameter set becomes `C`'s public properties,
-  inherited ones included. Unknown class → `orisaiNette.latte.unknownType`. A property's type comes from its
+  inherited ones included. Unknown class → `orisai.nette.latte.unknownType`. A property's type comes from its
   native type hint or its own `@var` docblock, whichever it has
   (`PropertyTypeResolver::resolve()`); a property typed as a bare `@template` parameter resolves to
   `mixed` rather than to whatever an `@extends UITemplate<FooControl>` binds it to. The surface is
@@ -267,9 +267,9 @@ edges or call sites, only at a single target's own two declarations of the same 
 
 | Relation (native vs override) | Identifier | Behavior |
 |---|---|---|
-| Exact match | `orisaiNette.latte.duplicateDeclaration` | Always reported — the `{varType}` adds nothing. |
-| Override narrower (a subtype of native) | `orisaiNette.latte.narrowingOverride` | Reported unless `orisai.nette.latte.allowNarrowingOverride: true`. |
-| Override wider or unrelated | `orisaiNette.latte.impossibleOverride` | Always reported — the override can never hold. |
+| Exact match | `orisai.nette.latte.duplicateDeclaration` | Always reported — the `{varType}` adds nothing. |
+| Override narrower (a subtype of native) | `orisai.nette.latte.narrowingOverride` | Reported unless `orisai.nette.latte.allowNarrowingOverride: true`. |
+| Override wider or unrelated | `orisai.nette.latte.impossibleOverride` | Always reported — the override can never hold. |
 
 An untyped native side (a block param without a type hint) plus a `{varType}` is **not** a
 conflict — that is the ordinary block input-contract channel (the `{varType}` is the param's only
@@ -302,7 +302,7 @@ rule is for a named `@var`**, and the reason is structural: PHP's `@var` may omi
 name, so upstream's anchor list mostly exists to decide *which* variable an unnamed tag means, and
 a named tag above an arbitrary statement is only checked for the variable's existence. Latte's
 compiler rejects a variable-less `{varType}` outright (`Unexpected content, expecting
-{varType type $var}`, surfaced here as `orisaiNette.latte.parseError`), so every `{varType}` that reaches this
+{varType type $var}`, surfaced here as `orisai.nette.latte.parseError`), so every `{varType}` that reaches this
 check is named, and the anchor list is repurposed as the placement contract it describes.
 
 Two positions are **exempt entirely**, because they are parameter declarations rather than
@@ -340,15 +340,15 @@ one.
 
 | Situation | Identifier | Message shape |
 |---|---|---|
-| No anchor at all (separated from its assignment, above a construct that assigns nothing, at end of template) | `orisaiNette.latte.varTypeMisplaced` | *Mid-file `{varType}` for `$x` must sit directly above an assignment to `$x`, not above `{if}`.* |
-| Anchor binds exactly one variable, and it is not this one | `orisaiNette.latte.varTypeDifferentVariable` | *Variable `$x` in `{varType}` does not match assigned variable `$y`.* |
-| `foreach` anchor that binds no such variable | `orisaiNette.latte.varTypeDifferentVariable` | *Variable `$x` in `{varType}` does not match any variable in the foreach loop: `$items`, `$item`* |
-| Anchor binds several variables (or several tags share it), and none is this one | `orisaiNette.latte.varTypeVariableNotFound` | *Variable `$x` in `{varType}` does not exist.* — mirrors `processAssign()`'s own wording verbatim: with more than one candidate, upstream stops listing them and just says the name does not exist |
+| No anchor at all (separated from its assignment, above a construct that assigns nothing, at end of template) | `orisai.nette.latte.varTypeMisplaced` | *Mid-file `{varType}` for `$x` must sit directly above an assignment to `$x`, not above `{if}`.* |
+| Anchor binds exactly one variable, and it is not this one | `orisai.nette.latte.varTypeDifferentVariable` | *Variable `$x` in `{varType}` does not match assigned variable `$y`.* |
+| `foreach` anchor that binds no such variable | `orisai.nette.latte.varTypeDifferentVariable` | *Variable `$x` in `{varType}` does not match any variable in the foreach loop: `$items`, `$item`* |
+| Anchor binds several variables (or several tags share it), and none is this one | `orisai.nette.latte.varTypeVariableNotFound` | *Variable `$x` in `{varType}` does not exist.* — mirrors `processAssign()`'s own wording verbatim: with more than one candidate, upstream stops listing them and just says the name does not exist |
 
 The dominant real-world trigger is not a misplaced local at all: it is a **template parameter whose
 `{varType}` lost its header position** to a preceding non-header tag (a `{var}` above it is enough).
 There the named variable is never assigned anywhere in the file, so the assignment the message asks
-for cannot be written — the fix is to move the tag back into the header. `orisaiNette.latte.varTypeMisplaced`
+for cannot be written — the fix is to move the tag back into the header. `orisai.nette.latte.varTypeMisplaced`
 detects that case (nothing in the whole template binds the variable) and adds a tip saying so:
 
 > Variable `$items` is never assigned in this template - move the `{varType}` above the first
@@ -380,7 +380,7 @@ even trying to describe.
 
 The second `{varType string $p}` is anchored to `{var $other = 2}` and does not match it — but `$p`
 is already known (it is a header parameter), so this is silent, exactly as PHPStan is silent on the
-PHP analogue. Without the guard this would wrongly report `orisaiNette.latte.varTypeDifferentVariable`. The
+PHP analogue. Without the guard this would wrongly report `orisai.nette.latte.varTypeDifferentVariable`. The
 guard is scoped to non-`foreach` anchors only, matching upstream precisely: `processForeach()` has
 no such guard, so a `foreach` mismatch is reported even when the name is otherwise known. An earlier
 construct whose bindings cannot be resolved (an opaque `{php}`/`{do}` body) counts as known too,
@@ -406,8 +406,8 @@ This is a port of PHPStan's `VarTagTypeRuleHelper`, including both of its knobs:
 
 | Identifier | Mirrors | Gate |
 |---|---|---|
-| `orisaiNette.latte.varTypeNativeType` | `varTag.nativeType` | always runs — but its own strictness on a *widening* declaration is toggled by `orisai.nette.latte.reportAnyTypeWideningInVarType` (see below); only an outright incompatible type is unconditional |
-| `orisaiNette.latte.varTypeType` | `varTag.type` | `orisai.nette.latte.reportWrongPhpDocTypeInVarType` (skipped entirely when off) |
+| `orisai.nette.latte.varTypeNativeType` | `varTag.nativeType` | always runs — but its own strictness on a *widening* declaration is toggled by `orisai.nette.latte.reportAnyTypeWideningInVarType` (see below); only an outright incompatible type is unconditional |
+| `orisai.nette.latte.varTypeType` | `varTag.type` | `orisai.nette.latte.reportWrongPhpDocTypeInVarType` (skipped entirely when off) |
 
 | Option | Mirrors | PHPStan core default | **Default here** |
 |---|---|---|---|
@@ -500,20 +500,20 @@ Contract errors report only definite violations: a mismatch must hold across *al
 reach the edge — if even one reachable context satisfies the declaration, the edge stays quiet
 (OPEN discipline, no speculative errors):
 
-- a provided type not assignable to the declared type → `orisaiNette.latte.includeTypeMismatch` at the include
+- a provided type not assignable to the declared type → `orisai.nette.latte.includeTypeMismatch` at the include
   site;
-- a declared, defaultless variable not provided by the edge → `orisaiNette.latte.includeMissingVariable` at
+- a declared, defaultless variable not provided by the edge → `orisai.nette.latte.includeMissingVariable` at
   the include site;
 - inside the file, the declared types govern the body, so a fully-declared partial analyzes
   identically from every compatible caller (one instantiation, not one per caller).
 
 Static include/extends targets are resolved relative to the referring template's directory. A
-target that doesn't exist on disk → `orisaiNette.latte.unknownInclude`. A target only known at runtime
-(`{include $x->getTemplate()}`, `{extends $originalTemplate}`) → `orisaiNette.latte.dynamicInclude` /
-`orisaiNette.latte.dynamicExtends`; the site's own argument expressions are still analyzed, the target itself
+target that doesn't exist on disk → `orisai.nette.latte.unknownInclude`. A target only known at runtime
+(`{include $x->getTemplate()}`, `{extends $originalTemplate}`) → `orisai.nette.latte.dynamicInclude` /
+`orisai.nette.latte.dynamicExtends`; the site's own argument expressions are still analyzed, the target itself
 is not followed. `{include #block}` against a block absent from every reachable block table →
-`orisaiNette.latte.unknownBlock` (with the suppression carve-outs below); `{ifset #block}`/`{elseifset #block}`
-are guards and never error. Include chains that cycle are cut with `orisaiNette.latte.includeCycle` at the
+`orisai.nette.latte.unknownBlock` (with the suppression carve-outs below); `{ifset #block}`/`{elseifset #block}`
+are guards and never error. Include chains that cycle are cut with `orisai.nette.latte.includeCycle` at the
 closing edge.
 
 ### Include isolation (`orisai.nette.latte.includeIsolation`)
@@ -537,7 +537,7 @@ any supported Latte runs.
 
 `orisai.nette.latte.includeIsolation` (bool, default `false`) switches `EdgeScope::resolve()`'s file-form
 include/embed branch to the isolated shape — the one seam every consumer already routes through.
-Turning it on reports, through the existing `orisaiNette.latte.includeMissingVariable` machinery, every edge
+Turning it on reports, through the existing `orisai.nette.latte.includeMissingVariable` machinery, every edge
 whose target **declares** a variable that today arrives only by inheritance — the declared-variable
 slice of what fully isolated includes would miss. The undeclared remainder is invisible to this
 identifier and surfaces as `variable.undefined` inside the target instead (see the table below). It
@@ -556,7 +556,7 @@ parameters:
 				includeIsolation: true
 ```
 
-The flag reports only through `orisaiNette.latte.includeMissingVariable`, which fires only when an
+The flag reports only through `orisai.nette.latte.includeMissingVariable`, which fires only when an
 include *target* declares a variable the edge fails to satisfy. A project whose include targets
 declare nothing therefore gets zero findings from it — and that is **not** evidence that isolating
 includes is free. The flag's worklist grows exactly as `{varType}`/`{parameters}` coverage on include targets
@@ -585,12 +585,12 @@ can only *miss* findings, never invent them; with `orisai.nette.latte.includeIso
 matches the runtime exactly. The default stays a union because `{embed}` is rare; correcting the default matters only for a
 project that uses `{embed}`.
 
-### `orisaiNette.latte.unknownBlock` suppression
+### `orisai.nette.latte.unknownBlock` suppression
 
 Phase 1 only sees explicit Latte-tag edges (`{include}`, `{extends}`, `{import}`, ...); it has no
 model of Nette's *convention*-based wiring — presenter auto-layout discovery, `setFile()`,
 component render callbacks — which attach files to each other invisibly. Reporting
-`orisaiNette.latte.unknownBlock` against a file phase 1 cannot prove is reachable-or-not would be a false
+`orisai.nette.latte.unknownBlock` against a file phase 1 cannot prove is reachable-or-not would be a false
 positive, so two categories are exempt (OPEN, never false-close):
 
 1. **Files with zero incoming edges** — nothing in the graph points at them, so an
@@ -698,10 +698,10 @@ them: below level 9, mixed-type operations are not reported. So a lost capture
 costs both directions — some findings appear, an unknown number are silently suppressed — which is
 why the narrowing store is load-bearing rather than a pure optimisation.
 
-## Access to runtime internals (`orisaiNette.latte.internalAccess`)
+## Access to runtime internals (`orisai.nette.latte.internalAccess`)
 
 A compiled template's `$this` is Latte's generated `LatteTpl_*` runtime class, not your
-presenter/control. Phase 1 doesn't model that boundary (phase 3 does), so `orisaiNette.latte.internalAccess`
+presenter/control. Phase 1 doesn't model that boundary (phase 3 does), so `orisai.nette.latte.internalAccess`
 flags every `$this->member` (method call or property fetch) that a template's own source literally
 writes:
 
@@ -750,7 +750,7 @@ imperative `addFilter()` calls. Two channels are modeled; a third is deliberatel
   `C`'s own tagged/attributed methods become filters/functions (below).
 - **Imperative render-time registration** (`$template->addFilter(...)`,
   `$compiler->addFilter(...)` called from presenter/control code) stays out of scope — see *Known
-  limitations*. All such names still analyse (reported as `orisaiNette.latte.unknownFilter`), just without
+  limitations*. All such names still analyse (reported as `orisai.nette.latte.unknownFilter`), just without
   real-signature checking.
 
 ### Engine harvest (global customs)
@@ -841,7 +841,7 @@ call. The engine reader hands `HarvestedCustoms` a `FilterLoaderProbe` (none whe
 loaders, so without an engine loader this is a no-op); `FilterTable::resolveForTemplate()` asks it
 on a miss and reflects the answered callable exactly like a harvested extension callable
 (`resolveDefaultTarget()`: static, instance-bound or named-method; an anonymous closure is known but
-untyped, `Helpers::untypedFilter()`), and a decline stays `orisaiNette.latte.unknownFilter`. Latte 3 asks
+untyped, `Helpers::untypedFilter()`), and a decline stays `orisai.nette.latte.unknownFilter`. Latte 3 asks
 `FilterExecutor::__get()`, which consults the loaders in registration order (newest first) and
 throws `LogicException` on a decline; the answered callable is read back from the executor's
 `_static` because `__get()` wraps a FilterInfo-aware one. Latte 2's `__get()` only returns a lazy
@@ -855,7 +855,7 @@ decline is asked once more, in lowercase only (`FilterLoaderProbe`'s `$lowercase
 runtime that spelling works only once another spelling has loaded the filter (and throws while
 none has), an order the analysis cannot know, so it types it. The fallback is one-way — no other
 spelling is tried: when the loaders answer only `formatDyn`, a written `{$s|formatdyn}` stays
-`orisaiNette.latte.unknownFilter`, although at runtime it works once `{$s|formatDyn}` has loaded the
+`orisai.nette.latte.unknownFilter`, although at runtime it works once `{$s|formatDyn}` has loaded the
 filter. Answers are memoised per written name for the process.
 
 Limitation (Latte 2): a loader filter used only as a block filter (`{block|name}`) goes through
@@ -878,12 +878,12 @@ those names under `loader filters:` when the engine has loaders.
 
 Harvested filter/function names join the existing filter-rewrite table with **real, reflected
 signatures** — a call through a harvested name checks its arguments against the actual PHP
-callable, exactly like a built-in. `orisaiNette.latte.unknownFilter` (and PHPStan's native `function.notFound`
+callable, exactly like a built-in. `orisai.nette.latte.unknownFilter` (and PHPStan's native `function.notFound`
 for functions) stop firing for harvested names; an unrecognized name still reports as before. (Tag
 *name* collisions — a harvested macro sharing a built-in's tag name — are a separate, macro-level
 concern; see *Native macros* below.)
 
-### Case-mismatch diagnostics (`orisaiNette.latte.filterCaseMismatch` / `orisaiNette.latte.functionCaseMismatch`)
+### Case-mismatch diagnostics (`orisai.nette.latte.filterCaseMismatch` / `orisai.nette.latte.functionCaseMismatch`)
 
 Latte 2.11 resolves filter and function names **case-insensitively** —
 `{$x|Upper}` and `{$x|upper}` are the same call. Latte 3 made resolution **case-sensitive**: a
@@ -914,11 +914,11 @@ unknown name:
 
 Latte 3.0 still resolves a function spelled in another case in its `customFunctionsPass`, with a
 compile warning that carries no line, and compiles the registered spelling: `Latte3Compiler` turns the
-warning into `orisaiNette.latte.functionCaseMismatch` ("… - Latte 3.0 resolves it with a warning,
+warning into `orisai.nette.latte.functionCaseMismatch` ("… - Latte 3.0 resolves it with a warning,
 Latte 3.1 does not resolve it.") on the call's line, read from the node tree before the pass, and the
 call keeps the registered function's signature. Probed on 3.0.26 and 3.1.6: a mis-cased filter throws
 `LogicException` at render time on both, a mis-cased function is an undefined PHP function on 3.1. A
-mis-cased tag (`{IF}…{/IF}`) is `orisaiNette.latte.unknownMacro`; a name after `|` which starts
+mis-cased tag (`{IF}…{/IF}`) is `orisai.nette.latte.unknownMacro`; a name after `|` which starts
 uppercase (`{$s|Upper}`) is no filter call on Latte 3 (see *Loader-provided filters* above).
 
 Latte's own `Defaults` deliberately double-registers some names under two valid spellings
@@ -951,7 +951,7 @@ A consequence, by design: the real compiled calls are analysed. A project that f
 every template using the macro family — findings the passthrough shape never produced. They are
 true positives; baseline them as a migration backlog rather than ignoring the identifier.
 
-### Vendor error containment and `orisaiNette.latte.deprecated`
+### Vendor error containment and `orisai.nette.latte.deprecated`
 
 Vendor Latte code calls `trigger_error()` at 30 sites total, 22 of them reachable from a
 compile-only invocation (deprecations, its own dormant case-mismatch checks, …). Left alone these
@@ -962,7 +962,7 @@ error-collecting handler. A scoped `set_error_handler` — installed and restore
 chained to any ambient handler — wraps every vendor invocation this extension makes: template
 compilation, engine construction/enumeration during harvest, and harvested macro-set installation.
 
-`E_USER_DEPRECATED` captured during compilation becomes an ordinary `orisaiNette.latte.deprecated` finding at
+`E_USER_DEPRECATED` captured during compilation becomes an ordinary `orisai.nette.latte.deprecated` finding at
 the compiler's current line (falling back to line 1 when no position is available); every other
 captured severity is silently dropped — vendor-internal noise, not a report. The one deprecation
 class plausible in ordinary templates is `n:ifcontent` on a void/self-closing element.
@@ -981,7 +981,7 @@ An error on macro- or filter-generated code reports at the `.latte` line, but th
   - one macro on the line: `Generated by the {_} macro at column 5.`
   - several: `Generated by a macro on this line: {_} at column 3, {ng_} at column 20.`
 - **Functions** — never tipped; the developer wrote the call directly.
-- **`orisaiNette.latte.debugDump`** findings (below) are never tipped either, for the same reason — a debug
+- **`orisai.nette.latte.debugDump`** findings (below) are never tipped either, for the same reason — a debug
   dump is a diagnostic the developer wrote directly, not generated code.
 
 A provenance tip **combines with**, never replaces, a tip the underlying rule already set (PHPStan
@@ -1028,7 +1028,7 @@ afterward, in an order that depends on which template happens to render first �
 order-dependence landmine as the imperative `addFilter()` sites. This pipeline never models that
 leak. A per-template custom is visible only to templates whose own `{templateType}` is the exact
 declaring class (and that file's include-context clones) — an unrelated template calling the same
-name still reports `orisaiNette.latte.unknownFilter`/"function not found", even though the real runtime might
+name still reports `orisai.nette.latte.unknownFilter`/"function not found", even though the real runtime might
 have accidentally made it work depending on render order. This is the documented recommendation
 for new code: never rely on the runtime leak, declare `{templateType}` on every template that needs
 a custom.
@@ -1091,7 +1091,7 @@ Two independent caches consume this salt:
   `.latte` surface at once, the same coarse trade the topology salt already makes.
 - **`LatteCompiler`'s own compile cache** (`LatteAnalysisCache`, keyed under `LatteCodeVersion`) —
   the cached `CompileResult` bakes in harvest-dependent shapes (native macros vs. passthrough,
-  `orisaiNette.latte.unknownMacro`, case-mismatch diagnostics), so `compile()`'s content-addressed key is
+  `orisai.nette.latte.unknownMacro`, case-mismatch diagnostics), so `compile()`'s content-addressed key is
   `sha1($source) . '|' . $className . '|' . $harvestSalt`, not just source+class name. Without the
   salt in this key, a harvest change would invalidate PHPStan's result cache (forcing
   re-analysis) but the re-analysis would still read the STALE compiled PHP back out of this cache,
@@ -1117,7 +1117,7 @@ directory's `*.php` files, with a `harvest note:` line in `dumpLatteCustoms()`. 
 classes of such an extension in subdirectories do not invalidate the analysis — declare extensions
 in a directory of their own. An unreadable directory in the walk is salted as `<path> unreadable`
 (so a permission flip changes the salt), skipped, and reported once as
-`orisaiNette.latte.customsHarvest` on line 1 of the analysed universe's first template (sorted, the
+`orisai.nette.latte.customsHarvest` on line 1 of the analysed universe's first template (sorted, the
 same file on every worker and run; `HarvestProblemReporter`) and as a `harvest problem:` dump line —
 the harvest itself is kept. The reported path is relative to `%currentWorkingDirectory%` when it
 lies inside it, so the message is stable in a baseline. A run which does not analyse that first
@@ -1235,10 +1235,10 @@ The declaration may widen; creation decides:
 below, these are reported on `.php` lines (the offending declaration/creation site), and unlike
 the dump family they are ordinary, ignorable, baselinable errors:
 
-- `orisaiNette.latte.pairingConflict` — e.g. `Template class pairing conflict: Acme\UserPanel\DetailTemplate
+- `orisai.nette.latte.pairingConflict` — e.g. `Template class pairing conflict: Acme\UserPanel\DetailTemplate
   (phpdoc, genericBinding) vs Acme\UserPanel\ListTemplate (new).` One message per
   (kind, declared, runtime) pair; every channel that observed a side is named on that side.
-- `orisaiNette.latte.pairingOpaque` — e.g. `Template class pairing is opaque in channel convention.` A
+- `orisai.nette.latte.pairingOpaque` — e.g. `Template class pairing is opaque in channel convention.` A
   class-level channel whose class expression is not statically resolvable (the message never
   names a class — there is none to name).
 
@@ -1276,7 +1276,7 @@ non-qualifying classes never reach the judge.
 
 ## Template-file discovery
 
-The bridge's third stage answers the question phase 1 had to leave open (*`orisaiNette.latte.unknownBlock`
+The bridge's third stage answers the question phase 1 had to leave open (*`orisai.nette.latte.unknownBlock`
 suppression* above): **which `.latte` file does a given renderer render?** Every walked class
 resolves a view set, a per-view list of candidate paths, and its layout candidates; the resulting
 class→file links publish through a derived store and become real incoming edges in the
@@ -1375,7 +1375,7 @@ opaque — controls, which need no name, still resolve. That opaque stays in the
 (`ConfigurationGuard::hasTemplateFactoryContainerLoader()`). The suppression must not move into
 `DiscoveryResolver`: a cached fact that depended on configuration the cache envelope does not
 compare would make a warm run disagree with a cold one after a loader change, and
-`orisaiNette.latte.templateMissing` would lose its opaque escape (a false close).
+`orisai.nette.latte.templateMissing` would lose its opaque escape (a false close).
 
 The mirrored path algebra is a committed tripwire: `FormulaParityTest` byte-compares this
 extension's output against the **real** vendor `formatTemplateFiles()`/`formatLayoutTemplateFiles()`
@@ -1431,7 +1431,7 @@ action-name grammar (the `initGlobalParameters()` guard), which keeps `@layout.l
 partials and dotted leftovers out.
 
 A **dynamic** `setView($x)` argument *opens* the view set: the real set is unknown, not empty, so
-every per-view check (`orisaiNette.latte.templateMissing` above all) skips that class entirely rather than
+every per-view check (`orisai.nette.latte.templateMissing` above all) skips that class entirely rather than
 answer from a set it knows to be incomplete.
 
 ### The derived discovery store
@@ -1465,10 +1465,10 @@ artifact a previous run left behind. Deleting the directory costs nothing but th
   "discovery requires latte" row, since the defaults would violate it
   (`testDiscoveryWithoutLatteIsInert` pins the inert combination). Off means literally no store read
   or write anywhere — every consumer short-circuits before touching the store, whose own directory
-  load is lazy, and the build itself never runs — and `orisaiNette.latte.fileDiscoveryOpaque` is not
+  load is lazy, and the build itself never runs — and `orisai.nette.latte.fileDiscoveryOpaque` is not
   reported.
 - **Until the store has links, all four store-consuming diagnostics stay silent.**
-  `orisaiNette.latte.orphanTemplate`, `orisaiNette.latte.templateMissing`, `orisaiNette.latte.templateTypeMismatch` and
+  `orisai.nette.latte.orphanTemplate`, `orisai.nette.latte.templateMissing`, `orisai.nette.latte.templateTypeMismatch` and
   `orisai.nette.latte.templateTypeRequired` are answered from the store's class→file links, so a run that finds
   none — a corpus with no renderers at all, or a store whose per-template files exist but carry no
   records — reports nothing at all rather than declaring every analysed template unreachable. The
@@ -1525,19 +1525,19 @@ is not statically resolvable (opaque, condition 2). Either way the layout link s
 
 The classes the gate drops are genuine non-renderers: base presenters never instantiated directly
 and API-only presenters that respond with JSON/redirects and never reach `sendTemplate()`.
-`orisaiNette.latte.orphanTemplate` reachability only needs one surviving live edge, so a layout that keeps
-several concrete renderers is unaffected, and `orisaiNette.latte.unknownBlock`'s "zero incoming edges"
-exemption (*`orisaiNette.latte.unknownBlock` suppression* above) applies only to a layout that dropped to
+`orisai.nette.latte.orphanTemplate` reachability only needs one surviving live edge, so a layout that keeps
+several concrete renderers is unaffected, and `orisai.nette.latte.unknownBlock`'s "zero incoming edges"
+exemption (*`orisai.nette.latte.unknownBlock` suppression* above) applies only to a layout that dropped to
 zero.
 
-**Consequence for `orisaiNette.latte.templateMissing`.** A class whose only discovery record was ever the
+**Consequence for `orisai.nette.latte.templateMissing`.** A class whose only discovery record was ever the
 layout one — a class this gate now correctly links to nothing — can no longer host that finding, and
 this DOES create new instances of the hole *Known limitations* already documents for
 `missingByHost()` (it iterates only `firstLinkedTemplates()`, so a renderer linking no template hosts
 nothing). `TemplateTypeChecker::missingDiagnostics()` (`:385-435`) fires for a view whose candidates
 all answer `exists() === false`, and `resolvesATemplateFile()` (`:449`) answers true off a live,
 non-terminating `render<View>` hook alone — no template file has to exist for that. So a presenter
-with `renderFoo()` and no `foo.latte` anywhere DOES satisfy `orisaiNette.latte.templateMissing`'s own
+with `renderFoo()` and no `foo.latte` anywhere DOES satisfy `orisai.nette.latte.templateMissing`'s own
 precondition, regardless of its layout link: before this branch its (unconditional) layout record
 made it that class's first linked template, hosting the finding there; now that link is gone, the
 class has no record at all, it never reaches `firstLinkedTemplates()`, and `missingByHost()` never
@@ -1552,7 +1552,7 @@ detection, which is safe. `FactoryProvidedVars::intersect()` now folds `$present
 exactly the renderer set a template links, read straight from the store, so a wrongly dropped link
 also moves that folded type — and a wrongly-narrowed type invents findings rather than merely missing
 one. Layout reachability's correctness is therefore now a false-positive-safety property for the
-merge, not only a detection-completeness property for `orisaiNette.latte.orphanTemplate`/`orisaiNette.latte.unknownBlock`.
+merge, not only a detection-completeness property for `orisai.nette.latte.orphanTemplate`/`orisai.nette.latte.unknownBlock`.
 
 ### Store-path precondition (granular vs. coarse invalidation)
 
@@ -1603,19 +1603,19 @@ Every other coarse layout is fixable by moving the store and stays silent — a 
 All of them need `orisai.nette.latte.enabled`; the four Latte-side ones additionally need
 `orisai.nette.latte.discovery.enabled` (no records, no linked templates, nothing to check).
 
-- **`orisaiNette.latte.fileDiscoveryOpaque`** (PHP side, on the class) — a channel discovery could not resolve:
+- **`orisai.nette.latte.fileDiscoveryOpaque`** (PHP side, on the class) — a channel discovery could not resolve:
   `Template file discovery is opaque: formatTemplateFiles override declared by Acme\Control\FooBase
   has no assigned discovery formula.`, `Template file discovery is opaque: setFile argument is not
   statically resolvable.`, `Template file discovery is opaque: presenter name unresolved: no
   mapping reverse-maps class Acme\Module\BarPresenter.`
-- **`orisaiNette.latte.ineffectiveTemplateMutation`** (PHP side, at the call) — a write proven outside its
+- **`orisai.nette.latte.ineffectiveTemplateMutation`** (PHP side, at the call) — a write proven outside its
   window: `Call to setView() has no effect at this point of the presenter lifecycle.` Only
   provably-out-of-window calls report; the ambiguous state (`maybe`) is silent by construction.
-- **`orisaiNette.latte.templateTypeMismatch`** (template side) — `Template declares {templateType
+- **`orisai.nette.latte.templateTypeMismatch`** (template side) — `Template declares {templateType
   Acme\UserPanel\ListTemplate} but renderer Acme\UserPanel\ListControl pairs
   Acme\UserPanel\DetailTemplate.` Checked against *every* linked renderer; a declaration may widen
   (subtype-tolerated, the pairing rule above), and an opaque or `*dynamic*` verdict skips.
-- **`orisaiNette.latte.templateMissing`** (template side, hosted on the renderer's first linked template) —
+- **`orisai.nette.latte.templateMissing`** (template side, hosted on the renderer's first linked template) —
   `No template file found for Acme\Module\FooPresenter::bar (tried: templates/Foo/bar.latte,
   templates/Foo.bar.latte).` The runtime-500 catch: every candidate missing, for a view that
   *provably* reaches file resolution (an explicit `setFile`/convention write, or a `render<View>`
@@ -1625,7 +1625,7 @@ All of them need `orisai.nette.latte.enabled`; the four Latte-side ones addition
   renderer Acme\Module\FooPresenter pairs the default template class.` Behind
   `orisai.nette.latte.templateTypeRequired` (default **off**): it is a
   migration nudge toward typed templates, not a defect.
-- **`orisaiNette.latte.orphanTemplate`** (template side) — `No analysable render, include or layout path
+- **`orisai.nette.latte.orphanTemplate`** (template side) — `No analysable render, include or layout path
   reaches this template file.` Computed as a reachability fixpoint over the whole template graph:
   live roots are templates a PHP renderer renders, liveness propagates through
   include/import/extends/layout edges, and anything in app scope not reached is reported, with a
@@ -1662,52 +1662,52 @@ Latte-specific identifiers (all ordinary, ignorable, baselinable, reported on `.
 
 | Identifier | Meaning | Reported at |
 |---|---|---|
-| `orisaiNette.latte.parseError` | template failed to tokenize/compile, a vendor throwable during the compile (`Thrown exception '…'`), or generated PHP which does not parse (`Error in template: …`) | offending line (file-level fallback line 1) |
-| `orisaiNette.latte.unknownMacro` | tag / n:attribute not in the registered set | tag site |
-| `orisaiNette.latte.unknownFilter` | filter name not in the known set | filter site |
-| `orisaiNette.latte.unknownType` | `{templateType}`/`{varType}` references an unknown class | declaration site |
-| `orisaiNette.latte.dynamicInclude` | include target not statically determinable | include site |
-| `orisaiNette.latte.dynamicExtends` | extends/layout target not statically determinable | tag site |
-| `orisaiNette.latte.unknownInclude` | static include target file does not exist | include site |
-| `orisaiNette.latte.unknownBlock` | block include target exists in no reachable table (see suppression above) | include site |
-| `orisaiNette.latte.includeCycle` | include chain cycles | closing edge site |
-| `orisaiNette.latte.includeTypeMismatch` | provided context incompatible with target's declaration | include site |
-| `orisaiNette.latte.includeMissingVariable` | declared (defaultless) variable not provided by edge | include site |
-| `orisaiNette.latte.internalAccess` | template source writes `$this->member` on the compiled runtime class | access site |
-| `orisaiNette.latte.duplicateDeclaration` | `{varType}` override exactly matches its native declaration | `{varType}` site |
-| `orisaiNette.latte.narrowingOverride` | `{varType}` override narrows its native declaration (see *Declaration consistency*) | `{varType}` site |
-| `orisaiNette.latte.impossibleOverride` | `{varType}` override is wider than or unrelated to its native declaration | `{varType}` site |
-| `orisaiNette.latte.varTypeMisplaced` | mid-file `{varType}` is not directly above an assignment to its variable (see *Mid-file `{varType}` placement*) | `{varType}` site |
-| `orisaiNette.latte.varTypeDifferentVariable` | mid-file `{varType}` names a variable its single anchor does not bind | `{varType}` site |
-| `orisaiNette.latte.varTypeVariableNotFound` | mid-file `{varType}` names a variable none of its anchor's several bindings match | `{varType}` site |
-| `orisaiNette.latte.varTypeNativeType` | `{varType}` conflicts with the native type of the expression its anchor assigns | `{varType}` site |
-| `orisaiNette.latte.varTypeType` | `{varType}` conflicts with the PHPDoc type of that expression (`orisai.nette.latte.reportWrongPhpDocTypeInVarType`) | `{varType}` site |
-| `orisaiNette.latte.filterCaseMismatch` | called filter spelling differs in case from the registered one (Latte 2: token scan, breaks on Latte 3; Latte 3: `FilterRewriter`, throws at runtime) | filter site |
-| `orisaiNette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte 2: token scan; Latte 3.0: the compile warning; Latte 3.1: `FilterRewriter`) | function call site |
-| `orisaiNette.latte.deprecated` | vendor `E_USER_DEPRECATED` captured during compilation (see *Vendor error containment*) | compiler's current line (fallback line 1) |
-| `orisaiNette.latte.internalError` | the analysis pipeline's own diagnostic-materialization invariant was violated | offending node |
-| `orisaiNette.latte.customsHarvest` | a directory under a harvested Latte 3 extension could not be read for the harvest salt (see *Invalidation*); the path is relative to `%currentWorkingDirectory%` when inside it | line 1 of the universe's first template (sorted) |
-| `orisaiNette.latte.templateTypeMismatch` | `{templateType}` outside what a linked renderer pairs (see *Template-file discovery*) | `{templateType}` site |
-| `orisaiNette.latte.templateMissing` | a renderable view whose every candidate file is missing | renderer's first linked template, line 1 |
+| `orisai.nette.latte.parseError` | template failed to tokenize/compile, a vendor throwable during the compile (`Thrown exception '…'`), or generated PHP which does not parse (`Error in template: …`) | offending line (file-level fallback line 1) |
+| `orisai.nette.latte.unknownMacro` | tag / n:attribute not in the registered set | tag site |
+| `orisai.nette.latte.unknownFilter` | filter name not in the known set | filter site |
+| `orisai.nette.latte.unknownType` | `{templateType}`/`{varType}` references an unknown class | declaration site |
+| `orisai.nette.latte.dynamicInclude` | include target not statically determinable | include site |
+| `orisai.nette.latte.dynamicExtends` | extends/layout target not statically determinable | tag site |
+| `orisai.nette.latte.unknownInclude` | static include target file does not exist | include site |
+| `orisai.nette.latte.unknownBlock` | block include target exists in no reachable table (see suppression above) | include site |
+| `orisai.nette.latte.includeCycle` | include chain cycles | closing edge site |
+| `orisai.nette.latte.includeTypeMismatch` | provided context incompatible with target's declaration | include site |
+| `orisai.nette.latte.includeMissingVariable` | declared (defaultless) variable not provided by edge | include site |
+| `orisai.nette.latte.internalAccess` | template source writes `$this->member` on the compiled runtime class | access site |
+| `orisai.nette.latte.duplicateDeclaration` | `{varType}` override exactly matches its native declaration | `{varType}` site |
+| `orisai.nette.latte.narrowingOverride` | `{varType}` override narrows its native declaration (see *Declaration consistency*) | `{varType}` site |
+| `orisai.nette.latte.impossibleOverride` | `{varType}` override is wider than or unrelated to its native declaration | `{varType}` site |
+| `orisai.nette.latte.varTypeMisplaced` | mid-file `{varType}` is not directly above an assignment to its variable (see *Mid-file `{varType}` placement*) | `{varType}` site |
+| `orisai.nette.latte.varTypeDifferentVariable` | mid-file `{varType}` names a variable its single anchor does not bind | `{varType}` site |
+| `orisai.nette.latte.varTypeVariableNotFound` | mid-file `{varType}` names a variable none of its anchor's several bindings match | `{varType}` site |
+| `orisai.nette.latte.varTypeNativeType` | `{varType}` conflicts with the native type of the expression its anchor assigns | `{varType}` site |
+| `orisai.nette.latte.varTypeType` | `{varType}` conflicts with the PHPDoc type of that expression (`orisai.nette.latte.reportWrongPhpDocTypeInVarType`) | `{varType}` site |
+| `orisai.nette.latte.filterCaseMismatch` | called filter spelling differs in case from the registered one (Latte 2: token scan, breaks on Latte 3; Latte 3: `FilterRewriter`, throws at runtime) | filter site |
+| `orisai.nette.latte.functionCaseMismatch` | called function spelling differs in case from the registered one (Latte 2: token scan; Latte 3.0: the compile warning; Latte 3.1: `FilterRewriter`) | function call site |
+| `orisai.nette.latte.deprecated` | vendor `E_USER_DEPRECATED` captured during compilation (see *Vendor error containment*) | compiler's current line (fallback line 1) |
+| `orisai.nette.latte.internalError` | the analysis pipeline's own diagnostic-materialization invariant was violated | offending node |
+| `orisai.nette.latte.customsHarvest` | a directory under a harvested Latte 3 extension could not be read for the harvest salt (see *Invalidation*); the path is relative to `%currentWorkingDirectory%` when inside it | line 1 of the universe's first template (sorted) |
+| `orisai.nette.latte.templateTypeMismatch` | `{templateType}` outside what a linked renderer pairs (see *Template-file discovery*) | `{templateType}` site |
+| `orisai.nette.latte.templateMissing` | a renderable view whose every candidate file is missing | renderer's first linked template, line 1 |
 | `orisai.nette.latte.templateTypeRequired` | linked template with no `{templateType}`, renderer pairs the default class (opt-in) | line 1 |
-| `orisaiNette.latte.orphanTemplate` | no render, include or layout path reaches this template (advisory) | line 1 |
-| `orisaiNette.latte.providerUnavailable` | a `uiControl`/`uiPresenter`/`snippetBridge`-requiring macro whose every linked renderer proves `CONTROL_NONE` (see *Provider-availability guard*) | macro site |
+| `orisai.nette.latte.orphanTemplate` | no render, include or layout path reaches this template (advisory) | line 1 |
+| `orisai.nette.latte.providerUnavailable` | a `uiControl`/`uiPresenter`/`snippetBridge`-requiring macro whose every linked renderer proves `CONTROL_NONE` (see *Provider-availability guard*) | macro site |
 
 Everything else is native PHPStan (`variable.undefined`, `method.notFound`, `argument.type`,
 `booleanAnd.leftNotBoolean`, ...) with standard identifiers, reported on `.latte` lines exactly as
 it would be on a `.php` line.
 
-`orisaiNette.latte.debugDump` (the `dumpLatteCustoms()`/`dumpLatteIncluders()`/`dumpLatteVarOrigin()`/
+`orisai.nette.latte.debugDump` (the `dumpLatteCustoms()`/`dumpLatteIncluders()`/`dumpLatteVarOrigin()`/
 `dumpLatteRenderFacts()`/`dumpLattePairing()`/`dumpLatteDiscovery()` family, see above) is a
 deliberate exception to "ordinary, ignorable, baselinable": it is a developer-invoked,
 non-ignorable finding by design — a debug print, never meant to be silenced or baselined.
 
-`orisaiNette.latte.pairingConflict`/`orisaiNette.latte.pairingOpaque` (see *Template-class pairing* above) plus
-`orisaiNette.latte.fileDiscoveryOpaque`/`orisaiNette.latte.ineffectiveTemplateMutation` (see *Template-file discovery*)
+`orisai.nette.latte.pairingConflict`/`orisai.nette.latte.pairingOpaque` (see *Template-class pairing* above) plus
+`orisai.nette.latte.fileDiscoveryOpaque`/`orisai.nette.latte.ineffectiveTemplateMutation` (see *Template-file discovery*)
 are the PHP-side surface: ordinary, ignorable and baselinable like the table, but reported on
 `.php` class/site lines, not `.latte` lines.
 
-The five `orisaiNette.latteForms.*` identifiers (`unknownControl`, `unknownForm`, `containerAsControl`,
+The five `orisai.nette.latteForms.*` identifiers (`unknownControl`, `unknownForm`, `containerAsControl`,
 `controlAsContainer`, `labellessControl`) come from the Latte+Forms bridge (`src/LatteForms/`), a
 separate area joining this extension's discovery store to the Forms extension's shapes — see
 [latte-forms.md](latte-forms.md).
@@ -1797,7 +1797,7 @@ declaration is often strictly *wider* than what the factory resolves: declaring
 `{templateType Nette\Bridges\ApplicationLatte\DefaultTemplate}` on a grid template shared by a base
 grid control and its subclasses takes `$control` from that base class down to the declared
 `Nette\Application\UI\Control`, losing every control-specific member, and reports one
-`orisaiNette.latte.templateTypeMismatch` per renderer (they pair to the bare `Template` floor, which a
+`orisai.nette.latte.templateTypeMismatch` per renderer (they pair to the bare `Template` floor, which a
 narrower declaration contradicts). To narrow rather than widen, write
 `{if $control instanceof FooControl}` — an ordinary `instanceof` on the refined type, which needs no
 declaration at all.
@@ -1835,8 +1835,8 @@ the unmatched one costs nothing); regenerating the baseline drops whichever vari
 see.
 
 **The one structural residual: the `IComponent` asymmetry.** When `ContainerModel::walk()` cannot
-prove a child, the existence axis answers OPEN (correctly — no `orisaiNette.forms.noSuchComponent` or
-`orisaiNette.forms.unknownAccess` arises from it) but the type axis has no equivalent: phpstan-nette's
+prove a child, the existence axis answers OPEN (correctly — no `orisai.nette.forms.noSuchComponent` or
+`orisai.nette.forms.unknownAccess` arises from it) but the type axis has no equivalent: phpstan-nette's
 `ArrayAccess<string, IComponent>` stub stands, and `IComponent` is a closed, narrow interface, so
 "I don't know" reads as "definitely an `IComponent`" and every member access reports. `control`
 routes a few more sites into that floor; it does not create it. Closing it means yielding the
@@ -1908,7 +1908,7 @@ widened common ancestor itself declares the factory and a subclass renderer OVER
 reached through `$control['form']` on that template is classified against the ancestor's shape, not
 the overriding subclass's — the object type stays sound, only the shape derivation is optimistic.
 
-## Provider-availability guard (`orisaiNette.latte.providerUnavailable`)
+## Provider-availability guard (`orisai.nette.latte.providerUnavailable`)
 
 `Nette\Bridges\ApplicationLatte\TemplateFactory::setupLatte2()` adds three more Latte providers
 inside the SAME `if ($control)` conditional the `presenter` variable above is read from
@@ -1992,7 +1992,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   `Undefined variable` findings for factory variables. Closing it
   means preferring the factory's configured class when the declared type is a supertype of it AND
   the value provably came from the factory.
-- **`orisaiNette.latte.templateMissing` cannot fire for a renderer that links no template at all.**
+- **`orisai.nette.latte.templateMissing` cannot fire for a renderer that links no template at all.**
   `TemplateTypeChecker::missingByHost()` iterates only `firstLinkedTemplates()`, so the finding is
   hosted on the renderer's first linked template — and a renderer whose *only* candidate is missing
   links nothing, which is exactly the case the diagnostic describes. Hosting such findings on the
@@ -2006,7 +2006,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   ranks worse. Revisit if effectively-abstract detection lands. The hole covers a control with no
   layout channel (its only possible record source is its own missing view candidate) and, because of
   *Layout reachability* (above), a presenter with a missing view whose layout link is (correctly)
-  dropped: it links no template at all, per the *Consequence for `orisaiNette.latte.templateMissing`*
+  dropped: it links no template at all, per the *Consequence for `orisai.nette.latte.templateMissing`*
   note above.
 - **`{default $x = expr}` and null diverge from runtime in one case.** It is modeled as
   `$x ??= expr`, but Latte's runtime `EXTR_SKIP` checks variable *existence*, not nullness: a
@@ -2051,7 +2051,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   named-method or plain-function closure to its declaration; an anonymous closure (`{closure}`, and on a Latte 2
   harvest any closure) has none PHPStan could reflect — the harvested `Closure` is a runtime value only. The tables
   register `Helpers::untypedFilter()`/`Helpers::untypedFunction()` (`mixed ...$args`, returns `mixed`) for it, a
-  closure a filter loader answers included: the call is known, never `orisaiNette.latte.unknownFilter`, but neither
+  closure a filter loader answers included: the call is known, never `orisai.nette.latte.unknownFilter`, but neither
   its arguments nor its result are checked.
 - **A purely virtual `@property` tag on a `{templateType}` class contributes no parameter.** The
   declared surface is `ReflectionClass::getProperties(IS_PUBLIC)` — native reflection — so a
@@ -2062,7 +2062,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
 - **A typed `{var T $x = expr}` / `{default T $x = expr}` anchor is not expression-type-checked.**
   Placement (*Mid-file `{varType}` placement*) still applies, but `DeclarationInjector` rewrites a
   typed one into a static-property carrier (`self::$prop_N_x = expr; $x = self::$prop_N_x;`), so the
-  assignment `orisaiNette.latte.varTypeNativeType`/`orisaiNette.latte.varTypeType` would read is no longer the author's
+  assignment `orisai.nette.latte.varTypeNativeType`/`orisai.nette.latte.varTypeType` would read is no longer the author's
   expression. Declaring the same variable twice (once with the tag's own type prefix, once with a
   mid-file `{varType}`) is the only shape affected; the typed form's own `expr`-against-`T` check
   still runs, so nothing goes unchecked — only the redundant second declaration does.
@@ -2079,8 +2079,8 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   tag's own explicit args (*Include isolation* above) — an over-approximation of the
   embed target's scope that can only miss findings, never invent them. It under-reports only for a
   project that uses the tag.
-- **Dynamic include/extends targets are reported, not followed** (`orisaiNette.latte.dynamicInclude` /
-  `orisaiNette.latte.dynamicExtends`); the target file is never analyzed for that edge.
+- **Dynamic include/extends targets are reported, not followed** (`orisai.nette.latte.dynamicInclude` /
+  `orisai.nette.latte.dynamicExtends`); the target file is never analyzed for that edge.
 - **Filter availability from the engine harvest is global, not per-context.** A filter/function
   discovered via `CustomsHarvester` (*Custom filters, functions and macros* above) is treated as
   available to every template, regardless of which presenter/control actually wires it at runtime.
@@ -2093,7 +2093,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   (`$template->addFilter(...)`/`addFunction()`, `$compiler->addFilter(...)`/`addMacro()` called
   from presenter/control PHP code, as opposed to construction-time engine wiring) is not modeled —
   phase 3 territory (needs call-site analysis of the PHP side).** These names still report
-  `orisaiNette.latte.unknownFilter`/`orisaiNette.latte.unknownMacro` as unknown, same as any other unrecognized
+  `orisai.nette.latte.unknownFilter`/`orisai.nette.latte.unknownMacro` as unknown, same as any other unrecognized
   name; only their *typing* is unavailable, not their *reporting*. Their runtime behavior carries
   the same order-dependence landmine as the per-template leak above — a filter registered
   imperatively is available only from the point it's registered onward, in whatever order presenters
@@ -2172,7 +2172,7 @@ And the implementation-ledgered additions:
   check skip that class silently — visible only through `dumpLatteDiscovery()`'s `open view set:
   yes` line. A class that opens its view set usually also has an opaque channel which is reported;
   one that opens it *without* any other opaque channel goes completely unremarked.
-- **`orisaiNette.latte.orphanTemplate` is advisory and must never be auto-fixable.** dead-code-detector may
+- **`orisai.nette.latte.orphanTemplate` is advisory and must never be auto-fixable.** dead-code-detector may
   auto-fix because its assumptions over-approximate *usage* (a call on `mixed` marks every
   same-named method used), which makes deletion conservative. This check has the opposite bias —
   it *under*-detects usage (opaque `setFile` arguments, dynamic includes, unassigned locators,
@@ -2186,7 +2186,7 @@ And the implementation-ledgered additions:
   includers are rendered with.** Its *variable* contract is checked on every include edge, as for
   any declaration (*Declarations are a checked contract* above — the declared class's public
   properties are exactly the declared variable set). What is not checked is the *class* half:
-  `orisaiNette.latte.templateTypeMismatch` compares a declaration against the verdicts of the renderers the
+  `orisai.nette.latte.templateTypeMismatch` compares a declaration against the verdicts of the renderers the
   discovery store links to that file, and a partial no renderer renders has none, so a partial
   declaring `{templateType C}` whose only includer is rendered with an unrelated `D` passes
   silently even though it reads members `D` need not have. The includer→included template-class
@@ -2194,7 +2194,7 @@ And the implementation-ledgered additions:
   level.
 - **`orisai.nette.latte.includeIsolation` has no detection power over undeclared include targets.** The whole
   isolation worklist is visible as `variable.undefined` inside the targets, not through the flag,
-  because `orisaiNette.latte.includeMissingVariable` fires only when a *target declares* the variable
+  because `orisai.nette.latte.includeMissingVariable` fires only when a *target declares* the variable
   (*Include isolation* above has the derivation). Re-run the flag after each declaration
   wave; its findings grow exactly as `{varType}`/`{parameters}` coverage on include targets grows.
 - **`{embed}` is modelled as a union although every supported Latte line isolates it** — the pre-existing
@@ -2214,7 +2214,7 @@ And the implementation-ledgered additions:
 - **Two opaque channels remain by construction**: a `setFile()` argument that is not a static
   literal or a recognized convention call, and a presenter class whose name does not reverse-map
   through the application mapping (the round-trip guard refuses a lossy inverse rather than invent
-  a name). Both are reported (`orisaiNette.latte.fileDiscoveryOpaque`), never guessed, and both close the
+  a name). Both are reported (`orisai.nette.latte.fileDiscoveryOpaque`), never guessed, and both close the
   per-view checks for their class rather than answering from an incomplete candidate set.
 - **Multi-renderer templates are checked per renderer.** A template linked to several renderer
   classes is compared against each verdict separately; there is no merged cross-renderer view, so
@@ -2231,7 +2231,7 @@ And the implementation-ledgered additions:
   `$x` evaluating to `null` leaves `$parentName` null and `UIRuntime::initialize()` runs the layout
   walk anyway. This is the one layout rule that is a **known divergence rather than parity**, and the
   model under-approximates: a layout reachable only through such a template loses that incoming edge,
-  which can add an `orisaiNette.latte.orphanTemplate` lead but never silence one. In practice the layouts
+  which can add an `orisai.nette.latte.orphanTemplate` lead but never silence one. In practice the layouts
   the walk would reach are usually live roots on their own store records regardless of the edge.
 - **The SP2 carries still apply**: a return-form `X::create()` outside a convention hook records no
   per-site pairing (assign-form does), and vendor suffix-magic `formatTemplateClass()` naming is
@@ -2343,13 +2343,13 @@ And the implementation-ledgered additions:
   `addMacro()` called from presenter/control PHP code) stays phase-3 territory, below.
 - **Phase 3** — presenter/control render analysis (`$template->x` assignments, `render`/`setFile`
   resolution) to provide real root contexts across the PHP↔Latte boundary, add the convention
-  edges that lift the `orisaiNette.latte.unknownBlock` suppression above, and enable sound modeling of
+  edges that lift the `orisai.nette.latte.unknownBlock` suppression above, and enable sound modeling of
   imperative filter/function/macro registration (today such names report as unknown, see *Known
   limitations*).
   Three slices are shipped: per-class render-fact extraction (*`dumpLatteRenderFacts()`* above),
   template-class pairing (*Template-class pairing* above) and template-file discovery
   (*Template-file discovery* above — convention edges now exist for every linked template, which
-  is what lifted the `orisaiNette.latte.unknownBlock` suppression there). What remains is the variable payload:
+  is what lifted the `orisai.nette.latte.unknownBlock` suppression there). What remains is the variable payload:
   root contexts carrying what a renderer actually assigns to `$template->x` across the boundary,
   plus the component-tree contexts that would make those contexts per-render-site.
 
@@ -2360,7 +2360,7 @@ And the implementation-ledgered additions:
 2.2 defers `bootstrapFiles` to right before the analysis, but `ResultCacheManager::restore()` parses
 every changed file first to diff exported nodes — for a changed `.latte` that is the whole pipeline,
 before any bootstrap-registered autoloader exists. The memoised result (this process, or a worker
-forked from it) then reports `orisaiNette.latte.unknownType` where a cold run does not.
+forked from it) then reports `orisai.nette.latte.unknownType` where a cold run does not.
 
 `BootstrapFilesLoader` closes that gap: the routing parser runs `%bootstrapFiles%` (with PHPStan's
 `$container` in scope, exactly like `CommandHelper::executeBootstrapFile()`) before the first

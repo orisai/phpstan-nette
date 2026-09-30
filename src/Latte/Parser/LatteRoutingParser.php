@@ -316,7 +316,7 @@ final class LatteRoutingParser implements Parser
 
 	// EdgeFingerprint's own transitive-includer window (see its class doc): a reflection failure
 	// degrades to no vars folded in for that one class, same as DeclaredVarsResolver::resolve()'s
-	// own precedent for the identical call - orisaiNette.latte.unknownType already reports a bad templateType
+	// own precedent for the identical call - orisai.nette.latte.unknownType already reports a bad templateType
 	// once, at ITS declaring file, so silently contributing nothing here never hides that
 	// diagnostic. Later classes in $templateTypeClasses win on a property-name collision (matches
 	// PropertyTypeResolver::resolveAllPublic()'s own per-class last-property-wins iteration order,

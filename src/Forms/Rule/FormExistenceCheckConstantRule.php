@@ -174,7 +174,7 @@ final class FormExistenceCheckConstantRule implements Rule
 		if ($exists) {
 			return [
 				RuleErrorBuilder::message("Form component '$name' in $spelling always exists.")
-					->identifier('orisaiNette.forms.constantExistenceCheck')
+					->identifier('orisai.nette.forms.constantExistenceCheck')
 					->line($reported->getStartLine())
 					->build(),
 			];
@@ -184,7 +184,7 @@ final class FormExistenceCheckConstantRule implements Rule
 
 		return [
 			RuleErrorBuilder::message("Form component '$name' in $spelling never exists.")
-				->identifier('orisaiNette.forms.constantExistenceCheck')
+				->identifier('orisai.nette.forms.constantExistenceCheck')
 				->tip(
 					$factory === null
 						? 'Nette resolves no factory for a capitalised name, so the check cannot build one either.'

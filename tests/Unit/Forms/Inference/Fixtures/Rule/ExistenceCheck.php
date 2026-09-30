@@ -51,7 +51,7 @@ final class ExistenceCheck
 		$v->nope ?? null;
 	}
 
-	// EC-06: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — plain read must still error
+	// EC-06: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — plain read must still error
 	public function ec06(): void
 	{
 		$form = new ApplicationForm();
@@ -107,7 +107,7 @@ final class ExistenceCheck
 		$form['save'];
 	}
 
-	// EC-13: Form value 'save' does not exist. [orisaiNette.forms.noSuchComponent] — a submit is
+	// EC-13: Form value 'save' does not exist. [orisai.nette.forms.noSuchComponent] — a submit is
 	// KIND_OMITTED, so a VALUES access still finds nothing to read, even though the component
 	// itself exists
 	public function ec13(): void
@@ -142,7 +142,7 @@ final class ExistenceCheck
 		$form['rows']['addNode'];
 	}
 
-	// EC-16: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — an unknown string
+	// EC-16: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — an unknown string
 	// offset on a replicator whose own-children set is closed is reported exactly once by OUR rule
 	public function ec16(): void
 	{
@@ -256,7 +256,7 @@ final class ExistenceCheck
 		$form['rows']->getComponent('addNode');
 	}
 
-	// EC-25: Form component 'rep-nope' does not exist. [orisaiNette.forms.noSuchComponent] — the
+	// EC-25: Form component 'rep-nope' does not exist. [orisai.nette.forms.noSuchComponent] — the
 	// separator-path message names the FULL name the user wrote, not just the last segment
 	public function ec25(): void
 	{
@@ -295,7 +295,7 @@ final class ExistenceCheck
 		$form['sub']['z'];
 	}
 
-	// EC-28: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — the counterpart
+	// EC-28: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — the counterpart
 	// EC-27 must not swallow. An add* call that IS the whole statement drops the container reference
 	// on the floor, so nothing can ever have added to it and the closed empty shape is a proof.
 	public function ec28(): void
@@ -323,7 +323,7 @@ final class ExistenceCheck
 		$form['rep30'][0]['q'];
 	}
 
-	// EC-31: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — a LEAF control
+	// EC-31: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — a LEAF control
 	// pulled into a local and only modified through it. The handle cannot register anything (a
 	// TextInput has no add* surface) and every use of it is a call that registers nothing, so the
 	// shape stays closed and absence is still reportable. The same component set written

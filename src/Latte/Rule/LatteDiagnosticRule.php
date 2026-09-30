@@ -73,7 +73,7 @@ final class LatteDiagnosticRule implements Rule
 		}
 
 		// Deliberately no fixNode() anywhere in this rule: the pipeline's own diagnostics include
-		// deadness-style findings (orisaiNette.latte.orphanTemplate) built on UNDER-detected usage, where an
+		// deadness-style findings (orisai.nette.latte.orphanTemplate) built on UNDER-detected usage, where an
 		// auto-fix would delete files that are genuinely rendered - see TemplateTypeChecker's
 		// constraint note. Nothing here is ever a FixableNodeRuleError.
 		return [$builder->build()];
@@ -100,7 +100,7 @@ final class LatteDiagnosticRule implements Rule
 			Diag::class . '::report() called with non-constant arguments; the Latte analysis pipeline must '
 			. 'always materialize literal-string identifier/message pairs.',
 		)
-			->identifier('orisaiNette.latte.internalError')
+			->identifier('orisai.nette.latte.internalError')
 			->line($node->getStartLine())
 			->build();
 	}

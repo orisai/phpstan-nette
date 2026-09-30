@@ -64,7 +64,7 @@ final class TemplateTypeCustomsIntegrationTest extends BaseTestCase
 
 	// The scoping pin, in one spawn: TWO templates in the SAME analysed set, only one of them
 	// declaring {templateType FixtureTemplateTypeCustoms} - the OTHER, calling the identical filter
-	// name, must still report orisaiNette.latte.unknownFilter. Cross-template leakage here would mean the
+	// name, must still report orisai.nette.latte.unknownFilter. Cross-template leakage here would mean the
 	// per-template overlay escaped its declaring compiled class - exactly the boundary this
 	// scoping pin requires to hold.
 	public function testUnrelatedTemplateInTheSameAnalysedSetStillReportsUnknownFilter(): void

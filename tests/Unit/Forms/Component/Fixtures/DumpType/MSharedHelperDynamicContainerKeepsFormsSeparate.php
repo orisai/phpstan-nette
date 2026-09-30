@@ -14,7 +14,7 @@ use function PHPStan\dumpType;
  *
  * A replicator's own children stay unknown, but that opens the REPLICATOR's inner shape and not the
  * FORM's: each form-level shape is still closed, so the other form's field is proven absent and reads
- * *ERROR* with one orisaiNette.forms.noSuchComponent, exactly as in the plain-control sibling.
+ * *ERROR* with one orisai.nette.forms.noSuchComponent, exactly as in the plain-control sibling.
  */
 final class MSharedHelperDynamicContainerKeepsFormsSeparate extends Control
 {

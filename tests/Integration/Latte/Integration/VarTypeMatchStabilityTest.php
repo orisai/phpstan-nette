@@ -26,7 +26,7 @@ use const SORT_STRING;
 // anchored on ONE statement is the shape where that arithmetic does not cancel: at one includer the
 // statement paired with the first declaration and nothing was reported, at two includers the second
 // traversal paired the very same statement with the SECOND declaration and a
-// orisaiNette.latte.varTypeNativeType finding appeared - a template's own findings changing because an unrelated
+// orisai.nette.latte.varTypeNativeType finding appeared - a template's own findings changing because an unrelated
 // file started including it.
 /**
  * @group latte2

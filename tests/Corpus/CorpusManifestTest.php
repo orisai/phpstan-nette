@@ -47,7 +47,7 @@ final class CorpusManifestTest extends BaseTestCase
 
 	private const PACKAGES = ['latte/latte', 'nette/application', 'nette/forms'];
 
-	private const FAILURE_IDENTIFIERS = ['orisaiNette.latte.internalError', 'phpstan.parse'];
+	private const FAILURE_IDENTIFIERS = ['orisai.nette.latte.internalError', 'phpstan.parse'];
 
 	private ?ScratchProject $project = null;
 
@@ -201,7 +201,7 @@ final class CorpusManifestTest extends BaseTestCase
 
 			if (!isset($states[$name]) || in_array($message['identifier'], self::FAILURE_IDENTIFIERS, true)) {
 				$failures[$name][] = ($message['identifier'] ?? '(no identifier)') . ': ' . $message['message'];
-			} elseif ($message['identifier'] === 'orisaiNette.latte.parseError') {
+			} elseif ($message['identifier'] === 'orisai.nette.latte.parseError') {
 				$states[$name] = self::COMPILE_ERROR;
 			}
 		}

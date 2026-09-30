@@ -44,7 +44,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 
 	public function testKeyIsStable(): void
 	{
-		self::assertSame('orisaiNette.latte.edgeTopology', $this->metaFor([], false)->getKey());
+		self::assertSame('orisai.nette.latte.edgeTopology', $this->metaFor([], false)->getKey());
 	}
 
 	public function testDisabledFlagYieldsConstantHash(): void

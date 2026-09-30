@@ -581,7 +581,7 @@ final class ControlAnnotationValueTypeReader
 				'specs' => [],
 				'violations' => [
 					new FormAddsViolation(
-						'orisaiNette.forms.outsideContainer',
+						'orisai.nette.forms.outsideContainer',
 						self::ADDS_TAG_NAME . ' is only valid on a method declared on a '
 							. self::FORMS_CONTAINER . ' subclass, and ' . $origin . ' is not declared on one.',
 					),
@@ -606,7 +606,7 @@ final class ControlAnnotationValueTypeReader
 			$operands = trim((string) preg_replace('~\*/\s*$~', '', $occurrence));
 			if (preg_match(self::ADDS_OPERANDS, $operands, $m) !== 1) {
 				$violations[] = new FormAddsViolation(
-					'orisaiNette.forms.malformed',
+					'orisai.nette.forms.malformed',
 					'Malformed ' . self::ADDS_TAG_NAME . ' tag on ' . $origin
 						. '; the grammar is ' . self::ADDS_TAG_NAME . ' $parameterName [FullyQualifiedControlClass].',
 				);
@@ -620,14 +620,14 @@ final class ControlAnnotationValueTypeReader
 
 			if (!isset($indexes[$parameterName])) {
 				$violations[] = new FormAddsViolation(
-					'orisaiNette.forms.unknownParameter',
+					'orisai.nette.forms.unknownParameter',
 					self::ADDS_TAG_NAME . ' names $' . $parameterName
 						. ', which is not a parameter of ' . $origin . '.',
 				);
 				$valid = false;
 			} elseif (isset($seen[$parameterName])) {
 				$violations[] = new FormAddsViolation(
-					'orisaiNette.forms.duplicateParameter',
+					'orisai.nette.forms.duplicateParameter',
 					self::ADDS_TAG_NAME . ' names $' . $parameterName . ' more than once on ' . $origin
 						. '; each occurrence must name a distinct parameter.',
 				);
@@ -672,7 +672,7 @@ final class ControlAnnotationValueTypeReader
 
 			return [
 				new FormAddsViolation(
-					'orisaiNette.forms.missingControlClass',
+					'orisai.nette.forms.missingControlClass',
 					self::ADDS_TAG_NAME . ' on ' . $origin . ' names no control class and the declared '
 						. 'return type names none either, so the tag has no class to register.',
 				),
@@ -682,7 +682,7 @@ final class ControlAnnotationValueTypeReader
 		if (!$this->reflectionProvider->hasClass($controlClass)) {
 			return [
 				new FormAddsViolation(
-					'orisaiNette.forms.unknownControlClass',
+					'orisai.nette.forms.unknownControlClass',
 					self::ADDS_TAG_NAME . ' on ' . $origin . ' names control class ' . $controlClass
 						. ', which does not exist; write it as a fully qualified name.',
 				),
@@ -692,7 +692,7 @@ final class ControlAnnotationValueTypeReader
 		if (!ComponentClassName::isComponent($controlClass)) {
 			return [
 				new FormAddsViolation(
-					'orisaiNette.forms.invalidControlClass',
+					'orisai.nette.forms.invalidControlClass',
 					self::ADDS_TAG_NAME . ' on ' . $origin . ' names control class ' . $controlClass
 						. ', which is not a ' . IComponent::class . ' and cannot be modelled as a form component.',
 				),
@@ -703,7 +703,7 @@ final class ControlAnnotationValueTypeReader
 		if ($declared !== null && !(new ObjectType($declared))->isSuperTypeOf(new ObjectType($controlClass))->yes()) {
 			return [
 				new FormAddsViolation(
-					'orisaiNette.forms.returnTypeContradiction',
+					'orisai.nette.forms.returnTypeContradiction',
 					self::ADDS_TAG_NAME . ' on ' . $origin . ' names control class ' . $controlClass
 						. ', which is not a subtype of the declared return type ' . $declared . '.',
 				),

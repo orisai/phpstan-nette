@@ -97,7 +97,7 @@ final class ShadowDivergenceRule implements Rule
 					)
 						->file($file)
 						->line($candidate['line'])
-						->identifier('orisaiNette.forms.shadowDivergence')
+						->identifier('orisai.nette.forms.shadowDivergence')
 						->nonIgnorable()
 						->build();
 				}

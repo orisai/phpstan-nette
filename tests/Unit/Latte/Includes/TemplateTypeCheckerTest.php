@@ -177,7 +177,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 	/**
 	 * @group latte2
 	 */
-	// orisaiNette.latte.unknownType already reports a bad {templateType} once, at its declaring file - comparing
+	// orisai.nette.latte.unknownType already reports a bad {templateType} once, at its declaring file - comparing
 	// against a class reflection cannot resolve would only duplicate it with a guessed verdict.
 	public function testUnresolvableTemplateTypeClassIsSkipped(): void
 	{
@@ -263,7 +263,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
-	// === orisaiNette.latte.templateMissing ===
+	// === orisai.nette.latte.templateMissing ===
 
 	public function testViewWhoseCandidatesAllFailExistenceIsReported(): void
 	{
@@ -327,7 +327,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 		);
 	}
 
-	// === orisaiNette.latte.orphanTemplate: existing-but-unchosen candidates ===
+	// === orisai.nette.latte.orphanTemplate: existing-but-unchosen candidates ===
 
 	// The store records CHOSEN candidates only, which answers the wrong question for reachability:
 	// an existing but unchosen candidate (a conditional write, say) is still reachable. Liveness
@@ -408,7 +408,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 	/**
 	 * @group latte2
 	 */
-	// === orisaiNette.latte.orphanTemplate ===
+	// === orisai.nette.latte.orphanTemplate ===
 	public function testTemplateCarryingADiscoveryRecordIsLive(): void
 	{
 		$this->assertOrphans(

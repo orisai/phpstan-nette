@@ -45,7 +45,7 @@ final class FormsResultCacheMeta implements ResultCacheMetaExtension
 
 	public function getKey(): string
 	{
-		return 'orisaiNette.forms.shapeSources';
+		return 'orisai.nette.forms.shapeSources';
 	}
 
 	public function getHash(): string

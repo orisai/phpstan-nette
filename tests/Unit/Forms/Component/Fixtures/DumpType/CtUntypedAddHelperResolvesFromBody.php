@@ -20,7 +20,7 @@ use function PHPStan\dumpType;
  * statement must be a return, since a fall-through path yields null rather than a control. So `arms`
  * (a TextArea on one branch, a TextInput on the other) and `opaque` (no return at all) keep the
  * historical answer, which is what the old name recorded: an unnameable-but-present child degrades to
- * mixed with one orisaiNette.forms.partiallyUnknown beside it. mixed is the deliberate carrier rather than
+ * mixed with one orisai.nette.forms.partiallyUnknown beside it. mixed is the deliberate carrier rather than
  * IComponent, which would positively assert the child is ONLY an IComponent and cascade a false
  * undefined-method report onto every member access on a control that really is a BaseControl.
  *

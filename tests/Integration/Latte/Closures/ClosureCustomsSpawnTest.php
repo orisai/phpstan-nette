@@ -50,7 +50,7 @@ final class ClosureCustomsSpawnTest extends BaseTestCase
 			$findings[] = $message['line'] . ' ' . $message['identifier'] . ' ' . $message['message'];
 		}
 
-		self::assertSame(["6 orisaiNette.latte.unknownFilter Unknown Latte filter 'nope'."], $findings);
+		self::assertSame(["6 orisai.nette.latte.unknownFilter Unknown Latte filter 'nope'."], $findings);
 	}
 
 }

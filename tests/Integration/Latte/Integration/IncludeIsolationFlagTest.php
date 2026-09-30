@@ -56,7 +56,7 @@ final class IncludeIsolationFlagTest extends BaseTestCase
 				$this->spawn($projectRoot, $srcDir, $scratch . '/on', true),
 				'isolation on: the edge provides only its (empty) explicit args, so the same'
 					. ' declaration is unsatisfied - reported at the include site as'
-					. ' orisaiNette.latte.includeMissingVariable',
+					. ' orisai.nette.latte.includeMissingVariable',
 			);
 		} finally {
 			FileSystem::delete($scratch);

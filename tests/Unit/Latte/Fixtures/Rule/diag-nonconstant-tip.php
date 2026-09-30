@@ -9,4 +9,4 @@ function nonConstantTip(): string
 	return 'dynamic';
 }
 
-Diag::report('orisaiNette.latte.orphanTemplate', 'message', nonConstantTip());
+Diag::report('orisai.nette.latte.orphanTemplate', 'message', nonConstantTip());

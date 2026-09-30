@@ -98,7 +98,7 @@ PHP);
 
 			self::assertCount(2, $messages);
 
-			self::assertSame('orisaiNette.latte.pairingConflict', $messages[0]['identifier']);
+			self::assertSame('orisai.nette.latte.pairingConflict', $messages[0]['identifier']);
 			self::assertSame("$relSrc/SpawnDriftPresenter.php", $messages[0]['file']);
 			self::assertSame(13, $messages[0]['line']);
 			self::assertTrue($messages[0]['ignorable'], 'pairing conflicts must stay baselineable');
@@ -108,7 +108,7 @@ PHP);
 				$messages[0]['message'],
 			);
 
-			self::assertSame('orisaiNette.latte.pairingOpaque', $messages[1]['identifier']);
+			self::assertSame('orisai.nette.latte.pairingOpaque', $messages[1]['identifier']);
 			self::assertSame("$relSrc/SpawnDynamicControl.php", $messages[1]['file']);
 			self::assertSame(16, $messages[1]['line']);
 			self::assertTrue($messages[1]['ignorable'], 'pairing opaques must stay baselineable');
@@ -155,7 +155,7 @@ PHP);
 				foreach ($fileMessages['messages'] as $message) {
 					if (!in_array(
 						$message['identifier'],
-						['orisaiNette.latte.pairingConflict', 'orisaiNette.latte.pairingOpaque'],
+						['orisai.nette.latte.pairingConflict', 'orisai.nette.latte.pairingOpaque'],
 						true,
 					)) {
 						continue;

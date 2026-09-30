@@ -94,7 +94,7 @@ foreach ($result['files'] as $file => $fileResult) {
 	foreach ($fileResult['messages'] as $message) {
 		$findings++;
 		$identifier = $message['identifier'] ?? '(none)';
-		if (in_array($identifier, ['orisaiNette.latte.internalError', 'phpstan.parse'], true)) {
+		if (in_array($identifier, ['orisai.nette.latte.internalError', 'phpstan.parse'], true)) {
 			$internal[] = sprintf('%s:%d %s: %s', $file, $message['line'] ?? 0, $identifier, $message['message']);
 		}
 

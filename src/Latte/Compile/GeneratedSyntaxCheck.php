@@ -26,7 +26,7 @@ final class GeneratedSyntaxCheck
 			$map = (new LineMapper($lineMarkerPattern))->buildMap($phpSource);
 
 			return new Diagnostic(
-				'orisaiNette.latte.parseError',
+				'orisai.nette.latte.parseError',
 				'Error in template: ' . $e->getRawMessage(),
 				$map[$e->getStartLine()] ?? 1,
 			);

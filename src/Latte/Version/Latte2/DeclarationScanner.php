@@ -59,7 +59,7 @@ final class DeclarationScanner
 			$declarations = $this->doScan($latteSource);
 		} catch (CompileException | RegexpException | InvalidArgumentException $e) {
 			// The compiler tokenizes/compiles the same source independently (LatteCompiler::compile)
-			// and reports its own orisaiNette.latte.parseError diagnostic for malformed input; this scanner only
+			// and reports its own orisai.nette.latte.parseError diagnostic for malformed input; this scanner only
 			// extracts declarations for injection, so degrading to empty here loses no diagnostic.
 			$declarations = $this->empty();
 		}

@@ -17,7 +17,7 @@ use Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer;
 final class ComponentPathAccess
 {
 
-	// CP-01: Form component 'nope-x' does not exist. [orisaiNette.forms.noSuchComponent] — THE DETECTION
+	// CP-01: Form component 'nope-x' does not exist. [orisai.nette.forms.noSuchComponent] — THE DETECTION
 	// LOSS this consolidation closed: an intermediate segment in no channel of a CLOSED shape is the
 	// same proven absence as a missing leaf ($form['nope'] on the next row), and Nette throws
 	// "Component with name 'nope' does not exist" for both. Reporting nothing here was the walk
@@ -30,7 +30,7 @@ final class ComponentPathAccess
 		$form['nope-x'];
 	}
 
-	// CP-02: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent] — the un-joined
+	// CP-02: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent] — the un-joined
 	// spelling of CP-01's first hop, which always reported
 	public function cp02(): void
 	{
@@ -40,7 +40,7 @@ final class ComponentPathAccess
 		$form['nope'];
 	}
 
-	// CP-03: Form component 'outer-nope' does not exist. [orisaiNette.forms.noSuchComponent] — a resolvable
+	// CP-03: Form component 'outer-nope' does not exist. [orisai.nette.forms.noSuchComponent] — a resolvable
 	// hop with a missing LEAF; the message names the FULL name the author wrote
 	public function cp03(): void
 	{
@@ -75,7 +75,7 @@ final class ComponentPathAccess
 		$form->getComponent('outer')->getComponent('mid-a');
 	}
 
-	// CP-06: Form component 'outer-mid-nope' does not exist. [orisaiNette.forms.noSuchComponent]
+	// CP-06: Form component 'outer-mid-nope' does not exist. [orisai.nette.forms.noSuchComponent]
 	public function cp06(): void
 	{
 		$form = new ApplicationForm();
@@ -85,7 +85,7 @@ final class ComponentPathAccess
 		$form['outer-mid-nope'];
 	}
 
-	// CP-07: Form component 'outer-nope-a' does not exist. [orisaiNette.forms.noSuchComponent] — the missing
+	// CP-07: Form component 'outer-nope-a' does not exist. [orisai.nette.forms.noSuchComponent] — the missing
 	// segment is in the MIDDLE, and the shape holding it is closed
 	public function cp07(): void
 	{
@@ -106,7 +106,7 @@ final class ComponentPathAccess
 		$form['a-x'];
 	}
 
-	// CP-09: Form value 'nope-x' may not exist; the form shape is open. [orisaiNette.forms.unknownAccess]
+	// CP-09: Form value 'nope-x' may not exist; the form shape is open. [orisai.nette.forms.unknownAccess]
 	// (tip: Form shape opened by: dynamic_name) — the same missing intermediate as CP-01 on an OPEN
 	// shape degrades to the openness message, exactly as the un-joined $form['nope'] does
 	public function cp09(string $dynamic): void
@@ -119,7 +119,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-10: Form component path 'outer-' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — the empty segment a trailing
+	// non-empty alphanumeric string. [orisai.nette.forms.shapeInvalidComponentName] — the empty segment a trailing
 	// separator produces can never be in $components (addComponent() applies the same NameRegexp),
 	// so getComponent() throws no matter what the container holds
 	public function cp10(): void
@@ -131,7 +131,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-11: Form component path '-a' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName]
+	// non-empty alphanumeric string. [orisai.nette.forms.shapeInvalidComponentName]
 	public function cp11(): void
 	{
 		$form = new ApplicationForm();
@@ -140,7 +140,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-12: Form component path 'outer--a' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName]
+	// non-empty alphanumeric string. [orisai.nette.forms.shapeInvalidComponentName]
 	public function cp12(): void
 	{
 		$form = new ApplicationForm();
@@ -150,7 +150,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-13: Form component path '-' has an invalid segment ''; a component name must be a non-empty
-	// alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — a name that is only the separator
+	// alphanumeric string. [orisai.nette.forms.shapeInvalidComponentName] — a name that is only the separator
 	public function cp13(): void
 	{
 		$form = new ApplicationForm();
@@ -159,7 +159,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-14: Form component path 'nope-' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — the invalid segment is
+	// non-empty alphanumeric string. [orisai.nette.forms.shapeInvalidComponentName] — the invalid segment is
 	// reported even though the vendor would fail on 'nope' first: BOTH throw, and validation is
 	// eager because an invalid segment can never be reached without every earlier one resolving
 	public function cp14(): void
@@ -170,7 +170,7 @@ final class ComponentPathAccess
 	}
 
 	// CP-15: Form component path 'nope-' has an invalid segment ''; a component name must be a
-	// non-empty alphanumeric string. [orisaiNette.forms.shapeInvalidComponentName] — and it reports on an OPEN
+	// non-empty alphanumeric string. [orisai.nette.forms.shapeInvalidComponentName] — and it reports on an OPEN
 	// shape too, the ONE arm of this rule that does not need the shape closed: no build step the
 	// analyser failed to enumerate could ever have registered an empty name
 	public function cp15(string $dynamic): void
@@ -180,7 +180,7 @@ final class ComponentPathAccess
 		$form['nope-'];
 	}
 
-	// CP-16: Form component 'a b' does not exist. [orisaiNette.forms.noSuchComponent] — an invalid SINGLE
+	// CP-16: Form component 'a b' does not exist. [orisai.nette.forms.noSuchComponent] — an invalid SINGLE
 	// name is still classified by absence, exactly as before: with one segment "invalid" and
 	// "absent" are the same failed lookup and the absence machinery already owns it
 	public function cp16(): void
@@ -206,7 +206,7 @@ final class ComponentPathAccess
 		$form['rows'][0]['x'];
 	}
 
-	// CP-18: Form component 'rows-nope' does not exist. [orisaiNette.forms.noSuchComponent] — a NON-decimal
+	// CP-18: Form component 'rows-nope' does not exist. [orisai.nette.forms.noSuchComponent] — a NON-decimal
 	// first segment under a replicator is an own child, and a closed own shape proves its absence
 	public function cp18(): void
 	{
@@ -233,7 +233,7 @@ final class ComponentPathAccess
 		$form['rows']->getComponent('addNode');
 	}
 
-	// CP-20: Form component 'nope-x' does not exist. [orisaiNette.forms.noSuchComponent] — getComponent()
+	// CP-20: Form component 'nope-x' does not exist. [orisai.nette.forms.noSuchComponent] — getComponent()
 	// and offsetGet() are the same operation (ComponentModel\ArrayAccess::offsetGet delegates), so
 	// the joined name reports identically through the method spelling
 	public function cp20(): void
@@ -280,7 +280,7 @@ final class ComponentPathAccess
 		$form['outer-save'];
 	}
 
-	// CP-24: Form value 'outer-a' does not exist. [orisaiNette.forms.noSuchComponent] — the separator carries
+	// CP-24: Form value 'outer-a' does not exist. [orisai.nette.forms.noSuchComponent] — the separator carries
 	// no meaning at all on the VALUES axis: $values is a data hash keyed by one component's own name,
 	// not a component tree, so the very spelling the line above resolves as a nested COMPONENT is
 	// looked up literally here and found absent. A values key can never itself contain a separator

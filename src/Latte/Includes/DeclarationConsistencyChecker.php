@@ -68,7 +68,7 @@ final class DeclarationConsistencyChecker
 		try {
 			$nativeTypes = PropertyTypeResolver::resolveAllPublic($templateTypeClass);
 		} catch (ReflectionException $e) {
-			// orisaiNette.latte.unknownType already covers a genuinely bad {templateType} class, reported once
+			// orisai.nette.latte.unknownType already covers a genuinely bad {templateType} class, reported once
 			// by DeclarationInjector for the declaring file - degrading silently here avoids a
 			// duplicate report from this unrelated checker.
 			return [];
@@ -170,7 +170,7 @@ final class DeclarationConsistencyChecker
 		if ($native->equals($override)) {
 			return [
 				new Diagnostic(
-					'orisaiNette.latte.duplicateDeclaration',
+					'orisai.nette.latte.duplicateDeclaration',
 					sprintf(
 						"Variable \$%s in '%s' is declared as %s both natively and via {varType} - the {varType} is redundant.",
 						$name,
@@ -189,7 +189,7 @@ final class DeclarationConsistencyChecker
 
 			return [
 				new Diagnostic(
-					'orisaiNette.latte.narrowingOverride',
+					'orisai.nette.latte.narrowingOverride',
 					sprintf(
 						"Variable \$%s in '%s' is narrowed via {varType} from its native type %s to %s.",
 						$name,
@@ -204,7 +204,7 @@ final class DeclarationConsistencyChecker
 
 		return [
 			new Diagnostic(
-				'orisaiNette.latte.impossibleOverride',
+				'orisai.nette.latte.impossibleOverride',
 				sprintf(
 					"Variable \$%s in '%s' is declared via {varType} as %s, which is incompatible with its native type %s.",
 					$name,

@@ -134,13 +134,13 @@ final class EdgeScopeIsolationTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->identifiersFor($dir, false),
 				'union semantics: the includer\'s own $shared reaches the partial without the include'
 					. ' site naming it',
 			);
 			self::assertContains(
-				'orisaiNette.latte.includeMissingVariable',
+				'orisai.nette.latte.includeMissingVariable',
 				$this->identifiersFor($dir, true),
 				'isolation: the same edge provides nothing but its (empty) explicit args, so the'
 					. ' partial\'s declared $shared is unprovided - this finding IS the Latte 3'

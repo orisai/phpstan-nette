@@ -8,7 +8,7 @@ use Nette\Forms\Controls\DateTimeControl;
 final class UnknownAccess
 {
 
-	// G12-01: Form value 'nope' may not exist; the form shape is open. [orisaiNette.forms.unknownAccess] (tip: Form shape opened by: dynamic_name)
+	// G12-01: Form value 'nope' may not exist; the form shape is open. [orisai.nette.forms.unknownAccess] (tip: Form shape opened by: dynamic_name)
 	public function g12_01(string $name): void
 	{
 		$form = new ApplicationForm();
@@ -17,7 +17,7 @@ final class UnknownAccess
 		$form->getValues()->nope;
 	}
 
-	// G12-02: Form value 'nope' may not exist; the form shape is open. [orisaiNette.forms.unknownAccess] (tip: Form shape opened by: extension_method)
+	// G12-02: Form value 'nope' may not exist; the form shape is open. [orisai.nette.forms.unknownAccess] (tip: Form shape opened by: extension_method)
 	public function g12_02(): void
 	{
 		$form = new ApplicationForm();
@@ -26,7 +26,7 @@ final class UnknownAccess
 		$form->getValues()->nope;
 	}
 
-	// G12-03: Form value 'nope' may not exist; the form shape is open. [orisaiNette.forms.unknownAccess] (tip: Form shape opened by: dynamic_name,extension_method)
+	// G12-03: Form value 'nope' may not exist; the form shape is open. [orisai.nette.forms.unknownAccess] (tip: Form shape opened by: dynamic_name,extension_method)
 	public function g12_03(string $name): void
 	{
 		$form = new ApplicationForm();
@@ -51,7 +51,7 @@ final class UnknownAccess
 		$form->getValues()->whatever;
 	}
 
-	// G12-06: Form value 'nope' does not exist. [orisaiNette.forms.noSuchComponent]
+	// G12-06: Form value 'nope' does not exist. [orisai.nette.forms.noSuchComponent]
 	public function g12_06(): void
 	{
 		$form = new ApplicationForm();
@@ -59,7 +59,7 @@ final class UnknownAccess
 		$form->getValues()->nope;
 	}
 
-	// G12-07: Form component 'nope' does not exist. [orisaiNette.forms.noSuchComponent]
+	// G12-07: Form component 'nope' does not exist. [orisai.nette.forms.noSuchComponent]
 	public function g12_07(): void
 	{
 		$form = new ApplicationForm();

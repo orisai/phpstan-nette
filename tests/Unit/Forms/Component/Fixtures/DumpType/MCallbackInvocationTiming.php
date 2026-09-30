@@ -17,7 +17,7 @@ use function PHPStan\dumpType;
  *   absence is what turns into a report — so an unknown timing may never produce one.
  *
  * The three answers below are that asymmetry, read off the form-level shape the access now carries.
- * NO closes the shape, so viaLater is PROVEN absent: *ERROR*, with one orisaiNette.forms.noSuchComponent.
+ * NO closes the shape, so viaLater is PROVEN absent: *ERROR*, with one orisai.nette.forms.noSuchComponent.
  * MAYBE opens it, so viaUnknown is merely unresolvable and degrades to the open shape's carrier with
  * NOTHING reported — the rule's own lost-field arm stays silent for an opened shape. An unknown
  * timing producing a report is the regression this pair exists to catch, and mixed rather than

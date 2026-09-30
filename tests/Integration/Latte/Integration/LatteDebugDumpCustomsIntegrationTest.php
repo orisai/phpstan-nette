@@ -61,7 +61,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 		));
 
 		self::assertSame(self::EXPECTED_POPULATED_MESSAGE, $message['message']);
-		self::assertSame('orisaiNette.latte.debugDump', $message['identifier']);
+		self::assertSame('orisai.nette.latte.debugDump', $message['identifier']);
 		self::assertFalse($message['ignorable']);
 	}
 
@@ -79,7 +79,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 			. "\ntemplate: (none)\ntemplate filters: (none)\ntemplate functions: (none)",
 			$message['message'],
 		);
-		self::assertSame('orisaiNette.latte.debugDump', $message['identifier']);
+		self::assertSame('orisai.nette.latte.debugDump', $message['identifier']);
 	}
 
 	public function testEmptyHarvestReportsNoneForEveryGlobalKindWhenTheConfiguredSourceYieldsNothing(): void
@@ -168,7 +168,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 				$messages = [];
 				foreach ($decoded['files'] as $fileMessages) {
 					foreach ($fileMessages['messages'] as $message) {
-						if ($message['identifier'] !== 'orisaiNette.latte.debugDump') {
+						if ($message['identifier'] !== 'orisai.nette.latte.debugDump') {
 							continue;
 						}
 

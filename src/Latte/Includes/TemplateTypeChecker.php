@@ -43,11 +43,11 @@ use const SORT_STRING;
 // THE CONSTRAINT THIS PLACEMENT ENCODES - the code cannot show it, so it is written down. Every one
 // of the four reads a fact derived from files OTHER than the template it reports on, through a
 // channel PHPStan's result cache does not propagate:
-//   - orisaiNette.latte.orphanTemplate / orisaiNette.latte.templateMissing are GLOBAL AGGREGATES: reachability is a fixpoint
+//   - orisai.nette.latte.orphanTemplate / orisai.nette.latte.templateMissing are GLOBAL AGGREGATES: reachability is a fixpoint
 //     over the whole template graph and the missing-view host is the renderer's lexicographically
 //     first linked template across the whole store, so a warm run that reanalysed only the changed
 //     files could serve a verdict computed from a graph that no longer exists.
-//   - orisaiNette.latte.templateTypeMismatch / orisai.nette.latte.templateTypeRequired compare the template's own
+//   - orisai.nette.latte.templateTypeMismatch / orisai.nette.latte.templateTypeRequired compare the template's own
 //     {templateType} against the renderer's PAIRING VERDICT, whose primary channel
 //     (PhpRenderWalk::CONVENTION_HOOK_METHODS) is a `return X::class;` inside a METHOD BODY, and
 //     against the class HIERARCHY of the paired class. A body-only edit leaves every signature
@@ -75,13 +75,13 @@ use const SORT_STRING;
 final class TemplateTypeChecker
 {
 
-	public const MISMATCH_IDENTIFIER = 'orisaiNette.latte.templateTypeMismatch';
+	public const MISMATCH_IDENTIFIER = 'orisai.nette.latte.templateTypeMismatch';
 
-	public const MISSING_IDENTIFIER = 'orisaiNette.latte.templateMissing';
+	public const MISSING_IDENTIFIER = 'orisai.nette.latte.templateMissing';
 
-	public const REQUIRED_IDENTIFIER = 'orisaiNette.latte.templateTypeRequired';
+	public const REQUIRED_IDENTIFIER = 'orisai.nette.latte.templateTypeRequired';
 
-	public const ORPHAN_IDENTIFIER = 'orisaiNette.latte.orphanTemplate';
+	public const ORPHAN_IDENTIFIER = 'orisai.nette.latte.orphanTemplate';
 
 	public const RECORD_SOURCE_SERVICE_NAME = 'latteDiscoveryRecordSource';
 
@@ -298,7 +298,7 @@ final class TemplateTypeChecker
 		$primaryClass = $verdict->getPrimaryClass();
 		$reflectionProvider = $this->reflectionProvider();
 
-		// orisaiNette.latte.unknownType already reports an unresolvable {templateType} once, at its declaring
+		// orisai.nette.latte.unknownType already reports an unresolvable {templateType} once, at its declaring
 		// file; a vanished pairing target is LattePairingRule's opaque finding. Either side missing
 		// makes the subtype question unanswerable, never answered wrongly - PairingJudge's own
 		// unknown-class discipline, through the same reflection surface it uses.

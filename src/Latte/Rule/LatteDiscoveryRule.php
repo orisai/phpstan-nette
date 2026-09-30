@@ -26,9 +26,9 @@ use function substr_compare;
 final class LatteDiscoveryRule implements Rule
 {
 
-	public const OPAQUE_IDENTIFIER = 'orisaiNette.latte.fileDiscoveryOpaque';
+	public const OPAQUE_IDENTIFIER = 'orisai.nette.latte.fileDiscoveryOpaque';
 
-	public const MUTATION_IDENTIFIER = 'orisaiNette.latte.ineffectiveTemplateMutation';
+	public const MUTATION_IDENTIFIER = 'orisai.nette.latte.ineffectiveTemplateMutation';
 
 	private PhpRenderWalk $renderWalk;
 

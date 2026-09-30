@@ -32,7 +32,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 	public function testDefineBodyVarTypeNestedInsideAConditionIsNotExempt(): void
 	{
 		self::assertSame(
-			['orisaiNette.latte.varTypeMisplaced'],
+			['orisai.nette.latte.varTypeMisplaced'],
 			$this->idsFor("{var \$q = 1}\n{define b}\n{if true}\n{varType string \$x}\n{/if}\n{/define}\n"),
 		);
 	}
@@ -44,7 +44,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 	public function testAnonymousBlockBodyVarTypeIsNotExempt(): void
 	{
 		self::assertSame(
-			['orisaiNette.latte.varTypeMisplaced'],
+			['orisai.nette.latte.varTypeMisplaced'],
 			$this->idsFor("{var \$q = 1}\n{block}\n{varType string \$x}\n{\$x}\n{/block}\n"),
 		);
 	}
@@ -52,7 +52,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 	public function testDynamicallyNamedDefineBodyVarTypeIsNotExempt(): void
 	{
 		self::assertSame(
-			['orisaiNette.latte.varTypeMisplaced'],
+			['orisai.nette.latte.varTypeMisplaced'],
 			$this->idsFor(
 				"{var \$q = 1}\n{var \$name = 'b'}\n{define \$name}\n{varType string \$x}\n{\$x}\n{/define}\n",
 			),
@@ -120,7 +120,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 	public function testNForeachElementNotBindingTheNamedVariableReportsDifferentVariable(): void
 	{
 		self::assertSame(
-			['orisaiNette.latte.varTypeDifferentVariable'],
+			['orisai.nette.latte.varTypeDifferentVariable'],
 			$this->idsFor("{var \$q = 1}\n{varType string \$other}\n<div n:foreach=\"\$items as \$item\">x</div>\n"),
 		);
 	}
@@ -156,7 +156,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{var \$q = 1}\n{varType string \$x}\n{\$q}\n{var \$x = 'a'}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
 		self::assertSame(2, $diagnostics[0]->getLatteLine());
 		self::assertSame(
 			'Mid-file {varType} for $x must sit directly above an assignment to $x, not above an output tag.',
@@ -169,7 +169,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{var \$q = 1}\n{varType string \$x}\n{if \$q}{/if}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Mid-file {varType} for $x must sit directly above an assignment to $x, not above {if}.',
 			$diagnostics[0]->getMessage(),
@@ -181,7 +181,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{if true}{varType string \$x}{/if}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Mid-file {varType} for $x must sit directly above an assignment to $x, not above {/if}.',
 			$diagnostics[0]->getMessage(),
@@ -209,7 +209,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{var \$q = 1}\n{varType array<string> \$items}\n{\$items}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeMisplaced', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Variable $items is never assigned in this template - move the {varType} above the first'
 			. ' non-header tag to declare it as a parameter for the whole template instead.',
@@ -264,14 +264,14 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{var \$q = 1}\n{varType string \$other}\n{var \$x = 'a'}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
 		self::assertNull($diagnostics[0]->getTip());
 	}
 
 	public function testAboveNonBlankTextIsMisplaced(): void
 	{
 		self::assertSame(
-			['orisaiNette.latte.varTypeMisplaced'],
+			['orisai.nette.latte.varTypeMisplaced'],
 			$this->idsFor("{var \$q = 1}\n{varType string \$x}\nplain text\n{var \$x = 'a'}\n"),
 		);
 	}
@@ -279,7 +279,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 	public function testEveryVarTypeInARunWithoutAnAnchorIsReported(): void
 	{
 		self::assertSame(
-			['orisaiNette.latte.varTypeMisplaced', 'orisaiNette.latte.varTypeMisplaced'],
+			['orisai.nette.latte.varTypeMisplaced', 'orisai.nette.latte.varTypeMisplaced'],
 			$this->idsFor("{var \$q = 1}\n{varType string \$x}\n{varType int \$y}\n{\$q}\n"),
 		);
 	}
@@ -293,7 +293,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		);
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Variable $other in {varType} does not match any variable in the foreach loop: $items, $item',
 			$diagnostics[0]->getMessage(),
@@ -321,7 +321,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{var \$q = 1}\n{varType string \$other}\n{var \$x = 'a'}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Variable $other in {varType} does not match assigned variable $x.',
 			$diagnostics[0]->getMessage(),
@@ -333,7 +333,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("{var \$q = 1}\n{varType string \$other}\n{var \$x = 'a', \$y = 1}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeVariableNotFound', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeVariableNotFound', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Variable $other in {varType} does not exist.',
 			$diagnostics[0]->getMessage(),
@@ -347,7 +347,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		);
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeVariableNotFound', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeVariableNotFound', $diagnostics[0]->getIdentifier());
 	}
 
 	// A {do}/{php} body this scanner cannot resolve to a plain variable assignment binds an
@@ -422,7 +422,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		);
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Variable $p in {varType} does not match any variable in the foreach loop: $items, $item',
 			$diagnostics[0]->getMessage(),
@@ -449,7 +449,7 @@ final class VarTypePlacementCheckerTest extends BaseTestCase
 		);
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.varTypeDifferentVariable', $diagnostics[0]->getIdentifier());
 		self::assertSame(
 			'Variable $p in {varType} does not match assigned variable $other.',
 			$diagnostics[0]->getMessage(),

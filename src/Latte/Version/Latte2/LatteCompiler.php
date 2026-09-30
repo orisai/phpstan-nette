@@ -144,7 +144,7 @@ final class LatteCompiler
 			return CompileResult::failure(
 				$className,
 				new Diagnostic(
-					'orisaiNette.latte.parseError',
+					'orisai.nette.latte.parseError',
 					VendorCompileFailure::message($e),
 					$this->recoverLine($parser->getLine()),
 				),
@@ -166,7 +166,7 @@ final class LatteCompiler
 				// already set $line for this same name on the prior attempt.
 				return CompileResult::failure(
 					$className,
-					new Diagnostic('orisaiNette.latte.parseError', $e->getMessage(), $line),
+					new Diagnostic('orisai.nette.latte.parseError', $e->getMessage(), $line),
 				);
 			}
 
@@ -188,7 +188,7 @@ final class LatteCompiler
 					function (int $severity, string $message) use ($compiler, &$deprecations): void {
 						if ($severity === E_USER_DEPRECATED) {
 							$deprecations[] = new Diagnostic(
-								'orisaiNette.latte.deprecated',
+								'orisai.nette.latte.deprecated',
 								$message,
 								$this->recoverLine($compiler->getLine()),
 							);
@@ -215,12 +215,12 @@ final class LatteCompiler
 				if ($unknownName === null) {
 					return CompileResult::failure(
 						$className,
-						new Diagnostic('orisaiNette.latte.parseError', $e->getMessage(), $line),
+						new Diagnostic('orisai.nette.latte.parseError', $e->getMessage(), $line),
 					);
 				}
 
 				$diagnostics[] = new Diagnostic(
-					'orisaiNette.latte.unknownMacro',
+					'orisai.nette.latte.unknownMacro',
 					"Unknown Latte macro or attribute '$unknownName'.",
 					$line,
 				);
@@ -229,7 +229,7 @@ final class LatteCompiler
 				return CompileResult::failure(
 					$className,
 					new Diagnostic(
-						'orisaiNette.latte.parseError',
+						'orisai.nette.latte.parseError',
 						VendorCompileFailure::message($e),
 						$this->recoverLine($compiler->getLine()),
 					),
@@ -239,7 +239,7 @@ final class LatteCompiler
 
 		return CompileResult::failure(
 			$className,
-			new Diagnostic('orisaiNette.latte.parseError', 'Too many unknown macros.', 1),
+			new Diagnostic('orisai.nette.latte.parseError', 'Too many unknown macros.', 1),
 		);
 	}
 

@@ -16,7 +16,7 @@ use const PHP_BINARY;
 // function consumption end to end - a fixture engine-loader registers a typed filter and function
 // (Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\FixtureTypedCustoms), and the spawned analysis run
 // must resolve them to the REAL signature (a wrong-arg-type call reports the underlying method's
-// own argument.type error, not orisaiNette.latte.unknownFilter/a bare "function not found") while an unrelated,
+// own argument.type error, not orisai.nette.latte.unknownFilter/a bare "function not found") while an unrelated,
 // genuinely unregistered name keeps reporting exactly what it reports today.
 /**
  * @group latte2
@@ -34,7 +34,7 @@ final class HarvestedCustomsIntegrationTest extends BaseTestCase
 
 		self::assertStringContainsString('myFilter', $output);
 		self::assertStringContainsString('int', $output);
-		self::assertStringNotContainsString('orisaiNette.latte.unknownFilter', $output);
+		self::assertStringNotContainsString('orisai.nette.latte.unknownFilter', $output);
 		self::assertStringNotContainsString('Unknown Latte filter', $output);
 	}
 

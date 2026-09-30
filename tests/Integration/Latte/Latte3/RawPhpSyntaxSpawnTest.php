@@ -57,7 +57,7 @@ final class RawPhpSyntaxSpawnTest extends BaseTestCase
 
 		self::assertSame(
 			[
-				"src/broken.latte:3 orisaiNette.latte.parseError Error in template: Syntax error, unexpected ';'",
+				"src/broken.latte:3 orisai.nette.latte.parseError Error in template: Syntax error, unexpected ';'",
 				'src/other.latte:1 variable.undefined Undefined variable: $undefined',
 			],
 			$findings,

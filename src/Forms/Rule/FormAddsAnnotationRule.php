@@ -68,7 +68,7 @@ final class FormAddsAnnotationRule implements Rule
 					ControlAnnotationValueTypeReader::ADDS_TAG_NAME . ' is only valid on a method declared on a '
 						. 'Nette\Forms\Container subclass, and this is not a method of one.',
 				)
-					->identifier('orisaiNette.forms.outsideContainer')
+					->identifier('orisai.nette.forms.outsideContainer')
 					->line($node->getStartLine())
 					->build(),
 			];

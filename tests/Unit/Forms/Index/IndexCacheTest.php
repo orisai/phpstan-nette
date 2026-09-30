@@ -611,7 +611,7 @@ PHP;
 
 		foreach ($decoded['files'] ?? [] as $info) {
 			foreach ($info['messages'] ?? [] as $message) {
-				if (($message['identifier'] ?? '') !== 'orisaiNette.forms.shadowDivergence') {
+				if (($message['identifier'] ?? '') !== 'orisai.nette.forms.shadowDivergence') {
 					continue;
 				}
 

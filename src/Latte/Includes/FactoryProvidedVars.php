@@ -87,7 +87,7 @@ use const SORT_STRING;
 // value-less control, the second FormShapeProjector copy, the catalog stub's dropped @property tags,
 // and the replicator own-child the component walk reaches mid-chain. A whole-corpus cold run now
 // measures ZERO of both classes and zero `formShape.*` AMONG THE 189 - not zero in the corpus, which
-// keeps one pre-existing `orisaiNette.forms.partiallyUnknown` this change never touches.
+// keeps one pre-existing `orisai.nette.forms.partiallyUnknown` this change never touches.
 //
 // What the key costs and buys, whole-corpus and both measured: 73 baselined `Undefined variable:
 // $control` entries across 23 templates go away (of a pre-existing 148 across 37 - the 75 that

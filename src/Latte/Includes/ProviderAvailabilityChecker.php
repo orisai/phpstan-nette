@@ -44,7 +44,7 @@ use function sprintf;
 final class ProviderAvailabilityChecker
 {
 
-	public const IDENTIFIER = 'orisaiNette.latte.providerUnavailable';
+	public const IDENTIFIER = 'orisai.nette.latte.providerUnavailable';
 
 	public const RECORD_SOURCE_SERVICE_NAME = 'latteDiscoveryRecordSource';
 

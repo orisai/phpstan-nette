@@ -24,7 +24,7 @@ attribute constants of `OriPhpstan\Nette\Component\NullComparisonParentVisitor` 
 `OriPhpstan\Nette\Component\StatementExpressionVisitor`; treat those constants as an internal
 contract — renaming one breaks such a rule without any error in this library.
 
-## `orisaiNette.component.unattachedParentAccess`
+## `orisai.nette.component.unattachedParentAccess`
 
 > Component is not attached to a parent here, so `getForm()` always throws `Nette\InvalidStateException`.
 

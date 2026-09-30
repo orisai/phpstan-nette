@@ -28,7 +28,7 @@ final class ContainerResultCacheMetaExtension implements ResultCacheMetaExtensio
 
 	public function getKey(): string
 	{
-		return 'orisaiNette.dic.containers';
+		return 'orisai.nette.dic.containers';
 	}
 
 	public function getHash(): string

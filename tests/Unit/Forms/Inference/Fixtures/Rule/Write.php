@@ -33,7 +33,7 @@ final class Write
 		$form['a']->setValue(null);
 	}
 
-	// G8-04: Form field 'a' (Nette\Forms\Controls\TextInput) accepts scalar|Stringable|null, array{1, 2} given. [orisaiNette.forms.writeType]
+	// G8-04: Form field 'a' (Nette\Forms\Controls\TextInput) accepts scalar|Stringable|null, array{1, 2} given. [orisai.nette.forms.writeType]
 	public function g8_04(): void
 	{
 		$form = new ApplicationForm();
@@ -65,7 +65,7 @@ final class Write
 		$form['a']->setValue(true);
 	}
 
-	// G8-08: Form field 'a' (Nette\Forms\Controls\Checkbox) accepts scalar|null, array{'x'} given. [orisaiNette.forms.writeType]
+	// G8-08: Form field 'a' (Nette\Forms\Controls\Checkbox) accepts scalar|null, array{'x'} given. [orisai.nette.forms.writeType]
 	public function g8_08(): void
 	{
 		$form = new ApplicationForm();
@@ -81,7 +81,7 @@ final class Write
 		$form['a']->setValue(3);
 	}
 
-	// G8-10: Form field 'a' (Nette\Forms\Controls\SelectBox) accepts string|int|BackedEnum|null, float given. [orisaiNette.forms.writeType]
+	// G8-10: Form field 'a' (Nette\Forms\Controls\SelectBox) accepts string|int|BackedEnum|null, float given. [orisai.nette.forms.writeType]
 	public function g8_10(): void
 	{
 		$form = new ApplicationForm();
@@ -97,7 +97,7 @@ final class Write
 		$form['a']->setValue([1, 2]);
 	}
 
-	// G8-12: Form field 'a' (Nette\Forms\Controls\MultiSelectBox) accepts iterable<scalar|Stringable|BackedEnum>|scalar|null, stdClass given. [orisaiNette.forms.writeType]
+	// G8-12: Form field 'a' (Nette\Forms\Controls\MultiSelectBox) accepts iterable<scalar|Stringable|BackedEnum>|scalar|null, stdClass given. [orisai.nette.forms.writeType]
 	public function g8_12(): void
 	{
 		$form = new ApplicationForm();
@@ -121,7 +121,7 @@ final class Write
 		$form['a']->setValue(new DateTimeImmutable());
 	}
 
-	// G8-15: Form field 'a' (Nette\Forms\Controls\DateTimeControl) accepts DateTimeInterface|string|int|null, true given. [orisaiNette.forms.writeType]
+	// G8-15: Form field 'a' (Nette\Forms\Controls\DateTimeControl) accepts DateTimeInterface|string|int|null, true given. [orisai.nette.forms.writeType]
 	public function g8_15(): void
 	{
 		$form = new ApplicationForm();
@@ -137,7 +137,7 @@ final class Write
 		$form['a']->setValue('#fff');
 	}
 
-	// G8-17: Form field 'a' (Nette\Forms\Controls\ColorPicker) accepts string|null, int given. [orisaiNette.forms.writeType]
+	// G8-17: Form field 'a' (Nette\Forms\Controls\ColorPicker) accepts string|null, int given. [orisai.nette.forms.writeType]
 	public function g8_17(): void
 	{
 		$form = new ApplicationForm();
@@ -145,7 +145,7 @@ final class Write
 		$form['a']->setValue(5);
 	}
 
-	// G8-18: setValue() on upload field 'a' has no effect. [orisaiNette.forms.writeNoEffect]
+	// G8-18: setValue() on upload field 'a' has no effect. [orisai.nette.forms.writeNoEffect]
 	public function g8_18(): void
 	{
 		$form = new ApplicationForm();
@@ -153,7 +153,7 @@ final class Write
 		$form['a']->setValue('x');
 	}
 
-	// G8-19: setValue() on upload field 'a' has no effect. [orisaiNette.forms.writeNoEffect]
+	// G8-19: setValue() on upload field 'a' has no effect. [orisai.nette.forms.writeNoEffect]
 	public function g8_19(): void
 	{
 		$form = new ApplicationForm();

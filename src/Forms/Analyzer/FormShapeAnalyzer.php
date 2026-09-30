@@ -3258,7 +3258,7 @@ final class FormShapeAnalyzer
 	 * offsetGet delegating to getComponent — hands out a handle the form could gain fields through.
 	 * It usually can, and the shape then opens: its known fields stay precise, but unseen ones are no
 	 * longer reported as missing. An open shape reports NO absence at all, so this is the whole form's
-	 * `orisaiNette.forms.noSuchComponent` coverage, not a widened member type.
+	 * `orisai.nette.forms.noSuchComponent` coverage, not a widened member type.
 	 *
 	 * What the read costs is therefore decided by what the handle IS and what is DONE with it, never
 	 * by the assignment's presence:

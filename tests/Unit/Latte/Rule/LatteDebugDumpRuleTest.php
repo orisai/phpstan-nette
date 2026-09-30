@@ -125,7 +125,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			);
 
 			self::assertCount(1, $errors);
-			self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
+			self::assertSame('orisai.nette.latte.debugDump', $errors[0]->getIdentifier());
 			self::assertSame(
 				'no incoming Latte edges (convention-wired? PHP-side wiring is invisible until phase 3)',
 				$errors[0]->getMessage(),
@@ -237,7 +237,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				$errors = $rule->processNode($node, $scope);
 
 				self::assertCount(1, $errors);
-				self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
+				self::assertSame('orisai.nette.latte.debugDump', $errors[0]->getIdentifier());
 				self::assertSame(
 					sprintf(
 						"\$x: %s\nchain: %s\nprovenance: %s\nunion: %s",
@@ -381,7 +381,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			);
 
 			self::assertCount(1, $errors);
-			self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
+			self::assertSame('orisai.nette.latte.debugDump', $errors[0]->getIdentifier());
 			self::assertSame(
 				'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)'
 				. "\ntemplate: (none)\ntemplate filters: (none)\ntemplate functions: (none)",
@@ -562,7 +562,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			);
 
 			self::assertCount(1, $errors);
-			self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
+			self::assertSame('orisai.nette.latte.debugDump', $errors[0]->getIdentifier());
 			self::assertSame(
 				"class: Tests\\OriPhpstan\\Nette\\Unit\\Latte\\Bridge\\Fixtures\\App\\DoesNotExist\nno render facts: class not found",
 				$errors[0]->getMessage(),
@@ -1055,7 +1055,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		);
 
 		self::assertCount(1, $errors);
-		self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.debugDump', $errors[0]->getIdentifier());
 		self::assertSame(
 			"class: Tests\\OriPhpstan\\Nette\\Unit\\Latte\\Bridge\\Pairing\\Fixtures\\App\\DoesNotExist\nno pairing: class not found",
 			$errors[0]->getMessage(),
@@ -1376,7 +1376,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		);
 
 		self::assertCount(1, $errors);
-		self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.debugDump', $errors[0]->getIdentifier());
 		self::assertSame(
 			"class: Tests\\OriPhpstan\\Nette\\Unit\\Latte\\Bridge\\Fixtures\\App\\DoesNotExist\nno discovery: class not found",
 			$errors[0]->getMessage(),

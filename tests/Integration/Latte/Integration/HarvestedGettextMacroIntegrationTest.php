@@ -16,7 +16,7 @@ use const PHP_BINARY;
 // consumption end to end - a fixture engine-loader registers the real vendor gettext macro set
 // (h4kuna\Gettext\Macros\Gettext, the same class GettextLatteExtension installs in production),
 // and the spawned analysis run must compile {_}/{g_}/{ng_}/{dg_}/{dng_} through that real macro
-// code (no orisaiNette.latte.unknownMacro) while an unrelated, genuinely unregistered macro name keeps
+// code (no orisai.nette.latte.unknownMacro) while an unrelated, genuinely unregistered macro name keeps
 // reporting exactly what it reports today (passthrough stays the fallback).
 /**
  * @group latte2
@@ -36,7 +36,7 @@ final class HarvestedGettextMacroIntegrationTest extends BaseTestCase
 		);
 
 		self::assertStringNotContainsString('Unknown Latte macro', $output);
-		self::assertStringNotContainsString('orisaiNette.latte.unknownMacro', $output);
+		self::assertStringNotContainsString('orisai.nette.latte.unknownMacro', $output);
 	}
 
 	public function testGenuinelyUnknownMacroStillReportsUnknownMacroWithGettextEngineLoaderConfigured(): void

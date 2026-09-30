@@ -452,7 +452,7 @@ dumpFormValues($form);
 ```
 
 `dumpComponent($component, ?int $depth = null, bool $formValues = true)` prints the inferred component tree
-(`orisaiNette.forms.componentShapeDump`). Each control shows its accepted write type and its read type:
+(`orisai.nette.forms.componentShapeDump`). Each control shows its accepted write type and its read type:
 
 ```
 App\Forms\SignForm{
@@ -463,7 +463,7 @@ App\Forms\SignForm{
 `$depth` limits nesting, `$formValues: false` leaves the value types out. An open shape — one the analysis could not
 fully enumerate — ends with a `...` member.
 
-`dumpFormValues($component)` prints what `getValues()` returns (`orisaiNette.forms.formValuesDump`):
+`dumpFormValues($component)` prints what `getValues()` returns (`orisai.nette.forms.formValuesDump`):
 
 ```
 Nette\Utils\ArrayHash{name: string, address: Nette\Utils\ArrayHash{city: string, zip: string}}
@@ -471,7 +471,7 @@ Nette\Utils\ArrayHash{name: string, address: Nette\Utils\ArrayHash{city: string,
 
 `assertComponent($component, string $expected, ?int $depth = null, bool $formValues = true)` and
 `assertFormValues($component, string $expected)` compare the same output with a string and report only a mismatch
-(`orisaiNette.forms.componentShapeAssert`, `orisaiNette.forms.formValuesAssert`). Use them in your own tests of
+(`orisai.nette.forms.componentShapeAssert`, `orisai.nette.forms.formValuesAssert`). Use them in your own tests of
 custom controls:
 
 ```php
@@ -489,7 +489,7 @@ In a template, call them bare — no namespace needed:
 {do dumpLatteVarOrigin($user)}
 ```
 
-All of them report `orisaiNette.latte.debugDump`.
+All of them report `orisai.nette.latte.debugDump`.
 
 - `dumpLatteIncluders()` – every `{include}`, `{extends}`, `{import}`, `{embed}` and `{sandbox}` site reaching the
   current template, one per line with its number of contexts, e.g. `app/templates/Home/default.latte:12 (include) - 1 context(s)`
@@ -638,7 +638,7 @@ public function addPhone(string $name): TextInput
 ```
 
 Inside your analysed paths, an unannotated helper registering one component under a parameter is reported
-(`orisaiNette.forms.unannotatedRegistrar`). It works today, but the day the class moves into a package its body is not
+(`orisai.nette.forms.unannotatedRegistrar`). It works today, but the day the class moves into a package its body is not
 read any more and the registration disappears. Turn the report off with `orisai.nette.forms.reportUnannotatedRegistrars`.
 
 **`@form-wizard [stepPrefix]`** – a forms wizard; its `createStep1()`, `createStep2()`, … methods are its steps and
@@ -738,7 +738,7 @@ them checked.
 Extensions are identified by their code: an extension from a Composer package by the package version, your own by
 every PHP file in its class's directory and below, so editing one of its node classes invalidates the analysis. Declare
 your extensions in a directory of their own — an extension in the project root directory is identified by the files of
-that directory only. A directory which cannot be read is reported (`orisaiNette.latte.customsHarvest`) and left out.
+that directory only. A directory which cannot be read is reported (`orisai.nette.latte.customsHarvest`) and left out.
 
 ### Latte template customs
 
@@ -811,7 +811,7 @@ only; `<declaring dir>` is the directory of the class declaring the override. A 
 `@@`, otherwise it is read as a service reference. `nameProperty` is read from the rendered class, so a subclass
 overriding the property's default gets its own template.
 
-An override without a formula is reported (`orisaiNette.latte.fileDiscoveryOpaque`) and never guessed.
+An override without a formula is reported (`orisai.nette.latte.fileDiscoveryOpaque`) and never guessed.
 
 ### Bridges extension points
 
@@ -842,20 +842,20 @@ Service lookups on `Nette\DI\Container` are typed from your compiled containers:
 
 | What is checked or typed                                        | Error identifier                              | Notes                                   |
 |-----------------------------------------------------------------|-----------------------------------------------|-----------------------------------------|
-| Service name not registered in any container                    | `orisaiNette.dic.serviceNotFound`             | `getService()`, `getByName()`, …        |
-| Service name missing in some profiles                           | `orisaiNette.dic.serviceNotInAllContainers`   | names the profiles                      |
-| Service name is not a literal                                   | `orisaiNette.dic.dynamicServiceName`          |                                         |
-| `hasService()` is always true                                   | `orisaiNette.dic.hasServiceAlwaysTrue`        | partial existence is not reported       |
-| `hasService()` is always false                                  | `orisaiNette.dic.hasServiceAlwaysFalse`       |                                         |
-| Lookup of a service the `hasService()` guard excluded           | `orisaiNette.dic.serviceMissingInBranch`      | best-effort                             |
-| Type not registered in any container                            | `orisaiNette.dic.typeNotFound`                | `getByType()`, `findByType()`           |
-| Type missing or not autowirable in some profiles                | `orisaiNette.dic.typeNotInAllContainers`      |                                         |
-| Type has several autowired services                             | `orisaiNette.dic.typeAmbiguous`               | `getByType()` throws                    |
-| Type registered but not autowired                               | `orisaiNette.dic.typeNotAutowired`            | `getByType()` throws                    |
-| Type is not a literal `::class`                                 | `orisaiNette.dic.dynamicType`                 |                                         |
-| Tag not present in any container                                | `orisaiNette.dic.tagNotFound`                 | `findByTag()`                           |
-| Tag missing in some profiles                                    | `orisaiNette.dic.tagNotInAllContainers`       |                                         |
-| Tag is not a literal                                            | `orisaiNette.dic.dynamicTag`                  |                                         |
+| Service name not registered in any container                    | `orisai.nette.dic.serviceNotFound`             | `getService()`, `getByName()`, …        |
+| Service name missing in some profiles                           | `orisai.nette.dic.serviceNotInAllContainers`   | names the profiles                      |
+| Service name is not a literal                                   | `orisai.nette.dic.dynamicServiceName`          |                                         |
+| `hasService()` is always true                                   | `orisai.nette.dic.hasServiceAlwaysTrue`        | partial existence is not reported       |
+| `hasService()` is always false                                  | `orisai.nette.dic.hasServiceAlwaysFalse`       |                                         |
+| Lookup of a service the `hasService()` guard excluded           | `orisai.nette.dic.serviceMissingInBranch`      | best-effort                             |
+| Type not registered in any container                            | `orisai.nette.dic.typeNotFound`                | `getByType()`, `findByType()`           |
+| Type missing or not autowirable in some profiles                | `orisai.nette.dic.typeNotInAllContainers`      |                                         |
+| Type has several autowired services                             | `orisai.nette.dic.typeAmbiguous`               | `getByType()` throws                    |
+| Type registered but not autowired                               | `orisai.nette.dic.typeNotAutowired`            | `getByType()` throws                    |
+| Type is not a literal `::class`                                 | `orisai.nette.dic.dynamicType`                 |                                         |
+| Tag not present in any container                                | `orisai.nette.dic.tagNotFound`                 | `findByTag()`                           |
+| Tag missing in some profiles                                    | `orisai.nette.dic.tagNotInAllContainers`       |                                         |
+| Tag is not a literal                                            | `orisai.nette.dic.dynamicTag`                  |                                         |
 | Constructors and setup methods called by the container are used | –                                             | [dead code detection](#dead-code-detection) |
 
 #### DI limitations
@@ -887,30 +887,30 @@ The shape of a form — its children, their classes and values — is inferred w
 
 | What is checked or typed                                                      | Error identifier                                  | Notes                                                   |
 |-------------------------------------------------------------------------------|---------------------------------------------------|---------------------------------------------------------|
-| Component which does not exist                                                | `orisaiNette.forms.noSuchComponent`               | only on a fully known shape                             |
-| Component which may not exist, on an open shape                               | `orisaiNette.forms.unknownAccess`                 | the tip says why the shape is open                      |
-| Value of an unknown type                                                      | `orisaiNette.forms.partiallyUnknown`              | the tip says why                                        |
-| Component path with an empty segment (`$form['a--b']`)                        | `orisaiNette.forms.shapeInvalidComponentName`     | Nette throws                                            |
-| Component registered under an invalid name (`addText('first-name')`)          | `orisaiNette.forms.invalidComponentName`          | Nette throws                                            |
-| `isset()`/`??` on a component whose presence is known                         | `orisaiNette.forms.constantExistenceCheck`        | always or never exists                                  |
-| Incompatible value written by `setValue()`, `setDefaults()`, `setValues()`, … | `orisaiNette.forms.writeType`                     |                                                         |
-| `setValue()` on an upload control                                             | `orisaiNette.forms.writeNoEffect`                 |                                                         |
-| Form values not mappable to the mapped type                                   | `orisaiNette.forms.mappedTypeWrite`               | missing property, required member unset, type mismatch  |
-| `createComponent*()` returning `Nette\Forms\Form` instead of a UI form        | `orisaiNette.forms.createComponentNonUiForm`      | signals and submission would be lost                    |
-| Generic `add*` helper without `@form-adds`                                    | `orisaiNette.forms.unannotatedRegistrar`          | `orisai.nette.forms.reportUnannotatedRegistrars`         |
-| `@form-adds` outside a `Nette\Forms\Container` subclass                       | `orisaiNette.forms.outsideContainer`              |                                                         |
-| `@form-adds` which does not parse                                             | `orisaiNette.forms.malformed`                     |                                                         |
-| `@form-adds` naming no parameter of the method                                | `orisaiNette.forms.unknownParameter`              |                                                         |
-| `@form-adds` naming a parameter twice                                         | `orisaiNette.forms.duplicateParameter`            |                                                         |
-| `@form-adds` naming a class which does not exist                              | `orisaiNette.forms.unknownControlClass`           | write the class fully qualified                         |
-| `@form-adds` naming a class which is not a component                          | `orisaiNette.forms.invalidControlClass`           |                                                         |
-| `@form-adds` without a class and without a usable return type                 | `orisaiNette.forms.missingControlClass`           |                                                         |
-| `@form-adds` class contradicting the declared return type                     | `orisaiNette.forms.returnTypeContradiction`       |                                                         |
-| `dumpComponent()`, `assertComponent()` output                                 | `orisaiNette.forms.componentShapeDump`, `orisaiNette.forms.componentShapeAssert` | [debugging](#forms-debugging)                           |
-| `dumpFormValues()`, `assertFormValues()` output                               | `orisaiNette.forms.formValuesDump`, `orisaiNette.forms.formValuesAssert`         | [debugging](#forms-debugging)                           |
-| Divergence of two resolution strategies                                       | `orisaiNette.forms.shadowDivergence`              | maintainers only, `forms.internals.indexShadowCompare`  |
-| `getPresenter()`, `getForm()` and similar on a component not attached yet     | `orisaiNette.component.unattachedParentAccess`    | always throws; `component.enabled`                      |
-| `action*()`, `render*()`, `handle*()` returning a value                       | `orisaiNette.component.magicMethodReturnType`     | must return `void` or `never`; `component.enabled`      |
+| Component which does not exist                                                | `orisai.nette.forms.noSuchComponent`               | only on a fully known shape                             |
+| Component which may not exist, on an open shape                               | `orisai.nette.forms.unknownAccess`                 | the tip says why the shape is open                      |
+| Value of an unknown type                                                      | `orisai.nette.forms.partiallyUnknown`              | the tip says why                                        |
+| Component path with an empty segment (`$form['a--b']`)                        | `orisai.nette.forms.shapeInvalidComponentName`     | Nette throws                                            |
+| Component registered under an invalid name (`addText('first-name')`)          | `orisai.nette.forms.invalidComponentName`          | Nette throws                                            |
+| `isset()`/`??` on a component whose presence is known                         | `orisai.nette.forms.constantExistenceCheck`        | always or never exists                                  |
+| Incompatible value written by `setValue()`, `setDefaults()`, `setValues()`, … | `orisai.nette.forms.writeType`                     |                                                         |
+| `setValue()` on an upload control                                             | `orisai.nette.forms.writeNoEffect`                 |                                                         |
+| Form values not mappable to the mapped type                                   | `orisai.nette.forms.mappedTypeWrite`               | missing property, required member unset, type mismatch  |
+| `createComponent*()` returning `Nette\Forms\Form` instead of a UI form        | `orisai.nette.forms.createComponentNonUiForm`      | signals and submission would be lost                    |
+| Generic `add*` helper without `@form-adds`                                    | `orisai.nette.forms.unannotatedRegistrar`          | `orisai.nette.forms.reportUnannotatedRegistrars`         |
+| `@form-adds` outside a `Nette\Forms\Container` subclass                       | `orisai.nette.forms.outsideContainer`              |                                                         |
+| `@form-adds` which does not parse                                             | `orisai.nette.forms.malformed`                     |                                                         |
+| `@form-adds` naming no parameter of the method                                | `orisai.nette.forms.unknownParameter`              |                                                         |
+| `@form-adds` naming a parameter twice                                         | `orisai.nette.forms.duplicateParameter`            |                                                         |
+| `@form-adds` naming a class which does not exist                              | `orisai.nette.forms.unknownControlClass`           | write the class fully qualified                         |
+| `@form-adds` naming a class which is not a component                          | `orisai.nette.forms.invalidControlClass`           |                                                         |
+| `@form-adds` without a class and without a usable return type                 | `orisai.nette.forms.missingControlClass`           |                                                         |
+| `@form-adds` class contradicting the declared return type                     | `orisai.nette.forms.returnTypeContradiction`       |                                                         |
+| `dumpComponent()`, `assertComponent()` output                                 | `orisai.nette.forms.componentShapeDump`, `orisai.nette.forms.componentShapeAssert` | [debugging](#forms-debugging)                           |
+| `dumpFormValues()`, `assertFormValues()` output                               | `orisai.nette.forms.formValuesDump`, `orisai.nette.forms.formValuesAssert`         | [debugging](#forms-debugging)                           |
+| Divergence of two resolution strategies                                       | `orisai.nette.forms.shadowDivergence`              | maintainers only, `forms.internals.indexShadowCompare`  |
+| `getPresenter()`, `getForm()` and similar on a component not attached yet     | `orisai.nette.component.unattachedParentAccess`    | always throws; `component.enabled`                      |
+| `action*()`, `render*()`, `handle*()` returning a value                       | `orisai.nette.component.magicMethodReturnType`     | must return `void` or `never`; `component.enabled`      |
 
 #### Forms limitations
 
@@ -947,41 +947,41 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 
 | What is checked or typed                                                 | Error identifier                                | Notes                                              |
 |--------------------------------------------------------------------------|-------------------------------------------------|----------------------------------------------------|
-| Template which does not compile                                          | `orisaiNette.latte.parseError`                  |                                                    |
-| Unknown macro or `n:` attribute                                          | `orisaiNette.latte.unknownMacro`                |                                                    |
-| Unknown filter, or engine function with no declaration to check          | `orisaiNette.latte.unknownFilter`               |                                                    |
-| Unknown class in `{templateType}` or `{varType}`                         | `orisaiNette.latte.unknownType`                 |                                                    |
-| Include target not statically known                                      | `orisaiNette.latte.dynamicInclude`              |                                                    |
-| Extends or layout target not statically known                            | `orisaiNette.latte.dynamicExtends`              |                                                    |
-| Included file does not exist                                             | `orisaiNette.latte.unknownInclude`              |                                                    |
-| Included block exists in no reachable template                           | `orisaiNette.latte.unknownBlock`                |                                                    |
-| Include cycle                                                            | `orisaiNette.latte.includeCycle`                |                                                    |
-| Include passes a type the target does not accept                         | `orisaiNette.latte.includeTypeMismatch`         |                                                    |
-| Include misses a variable the target declares                            | `orisaiNette.latte.includeMissingVariable`      | `latte.includeIsolation` widens it                 |
-| `{varType}` repeating the native declaration                             | `orisaiNette.latte.duplicateDeclaration`        |                                                    |
-| `{varType}` narrowing the native declaration                             | `orisaiNette.latte.narrowingOverride`           | `latte.allowNarrowingOverride`                     |
-| `{varType}` wider than or unrelated to the native declaration            | `orisaiNette.latte.impossibleOverride`          |                                                    |
-| Mid-file `{varType}` not directly above an assignment                    | `orisaiNette.latte.varTypeMisplaced`            |                                                    |
-| Mid-file `{varType}` naming another variable than the assignment         | `orisaiNette.latte.varTypeDifferentVariable`    |                                                    |
-| Mid-file `{varType}` naming none of the assigned variables               | `orisaiNette.latte.varTypeVariableNotFound`     |                                                    |
-| `{varType}` conflicting with the assigned expression's native type       | `orisaiNette.latte.varTypeNativeType`           | `latte.reportAnyTypeWideningInVarType`             |
-| `{varType}` conflicting with the assigned expression's PHPDoc type       | `orisaiNette.latte.varTypeType`                 | `latte.reportWrongPhpDocTypeInVarType`             |
-| Filter spelled in a different case than registered                       | `orisaiNette.latte.filterCaseMismatch`          | reported on every line; breaks on Latte 3          |
-| Function spelled in a different case than registered                     | `orisaiNette.latte.functionCaseMismatch`        | reported on every line; breaks on Latte 3.1        |
-| Template writing `$this->…` of the compiled template class                | `orisaiNette.latte.internalAccess`              |                                                    |
-| Deprecation raised by Latte while compiling                              | `orisaiNette.latte.deprecated`                  |                                                    |
-| Invariant of the analysis itself broken                                  | `orisaiNette.latte.internalError`               | please report it                                   |
-| Engine extension directory which cannot be read                          | `orisaiNette.latte.customsHarvest`              | once, on line 1 of the first template              |
-| Template class conflict between declaration and creation (PHP side)      | `orisaiNette.latte.pairingConflict`             | reported on the class                              |
-| Template class not statically resolvable (PHP side)                      | `orisaiNette.latte.pairingOpaque`               | reported on the class                              |
-| Template file not resolvable (PHP side)                                  | `orisaiNette.latte.fileDiscoveryOpaque`         | e.g. an override without a [formula](#latte-discovery-formulas) |
-| `setView()` or another template write made when it has no effect (PHP side) | `orisaiNette.latte.ineffectiveTemplateMutation` |                                                    |
-| `{templateType}` other than the renderer's template class                | `orisaiNette.latte.templateTypeMismatch`        | needs discovery                                    |
-| View with no existing template file                                      | `orisaiNette.latte.templateMissing`             | needs discovery                                    |
+| Template which does not compile                                          | `orisai.nette.latte.parseError`                  |                                                    |
+| Unknown macro or `n:` attribute                                          | `orisai.nette.latte.unknownMacro`                |                                                    |
+| Unknown filter, or engine function with no declaration to check          | `orisai.nette.latte.unknownFilter`               |                                                    |
+| Unknown class in `{templateType}` or `{varType}`                         | `orisai.nette.latte.unknownType`                 |                                                    |
+| Include target not statically known                                      | `orisai.nette.latte.dynamicInclude`              |                                                    |
+| Extends or layout target not statically known                            | `orisai.nette.latte.dynamicExtends`              |                                                    |
+| Included file does not exist                                             | `orisai.nette.latte.unknownInclude`              |                                                    |
+| Included block exists in no reachable template                           | `orisai.nette.latte.unknownBlock`                |                                                    |
+| Include cycle                                                            | `orisai.nette.latte.includeCycle`                |                                                    |
+| Include passes a type the target does not accept                         | `orisai.nette.latte.includeTypeMismatch`         |                                                    |
+| Include misses a variable the target declares                            | `orisai.nette.latte.includeMissingVariable`      | `latte.includeIsolation` widens it                 |
+| `{varType}` repeating the native declaration                             | `orisai.nette.latte.duplicateDeclaration`        |                                                    |
+| `{varType}` narrowing the native declaration                             | `orisai.nette.latte.narrowingOverride`           | `latte.allowNarrowingOverride`                     |
+| `{varType}` wider than or unrelated to the native declaration            | `orisai.nette.latte.impossibleOverride`          |                                                    |
+| Mid-file `{varType}` not directly above an assignment                    | `orisai.nette.latte.varTypeMisplaced`            |                                                    |
+| Mid-file `{varType}` naming another variable than the assignment         | `orisai.nette.latte.varTypeDifferentVariable`    |                                                    |
+| Mid-file `{varType}` naming none of the assigned variables               | `orisai.nette.latte.varTypeVariableNotFound`     |                                                    |
+| `{varType}` conflicting with the assigned expression's native type       | `orisai.nette.latte.varTypeNativeType`           | `latte.reportAnyTypeWideningInVarType`             |
+| `{varType}` conflicting with the assigned expression's PHPDoc type       | `orisai.nette.latte.varTypeType`                 | `latte.reportWrongPhpDocTypeInVarType`             |
+| Filter spelled in a different case than registered                       | `orisai.nette.latte.filterCaseMismatch`          | reported on every line; breaks on Latte 3          |
+| Function spelled in a different case than registered                     | `orisai.nette.latte.functionCaseMismatch`        | reported on every line; breaks on Latte 3.1        |
+| Template writing `$this->…` of the compiled template class                | `orisai.nette.latte.internalAccess`              |                                                    |
+| Deprecation raised by Latte while compiling                              | `orisai.nette.latte.deprecated`                  |                                                    |
+| Invariant of the analysis itself broken                                  | `orisai.nette.latte.internalError`               | please report it                                   |
+| Engine extension directory which cannot be read                          | `orisai.nette.latte.customsHarvest`              | once, on line 1 of the first template              |
+| Template class conflict between declaration and creation (PHP side)      | `orisai.nette.latte.pairingConflict`             | reported on the class                              |
+| Template class not statically resolvable (PHP side)                      | `orisai.nette.latte.pairingOpaque`               | reported on the class                              |
+| Template file not resolvable (PHP side)                                  | `orisai.nette.latte.fileDiscoveryOpaque`         | e.g. an override without a [formula](#latte-discovery-formulas) |
+| `setView()` or another template write made when it has no effect (PHP side) | `orisai.nette.latte.ineffectiveTemplateMutation` |                                                    |
+| `{templateType}` other than the renderer's template class                | `orisai.nette.latte.templateTypeMismatch`        | needs discovery                                    |
+| View with no existing template file                                      | `orisai.nette.latte.templateMissing`             | needs discovery                                    |
 | Linked template without `{templateType}`                                 | `orisai.nette.latte.templateTypeRequired`        | needs discovery, `latte.templateTypeRequired`      |
-| Template no render, include or layout reaches                            | `orisaiNette.latte.orphanTemplate`              | needs discovery; advisory                          |
-| `{control}`, `{link}`, `{snippet}`, … where no control renders the template | `orisaiNette.latte.providerUnavailable`       | needs discovery                                    |
-| Debugging function output                                                | `orisaiNette.latte.debugDump`                   | [debugging](#latte-debugging)                      |
+| Template no render, include or layout reaches                            | `orisai.nette.latte.orphanTemplate`              | needs discovery; advisory                          |
+| `{control}`, `{link}`, `{snippet}`, … where no control renders the template | `orisai.nette.latte.providerUnavailable`       | needs discovery                                    |
+| Debugging function output                                                | `orisai.nette.latte.debugDump`                   | [debugging](#latte-debugging)                      |
 
 #### Latte limitations
 
@@ -989,12 +989,12 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - `{default $x = …}` is analysed as `$x ??= …`; at runtime an existing `null` variable keeps `null`.
 - Filters added at render time (`$template->addFilter()`) are not seen — they are reported as unknown.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
-- `orisaiNette.latte.templateMissing` is not reported for a renderer which links no template at all.
+- `orisai.nette.latte.templateMissing` is not reported for a renderer which links no template at all.
 - The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
 - Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.
 - A presenter's `#[TemplateVariable]` property counts as present even when it is never initialized; at runtime such a
   variable is missing.
-- An unknown tag (one no engine registers) passes through and is reported as `orisaiNette.latte.unknownMacro`; its
+- An unknown tag (one no engine registers) passes through and is reported as `orisai.nette.latte.unknownMacro`; its
   arguments are not analysed. On Latte 3:
   - it is paired when the template contains its closing tag anywhere — also inside a Latte comment — or any generic
     `{/}`; using one unknown tag both paired and unpaired in one template is a compile error, and so is `{foo}` left
@@ -1002,7 +1002,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
   - `{else}`, `{elseif}`, `{elseifset}` and `{case}` directly inside an unknown paired tag pass through with it, as the
     branches of a custom conditional registered without an engine loader; their conditions are not analysed either
 - An error thrown inside Latte or a Latte extension while compiling a template is reported as
-  `orisaiNette.latte.parseError` (`Thrown exception '…'`).
+  `orisai.nette.latte.parseError` (`Thrown exception '…'`).
 
 ### Bridges features
 
@@ -1021,11 +1021,11 @@ Inside `{form}`, `$form` is typed as the paired form with its shape, and `{input
 
 | What is checked or typed                                              | Error identifier                              | Notes                              |
 |-----------------------------------------------------------------------|-----------------------------------------------|------------------------------------|
-| Control absent from the form of every linked renderer                 | `orisaiNette.latteForms.unknownControl`       | reported on the template line      |
-| `{form x}` naming a component which is not a form                     | `orisaiNette.latteForms.unknownForm`          |                                    |
-| `{input}`, `{label}`, `n:name` naming a container                     | `orisaiNette.latteForms.containerAsControl`   |                                    |
-| `{formContainer}` naming a control                                    | `orisaiNette.latteForms.controlAsContainer`   |                                    |
-| `{label}` on a control which renders no label (e.g. a submit button) | `orisaiNette.latteForms.labellessControl`     |                                    |
+| Control absent from the form of every linked renderer                 | `orisai.nette.latteForms.unknownControl`       | reported on the template line      |
+| `{form x}` naming a component which is not a form                     | `orisai.nette.latteForms.unknownForm`          |                                    |
+| `{input}`, `{label}`, `n:name` naming a container                     | `orisai.nette.latteForms.containerAsControl`   |                                    |
+| `{formContainer}` naming a control                                    | `orisai.nette.latteForms.controlAsContainer`   |                                    |
+| `{label}` on a control which renders no label (e.g. a submit button) | `orisai.nette.latteForms.labellessControl`     |                                    |
 
 Changes of a form builder's body reach its templates at most one warm run later; changes of signatures reach them in
 the same run.

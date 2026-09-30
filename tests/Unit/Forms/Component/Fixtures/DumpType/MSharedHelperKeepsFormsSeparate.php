@@ -15,7 +15,7 @@ use function PHPStan\dumpType;
  *
  * Each form's shape is CLOSED and non-empty — the whole builder was read — so the other form's field
  * is not merely unresolved, it is PROVEN absent, and the proof is no longer silent: the access reads
- * *ERROR* with exactly one orisaiNette.forms.noSuchComponent beside it, where a leaked contribution would
+ * *ERROR* with exactly one orisai.nette.forms.noSuchComponent beside it, where a leaked contribution would
  * read as a resolved TextInput. FormShapeUnknownAccessRule reads the shape off the receiver, which
  * only carries one now that a form-level access is a FormShapeType.
  */

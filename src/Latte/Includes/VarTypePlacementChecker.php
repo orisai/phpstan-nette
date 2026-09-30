@@ -28,11 +28,11 @@ use function sprintf;
 final class VarTypePlacementChecker
 {
 
-	public const MISPLACED_IDENTIFIER = 'orisaiNette.latte.varTypeMisplaced';
+	public const MISPLACED_IDENTIFIER = 'orisai.nette.latte.varTypeMisplaced';
 
-	public const DIFFERENT_VARIABLE_IDENTIFIER = 'orisaiNette.latte.varTypeDifferentVariable';
+	public const DIFFERENT_VARIABLE_IDENTIFIER = 'orisai.nette.latte.varTypeDifferentVariable';
 
-	public const VARIABLE_NOT_FOUND_IDENTIFIER = 'orisaiNette.latte.varTypeVariableNotFound';
+	public const VARIABLE_NOT_FOUND_IDENTIFIER = 'orisai.nette.latte.varTypeVariableNotFound';
 
 	/**
 	 * @return list<Diagnostic>

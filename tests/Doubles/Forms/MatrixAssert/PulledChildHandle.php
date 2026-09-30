@@ -13,7 +13,7 @@ use function OriPhpstan\Nette\Forms\Testing\assertComponent;
  *
  * The read used to open the form's shape on sight, which is not a widened member type: an open shape
  * reports NO absence at all, so every form where someone pulled a control into a local and called a
- * setter on it lost `orisaiNette.forms.noSuchComponent` for the whole form. It also split two spellings of one
+ * setter on it lost `orisai.nette.forms.noSuchComponent` for the whole form. It also split two spellings of one
  * component set — `$form->addText('a')->setDisabled()` has always closed — on syntax alone.
  *
  * What decides it now is the handle itself, on two axes that must BOTH hold. The child has to be one

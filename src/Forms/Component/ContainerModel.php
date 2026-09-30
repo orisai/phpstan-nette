@@ -226,7 +226,7 @@ final class ContainerModel
 	 * The one place this walk answers a name it can PROVE is not there, and it answers it by asking
 	 * the projector rather than by re-deciding it: FormShapeProjector::offsetPath() mints an ErrorType
 	 * exactly when its unknownLeaf() is reached on a CLOSED shape, which is exactly when
-	 * FormShapeUnknownAccessRule reports orisaiNette.forms.noSuchComponent for the same expression - same walk,
+	 * FormShapeUnknownAccessRule reports orisai.nette.forms.noSuchComponent for the same expression - same walk,
 	 * same three channels, same closedness. Every other answer it can give is dropped here, because
 	 * every other answer is one this walk already has its own better one for.
 	 *

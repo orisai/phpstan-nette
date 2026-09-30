@@ -11,7 +11,7 @@ use function implode;
 final class HarvestProblemReporter
 {
 
-	public const IDENTIFIER = 'orisaiNette.latte.customsHarvest';
+	public const IDENTIFIER = 'orisai.nette.latte.customsHarvest';
 
 	private CustomsHarvester $harvester;
 

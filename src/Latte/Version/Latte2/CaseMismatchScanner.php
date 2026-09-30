@@ -97,7 +97,7 @@ final class CaseMismatchScanner
 			$this->reportIfMismatched(
 				$name,
 				$this->filterOriginalNames,
-				'orisaiNette.latte.filterCaseMismatch',
+				'orisai.nette.latte.filterCaseMismatch',
 				'filter',
 				$line,
 				$diagnostics,
@@ -121,7 +121,7 @@ final class CaseMismatchScanner
 			$this->reportIfMismatched(
 				$name,
 				$this->functionOriginalNames,
-				'orisaiNette.latte.functionCaseMismatch',
+				'orisai.nette.latte.functionCaseMismatch',
 				'function',
 				$line,
 				$diagnostics,

@@ -269,8 +269,8 @@ per template with a committed manifest, so any change in what compiles is a visi
 - **Manifest.** `tests/Corpus/manifest.<profile>.json` (`default` for the primary set in `vendor/`, and the profiles
   `latte2`, `latte2-nette32`, `latte30`; the test takes the profile from `COMPOSER_VENDOR_DIR`) holds a header with the
   pretty versions of latte/latte, nette/application and nette/forms, and per template `"analysed"`, `"compileError"` (an
-  `orisaiNette.latte.parseError` on the file) or `{"expectedFail": "<reason>"}` (a compile error the analysis accepts,
-  with a reason kept across regenerations). The test fails on any `orisaiNette.latte.internalError` or `phpstan.parse`
+  `orisai.nette.latte.parseError` on the file) or `{"expectedFail": "<reason>"}` (a compile error the analysis accepts,
+  with a reason kept across regenerations). The test fails on any `orisai.nette.latte.internalError` or `phpstan.parse`
   finding, any run-level internal error, any finding outside the harvested set, and a header which differs from the
   installed versions. It skips when the profile's corpus is not harvested, and on a set with no manifest (`lowest`).
 - **Regenerate.** `make corpus-manifest [PROFILE=…]` runs the test with `CORPUS_MANIFEST_WRITE=1`: it rewrites the

@@ -46,7 +46,7 @@ final class ContainerResultCacheMetaExtensionTest extends PHPStanTestCase
 			TestGuard::of(self::getContainer()),
 			new MultiContainerRegistry(self::LoaderFile),
 		);
-		self::assertSame('orisaiNette.dic.containers', $extension->getKey());
+		self::assertSame('orisai.nette.dic.containers', $extension->getKey());
 	}
 
 	public function testInactiveRegistryHasStableSentinelHash(): void

@@ -223,9 +223,9 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 		$dir = $this->corpus(['page.latte' => "{include #ghost}\n{block real}x{/block}\n"]);
 
 		try {
-			self::assertNotContains('orisaiNette.latte.unknownBlock', $this->identifiers($dir, [], 'page.latte'));
+			self::assertNotContains('orisai.nette.latte.unknownBlock', $this->identifiers($dir, [], 'page.latte'));
 			self::assertContains(
-				'orisaiNette.latte.unknownBlock',
+				'orisai.nette.latte.unknownBlock',
 				$this->identifiers(
 					$dir,
 					['page.latte' => [$this->record(CandidatePath::KIND_CONVENTION, 'detail')]],
@@ -246,7 +246,7 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 
 		try {
 			self::assertNotContains(
-				'orisaiNette.latte.unknownBlock',
+				'orisai.nette.latte.unknownBlock',
 				$this->identifiers(
 					$dir,
 					['linked.latte' => [$this->record(CandidatePath::KIND_FORMULA, 'detail')]],
@@ -273,7 +273,7 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 			self::assertNotSame([], $index->incomingEdges('@layout.latte'));
 
 			self::assertNotContains(
-				'orisaiNette.latte.unknownBlock',
+				'orisai.nette.latte.unknownBlock',
 				$this->identifiersFromIndex($dir, $index, '@layout.latte'),
 			);
 		} finally {

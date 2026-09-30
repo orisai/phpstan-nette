@@ -28,9 +28,9 @@ use function substr_compare;
 final class LattePairingRule implements Rule
 {
 
-	public const CONFLICT_IDENTIFIER = 'orisaiNette.latte.pairingConflict';
+	public const CONFLICT_IDENTIFIER = 'orisai.nette.latte.pairingConflict';
 
-	public const OPAQUE_IDENTIFIER = 'orisaiNette.latte.pairingOpaque';
+	public const OPAQUE_IDENTIFIER = 'orisai.nette.latte.pairingOpaque';
 
 	private PhpRenderWalk $renderWalk;
 

@@ -78,7 +78,7 @@ final class Latte3AdapterTest extends BaseTestCase
 		$compiled = $this->adapter()->compile("{varType int \$a}\n{if}\n", 'LatteTpl_failed', 'a.latte');
 
 		self::assertNull($compiled->getResult()->getPhpSource());
-		self::assertSame('orisaiNette.latte.parseError', $compiled->getResult()->getDiagnostics()[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $compiled->getResult()->getDiagnostics()[0]->getIdentifier());
 		self::assertNull($compiled->getFacts()->getDeclarations()->getParameters());
 		self::assertSame([], $compiled->getFacts()->getDeclarations()->getHeaderVarTypes());
 	}

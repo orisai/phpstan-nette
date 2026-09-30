@@ -442,7 +442,7 @@ final class DeclarationInjector
 				}
 			} else {
 				$diagnostics[] = new Diagnostic(
-					'orisaiNette.latte.unknownType',
+					'orisai.nette.latte.unknownType',
 					"Unknown template type class $templateTypeClass.",
 					$declarations->getTemplateTypeLine() ?? 1,
 				);

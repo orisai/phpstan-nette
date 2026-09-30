@@ -135,7 +135,7 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 
 	// The collector -> checker link, which is the only place the terminating-render keys travel: the
 	// rule harvests them from collected data and hands them to checkAggregate, where they suppress
-	// orisaiNette.latte.templateMissing. Same corpus and same store on both runs - one collected key of
+	// orisai.nette.latte.templateMissing. Same corpus and same store on both runs - one collected key of
 	// difference. The suppression direction is the only one allowed: these keys must never reach the
 	// orphan half, where a terminating renderer would ORPHAN its template instead.
 	public function testTerminatingRenderKeysFromCollectedDataSuppressTheMissingFinding(): void

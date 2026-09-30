@@ -92,7 +92,7 @@ final class TypeLookupCallRule implements Rule
 					'Dynamic type in %s::%s() cannot be analysed. Provide a literal ::class type.',
 					Container::class,
 					$node->name->toString(),
-				))->identifier('orisaiNette.dic.dynamicType')->build(),
+				))->identifier('orisai.nette.dic.dynamicType')->build(),
 			];
 		}
 
@@ -142,7 +142,7 @@ final class TypeLookupCallRule implements Rule
 					'Type %s is ambiguous in container(s): %s; getByType() throws.',
 					$className,
 					implode(', ', $ambiguousParts),
-				))->identifier('orisaiNette.dic.typeAmbiguous')->build();
+				))->identifier('orisai.nette.dic.typeAmbiguous')->build();
 			}
 
 			if ($throwSuppressed) {
@@ -171,7 +171,7 @@ final class TypeLookupCallRule implements Rule
 				RuleErrorBuilder::message(sprintf(
 					'Type %s is never resolvable; findByType() always returns an empty array.',
 					$className,
-				))->identifier('orisaiNette.dic.typeNotFound')->build(),
+				))->identifier('orisai.nette.dic.typeNotFound')->build(),
 			];
 		}
 
@@ -180,7 +180,7 @@ final class TypeLookupCallRule implements Rule
 				'Type %s is not registered in container(s): %s.',
 				$className,
 				implode(', ', $unknown),
-			))->identifier('orisaiNette.dic.typeNotInAllContainers')->build(),
+			))->identifier('orisai.nette.dic.typeNotInAllContainers')->build(),
 		];
 	}
 
@@ -204,7 +204,7 @@ final class TypeLookupCallRule implements Rule
 					'Type %s is not registered in any analysed container (%s).',
 					$className,
 					implode(', ', $profiles),
-				))->identifier('orisaiNette.dic.typeNotFound')->build(),
+				))->identifier('orisai.nette.dic.typeNotFound')->build(),
 			];
 		}
 
@@ -214,7 +214,7 @@ final class TypeLookupCallRule implements Rule
 					'Type %s is registered but not autowired in container(s): %s; getByType() throws.',
 					$className,
 					implode(', ', $notAutowired),
-				))->identifier('orisaiNette.dic.typeNotAutowired')->build(),
+				))->identifier('orisai.nette.dic.typeNotAutowired')->build(),
 			];
 		}
 
@@ -223,7 +223,7 @@ final class TypeLookupCallRule implements Rule
 				'Type %s is not autowirable in container(s): %s; getByType() throws there.',
 				$className,
 				implode(', ', $failing),
-			))->identifier('orisaiNette.dic.typeNotInAllContainers')->build(),
+			))->identifier('orisai.nette.dic.typeNotInAllContainers')->build(),
 		];
 	}
 

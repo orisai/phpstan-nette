@@ -13,7 +13,7 @@ use function PHPStan\dumpType;
  *
  * An IMMEDIATELY-invoked callback has run by the time the form is returned, so its add is in the
  * shape and the shape stays closed — which makes the other form's field proven absent rather than
- * unresolved. It reads *ERROR* with one orisaiNette.forms.noSuchComponent; a runner-keyed contribution would
+ * unresolved. It reads *ERROR* with one orisai.nette.forms.noSuchComponent; a runner-keyed contribution would
  * read as a resolved control instead.
  */
 final class MCallbackTimingKeepsFormsSeparate extends Control

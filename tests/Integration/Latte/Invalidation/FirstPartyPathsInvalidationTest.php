@@ -53,7 +53,7 @@ final class FirstPartyPathsInvalidationTest extends BaseTestCase
 			$this->seed($scenario);
 
 			$inside = $scenario->run();
-			self::assertStringContainsString('orisaiNette.latte.debugDump', $inside->getErrorText());
+			self::assertStringContainsString('orisai.nette.latte.debugDump', $inside->getErrorText());
 			self::assertStringContainsString('template class: ', $inside->getErrorText());
 			self::assertStringContainsString(self::TEMPLATE . ' (convention, happens)', $inside->getErrorText());
 			self::assertFalse(strpos($inside->getErrorText(), self::NOT_QUALIFYING), $inside->getErrorText());

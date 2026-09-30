@@ -53,7 +53,7 @@ final class LatteDiagnosticRuleTest extends RuleTestCase
 		$errors = $this->gatherAnalyserErrors([self::FixtureFile]);
 
 		self::assertCount(1, $errors);
-		self::assertSame('orisaiNette.latte.unknownMacro', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownMacro', $errors[0]->getIdentifier());
 	}
 
 	public function testReportsInternalErrorForNonConstantArgs(): void
@@ -75,17 +75,17 @@ final class LatteDiagnosticRuleTest extends RuleTestCase
 		$errors = $this->gatherAnalyserErrors([self::InvalidFixtureFile]);
 
 		self::assertCount(1, $errors);
-		self::assertSame('orisaiNette.latte.internalError', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.internalError', $errors[0]->getIdentifier());
 	}
 
 	// The optional third argument carries a Diagnostic's tip through the materialized report call -
-	// the transitive-includer tip orisaiNette.latte.orphanTemplate attaches is the only producer today.
+	// the transitive-includer tip orisai.nette.latte.orphanTemplate attaches is the only producer today.
 	public function testTipArgumentReachesTheReportedError(): void
 	{
 		$errors = $this->gatherAnalyserErrors([self::TipFixtureFile]);
 
 		self::assertCount(1, $errors);
-		self::assertSame('orisaiNette.latte.orphanTemplate', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.orphanTemplate', $errors[0]->getIdentifier());
 		self::assertSame(
 			'Included only from templates that are themselves unreachable: dead.latte.',
 			$errors[0]->getTip(),
@@ -97,7 +97,7 @@ final class LatteDiagnosticRuleTest extends RuleTestCase
 		$errors = $this->gatherAnalyserErrors([self::NonConstantTipFixtureFile]);
 
 		self::assertCount(1, $errors);
-		self::assertSame('orisaiNette.latte.internalError', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.internalError', $errors[0]->getIdentifier());
 	}
 
 	// NO FIXER, EVER (spec section 9b): this rule materializes every pipeline diagnostic, orphan

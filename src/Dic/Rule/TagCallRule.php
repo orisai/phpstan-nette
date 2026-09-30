@@ -89,7 +89,7 @@ final class TagCallRule implements Rule
 					'Dynamic tag in %s::%s() cannot be analysed. Provide a literal tag name.',
 					Container::class,
 					$node->name->toString(),
-				))->identifier('orisaiNette.dic.dynamicTag')->build(),
+				))->identifier('orisai.nette.dic.dynamicTag')->build(),
 			];
 		}
 
@@ -108,11 +108,11 @@ final class TagCallRule implements Rule
 				'Tag \'%s\' is not present in any analysed container (%s).',
 				$tag,
 				implode(', ', array_keys($existence)),
-			))->identifier('orisaiNette.dic.tagNotFound')->build() : RuleErrorBuilder::message(sprintf(
+			))->identifier('orisai.nette.dic.tagNotFound')->build() : RuleErrorBuilder::message(sprintf(
 				'Tag \'%s\' is not present in container(s): %s.',
 				$tag,
 				implode(', ', $missing),
-			))->identifier('orisaiNette.dic.tagNotInAllContainers')->build();
+			))->identifier('orisai.nette.dic.tagNotInAllContainers')->build();
 		}
 
 		return $errors;

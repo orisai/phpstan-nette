@@ -35,7 +35,7 @@ final class ComponentShapeDumpRule extends BaseDumpAssertRule
 		return [
 			$this->buildError(
 				$this->describer->describe($args[0]->value, $node, $scope, $maxDepth, $formValues),
-				'orisaiNette.forms.componentShapeDump',
+				'orisai.nette.forms.componentShapeDump',
 				$node,
 			),
 		];

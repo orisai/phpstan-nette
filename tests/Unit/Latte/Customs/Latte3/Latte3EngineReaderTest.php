@@ -86,7 +86,7 @@ final class Latte3EngineReaderTest extends BaseTestCase
 		$compiled = TestAdapter::create()->compile("{hello}x{/hello}\n", 'LatteTpl_hello', 'hello.latte');
 
 		self::assertSame(
-			['orisaiNette.latte.unknownMacro'],
+			['orisai.nette.latte.unknownMacro'],
 			array_map(
 				static fn ($diagnostic): string => $diagnostic->getIdentifier(),
 				$compiled->getResult()->getDiagnostics(),

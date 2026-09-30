@@ -51,7 +51,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', 'Filter |noescape is not expected here.', 2]],
+			[['orisai.nette.latte.parseError', 'Filter |noescape is not expected here.', 2]],
 			self::describeDiagnostics($result),
 		);
 	}
@@ -62,7 +62,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.parseError', "Error in template: Syntax error, unexpected '*'", 3]],
+			[['orisai.nette.latte.parseError', "Error in template: Syntax error, unexpected '*'", 3]],
 			self::describeDiagnostics($result),
 		);
 	}
@@ -74,7 +74,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertNotNull($result->getPhpSource());
 		self::assertStringContainsString('<textarea></textarea>', $result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
 			self::describeDiagnostics($result),
 		);
 	}
@@ -88,7 +88,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
 			self::describeDiagnostics($result),
 		);
 	}
@@ -99,7 +99,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
 			self::describeDiagnostics($result),
 		);
 	}
@@ -110,7 +110,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertSame(
-			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			[['orisai.nette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
 			self::describeDiagnostics($result),
 		);
 	}
@@ -122,7 +122,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertNull($result->getPhpSource());
 		self::assertSame(
 			[[
-				'orisaiNette.latte.parseError',
+				'orisai.nette.latte.parseError',
 				'Unknown tag {return} (in JavaScript or CSS, try to put a space after bracket or use n:syntax=off)',
 				1,
 			]],
@@ -140,7 +140,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertCount(1, $result->getDiagnostics());
 
 		$diagnostic = $result->getDiagnostics()[0];
-		self::assertSame('orisaiNette.latte.parseError', $diagnostic->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $diagnostic->getIdentifier());
 		self::assertStringContainsString('Missing {/if}', $diagnostic->getMessage());
 		self::assertSame(1, $diagnostic->getLatteLine());
 	}
@@ -203,7 +203,7 @@ final class LatteCompilerTest extends BaseTestCase
 		}
 
 		self::assertSame(
-			['orisaiNette.latte.unknownMacro'],
+			['orisai.nette.latte.unknownMacro'],
 			$identifiers,
 			'the unrelated {foo}/{/foo} pair must still fall through to passthrough - only it, not the harvested gettext call',
 		);
@@ -312,7 +312,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertCount(1, $result->getDiagnostics());
 
 		$diagnostic = $result->getDiagnostics()[0];
-		self::assertSame('orisaiNette.latte.parseError', $diagnostic->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $diagnostic->getIdentifier());
 		self::assertStringContainsString('not valid UTF-8', $diagnostic->getMessage());
 	}
 
@@ -343,7 +343,7 @@ final class LatteCompilerTest extends BaseTestCase
 			$identifiers[] = $diagnostic->getIdentifier();
 		}
 
-		self::assertSame(['orisaiNette.latte.unknownMacro', 'orisaiNette.latte.unknownMacro'], $identifiers);
+		self::assertSame(['orisai.nette.latte.unknownMacro', 'orisai.nette.latte.unknownMacro'], $identifiers);
 		self::assertStringContainsString('$x', $result->getPhpSource());
 	}
 
@@ -354,7 +354,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertCount(1, $result->getDiagnostics());
-		self::assertSame('orisaiNette.latte.unknownMacro', $result->getDiagnostics()[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownMacro', $result->getDiagnostics()[0]->getIdentifier());
 	}
 
 	public function testUnknownPrefixedNAttributeToleratedInSingleRetry(): void
@@ -364,7 +364,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertCount(1, $result->getDiagnostics());
-		self::assertSame('orisaiNette.latte.unknownMacro', $result->getDiagnostics()[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownMacro', $result->getDiagnostics()[0]->getIdentifier());
 		self::assertStringContainsString('$b', $result->getPhpSource());
 	}
 
@@ -374,7 +374,7 @@ final class LatteCompilerTest extends BaseTestCase
 		$result = $compiler->compile("{if \$a}unclosed\n", 'LatteTpl_test');
 
 		self::assertNull($result->getPhpSource());
-		self::assertSame('orisaiNette.latte.parseError', $result->getDiagnostics()[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $result->getDiagnostics()[0]->getIdentifier());
 	}
 
 	public function testUnknownMacroDiagnosticHasRealLine(): void
@@ -394,7 +394,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNull($result->getPhpSource());
 		$diagnostic = $result->getDiagnostics()[0];
-		self::assertSame('orisaiNette.latte.parseError', $diagnostic->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $diagnostic->getIdentifier());
 		self::assertSame(2, $diagnostic->getLatteLine());
 	}
 
@@ -407,7 +407,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertCount(1, $result->getDiagnostics());
 
 		$diagnostic = $result->getDiagnostics()[0];
-		self::assertSame('orisaiNette.latte.parseError', $diagnostic->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $diagnostic->getIdentifier());
 		self::assertSame(1, $diagnostic->getLatteLine());
 	}
 
@@ -420,7 +420,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertCount(1, $result->getDiagnostics());
 
 		$diagnostic = $result->getDiagnostics()[0];
-		self::assertSame('orisaiNette.latte.parseError', $diagnostic->getIdentifier());
+		self::assertSame('orisai.nette.latte.parseError', $diagnostic->getIdentifier());
 		self::assertNotSame('', $diagnostic->getMessage());
 	}
 
@@ -441,7 +441,7 @@ final class LatteCompilerTest extends BaseTestCase
 			$identifiers[] = $diagnostic->getIdentifier();
 		}
 
-		self::assertSame(['orisaiNette.latte.functionCaseMismatch'], $identifiers);
+		self::assertSame(['orisai.nette.latte.functionCaseMismatch'], $identifiers);
 	}
 
 	public function testFilterCaseMismatchIsReported(): void
@@ -451,7 +451,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 		self::assertNotNull($result->getPhpSource());
 		self::assertCount(1, $result->getDiagnostics());
-		self::assertSame('orisaiNette.latte.filterCaseMismatch', $result->getDiagnostics()[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.filterCaseMismatch', $result->getDiagnostics()[0]->getIdentifier());
 	}
 
 	public function testExactCaseFunctionCallHasNoCaseMismatchDiagnostic(): void
@@ -476,7 +476,7 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertCount(1, $result->getDiagnostics());
 
 		$diagnostic = $result->getDiagnostics()[0];
-		self::assertSame('orisaiNette.latte.deprecated', $diagnostic->getIdentifier());
+		self::assertSame('orisai.nette.latte.deprecated', $diagnostic->getIdentifier());
 		self::assertStringContainsString('n:ifcontent', $diagnostic->getMessage());
 		self::assertSame(2, $diagnostic->getLatteLine());
 	}
@@ -492,7 +492,7 @@ final class LatteCompilerTest extends BaseTestCase
 
 	public function testRecoverLineFallsBackToOneForUnavailableCompilerLine(): void
 	{
-		// orisaiNette.latte.deprecated's line attribution is $this->recoverLine($compiler->getLine()) -
+		// orisai.nette.latte.deprecated's line attribution is $this->recoverLine($compiler->getLine()) -
 		// verbatim the same fallback every other Diagnostic in this class already relies on. No
 		// reachable vendor E_USER_DEPRECATED site leaves Compiler::getLine() genuinely null/<=0 at
 		// trigger time (position tracking is always mid-token-loop when any of them fire), so this
@@ -635,7 +635,7 @@ final class LatteCompilerTest extends BaseTestCase
 		}
 
 		self::assertSame(
-			['orisaiNette.latte.unknownMacro'],
+			['orisai.nette.latte.unknownMacro'],
 			$identifiers,
 			'a fresh compile with no harvester must fall back to passthrough, not the stale native compile',
 		);

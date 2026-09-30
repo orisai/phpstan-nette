@@ -77,7 +77,7 @@ final class CreateComponentReturnsUiFormRule implements Rule
 					. 'Presenter-attached forms must extend Nette\Application\UI\Form '
 					. 'so that signal handling and submission work.',
 			)
-				->identifier('orisaiNette.forms.createComponentNonUiForm')
+				->identifier('orisai.nette.forms.createComponentNonUiForm')
 				->line($node->getStartLine())
 				->build(),
 		];

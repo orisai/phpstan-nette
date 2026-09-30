@@ -122,7 +122,7 @@ final class DeclarationInjectorTest extends BaseTestCase
 		$diagnostics = $this->diagnosticsFor("\n\n{templateType Totally\\Missing\\ClassName}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.unknownType', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.unknownType', $diagnostics[0]->getIdentifier());
 		self::assertSame('Unknown template type class Totally\Missing\ClassName.', $diagnostics[0]->getMessage());
 		self::assertSame(3, $diagnostics[0]->getLatteLine());
 	}

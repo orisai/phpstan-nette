@@ -48,7 +48,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			$messages = $this->dumpMessages($projectRoot, $srcDir, $scratch . '/pstmp');
 
 			self::assertCount(1, $messages);
-			self::assertSame('orisaiNette.latte.debugDump', $messages[0]['identifier']);
+			self::assertSame('orisai.nette.latte.debugDump', $messages[0]['identifier']);
 			self::assertFalse($messages[0]['ignorable'], 'a leftover dump call must never be baselineable');
 			self::assertSame(1, $messages[0]['line']);
 			self::assertSame(
@@ -152,7 +152,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 				. 'union: RuntimeException|Exception across 2 contexts',
 				$messages[1]['message'],
 			);
-			self::assertSame('orisaiNette.latte.debugDump', $messages[0]['identifier']);
+			self::assertSame('orisai.nette.latte.debugDump', $messages[0]['identifier']);
 			self::assertFalse($messages[0]['ignorable']);
 			self::assertFalse($messages[1]['ignorable']);
 		} finally {
@@ -186,7 +186,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			);
 
 			self::assertCount(1, $messages);
-			self::assertSame('orisaiNette.latte.debugDump', $messages[0]['identifier']);
+			self::assertSame('orisai.nette.latte.debugDump', $messages[0]['identifier']);
 			self::assertFalse($messages[0]['ignorable']);
 			self::assertSame(
 				"class: $fqcn"
@@ -230,7 +230,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			);
 
 			self::assertCount(1, $messages);
-			self::assertSame('orisaiNette.latte.debugDump', $messages[0]['identifier']);
+			self::assertSame('orisai.nette.latte.debugDump', $messages[0]['identifier']);
 			self::assertFalse($messages[0]['ignorable']);
 			self::assertSame(
 				"class: $fqcn"
@@ -280,7 +280,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			);
 
 			self::assertCount(1, $messages);
-			self::assertSame('orisaiNette.latte.debugDump', $messages[0]['identifier']);
+			self::assertSame('orisai.nette.latte.debugDump', $messages[0]['identifier']);
 			self::assertFalse($messages[0]['ignorable']);
 			self::assertSame(
 				"class: $fqcn"
@@ -386,7 +386,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 			$messages = [];
 			foreach ($decoded['files'] as $fileMessages) {
 				foreach ($fileMessages['messages'] as $message) {
-					if ($message['identifier'] !== 'orisaiNette.latte.debugDump') {
+					if ($message['identifier'] !== 'orisai.nette.latte.debugDump') {
 						continue;
 					}
 

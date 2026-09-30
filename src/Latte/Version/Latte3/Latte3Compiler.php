@@ -117,7 +117,7 @@ final class Latte3Compiler
 					static function (int $severity, string $message) use (&$deprecations): void {
 						if ($severity === E_USER_DEPRECATED) {
 							$deprecations[] = new Diagnostic(
-								'orisaiNette.latte.deprecated',
+								'orisai.nette.latte.deprecated',
 								$message,
 								self::lineOf($message),
 							);
@@ -151,7 +151,7 @@ final class Latte3Compiler
 
 				$unknown = $this->matchUnknown($message, $engine);
 				if ($unknown === null) {
-					return ParsedTemplate::failed(new Diagnostic('orisaiNette.latte.parseError', $message, $line));
+					return ParsedTemplate::failed(new Diagnostic('orisai.nette.latte.parseError', $message, $line));
 				}
 
 				[$name, $isAttribute] = $unknown;
@@ -164,21 +164,21 @@ final class Latte3Compiler
 				if (!isset($claimedNames[$name])) {
 					$claimedNames[$name] = true;
 					$diagnostics[] = new Diagnostic(
-						'orisaiNette.latte.unknownMacro',
+						'orisai.nette.latte.unknownMacro',
 						"Unknown Latte macro or attribute '$name'.",
 						$line,
 					);
 				}
 			} catch (Throwable $e) {
 				return ParsedTemplate::failed(new Diagnostic(
-					'orisaiNette.latte.parseError',
+					'orisai.nette.latte.parseError',
 					VendorCompileFailure::message($e),
 					$recorder->lastTagLine() ?? 1,
 				));
 			}
 		}
 
-		return ParsedTemplate::failed(new Diagnostic('orisaiNette.latte.parseError', 'Too many unknown macros.', 1));
+		return ParsedTemplate::failed(new Diagnostic('orisai.nette.latte.parseError', 'Too many unknown macros.', 1));
 	}
 
 	public function generate(ParsedTemplate $parsed, string $className, string $templateName): CompileResult
@@ -209,7 +209,7 @@ final class Latte3Compiler
 				static function (int $severity, string $message) use (&$deprecations, &$functionCallLines): void {
 					if ($severity === E_USER_DEPRECATED) {
 						$deprecations[] = new Diagnostic(
-							'orisaiNette.latte.deprecated',
+							'orisai.nette.latte.deprecated',
 							$message,
 							self::lineOf($message),
 						);
@@ -218,7 +218,7 @@ final class Latte3Compiler
 						&& preg_match(self::FUNCTION_CASE_MISMATCH_PATTERN, $message, $m) === 1
 					) {
 						$deprecations[] = new Diagnostic(
-							'orisaiNette.latte.functionCaseMismatch',
+							'orisai.nette.latte.functionCaseMismatch',
 							"Latte function '$m[1]' differs in case from the registered '$m[2]' - Latte 3.0 resolves it "
 							. 'with a warning, Latte 3.1 does not resolve it.',
 							isset($functionCallLines[$m[1]]) && $functionCallLines[$m[1]] !== []
@@ -232,7 +232,7 @@ final class Latte3Compiler
 			return CompileResult::failure(
 				$className,
 				new Diagnostic(
-					'orisaiNette.latte.parseError',
+					'orisai.nette.latte.parseError',
 					$e->getMessage(),
 					$e->position !== null ? $e->position->line : 1,
 				),
@@ -240,7 +240,7 @@ final class Latte3Compiler
 		} catch (Throwable $e) {
 			return CompileResult::failure(
 				$className,
-				new Diagnostic('orisaiNette.latte.parseError', VendorCompileFailure::message($e), 1),
+				new Diagnostic('orisai.nette.latte.parseError', VendorCompileFailure::message($e), 1),
 			);
 		}
 

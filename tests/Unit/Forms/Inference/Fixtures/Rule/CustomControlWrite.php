@@ -13,7 +13,7 @@ final class CustomControlWrite
 		$form['x']->setValue('b');
 	}
 
-	// Form field 'x' (...WriteRating) accepts 'a'|'b'|'c', 'z' given. [orisaiNette.forms.writeType]
+	// Form field 'x' (...WriteRating) accepts 'a'|'b'|'c', 'z' given. [orisai.nette.forms.writeType]
 	public function rejected(): void
 	{
 		$form = new WriteRatingForm();

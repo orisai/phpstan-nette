@@ -40,7 +40,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 
 		try {
 			$diagnostics = $this->diagnosticsFor($dir, 'page.latte');
-			$duplicate = $this->only($diagnostics, 'orisaiNette.latte.duplicateDeclaration');
+			$duplicate = $this->only($diagnostics, 'orisai.nette.latte.duplicateDeclaration');
 
 			self::assertCount(1, $duplicate);
 			self::assertSame(2, $duplicate[0]->getLatteLine());
@@ -59,7 +59,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		);
 
 		try {
-			self::assertContains('orisaiNette.latte.narrowingOverride', $this->idsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.narrowingOverride', $this->idsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -77,9 +77,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte', true);
 
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -95,7 +95,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		);
 
 		try {
-			self::assertContains('orisaiNette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -111,7 +111,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		);
 
 		try {
-			self::assertContains('orisaiNette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -131,9 +131,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -154,9 +154,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -174,9 +174,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -191,7 +191,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 
 		try {
 			$diagnostics = $this->diagnosticsFor($dir, 'page.latte');
-			$duplicate = $this->only($diagnostics, 'orisaiNette.latte.duplicateDeclaration');
+			$duplicate = $this->only($diagnostics, 'orisai.nette.latte.duplicateDeclaration');
 
 			self::assertCount(1, $duplicate);
 			self::assertSame(2, $duplicate[0]->getLatteLine());
@@ -206,7 +206,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{define item, Throwable \$x}\n{varType Exception \$x}\n{/define}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.narrowingOverride', $this->idsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.narrowingOverride', $this->idsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -220,9 +220,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte', true);
 
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -234,7 +234,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{define item, Exception \$x}\n{varType Throwable \$x}\n{/define}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -246,7 +246,7 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		FileSystem::write($dir . '/page.latte', "{define item, string \$x}\n{varType int \$x}\n{/define}\n");
 
 		try {
-			self::assertContains('orisaiNette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
+			self::assertContains('orisai.nette.latte.impossibleOverride', $this->idsFor($dir, 'page.latte'));
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -262,9 +262,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -280,9 +280,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -296,9 +296,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}
@@ -317,9 +317,9 @@ final class DeclarationConsistencyCheckerTest extends PHPStanTestCase
 		try {
 			$ids = $this->idsFor($dir, 'page.latte');
 
-			self::assertNotContains('orisaiNette.latte.duplicateDeclaration', $ids);
-			self::assertNotContains('orisaiNette.latte.narrowingOverride', $ids);
-			self::assertNotContains('orisaiNette.latte.impossibleOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.duplicateDeclaration', $ids);
+			self::assertNotContains('orisai.nette.latte.narrowingOverride', $ids);
+			self::assertNotContains('orisai.nette.latte.impossibleOverride', $ids);
 		} finally {
 			FileSystem::delete($dir);
 		}

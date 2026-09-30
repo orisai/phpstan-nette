@@ -19,7 +19,7 @@ final class CaseMismatchScannerTest extends BaseTestCase
 		$diagnostics = $this->scan("{\$x|Upper}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.filterCaseMismatch', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.filterCaseMismatch', $diagnostics[0]->getIdentifier());
 		self::assertStringContainsString("'Upper'", $diagnostics[0]->getMessage());
 		self::assertStringContainsString("'upper'", $diagnostics[0]->getMessage());
 		self::assertStringContainsString('Latte 3', $diagnostics[0]->getMessage());
@@ -36,7 +36,7 @@ final class CaseMismatchScannerTest extends BaseTestCase
 		$diagnostics = $this->scan("{Clamp(\$x, 1, 2)}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.functionCaseMismatch', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.functionCaseMismatch', $diagnostics[0]->getIdentifier());
 		self::assertStringContainsString("'Clamp'", $diagnostics[0]->getMessage());
 		self::assertStringContainsString("'clamp'", $diagnostics[0]->getMessage());
 	}
@@ -58,7 +58,7 @@ final class CaseMismatchScannerTest extends BaseTestCase
 		$diagnostics = $this->scan("{if \$a || Clamp(\$x)}x{/if}\n");
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.functionCaseMismatch', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.functionCaseMismatch', $diagnostics[0]->getIdentifier());
 	}
 
 	public function testStringLiteralContentIsNeverScannedAsACall(): void
@@ -86,7 +86,7 @@ final class CaseMismatchScannerTest extends BaseTestCase
 		$diagnostics = $this->scan("{\$x|MyFilter}\n", $harvested);
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.filterCaseMismatch', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.filterCaseMismatch', $diagnostics[0]->getIdentifier());
 		self::assertStringContainsString("'MyFilter'", $diagnostics[0]->getMessage());
 		self::assertStringContainsString("'myFilter'", $diagnostics[0]->getMessage());
 	}
@@ -98,7 +98,7 @@ final class CaseMismatchScannerTest extends BaseTestCase
 		$diagnostics = $this->scan("{MyFunction(\$x)}\n", $harvested);
 
 		self::assertCount(1, $diagnostics);
-		self::assertSame('orisaiNette.latte.functionCaseMismatch', $diagnostics[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.functionCaseMismatch', $diagnostics[0]->getIdentifier());
 	}
 
 	public function testHarvestedExactCaseIsQuiet(): void

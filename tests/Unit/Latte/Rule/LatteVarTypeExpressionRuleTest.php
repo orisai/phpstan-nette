@@ -103,7 +103,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 		$this->reportAnyTypeWidening = false;
 
 		self::assertSame(
-			['02 orisaiNette.latte.varTypeNativeType {varType} for $wrong with type string is not subtype of native type 1.'],
+			['02 orisai.nette.latte.varTypeNativeType {varType} for $wrong with type string is not subtype of native type 1.'],
 			$this->reported(self::NativeTypeFixtureFile),
 		);
 	}
@@ -111,7 +111,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 	public function testIncompatibleNativeTypeIsAlsoReportedUnderTheStrictDefaults(): void
 	{
 		self::assertSame(
-			['02 orisaiNette.latte.varTypeNativeType {varType} for $wrong with type string is not subtype of native type 1.'],
+			['02 orisai.nette.latte.varTypeNativeType {varType} for $wrong with type string is not subtype of native type 1.'],
 			$this->reported(self::NativeTypeFixtureFile),
 		);
 	}
@@ -138,7 +138,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 		$this->reportAnyTypeWidening = true;
 
 		self::assertSame(
-			['02 orisaiNette.latte.varTypeNativeType {varType} for $widened with type int is not subtype of native type 1.'],
+			['02 orisai.nette.latte.varTypeNativeType {varType} for $widened with type int is not subtype of native type 1.'],
 			$this->reported(self::WideningFixtureFile),
 		);
 	}
@@ -157,7 +157,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 		$this->reportWrongPhpDocType = true;
 
 		self::assertSame(
-			['02 orisaiNette.latte.varTypeType {varType} for $nums with type array<int> is not subtype of type array<string>.'],
+			['02 orisai.nette.latte.varTypeType {varType} for $nums with type array<int> is not subtype of type array<string>.'],
 			$this->reported(self::PhpDocTypeFixtureFile),
 		);
 	}
@@ -167,7 +167,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 	public function testForeachItemMatchingTheIterableElementTypeIsSilentAndAMismatchIsReported(): void
 	{
 		self::assertSame(
-			['05 orisaiNette.latte.varTypeNativeType {varType} for $bad with type string is not subtype of native type 1|2.'],
+			['05 orisai.nette.latte.varTypeNativeType {varType} for $bad with type string is not subtype of native type 1|2.'],
 			$this->reported(self::ForeachFixtureFile),
 		);
 	}
@@ -177,7 +177,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 	public function testAnAnchorOnTheSameLineAsTheTagIsStillChecked(): void
 	{
 		self::assertSame(
-			['02 orisaiNette.latte.varTypeNativeType {varType} for $x with type string is not subtype of native type 5.'],
+			['02 orisai.nette.latte.varTypeNativeType {varType} for $x with type string is not subtype of native type 5.'],
 			$this->reported(self::SameLineFixtureFile),
 		);
 	}
@@ -188,7 +188,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 	public function testTwoSameLineRedeclarationsAreEachCheckedAgainstTheirOwnDeclaredType(): void
 	{
 		self::assertSame(
-			['03 orisaiNette.latte.varTypeNativeType {varType} for $x with type int is not subtype of native type string|null.'],
+			['03 orisai.nette.latte.varTypeNativeType {varType} for $x with type int is not subtype of native type string|null.'],
 			$this->reported(self::SameLineOrderFixtureFile),
 		);
 	}
@@ -203,7 +203,7 @@ final class LatteVarTypeExpressionRuleTest extends RuleTestCase
 	public function testADeclarationIsNotMatchedAcrossACompiledMethodBoundary(): void
 	{
 		self::assertSame(
-			['03 orisaiNette.latte.varTypeNativeType {varType} for $z with type string is not subtype of native type 1.'],
+			['03 orisai.nette.latte.varTypeNativeType {varType} for $z with type string is not subtype of native type 1.'],
 			$this->reported(self::BlockBoundaryFixtureFile),
 		);
 	}

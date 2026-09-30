@@ -39,10 +39,10 @@ final class NoConfigurationTest extends BaseTestCase
 
 		self::assertSame(
 			[
-				'src/HomePresenter.php:18 orisaiNette.component.unattachedParentAccess',
-				'src/ProfileControl.php:28 orisaiNette.forms.noSuchComponent',
+				'src/HomePresenter.php:18 orisai.nette.component.unattachedParentAccess',
+				'src/ProfileControl.php:28 orisai.nette.forms.noSuchComponent',
 			],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.'),
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.'),
 		);
 	}
 
@@ -52,8 +52,8 @@ final class NoConfigurationTest extends BaseTestCase
 		self::assertSame([], $result['errors'], $result['stderr']);
 
 		self::assertSame(
-			['src/HomePresenter.php:18 orisaiNette.component.unattachedParentAccess'],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.'),
+			['src/HomePresenter.php:18 orisai.nette.component.unattachedParentAccess'],
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.'),
 		);
 	}
 
@@ -70,10 +70,10 @@ final class NoConfigurationTest extends BaseTestCase
 		);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
-		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.forms.'));
+		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.forms.'));
 		self::assertSame(
 			[],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.component.'),
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.component.'),
 		);
 	}
 
@@ -85,7 +85,7 @@ final class NoConfigurationTest extends BaseTestCase
 		);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
-		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latte.'));
+		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.latte.'));
 	}
 
 	public function testDic(): void
@@ -93,7 +93,7 @@ final class NoConfigurationTest extends BaseTestCase
 		$result = $this->project->analyse(ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES, ConfigurationCorpus::PATHS);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
-		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.dic.'));
+		self::assertSame([], ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.dic.'));
 		self::assertSame(
 			[
 				'src/ContainerConsumer.php:12 Dumped type: Corpus\\Mailer',
@@ -113,7 +113,7 @@ final class NoConfigurationTest extends BaseTestCase
 
 		self::assertSame(
 			[],
-			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisaiNette.latteForms.'),
+			ConfigurationCorpus::findings($this->project, $result['messages'], 'orisai.nette.latteForms.'),
 		);
 	}
 

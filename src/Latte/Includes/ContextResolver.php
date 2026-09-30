@@ -83,7 +83,7 @@ final class ContextResolver
 	// A depth-cap cut (a straight, non-cyclic chain deeper than DEPTH_CAP) is a DIFFERENT failure
 	// mode from a true on-stack cycle cut: which edge gets cut depends on DFS visitation order,
 	// which is caller/entry-point dependent for a long enough chain - reporting it as
-	// orisaiNette.latte.includeCycle would make that diagnostic worker/traversal-order-dependent. Kept in its
+	// orisai.nette.latte.includeCycle would make that diagnostic worker/traversal-order-dependent. Kept in its
 	// own bucket so cutCycleEdges() stays exclusively true-cycle cuts.
 
 	/**

@@ -23,7 +23,7 @@ use function strncmp;
 // matching PHPStan's own isExplicit() gate: consuming an inferred never would tie suppression to
 // inference precision that shifts between releases.
 //
-// What is collected here may only REDUCE findings - it feeds orisaiNette.latte.templateMissing suppression and
+// What is collected here may only REDUCE findings - it feeds orisai.nette.latte.templateMissing suppression and
 // nothing else. It must never reach the orphan computation's liveness roots, where a renderer that
 // always terminates would instead ORPHAN its template and push a live file toward deletion.
 //

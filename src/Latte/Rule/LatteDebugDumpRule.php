@@ -52,7 +52,7 @@ final class LatteDebugDumpRule implements Rule
 	// Shared with LatteProvenanceTipRule, which excludes this identifier from tip decoration - a
 	// debug dump is a diagnostic the developer wrote directly, never generated code needing its
 	// origin explained.
-	public const IDENTIFIER = 'orisaiNette.latte.debugDump';
+	public const IDENTIFIER = 'orisai.nette.latte.debugDump';
 
 	// Compiled Latte classes carry no `namespace` statement (LatteCompiler emits straight into the
 	// global namespace), so the documented usage - the bare, unqualified {do

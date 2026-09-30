@@ -58,11 +58,11 @@ final class ExtendsArgsSpawnTest extends BaseTestCase
 		sort($findings);
 
 		self::assertSame([
-			"child-bad.latte:1 orisaiNette.latte.includeTypeMismatch Variable \$n provided as string does not match declared type int in 'src/page.latte'.",
-			"child-bad.latte:1 orisaiNette.latte.includeTypeMismatch Variable \$x provided as int does not match declared type string in 'src/page.latte'.",
-			"child-none.latte:1 orisaiNette.latte.includeMissingVariable Include target 'src/page.latte' requires variable \$n (int) that is not provided and has no default.",
-			"child-none.latte:1 orisaiNette.latte.includeMissingVariable Include target 'src/page.latte' requires variable \$x (string) that is not provided and has no default.",
-			"child.latte:1 orisaiNette.latte.includeMissingVariable Include target 'src/page.latte' requires variable \$n (int) that is not provided and has no default.",
+			"child-bad.latte:1 orisai.nette.latte.includeTypeMismatch Variable \$n provided as string does not match declared type int in 'src/page.latte'.",
+			"child-bad.latte:1 orisai.nette.latte.includeTypeMismatch Variable \$x provided as int does not match declared type string in 'src/page.latte'.",
+			"child-none.latte:1 orisai.nette.latte.includeMissingVariable Include target 'src/page.latte' requires variable \$n (int) that is not provided and has no default.",
+			"child-none.latte:1 orisai.nette.latte.includeMissingVariable Include target 'src/page.latte' requires variable \$x (string) that is not provided and has no default.",
+			"child.latte:1 orisai.nette.latte.includeMissingVariable Include target 'src/page.latte' requires variable \$n (int) that is not provided and has no default.",
 		], $findings);
 	}
 

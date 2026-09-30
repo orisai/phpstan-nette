@@ -114,7 +114,7 @@ final class DependencyEdgeEmitter
 	// several hops away from C needs its OWN direct edge to C, not just a hope that an unedited
 	// intermediate .latte file's own reanalysis carries the change forward. class_exists() guards
 	// the same way DeclarationInjector's own header-param build does: an
-	// unresolvable class already reports orisaiNette.latte.unknownType elsewhere, referencing it here would
+	// unresolvable class already reports orisai.nette.latte.unknownType elsewhere, referencing it here would
 	// only add a spurious edge to nothing.
 
 	/**

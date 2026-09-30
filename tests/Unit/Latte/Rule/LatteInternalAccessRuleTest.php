@@ -53,8 +53,8 @@ final class LatteInternalAccessRuleTest extends RuleTestCase
 		$errors = $this->gatherAnalyserErrors([self::FlaggedFixtureFile]);
 
 		self::assertCount(2, $errors);
-		self::assertSame('orisaiNette.latte.internalAccess', $errors[0]->getIdentifier());
-		self::assertSame('orisaiNette.latte.internalAccess', $errors[1]->getIdentifier());
+		self::assertSame('orisai.nette.latte.internalAccess', $errors[0]->getIdentifier());
+		self::assertSame('orisai.nette.latte.internalAccess', $errors[1]->getIdentifier());
 	}
 
 	public function testDoesNotFlagCompilerEmittedBlockDispatchIncludeAndSnippetScaffolding(): void

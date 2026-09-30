@@ -82,7 +82,7 @@ final class DeclaredVarsResolver
 					$provenance[$name] = 'declared:templateType';
 				}
 			} catch (ReflectionException $e) {
-				// orisaiNette.latte.unknownType is reported once, by DeclarationInjector, for the file that
+				// orisai.nette.latte.unknownType is reported once, by DeclarationInjector, for the file that
 				// DECLARES the bad templateType. This resolver runs for OTHER files consuming that
 				// declaration (ContextResolver/IncludeContractChecker); re-reporting here would
 				// duplicate the diagnostic once per consumer, so a reflection failure silently

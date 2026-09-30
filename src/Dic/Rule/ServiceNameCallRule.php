@@ -98,7 +98,7 @@ final class ServiceNameCallRule implements Rule
 					'Dynamic service name in %s::%s() cannot be analysed. Provide a literal service name.',
 					Container::class,
 					$node->name->toString(),
-				))->identifier('orisaiNette.dic.dynamicServiceName')->build(),
+				))->identifier('orisai.nette.dic.dynamicServiceName')->build(),
 			];
 		}
 
@@ -132,7 +132,7 @@ final class ServiceNameCallRule implements Rule
 				$errors[] = RuleErrorBuilder::message(sprintf(
 					'Service \'%s\' is excluded by the hasService() guard in this branch; the call always throws here.',
 					$name,
-				))->identifier('orisaiNette.dic.serviceMissingInBranch')->build();
+				))->identifier('orisai.nette.dic.serviceMissingInBranch')->build();
 
 				continue;
 			}
@@ -147,13 +147,13 @@ final class ServiceNameCallRule implements Rule
 						'Service \'%s\' is registered in every analysed container (%s); hasService() always returns true.',
 						$name,
 						$profiles,
-					))->identifier('orisaiNette.dic.hasServiceAlwaysTrue')->build();
+					))->identifier('orisai.nette.dic.hasServiceAlwaysTrue')->build();
 				} elseif (count($missing) === count($existence)) {
 					$errors[] = RuleErrorBuilder::message(sprintf(
 						'Service \'%s\' is not registered in any analysed container (%s); hasService() always returns false.',
 						$name,
 						$profiles,
-					))->identifier('orisaiNette.dic.hasServiceAlwaysFalse')->build();
+					))->identifier('orisai.nette.dic.hasServiceAlwaysFalse')->build();
 				}
 
 				continue;
@@ -168,12 +168,12 @@ final class ServiceNameCallRule implements Rule
 					'Service \'%s\' is not registered in any analysed container (%s).',
 					$name,
 					$profiles,
-				))->identifier('orisaiNette.dic.serviceNotFound')->build()
+				))->identifier('orisai.nette.dic.serviceNotFound')->build()
 				: RuleErrorBuilder::message(sprintf(
 					'Service \'%s\' is not registered in container(s): %s.',
 					$name,
 					implode(', ', $missing),
-				))->identifier('orisaiNette.dic.serviceNotInAllContainers')->build();
+				))->identifier('orisai.nette.dic.serviceNotInAllContainers')->build();
 		}
 
 		return $errors;

@@ -41,7 +41,7 @@ looks like).
 ### Cache freshness
 
 Two mechanisms keep analysis results in sync with DI config changes; both were added after a
-stale-cache incident (a freshly registered service reported as `orisaiNette.dic.typeNotFound`):
+stale-cache incident (a freshly registered service reported as `orisai.nette.dic.typeNotFound`):
 
 - **The loader must rebuild stale containers.** This is the consumer's side of the contract.
   Vanilla `Nette\Bootstrap\Configurator` couples `autoRebuild` to debug mode, so a loader that
@@ -144,12 +144,12 @@ gets its own two identifiers, described after the table.
 
 | Identifier | When | Example message |
 |---|---|---|
-| `orisaiNette.dic.dynamicServiceName` | first argument has no constant-string type | `Dynamic service name in Nette\DI\Container::getService() cannot be analysed. Provide a literal service name.` |
-| `orisaiNette.dic.serviceNotFound` | literal name missing from every profile | `Service 'foo' is not registered in any analysed container (alpha, beta).` |
-| `orisaiNette.dic.serviceNotInAllContainers` | literal name missing from some but not all profiles | `Service 'foo' is not registered in container(s): beta.` |
-| `orisaiNette.dic.hasServiceAlwaysFalse` | (`hasService` only) literal name missing from every profile | `Service 'foo' is not registered in any analysed container (alpha, beta); hasService() always returns false.` |
-| `orisaiNette.dic.hasServiceAlwaysTrue` | (`hasService` only) literal name present in every profile | `Service 'foo' is registered in every analysed container (alpha, beta); hasService() always returns true.` |
-| `orisaiNette.dic.serviceMissingInBranch` | (five throwing methods) call inside the negative branch of a `hasService()` guard on the same resolved service | `Service 'foo' is excluded by the hasService() guard in this branch; the call always throws here.` |
+| `orisai.nette.dic.dynamicServiceName` | first argument has no constant-string type | `Dynamic service name in Nette\DI\Container::getService() cannot be analysed. Provide a literal service name.` |
+| `orisai.nette.dic.serviceNotFound` | literal name missing from every profile | `Service 'foo' is not registered in any analysed container (alpha, beta).` |
+| `orisai.nette.dic.serviceNotInAllContainers` | literal name missing from some but not all profiles | `Service 'foo' is not registered in container(s): beta.` |
+| `orisai.nette.dic.hasServiceAlwaysFalse` | (`hasService` only) literal name missing from every profile | `Service 'foo' is not registered in any analysed container (alpha, beta); hasService() always returns false.` |
+| `orisai.nette.dic.hasServiceAlwaysTrue` | (`hasService` only) literal name present in every profile | `Service 'foo' is registered in every analysed container (alpha, beta); hasService() always returns true.` |
+| `orisai.nette.dic.serviceMissingInBranch` | (five throwing methods) call inside the negative branch of a `hasService()` guard on the same resolved service | `Service 'foo' is excluded by the hasService() guard in this branch; the call always throws here.` |
 
 #### `hasService()` reporting and guard narrowing
 
@@ -248,11 +248,11 @@ Covers `getByType`, `findByType`, `createInstance`.
 
 | Identifier | When | Example message |
 |---|---|---|
-| `orisaiNette.dic.dynamicType` | first argument has no constant-string type | `Dynamic type in Nette\DI\Container::getByType() cannot be analysed. Provide a literal ::class type.` |
-| `orisaiNette.dic.typeAmbiguous` | (`getByType` only) more than one autowired candidate in a profile | `Type Foo\Bar is ambiguous in container(s): alpha (FooImpl, BarImpl); getByType() throws.` |
-| `orisaiNette.dic.typeNotFound` | type unknown in every profile | `getByType`: `Type Foo\Bar is not registered in any analysed container (alpha, beta).` — `findByType`: `Type Foo\Bar is never resolvable; findByType() always returns an empty array.` |
-| `orisaiNette.dic.typeNotAutowired` | (`getByType` only) type registered but `autowired: false` in every profile that has it | `Type Foo\Bar is registered but not autowired in container(s): alpha; getByType() throws.` |
-| `orisaiNette.dic.typeNotInAllContainers` | mixed failure across profiles (some unknown, some not autowired) or (`findByType`) unknown in some but not all | `getByType`: `Type Foo\Bar is not autowirable in container(s): alpha; getByType() throws there.` — `findByType`: `Type Foo\Bar is not registered in container(s): alpha.` |
+| `orisai.nette.dic.dynamicType` | first argument has no constant-string type | `Dynamic type in Nette\DI\Container::getByType() cannot be analysed. Provide a literal ::class type.` |
+| `orisai.nette.dic.typeAmbiguous` | (`getByType` only) more than one autowired candidate in a profile | `Type Foo\Bar is ambiguous in container(s): alpha (FooImpl, BarImpl); getByType() throws.` |
+| `orisai.nette.dic.typeNotFound` | type unknown in every profile | `getByType`: `Type Foo\Bar is not registered in any analysed container (alpha, beta).` — `findByType`: `Type Foo\Bar is never resolvable; findByType() always returns an empty array.` |
+| `orisai.nette.dic.typeNotAutowired` | (`getByType` only) type registered but `autowired: false` in every profile that has it | `Type Foo\Bar is registered but not autowired in container(s): alpha; getByType() throws.` |
+| `orisai.nette.dic.typeNotInAllContainers` | mixed failure across profiles (some unknown, some not autowired) or (`findByType`) unknown in some but not all | `getByType`: `Type Foo\Bar is not autowirable in container(s): alpha; getByType() throws there.` — `findByType`: `Type Foo\Bar is not registered in container(s): alpha.` |
 
 Any `getByType($type, ...)` second argument that isn't *definitely* `true` — a literal `false`,
 a `bool`-typed variable, anything short of the constant `true` — suppresses the not-found/not-
@@ -268,9 +268,9 @@ Covers `findByTag`.
 
 | Identifier | When | Example message |
 |---|---|---|
-| `orisaiNette.dic.dynamicTag` | first argument has no constant-string type | `Dynamic tag in Nette\DI\Container::findByTag() cannot be analysed. Provide a literal tag name.` |
-| `orisaiNette.dic.tagNotFound` | literal tag present in no analysed container | `Tag 'foo' is not present in any analysed container (alpha, beta).` |
-| `orisaiNette.dic.tagNotInAllContainers` | literal tag present in some but not all containers | `Tag 'foo' is not present in container(s): beta.` |
+| `orisai.nette.dic.dynamicTag` | first argument has no constant-string type | `Dynamic tag in Nette\DI\Container::findByTag() cannot be analysed. Provide a literal tag name.` |
+| `orisai.nette.dic.tagNotFound` | literal tag present in no analysed container | `Tag 'foo' is not present in any analysed container (alpha, beta).` |
+| `orisai.nette.dic.tagNotInAllContainers` | literal tag present in some but not all containers | `Tag 'foo' is not present in container(s): beta.` |
 
 That's 14 identifiers in total.
 

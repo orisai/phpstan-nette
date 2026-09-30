@@ -7,7 +7,7 @@ use Tests\OriPhpstan\Nette\Doubles\Forms\Form\ApplicationForm;
 final class UploadButtons
 {
 
-	// G10-01: dynamic arg — setValue() on upload field 'a' has no effect. [orisaiNette.forms.writeNoEffect]
+	// G10-01: dynamic arg — setValue() on upload field 'a' has no effect. [orisai.nette.forms.writeNoEffect]
 	public function g10_01(string $x): void
 	{
 		$form = new ApplicationForm();
@@ -15,7 +15,7 @@ final class UploadButtons
 		$form['a']->setValue($x);
 	}
 
-	// G10-02: setValue() on upload field 'a' has no effect. [orisaiNette.forms.writeNoEffect]
+	// G10-02: setValue() on upload field 'a' has no effect. [orisai.nette.forms.writeNoEffect]
 	public function g10_02(string $x): void
 	{
 		$form = new ApplicationForm();

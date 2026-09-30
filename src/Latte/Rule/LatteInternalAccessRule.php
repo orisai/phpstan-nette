@@ -64,7 +64,7 @@ final class LatteInternalAccessRule implements Rule
 			RuleErrorBuilder::message(
 				'Access to Latte runtime internal $this->' . $member . ($isCall ? '()' : '') . ' from template code.',
 			)
-				->identifier('orisaiNette.latte.internalAccess')
+				->identifier('orisai.nette.latte.internalAccess')
 				->line($node->getStartLine())
 				->build(),
 		];

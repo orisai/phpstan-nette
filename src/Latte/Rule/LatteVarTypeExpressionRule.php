@@ -208,7 +208,7 @@ final class LatteVarTypeExpressionRule implements Rule
 		try {
 			$declared = $this->typeStringResolver->resolve($placement->getType());
 		} catch (Throwable $e) {
-			// orisaiNette.latte.unknownType / the compiler's own parse error already cover a malformed type
+			// orisai.nette.latte.unknownType / the compiler's own parse error already cover a malformed type
 			// string; DeclarationConsistencyChecker degrades on the same input the same way.
 			return [];
 		}

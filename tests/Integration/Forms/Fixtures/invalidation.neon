@@ -18,7 +18,7 @@ parameters:
 		# the body-only-edit row - so it carries the missing-tag hint in every scenario. Annotating it
 		# would change what the rows measure (the tag resolves the name the body edit is supposed to
 		# move); repeating the hint in ~25 full error-set expectations measures nothing.
-		- identifier: orisaiNette.forms.unannotatedRegistrar
+		- identifier: orisai.nette.forms.unannotatedRegistrar
 
 includes:
 	- ../../../../extension.neon

@@ -181,7 +181,7 @@ final class ShadowCompareTest extends BaseTestCase
 	{
 		$renders = [];
 		foreach ($messages as $message) {
-			if (($message['identifier'] ?? '') !== 'orisaiNette.forms.shadowDivergence') {
+			if (($message['identifier'] ?? '') !== 'orisai.nette.forms.shadowDivergence') {
 				continue;
 			}
 

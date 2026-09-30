@@ -158,7 +158,7 @@ final class FormReplicatorTypeTest extends PHPStanTestCase
 	/**
 	 * The never-No contract: an unknown name is never confidently absent - a No here would
 	 * double-report against FormShapeUnknownAccessRule (core's offsetAccess.notFound reports on a
-	 * definite No, and our own rule already reports orisaiNette.forms.noSuchComponent for the same access).
+	 * definite No, and our own rule already reports orisai.nette.forms.noSuchComponent for the same access).
 	 */
 	public function testUnknownNameNeverAnswersNo(): void
 	{

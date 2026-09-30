@@ -27,9 +27,9 @@ use function touch;
  * profile, and a consumer whose every probe states the whole answer -
  *
  *  - getService('foo')->gone()  : the RESOLVED SERVICE CLASS (ServiceReturnTypeExtension)
- *  - getService('absent')       : orisaiNette.dic.serviceNotFound, carrying the PROFILE NAME LIST
- *  - getByType() / findByTag()  : orisaiNette.dic.typeNotFound / orisaiNette.dic.tagNotFound, same list
- *  - hasService('foo')          : orisaiNette.dic.hasServiceAlwaysTrue, same list
+ *  - getService('absent')       : orisai.nette.dic.serviceNotFound, carrying the PROFILE NAME LIST
+ *  - getByType() / findByTag()  : orisai.nette.dic.typeNotFound / orisai.nette.dic.tagNotFound, same list
+ *  - hasService('foo')          : orisai.nette.dic.hasServiceAlwaysTrue, same list
  *  - parameters['absentParam']  : the whole PARAMETER SHAPE (ParametersPropertyTypeExtension)
  *
  * so a scenario cannot quietly stop discriminating. The trait- and parent-declared probes put two of
@@ -357,13 +357,13 @@ NEON;
 			'BaseConsumer.php:8 :: method.notFound :: Call to an undefined method ChildService::baseGone().',
 			'Consumer.php:10 :: method.notFound :: Call to an undefined method FooService::gone().',
 			'Consumer.php:11 :: method.notFound :: Call to an undefined method FooService::aliasGone().',
-			"Consumer.php:12 :: orisaiNette.dic.serviceNotFound :: Service 'absent' is not registered in any "
+			"Consumer.php:12 :: orisai.nette.dic.serviceNotFound :: Service 'absent' is not registered in any "
 				. "analysed container ($profiles).",
-			'Consumer.php:13 :: orisaiNette.dic.typeNotFound :: Type MissingService is not registered in any '
+			'Consumer.php:13 :: orisai.nette.dic.typeNotFound :: Type MissingService is not registered in any '
 				. "analysed container ($profiles).",
-			"Consumer.php:14 :: orisaiNette.dic.tagNotFound :: Tag 'absent.tag' is not present in any analysed "
+			"Consumer.php:14 :: orisai.nette.dic.tagNotFound :: Tag 'absent.tag' is not present in any analysed "
 				. "container ($profiles).",
-			"Consumer.php:16 :: orisaiNette.dic.hasServiceAlwaysTrue :: Service 'foo' is registered in every "
+			"Consumer.php:16 :: orisai.nette.dic.hasServiceAlwaysTrue :: Service 'foo' is registered in every "
 				. "analysed container ($profiles); hasService() always returns true.",
 			"Consumer.php:21 :: offsetAccess.notFound :: Offset 'absentParam' does not exist on "
 				. "$parameterShape.",

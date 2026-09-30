@@ -461,7 +461,7 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 		if ($spelling !== null) {
 			return new Diagnostic(
-				$kind === 'filter' ? 'orisaiNette.latte.filterCaseMismatch' : 'orisaiNette.latte.functionCaseMismatch',
+				$kind === 'filter' ? 'orisai.nette.latte.filterCaseMismatch' : 'orisai.nette.latte.functionCaseMismatch',
 				"Latte $kind '$name' differs in case from the registered '$spelling' - Latte 3 resolves $kind names "
 				. 'case-sensitively.',
 				$line,
@@ -469,7 +469,7 @@ final class FilterRewriter extends NodeVisitorAbstract
 		}
 
 		return new Diagnostic(
-			'orisaiNette.latte.unknownFilter',
+			'orisai.nette.latte.unknownFilter',
 			$kind === 'filter' ? "Unknown Latte filter '$name'." : "Unknown Latte function '$name'.",
 			$line,
 		);

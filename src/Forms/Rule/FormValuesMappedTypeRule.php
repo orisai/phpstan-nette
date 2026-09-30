@@ -452,7 +452,7 @@ final class FormValuesMappedTypeRule implements Rule
 	private function error(string $message): IdentifierRuleError
 	{
 		return RuleErrorBuilder::message($message)
-			->identifier('orisaiNette.forms.mappedTypeWrite')
+			->identifier('orisai.nette.forms.mappedTypeWrite')
 			->build();
 	}
 

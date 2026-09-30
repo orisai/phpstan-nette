@@ -237,7 +237,7 @@ final class FormShapeUnknownAccessRule implements Rule
 
 			return [
 				RuleErrorBuilder::message("Form value '" . $displayName . "' has an unknown type.")
-					->identifier('orisaiNette.forms.partiallyUnknown')
+					->identifier('orisai.nette.forms.partiallyUnknown')
 					->tip('Form shape opened by: ' . $this->reasons($shape))
 					->line($node->getStartLine())
 					->build(),
@@ -282,7 +282,7 @@ final class FormShapeUnknownAccessRule implements Rule
 
 			return [
 				RuleErrorBuilder::message("Form value '" . $displayName . "' may not exist; the form shape is open.")
-					->identifier('orisaiNette.forms.unknownAccess')
+					->identifier('orisai.nette.forms.unknownAccess')
 					->tip('Form shape opened by: ' . $this->reasons($shape))
 					->line($node->getStartLine())
 					->build(),
@@ -295,7 +295,7 @@ final class FormShapeUnknownAccessRule implements Rule
 			RuleErrorBuilder::message(
 				'Form ' . $noun . " '" . $displayName . "' does not exist.",
 			)
-				->identifier('orisaiNette.forms.noSuchComponent')
+				->identifier('orisai.nette.forms.noSuchComponent')
 				->line($node->getStartLine())
 				->build(),
 		];
@@ -338,7 +338,7 @@ final class FormShapeUnknownAccessRule implements Rule
 					"Form component path '" . $displayName . "' has an invalid segment '"
 					. $walk->getSegment() . "'; a component name must be a non-empty alphanumeric string.",
 				)
-					->identifier('orisaiNette.forms.shapeInvalidComponentName')
+					->identifier('orisai.nette.forms.shapeInvalidComponentName')
 					->line($node->getStartLine())
 					->build(),
 			];
