@@ -275,8 +275,9 @@ final class ContextResolver
 		// carries a different class. Measured on this corpus: app/templates/@layout.latte went from 4
 		// contexts to 41, multiplying every one of its findings (and its baseline counts) by ten. The
 		// target's OWN records answer for it instead, right after this in overlayFactoryVars(), and a
-		// target with no records of its own is left saying nothing - a missed detection, which is the
-		// safe direction. Only the still-inherited factory value is dropped: an include site passing
+		// target with no records of its own is left without the variable: a partial reading
+		// $presenter then reports variable.undefined (a false positive, the price of not
+		// multiplying contexts). Only the still-inherited factory value is dropped: an include site passing
 		// $control explicitly has overwritten the provenance and keeps its value. Dropped BEFORE the
 		// captured overlay below: a capture re-observes or narrows a name the edge provides, it must
 		// never carry the includer's identity back in (an {include}d partial that is also an

@@ -64,8 +64,10 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsVendorDef
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\FixtureTemplateTypeContainer;
 use function array_keys;
 use function array_map;
+use function array_values;
 use function getmypid;
 use function realpath;
+use function sha1;
 use function sys_get_temp_dir;
 use function uniqid;
 
@@ -685,6 +687,60 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 	}
 
+	// The drop runs BEFORE the captured overlay: a narrowing capture of the includer's factory
+	// $control/$presenter on the include edge must not carry them into the partial either, or two
+	// renderers including one partial-extender would give it (and every layout it extends) one
+	// context each - the multiplication the drop exists to prevent. Reverting the order in
+	// ContextResolver::buildEdgeContext() turns this red (two contexts, $control kept).
+	public function testCapturedIncluderIdentityNeverReachesTheIncludedPartial(): void
+	{
+		$dir = $this->corpus([
+			'a.latte' => "{include 'p.latte'}\n",
+			'b.latte' => "{include 'p.latte'}\n",
+			'p.latte' => "{block content}x{/block}\n",
+		]);
+
+		try {
+			$records = [
+				'a.latte' => FactoryVarsAncestorLeftPresenter::class,
+				'b.latte' => FactoryVarsAncestorRightPresenter::class,
+			];
+			$store = $this->storeWithRecords($dir, $records);
+			$plain = $this->resolver($dir, $this->index($dir, [], $store), $this->source($dir, [], null, true, $store));
+
+			$siteStore = new SiteScopeStore($dir . '/sitescope');
+			SiteScopeStore::bootstrap($dir . '/sitescope', ['a.latte', 'b.latte', 'p.latte']);
+			$entries = [];
+			foreach ($records as $rel => $class) {
+				$includerContexts = $plain->contextsFor($rel);
+				self::assertCount(1, $includerContexts);
+				self::assertSame('\\' . $class, $includerContexts[0]->getVars()['control']);
+				$entries[SiteScopeStore::key($rel, 1, 'p.latte', $includerContexts[0]->canonicalHash())] = [
+					'sha' => sha1(FileSystem::read($dir . '/templates/' . $rel)),
+					'vars' => ['control' => $class, 'presenter' => $class],
+					'args' => [],
+				];
+			}
+
+			$siteStore->replaceForIncluders(['a.latte', 'b.latte'], $entries);
+
+			$resolver = new ContextResolver(
+				$this->index($dir, [], $store),
+				$this->universe($dir),
+				new CapturedOverlay($siteStore, true),
+				false,
+				$this->source($dir, [], null, true, $store),
+			);
+			$contexts = $resolver->contextsFor('p.latte');
+
+			self::assertCount(1, $contexts);
+			self::assertArrayNotHasKey('control', $contexts[0]->getVars());
+			self::assertArrayNotHasKey('presenter', $contexts[0]->getVars());
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
 	/**
 	 * @group latte2
 	 */
@@ -882,13 +938,13 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	/**
 	 * @param list<string> $rendererClasses
 	 */
-	private function index(string $dir, array $rendererClasses): TemplateEdgeIndex
+	private function index(string $dir, array $rendererClasses, ?DiscoveryStore $store = null): TemplateEdgeIndex
 	{
 		return new TemplateEdgeIndex(
 			$this->universe($dir),
 			TestAdapter::accessor(),
 			null,
-			$this->store($dir, $rendererClasses),
+			$store ?? $this->store($dir, $rendererClasses),
 			true,
 		);
 	}
@@ -911,7 +967,8 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		string $dir,
 		array $rendererClasses,
 		?string $loaderFile = null,
-		bool $enabled = true
+		bool $enabled = true,
+		?DiscoveryStore $store = null
 	): FactoryProvidedVars
 	{
 		// ONE resolver instance for both consumers, exactly like the container wiring: the
@@ -924,10 +981,33 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 				new PairingJudge(self::createReflectionProvider()),
 				self::createReflectionProvider(),
 			),
-			$this->store($dir, $rendererClasses),
+			$store ?? $this->store($dir, $rendererClasses),
 			$templateFactoryDefault,
 			$enabled,
 		);
+	}
+
+	/**
+	 * @param array<string, string> $rendererByTemplate
+	 */
+	private function storeWithRecords(string $dir, array $rendererByTemplate): DiscoveryStore
+	{
+		$store = new DiscoveryStore($dir . '/store');
+		$records = [];
+		foreach ($rendererByTemplate as $rel => $className) {
+			$records[$rel] = [
+				[
+					'class' => $className,
+					'view' => 'default',
+					'kind' => CandidatePath::KIND_FORMULA,
+					'certainty' => Certainty::HAPPENS,
+				],
+			];
+		}
+
+		$store->replaceWith($records, array_values($rendererByTemplate), []);
+
+		return $store;
 	}
 
 	/**
