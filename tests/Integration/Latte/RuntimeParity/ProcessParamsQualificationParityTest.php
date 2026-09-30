@@ -19,8 +19,9 @@ use const PHP_VERSION_ID;
 // REAL vendor Engine::processParams() (invoked via reflection, since it's private) actually
 // registers off ProcessParamsQualificationFixture, immediately followed by what
 // TemplateTypeCustoms - the analysis-side model - decides for the identical fixture. A mismatch
-// here means the MODEL is wrong, never the probe. Latte 2 only: Latte 3's Engine has no
-// processParams() - a template params object registers nothing (TemplateTypeCustoms' forward note).
+// here means the MODEL is wrong, never the probe. Probes Latte 2's Engine::processParams(); 3.0
+// keeps it (deprecated doc tags), 3.1 moves attribute scanning into Helpers::resolveParams - re-pinned
+// with Task 16.
 /**
  * @group latte2
  */

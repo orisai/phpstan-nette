@@ -1,0 +1,65 @@
+{
+    "declarations": {
+        "templateTypeClass": null,
+        "templateTypeLine": null,
+        "headerVarTypes": {
+            "title": "string"
+        },
+        "headerVarTypeLines": {
+            "title": 2
+        },
+        "midFileVarTypes": [],
+        "typedVars": [],
+        "typedDefaults": [],
+        "parameters": null,
+        "defineParams": {
+            "title": []
+        },
+        "defineParamDefaults": {
+            "title": []
+        },
+        "varTypePlacements": []
+    },
+    "formSites": [],
+    "templateFacts": {
+        "includeSites": [
+            {
+                "tag": "extends",
+                "kind": "file",
+                "rawTarget": "parent.latte",
+                "resolvedPath": "fixtures/parent.latte",
+                "argsSource": "",
+                "latteLine": 1
+            }
+        ],
+        "blockNames": [
+            "title"
+        ],
+        "defineNames": [],
+        "topLevelVars": [],
+        "topLevelDefaults": [],
+        "blockDeclaredVars": [],
+        "blockDeclaredVarLines": [],
+        "lineMacros": {
+            "1": [
+                {
+                    "name": "extends",
+                    "column": 1
+                }
+            ],
+            "2": [
+                {
+                    "name": "varType",
+                    "column": 1
+                }
+            ],
+            "4": [
+                {
+                    "name": "block",
+                    "column": 1
+                }
+            ]
+        },
+        "layoutMode": "declared"
+    }
+}

@@ -106,8 +106,9 @@ final class Helpers
 
 	/**
 	 * @param string|int|object $name
+	 * @param mixed $part
 	 */
-	public static function formInput($name, ?string $part = null): NetteHtml
+	public static function formInput($name, $part = null): NetteHtml
 	{
 		throw new LogicException('never executed');
 	}
