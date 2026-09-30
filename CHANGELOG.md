@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   nette/forms 3.3 — and PHPStan analyses it for PHP 8.4; the former default set is the `latte2` profile, the `latte31`
   profile is gone and a `lowest` profile installs the lowest dependencies on PHP 7.4
 - `src/Latte/Version/Latte3/` no longer has to parse on PHP 7.4: it is loaded only with Latte 3, which requires PHP 8
+- Minimum versions raised to the lowest set the test suite passes on: phpstan/phpstan 2.2.13 (the extension calls
+  PHPStan API added in 2.2), latte/latte 2.11.7, nette/forms 3.1.15 and nette/component-model 3.0.3 (the extension reads
+  `IComponent::NameSeparator`)
 - Latte 3: tags Latte 3 dropped (`{includeblock}`, `{status}`, `{use}`, and `{ifCurrent}` with nette/application 3.3)
   are reported as `orisaiNette.latte.parseError`, never passed through as unknown macros
 - Latte 2: a repeated unpaired unknown tag with no closing tag compiles and reports `orisaiNette.latte.unknownMacro`
