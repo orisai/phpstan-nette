@@ -6,6 +6,7 @@ use LogicException;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Configuration\InvalidConfiguration;
 use OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry;
+use OriPhpstan\Nette\Support\PhpstanRuntimeStubs;
 use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
 use function hash;
 use function hash_file;
@@ -32,6 +33,8 @@ final class ContainerResultCacheMetaExtension implements ResultCacheMetaExtensio
 
 	public function getHash(): string
 	{
+		PhpstanRuntimeStubs::ensureLoaded();
+
 		try {
 			$this->guard->validate();
 		} catch (InvalidConfiguration $e) {

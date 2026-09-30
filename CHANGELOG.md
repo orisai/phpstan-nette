@@ -65,6 +65,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- PHP 7.4: no crash "Class 'ReflectionAttribute' not found" with PHPStan 2.2.10+, which runs result-cache meta
+  extensions before the `bootstrapFiles` loading its PHP < 8 runtime polyfills; the Latte discovery index reflects
+  methods there, and an attributed one needs the polyfills
 - Latte: a warm run no longer reports `orisaiNette.latte.unknownType` for a `{templateType}` class loadable only through
   a `bootstrapFiles` autoloader (PHPStan 2.2 parses changed files before running them)
 - Latte: `LatteDiscovery_*`/`LatteSlice_*` store classes written after the first reflection lookup are located, so

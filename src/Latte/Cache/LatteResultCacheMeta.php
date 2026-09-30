@@ -10,6 +10,7 @@ use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
+use OriPhpstan\Nette\Support\PhpstanRuntimeStubs;
 use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
 use function fwrite;
 use function implode;
@@ -129,6 +130,8 @@ final class LatteResultCacheMeta implements ResultCacheMetaExtension
 
 	public function getHash(): string
 	{
+		PhpstanRuntimeStubs::ensureLoaded();
+
 		try {
 			$this->guard->validate();
 		} catch (InvalidConfiguration $e) {

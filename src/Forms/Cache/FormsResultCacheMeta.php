@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Cache;
 
+use OriPhpstan\Nette\Support\PhpstanRuntimeStubs;
 use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
 
 /**
@@ -49,6 +50,8 @@ final class FormsResultCacheMeta implements ResultCacheMetaExtension
 
 	public function getHash(): string
 	{
+		PhpstanRuntimeStubs::ensureLoaded();
+
 		if (!$this->enabled) {
 			return 'disabled';
 		}
