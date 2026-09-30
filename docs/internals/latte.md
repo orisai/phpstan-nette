@@ -1202,8 +1202,10 @@ Class-level channels describe *the* template class of the class:
 - **Declaration-side**: `phpdoc` — the `@property`/`@property-read` override on `$template`;
   `genericBinding` — the reflection-resolved template surface (a generic `@extends Base<X>`
   argument included). A surface declared inside an installed Composer package is the `templateFloor`,
-  not a binding (`VendorPaths`) — unless the declaring file lies inside `firstPartyPaths`: a monorepo's
-  path-repository package is installed by Composer yet first-party.
+  not a binding (`VendorPaths`) — unless the package is linked into the vendor directory from outside it (its
+  install path resolves elsewhere, a monorepo's path-repository package) and the declaring file lies inside
+  `firstPartyPaths`. A first-party path holding the project root (the `%paths%` default) never exempts a package
+  installed into the vendor directory.
 
 Per-site channels pair one call site, never the class: `createTemplate` (a manual
 `templateFactory->createTemplate($this, X::class)` outside the override) and `factoryStatic`.

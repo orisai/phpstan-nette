@@ -57,6 +57,28 @@ final class TemplateSurfaceFloorTest extends PHPStanTestCase
 		self::assertSame([], $verdict->getOpaques());
 	}
 
+	// With the project root among the first-party paths (the %paths% default) the walk reaches the
+	// vendor classes too, but their template surface stays the floor.
+
+	/**
+	 * @param class-string $className
+	 *
+	 * @dataProvider provideVendorSurfaceOnlyClasses
+	 */
+	public function testTheProjectRootAsFirstPartyKeepsTheVendorSurfaceAFloor(string $className): void
+	{
+		$facts = $this->factsFor($className, [dirname(__DIR__, 4)]);
+
+		foreach ($facts->getTemplateClassCandidates() as $candidate) {
+			self::assertNotSame(TemplateClassFact::CHANNEL_GENERIC_BINDING, $candidate->getChannel());
+		}
+
+		$templateClass = $facts->getTemplateClass();
+		self::assertNotNull($templateClass);
+		self::assertSame(UiTemplate::class, $templateClass->getClassName());
+		self::assertSame(TemplateClassFact::CHANNEL_TEMPLATE_FLOOR, $templateClass->getChannel());
+	}
+
 	public function testNonVendorDeclaredSurfaceStaysABinding(): void
 	{
 		$facts = $this->factsFor(DefaultTemplateSurfaceDescendantControl::class);
@@ -76,7 +98,10 @@ final class TemplateSurfaceFloorTest extends PHPStanTestCase
 		self::assertSame(TemplateClassFact::CHANNEL_GENERIC_BINDING, $templateClass->getChannel());
 	}
 
-	private function factsFor(string $className): PhpRenderFacts
+	/**
+	 * @param list<string> $extraFirstPartyPaths
+	 */
+	private function factsFor(string $className, array $extraFirstPartyPaths = []): PhpRenderFacts
 	{
 		$appRoot = realpath(__DIR__ . '/Fixtures/App');
 		self::assertNotFalse($appRoot);
@@ -87,7 +112,7 @@ final class TemplateSurfaceFloorTest extends PHPStanTestCase
 		$walk = new PhpRenderWalk(
 			self::createReflectionProvider(),
 			$parser,
-			[$appRoot],
+			[$appRoot, ...$extraFirstPartyPaths],
 			new TemplateFactoryDefaultResolver(null),
 			new DiscoveryResolver(null, [], dirname($appRoot)),
 		);
