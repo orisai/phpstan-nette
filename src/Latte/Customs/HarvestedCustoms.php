@@ -3,11 +3,18 @@
 namespace OriPhpstan\Nette\Latte\Customs;
 
 use Closure;
+use FilesystemIterator;
 use Latte\Macros\MacroSet;
+use OriPhpstan\Nette\Support\ProjectInstalledVersions;
+use RecursiveCallbackFilterIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
+use SplFileInfo;
 use function array_keys;
+use function dirname;
 use function get_class;
 use function implode;
 use function is_array;
@@ -16,6 +23,8 @@ use function is_string;
 use function ksort;
 use function sha1;
 use function sha1_file;
+use function strlen;
+use function substr;
 use const SORT_STRING;
 
 final class HarvestedCustoms
@@ -265,9 +274,11 @@ final class HarvestedCustoms
 			$lines[] = $line;
 		}
 
+		$descriptions = [];
 		foreach ($extensions as $index => $extension) {
 			$class = get_class($extension);
-			$lines[] = "extension\x1f" . $index . "\x1f" . $class . "\x1f" . self::describeMacroClass($class);
+			$descriptions[$class] ??= self::describeExtensionClass($class);
+			$lines[] = "extension\x1f" . $index . "\x1f" . $class . "\x1f" . $descriptions[$class];
 		}
 
 		ksort($features, SORT_STRING);
@@ -327,6 +338,67 @@ final class HarvestedCustoms
 		$hash = sha1_file($fileName);
 
 		return $hash !== false ? $hash : 'unreadable';
+	}
+
+	// A Latte 3 extension's generated code lives in its node classes as much as in the extension
+	// itself. An installed package is identified by its version; a first-party extension by every
+	// PHP file under its class's directory, so an edited node next to it or below it changes the salt.
+
+	/**
+	 * @param class-string $class
+	 */
+	private static function describeExtensionClass(string $class): string
+	{
+		try {
+			$fileName = (new ReflectionClass($class))->getFileName();
+		} catch (ReflectionException $e) {
+			return 'unreflectable';
+		}
+
+		if ($fileName === false) {
+			return 'internal';
+		}
+
+		$installed = ProjectInstalledVersions::get();
+		$package = $installed->packageContaining($fileName);
+		if ($package !== null) {
+			return 'package:' . $package . '@' . ($installed->getVersion($package) ?? '?')
+				. '#' . ($installed->getReference($package) ?? '?');
+		}
+
+		return 'tree:' . self::describeDirectory(dirname($fileName), $installed);
+	}
+
+	// Installed packages nested in the tree (a vendor directory beside the extension) are left out;
+	// an extension from one of them is salted by its version instead.
+	private static function describeDirectory(string $directory, ProjectInstalledVersions $installed): string
+	{
+		$files = [];
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveCallbackFilterIterator(
+				new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+				static fn (SplFileInfo $file): bool => !$file->isDir()
+					|| $installed->packageContaining($file->getPathname()) === null,
+			),
+		);
+		foreach ($iterator as $file) {
+			if (!$file instanceof SplFileInfo || !$file->isFile() || $file->getExtension() !== 'php') {
+				continue;
+			}
+
+			$path = $file->getPathname();
+			$hash = sha1_file($path);
+			$files[(string) substr($path, strlen($directory))] = $hash !== false ? $hash : 'unreadable';
+		}
+
+		ksort($files, SORT_STRING);
+
+		$lines = [];
+		foreach ($files as $relative => $hash) {
+			$lines[] = $relative . "\x1f" . $hash;
+		}
+
+		return sha1(implode("\n", $lines));
 	}
 
 	/**

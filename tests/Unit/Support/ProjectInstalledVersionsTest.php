@@ -3,7 +3,9 @@
 namespace Tests\OriPhpstan\Nette\Unit\Support;
 
 use Composer\InstalledVersions;
+use Latte\Engine;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
+use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 
 final class ProjectInstalledVersionsTest extends BaseTestCase
@@ -57,6 +59,20 @@ final class ProjectInstalledVersionsTest extends BaseTestCase
 			InstalledVersions::getInstallPath(ProjectInstalledVersions::PACKAGE),
 			ProjectInstalledVersions::get()->getInstallPath(ProjectInstalledVersions::PACKAGE),
 		);
+	}
+
+	// The install root of a package and everything below it belong to the package; the root
+	// package's own files are first-party.
+	public function testPackageContainingResolvesInstalledPackagesOnly(): void
+	{
+		$versions = ProjectInstalledVersions::get();
+		$engineFile = (string) (new ReflectionClass(Engine::class))->getFileName();
+		$latteRoot = (string) $versions->getInstallPath('latte/latte');
+
+		self::assertSame('latte/latte', $versions->packageContaining($engineFile));
+		self::assertSame('latte/latte', $versions->packageContaining($latteRoot));
+		self::assertNull($versions->packageContaining(__FILE__));
+		self::assertNull($versions->packageContaining(__DIR__ . '/does-not-exist.php'));
 	}
 
 }
