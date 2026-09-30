@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   nette/application releases without the Latte 3 or 3.1 bridges
 - phpstan-nette patch verified against phpstan/phpstan-nette 2.0.8–2.0.12
 - Latte discovery follows `Presenter::switch()` (nette/application 3.2) as a view mutation
+- Latte: `vendor/bin/latte-converge` runs `phpstan analyse` again while the narrowing store changes
 
 ### Changed
 

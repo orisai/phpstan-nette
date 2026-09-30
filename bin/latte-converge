@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php declare(strict_types = 1);
+
+use OriPhpstan\Nette\Latte\Converge\ConvergeRunner;
+
+require_once __DIR__ . '/../src/Latte/Converge/StoreChangeSignal.php';
+require_once __DIR__ . '/../src/Latte/Converge/ConvergeRunner.php';
+
+$runner = new ConvergeRunner(
+	PHP_BINARY,
+	($GLOBALS['_composer_bin_dir'] ?? __DIR__ . '/../vendor/bin') . '/phpstan',
+	STDOUT,
+	STDERR,
+);
+
+exit($runner->run(array_slice($argv, 1)));

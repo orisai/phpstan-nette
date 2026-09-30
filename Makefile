@@ -29,7 +29,7 @@ else
 PHPSTAN_CONFIG=tools/phpstan.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
 endif
-PHPSTAN_PATHS=src tests tools/corpus $(SMOKE_PATHS)
+PHPSTAN_PATHS=bin/latte-converge src tests tools/corpus $(SMOKE_PATHS)
 
 ## Install
 
@@ -58,6 +58,7 @@ csf: ## Fix PHP files coding style
 
 lint: ## Check src parses on PHP 7.4, the oldest supported version (the Latte 3 adapter needs PHP 8): make lint LINT_PHP=php7.4
 	find src -name '*.php' -not -path 'src/Latte/Version/Latte3/*' -print0 | xargs -0 -n1 -P$(LOGICAL_CORES) $(LINT_PHP) -d display_errors=stderr -l > /dev/null
+	$(LINT_PHP) -d display_errors=stderr -l bin/latte-converge > /dev/null
 
 phpstan: ## Analyse code with PHPStan
 	test "$(PROFILE)" != lowest || { echo "The lowest profile has no static analysis; use PROFILE=latte2."; exit 1; }

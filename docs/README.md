@@ -232,7 +232,7 @@ parameters:
 					storePath: %currentWorkingDirectory%/tests/phpstan/latte-narrowing
 ```
 
-Create the directory, run the analysis until it reports no store change and commit the directory together with the
+Create the directory, run the analysis with `vendor/bin/latte-converge` and commit the directory together with the
 files the analysis writes into it. See [narrowing store lifecycle](#narrowing-store-lifecycle).
 
 ### Set up Bridges
@@ -394,9 +394,28 @@ entry otherwise falls back to the template's own declarations.
 
 - Create the directory at `orisai.nette.latte.narrowing.storePath`. The analysis never creates it — without it nothing
   is written.
-- Run the analysis again until the error disappears, then commit the directory with your change.
-- In CI, run the analysis. A store which does not match the code fails the run with the error above — the check
-  compares content, not the git state, so it holds whether or not the store is committed yet.
+- Run the analysis through `vendor/bin/latte-converge`, locally, and commit the directory with your change.
+- In CI, run plain `vendor/bin/phpstan analyse`. A store which does not match the code fails the run with the error
+  above — the check compares content, not the git state, so it holds whether or not the store is committed yet.
+
+#### Converge command
+
+`vendor/bin/latte-converge` runs `phpstan analyse` with the arguments you give it and runs it again while the store
+changes:
+
+```shell
+vendor/bin/latte-converge analyse -c phpstan.neon
+```
+
+It prints the last run's result in the error format you asked for and exits with its exit code. Other errors are
+never hidden: a run which also reports them is followed by the next one, and the settled run reports them. A store
+which still changes after `--max-runs` (default 6) runs fails with the last store change. Options go before `analyse`:
+
+- `--max-runs=<n>` – runs at most `n` analyses
+- `--phpstan=<path>` – the PHPStan executable; defaults to `phpstan` next to `latte-converge` in `vendor/bin`
+
+The command reads PHPStan's JSON output of its own runs; when you ask for another error format, it runs the settled
+state once more in that format, which is answered from the result cache.
 
 ### Dead code detection
 
