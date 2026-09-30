@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- `symfony/polyfill-php80` is required: the extension calls `str_starts_with()` and names `Stringable` on PHP 7.4
 - Latte 3: tags Latte 3 dropped (`{includeblock}`, `{status}`, `{use}`, and `{ifCurrent}` with nette/application 3.3)
   are reported as `orisaiNette.latte.parseError`, never passed through as unknown macros
 - Latte 2: a repeated unpaired unknown tag with no closing tag compiles and reports `orisaiNette.latte.unknownMacro`
