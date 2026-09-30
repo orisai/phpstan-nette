@@ -44,6 +44,33 @@ final class CapturedOverlayTest extends BaseTestCase
 		}
 	}
 
+	public function testCaptureEqualModuloLeadingBackslashNarrowsNothing(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$includer = $dir . '/includer.latte';
+			FileSystem::write($includer, "irrelevant\n");
+			$store = $this->storeWith($dir, $includer, ['control' => 'App\\UserPresenter', 'x' => 'Exception']);
+
+			$overlay = new CapturedOverlay($store, true);
+			$result = $overlay->overlay(
+				['control' => '\\App\\UserPresenter', 'x' => 'Exception|null'],
+				[],
+				'includer.latte',
+				$includer,
+				1,
+				"'t.latte'",
+				'ctx',
+			);
+
+			self::assertSame(['control' => '\\App\\UserPresenter', 'x' => 'Exception'], $result['vars']);
+			self::assertSame(['x' => true], $result['overlaidNames']);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
 	// Opt-in gate: a disabled overlay must ignore a store entry that WOULD
 	// narrow the type if enabled - "no store reads" is provable exactly here, since the store
 	// genuinely contains a matching, valid entry and the overlay still must not apply it.

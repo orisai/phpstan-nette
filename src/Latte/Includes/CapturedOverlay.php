@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Includes;
 
 use function array_key_exists;
 use function array_keys;
+use function ltrim;
 use function sha1_file;
 
 // The one piece of logic every capture CONSUMER (ContextResolver, IncludeContractChecker,
@@ -59,14 +60,14 @@ final class CapturedOverlay
 		$overlaidNames = [];
 
 		foreach ($slice['vars'] as $name => $type) {
-			if (array_key_exists($name, $vars)) {
+			if (array_key_exists($name, $vars) && !self::sameType($vars[$name], $type)) {
 				$vars[$name] = $type;
 				$overlaidNames[$name] = true;
 			}
 		}
 
 		foreach ($slice['args'] as $name => $type) {
-			if (array_key_exists($name, $namedKeys)) {
+			if (array_key_exists($name, $namedKeys) && !self::sameType($namedKeys[$name], $type)) {
 				$vars[$name] = $type;
 				$namedKeys[$name] = $type;
 				$overlaidNames[$name] = true;
@@ -74,6 +75,15 @@ final class CapturedOverlay
 		}
 
 		return ['vars' => $vars, 'namedKeys' => $namedKeys, 'overlaidNames' => $overlaidNames];
+	}
+
+	// A capture spells a class the way PHPStan describes it, an edge the way its producer wrote it
+	// (FactoryProvidedVars leads with a backslash): equal modulo that prefix, the capture narrows
+	// nothing and must not perturb the context's identity - a duplicate context would reach every
+	// layout the target extends.
+	private static function sameType(string $provided, string $captured): bool
+	{
+		return ltrim($provided, '\\') === ltrim($captured, '\\');
 	}
 
 	// Opt-in gate: narrowing disabled means the store is never even asked for an entry - this is
