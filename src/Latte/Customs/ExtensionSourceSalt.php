@@ -77,7 +77,11 @@ final class ExtensionSourceSalt
 
 		$root = realpath(dirname($fileName));
 		if ($root === false) {
-			return ['salt' => 'unreadable', 'shallow' => false, 'unreadable' => [dirname($fileName)]];
+			return [
+				'salt' => 'unreadable',
+				'shallow' => false,
+				'unreadable' => $this->relativeToProject([dirname($fileName)]),
+			];
 		}
 
 		if (!$this->isWalkable($root)) {
@@ -91,7 +95,11 @@ final class ExtensionSourceSalt
 			return $this->shallow($root);
 		}
 
-		return ['salt' => 'tree:' . sha1(implode("\n", $lines)), 'shallow' => false, 'unreadable' => $unreadable];
+		return [
+			'salt' => 'tree:' . sha1(implode("\n", $lines)),
+			'shallow' => false,
+			'unreadable' => $this->relativeToProject($unreadable),
+		];
 	}
 
 	private function isWalkable(string $root): bool
@@ -125,7 +133,32 @@ final class ExtensionSourceSalt
 			}
 		}
 
-		return ['salt' => 'shallow:' . sha1(implode("\n", $lines)), 'shallow' => true, 'unreadable' => $unreadable];
+		return [
+			'salt' => 'shallow:' . sha1(implode("\n", $lines)),
+			'shallow' => true,
+			'unreadable' => $this->relativeToProject($unreadable),
+		];
+	}
+
+	/**
+	 * @param list<string> $directories
+	 * @return list<string>
+	 */
+	private function relativeToProject(array $directories): array
+	{
+		$this->resolve();
+		if ($this->realProjectRoot === null) {
+			return $directories;
+		}
+
+		$relative = [];
+		foreach ($directories as $directory) {
+			$relative[] = $directory !== $this->realProjectRoot && self::isWithin($directory, $this->realProjectRoot)
+				? self::relative($this->realProjectRoot, $directory)
+				: $directory;
+		}
+
+		return $relative;
 	}
 
 	/**

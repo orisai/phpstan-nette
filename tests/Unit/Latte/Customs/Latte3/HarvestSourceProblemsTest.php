@@ -50,14 +50,14 @@ final class HarvestSourceProblemsTest extends BaseTestCase
 			self::markTestSkipped('Needs a filesystem that can deny a directory to this user.');
 		}
 
-		$harvester = $this->harvester(null);
+		$harvester = $this->harvester($this->root);
 		FileSystem::write($this->root . '/ext/Locked/Node.php', '<?php');
 		chmod($this->root . '/ext/Locked', 0000);
 
 		$harvested = $harvester->harvest();
 		self::assertContains('scratchHello', $harvested->getMacroNames());
 		self::assertSame(
-			['directory ' . $this->root . '/ext/Locked under extension ' . $this->extensionClass() . ' is unreadable'],
+			['directory ext/Locked under extension ' . $this->extensionClass() . ' is unreadable'],
 			$harvested->getSourceProblems(),
 		);
 
