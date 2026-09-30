@@ -111,9 +111,10 @@ final class ScratchProject
 			),
 			// The project's own root, as a real consumer runs it: Latte relativizes templates against the cwd.
 			$this->path(''),
-			// A dependency profile's COMPOSER=composer.<profile>.json must not reach the spawn: PHPStan
-			// reads it as the project's composer file, which changes what shipmonk reports.
-			['XDEBUG_MODE' => 'off', 'COMPOSER' => false],
+			// PHPStan runs from the library's vendor directory and so reads the library root as the Composer
+			// project, through the composer file COMPOSER names (a profile's composer.<profile>.json): without
+			// it, vendor classes are reflected from the default vendor/ instead of the profile's.
+			['XDEBUG_MODE' => 'off'],
 			null,
 			null,
 		);

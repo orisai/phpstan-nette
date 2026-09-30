@@ -49,6 +49,8 @@ final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 	// With every ignore entry overridden away the same corpus reports the line's internals, which
 	// pins that the entries are needed and that the spawn sees what a project sees. The entries
 	// every line shares (dead LatteTpl_* methods, LATTE_EDGE_FINGERPRINT) are left out of the pin.
+	// Latte 3 needs none: shipmonk counts its Blocks/Source/ContentType constants as overrides of the
+	// vendor Template's, and 3.1's $parentArgs is declared there.
 	public function testTheInstalledLinesInternalsAreReportedWithoutTheIgnoreEntries(): void
 	{
 		$findings = [];
@@ -61,31 +63,15 @@ final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 			}
 		}
 
-		switch (TestAdapter::factory()->family()->latteLine) {
-			case ShapeFamily::LATTE_2:
-				self::assertSame([
+		self::assertSame(
+			TestAdapter::factory()->family()->latteLine === ShapeFamily::LATTE_2
+				? [
 					'page.latte:4 property.private Access to private property $blocks of parent class Latte\Runtime\Template.',
 					'xml.latte:3 property.private Access to private property $blocks of parent class Latte\Runtime\Template.',
-				], $findings);
-
-				break;
-			case ShapeFamily::LATTE_30:
-				self::assertSame([
-					'page.latte:2 shipmonk.deadConstant Unused LatteTpl_src_page_latte_25b59905::Blocks',
-					'page.latte:2 shipmonk.deadConstant Unused LatteTpl_src_page_latte_25b59905::Source',
-					'xml.latte:3 shipmonk.deadConstant Unused LatteTpl_src_xml_latte_68cccc7e::ContentType',
-					'xml.latte:3 shipmonk.deadConstant Unused LatteTpl_src_xml_latte_68cccc7e::Source',
-				], $findings);
-
-				break;
-			default:
-				self::assertSame([
-					'child.latte:2 property.notFound Access to an undefined property LatteTpl_src_child_latte_77b4ac5f::$parentArgs.',
-					'child.latte:2 shipmonk.deadConstant Unused LatteTpl_src_child_latte_77b4ac5f::Blocks',
-					'page.latte:2 shipmonk.deadConstant Unused LatteTpl_src_page_latte_25b59905::Blocks',
-					'xml.latte:3 shipmonk.deadConstant Unused LatteTpl_src_xml_latte_68cccc7e::ContentType',
-				], $findings);
-		}
+				]
+				: [],
+			$findings,
+		);
 	}
 
 	/**
