@@ -333,8 +333,8 @@ parameters:
 - `firstPartyPaths` – classes and templates checked by the template-linking rules; code outside is used, never reported
 - `templateTypeRequired` – reports a linked template without `{templateType}` whose renderer uses the default template
   class
-- `includeIsolation` – analyses file includes with explicit arguments only, the way Latte 3 isolates them; on Latte 2
-  a local migration aid, not a gate; an installed Latte 3 does not switch it on
+- `includeIsolation` – analyses file includes with explicit arguments only; a local measurement aid, not a gate. Latte
+  2.11, 3.0 and 3.1 all pass the includer's parameters to a file `{include}`, so it is off by default on every line
 - `allowNarrowingOverride` – allows a `{varType}` to narrow the template's native declaration of the same variable
 - `reportWrongPhpDocTypeInVarType` – compares a mid-file `{varType}` also with the PHPDoc type of the assigned
   expression
@@ -974,9 +974,6 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - `orisaiNette.latte.templateMissing` is not reported for a renderer which links no template at all.
 - The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
-- With `includeIsolation` off, a file `{include}` or `{embed}` target is analysed with the includer's variables as
-  on Latte 2, also on Latte 3, which passes the explicit arguments only. A variable the target reads from the includer
-  is then not reported as undefined; nothing false is reported.
 - Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.
 - A presenter's `#[TemplateVariable]` property counts as present even when it is never initialized; at runtime such a
   variable is missing.

@@ -516,31 +516,30 @@ is not followed. `{include #block}` against a block absent from every reachable 
 are guards and never error. Include chains that cycle are cut with `orisaiNette.latte.includeCycle` at the
 closing edge.
 
-### Latte 3 forward compatibility (`orisaiNette.latte.includeIsolation`)
+### Include isolation (`orisaiNette.latte.includeIsolation`)
 
-The include row above is a **Latte 2** fact, and Latte 3 changes it. Latte 2.11.7 compiles a file
-include to `$this->createTemplate($file, %node.array? + $this->params, $mode)`: the target's scope
-is the includer's *entire* param set unioned with the site's explicit args (explicit wins on key
-collision), so an included file's environment is always a superset of its includer's. Latte 3
-**isolates** include/embed params — explicit args only. `{layout}`/`{extends}` inheritance is a
+Latte 2.11.7 compiles a file include to `$this->createTemplate($file, %node.array? + $this->params,
+$mode)`: the target's scope is the includer's *entire* param set unioned with the site's explicit
+args (explicit wins on key collision), so an included file's environment is always a superset of its
+includer's. The flag was designed on the assumption that Latte 3 isolates include params to the
+explicit args. It does not: a runtime probe (render param `a`, top-level `{var $b}`, then
+`{include file 'inc'}` and `{embed file 'emb'}{/embed}` reading both) gives the same result on
+2.11.7, 3.0.26 and 3.1.6 — the include sees `a` but not `b`, the embed sees neither — and
+`IncludeSemanticsParityTest` passes unchanged on the Latte 3 profiles. `{layout}`/`{extends}` inheritance is a
 different mechanism (`$this->params = $this->main()`, the child's finished scope flows into the
-layout) and is *not* what Latte 3 isolated; neither is a block dispatch, which keeps receiving the
+layout) and is separate from it; so is a block dispatch, which keeps receiving the
 surrounding scope.
 
 Both directions of that asymmetry are pinned as runtime probes against the real engine
-(`tests/Integration/Latte/Parity/Includes/IncludeSemanticsParityTest.php`). Those probes exist to
-**fail** on a Latte 3 upgrade: a red probe there is the signal that the compiled include semantics
-moved, not a nuisance.
-
-The installed Latte line does not decide this: with Latte 3 installed, the flag still defaults to `false`, so the
-file-form include/embed scope stays the Latte 2 union — an over-approximation of Latte 3's isolated scope which can
-miss findings, never invent them.
+(`tests/Integration/Latte/Parity/Includes/IncludeSemanticsParityTest.php`), which run on every
+Latte line. The flag therefore stays off by default on every line; it models a stricter scope than
+any supported Latte runs.
 
 `orisaiNette.latte.includeIsolation` (bool, default `false`) switches `EdgeScope::resolve()`'s file-form
 include/embed branch to the isolated shape — the one seam every consumer already routes through.
 Turning it on reports, through the existing `orisaiNette.latte.includeMissingVariable` machinery, every edge
 whose target **declares** a variable that today arrives only by inheritance — the declared-variable
-slice of the worklist a Latte 3 upgrade produces. The undeclared remainder is invisible to this
+slice of what fully isolated includes would miss. The undeclared remainder is invisible to this
 identifier and surfaces as `variable.undefined` inside the target instead (see the table below). It
 is a measurement tool, not a correctness gate — run it locally, read the findings, and do **not**
 baseline them:
@@ -558,16 +557,16 @@ parameters:
 
 The flag reports only through `orisaiNette.latte.includeMissingVariable`, which fires only when an
 include *target* declares a variable the edge fails to satisfy. A project whose include targets
-declare nothing therefore gets zero findings from it — and that is **not** evidence that the upgrade
-is free. The flag's worklist grows exactly as `{varType}`/`{parameters}` coverage on include targets
+declare nothing therefore gets zero findings from it — and that is **not** evidence that isolating
+includes is free. The flag's worklist grows exactly as `{varType}`/`{parameters}` coverage on include targets
 grows, so re-run it after each declaration wave.
 
-**The real Latte 3 worklist is visible today, under a different identifier.** With no declaration
+**The whole isolation worklist is visible today, under a different identifier.** With no declaration
 on a target, an inherited variable never crossed the edge in the model either, so it is already
 reported as `variable.undefined` (or `isset.variable`) *inside* the target. Intersecting the
 file-form include edges with those findings enumerates the whole migration surface: every include
 site whose target reads a variable that arrives only by inheritance needs an explicit argument, or
-its target a `{default}`, before the upgrade. `$presenter` is not exempt:
+its target a `{default}`, before includes are isolated. `$presenter` is not exempt:
 `Nette\Bridges\ApplicationLatte\TemplateFactory` sets it as a top-level template *parameter*
 (`'presenter' => $presenter`), not as a Latte provider, so it stops crossing an isolated include
 edge like any other variable — a partial reading it either takes `presenter: $presenter` at every
@@ -2044,7 +2043,7 @@ so that a change to the walk that silently shrinks or grows it is noticed.
 - **`(expand)`-splatted include arguments contribute `mixed`** to the target's context — they
   aren't destructured statically.
 - **`{embed file}` is modeled as an include-style union, but Latte 2 already isolates it** to the
-  tag's own explicit args (*Latte 3 forward compatibility* above) — an over-approximation of the
+  tag's own explicit args (*Include isolation* above) — an over-approximation of the
   embed target's scope that can only miss findings, never invent them. It under-reports only for a
   project that uses the tag.
 - **Dynamic include/extends targets are reported, not followed** (`orisaiNette.latte.dynamicInclude` /
@@ -2160,10 +2159,10 @@ And the implementation-ledgered additions:
   silently even though it reads members `D` need not have. The includer→included template-class
   contract is a backlog item; both halves of the include edge are checked today only at variable
   level.
-- **`orisaiNette.latte.includeIsolation` has no detection power over undeclared include targets.** The real
-  Latte 3 worklist is visible as `variable.undefined` inside the targets, not through the flag,
+- **`orisaiNette.latte.includeIsolation` has no detection power over undeclared include targets.** The whole
+  isolation worklist is visible as `variable.undefined` inside the targets, not through the flag,
   because `orisaiNette.latte.includeMissingVariable` fires only when a *target declares* the variable
-  (*Latte 3 forward compatibility* above has the derivation). Re-run the flag after each declaration
+  (*Include isolation* above has the derivation). Re-run the flag after each declaration
   wave; its findings grow exactly as `{varType}`/`{parameters}` coverage on include targets grows.
 - **`{embed}` is modelled as a union although Latte 2 already isolates it** — the pre-existing
   entry above; a real over-approximation for a project that uses the tag.
