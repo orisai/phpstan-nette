@@ -122,13 +122,13 @@ final class InvalidationControlsTest extends FormsInvalidationMatrixCase
 		$this->assertScenario('d1-parameter', [
 			[
 				'mutate' => function (): void {
-					$this->setParameter('orisaiNette.forms.enabled', false);
+					$this->setParameter('orisai.nette.forms.enabled', false);
 				},
 				'expect' => [$this->undefinedSetRequired()],
 			],
 			[
 				'mutate' => function (): void {
-					$this->setParameter('orisaiNette.forms.enabled', true);
+					$this->setParameter('orisai.nette.forms.enabled', true);
 				},
 				'expect' => $this->seedErrors(),
 			],

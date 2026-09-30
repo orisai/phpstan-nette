@@ -5,9 +5,10 @@ parameters:
 		- ../../../../../tests/autoload.php
 	scanFiles:
 		- ../../../../Doubles/Forms/functions.php
-	orisaiNette:
-		forms:
-			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
+	orisai:
+		nette:
+			forms:
+				defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
 	# nette/forms 3.2 deprecates the validator constants the corpus uses; not an inference finding.
 	ignoreErrors:
 		-

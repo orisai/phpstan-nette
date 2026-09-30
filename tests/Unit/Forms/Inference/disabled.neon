@@ -2,9 +2,10 @@ includes:
 	- phpstan-test.neon
 
 parameters:
-	orisaiNette:
-		forms:
-			enabled: false
+	orisai:
+		nette:
+			forms:
+				enabled: false
 	# With the extension off nothing of ours answers getValues(), so phpstan-nette's own extension is
 	# what a consumer falls back to.
 	netteFormContainerValuesDynamicReturnType: true

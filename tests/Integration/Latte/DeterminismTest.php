@@ -335,8 +335,8 @@ final class DeterminismTest extends BaseTestCase
 			[$srcDir],
 			$tmpDir,
 			[
-				'orisaiNette.latte.narrowing.storePath' => $storeDir,
-				'orisaiNette.latte.narrowing.enabled' => $narrowingEnabled,
+				'orisai.nette.latte.narrowing.storePath' => $storeDir,
+				'orisai.nette.latte.narrowing.enabled' => $narrowingEnabled,
 			],
 		);
 

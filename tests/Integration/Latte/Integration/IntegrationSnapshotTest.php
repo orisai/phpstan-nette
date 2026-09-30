@@ -64,7 +64,7 @@ final class IntegrationSnapshotTest extends BaseTestCase
 	private function analyseFixturesDirectory(string $projectRoot): string
 	{
 		// Fixtures/integration.neon turns narrowing on; LattePhpstanConfig::create() defaults
-		// orisaiNette.latte.narrowing.storePath to scratch, so this spawn never touches the default
+		// orisai.nette.latte.narrowing.storePath to scratch, so this spawn never touches the default
 		// phpstan-latte-store/.
 		$isolated = LattePhpstanConfig::create(
 			__DIR__ . '/Fixtures/integration.neon',

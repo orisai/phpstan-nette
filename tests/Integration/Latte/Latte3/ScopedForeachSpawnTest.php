@@ -47,13 +47,13 @@ final class ScopedForeachSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => [
+				'orisai' => ['nette' => ['latte' => [
 					'enabled' => true,
 					'engineLoader' => dirname(
 						__DIR__,
 						3,
 					) . '/Unit/Latte/Customs/Latte3/Fixtures/engine-loader-scoped-loops.php',
-				]],
+				]]],
 			],
 			['src'],
 		);

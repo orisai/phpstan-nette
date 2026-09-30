@@ -61,10 +61,10 @@ final class NoConfigurationTest extends BaseTestCase
 	{
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
-				'orisaiNette' => [
+				'orisai' => ['nette' => [
 					'forms' => ['enabled' => false],
 					'component' => ['enabled' => false],
-				],
+				]],
 			],
 			ConfigurationCorpus::PATHS,
 		);

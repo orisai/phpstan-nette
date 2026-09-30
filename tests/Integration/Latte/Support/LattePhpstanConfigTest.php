@@ -13,7 +13,7 @@ use function uniqid;
 use const PHP_BINARY;
 
 // Pins the structural isolation default LattePhpstanConfig::create() now provides: a caller that
-// never thinks about orisaiNette.latte.narrowing.storePath at all (no extraParameters entry) must still be
+// never thinks about orisai.nette.latte.narrowing.storePath at all (no extraParameters entry) must still be
 // impossible to point at the default phpstan-latte-store/ store - the exact
 // pollution bug 4 call sites had to be individually patched for before this default existed.
 /**
@@ -37,7 +37,7 @@ final class LattePhpstanConfigTest extends BaseTestCase
 			FileSystem::write($srcDir . '/target.latte', "{\$x}\n");
 			FileSystem::write($srcDir . '/includer.latte', "{include 'target.latte', x: 1}\n");
 
-			// No orisaiNette.latte.narrowing.storePath entry at all - the call under test.
+			// No orisai.nette.latte.narrowing.storePath entry at all - the call under test.
 			$isolated = LattePhpstanConfig::create(
 				self::REAL_CONFIG_PATH,
 				[$srcDir],
@@ -79,7 +79,7 @@ final class LattePhpstanConfigTest extends BaseTestCase
 			self::assertSame(
 				$realStoreSnapshotBefore,
 				$this->snapshotStore($realStoreDir),
-				'a spawn with no explicit orisaiNette.latte.narrowing.storePath must never write into the real '
+				'a spawn with no explicit orisai.nette.latte.narrowing.storePath must never write into the real '
 				. 'committed store',
 			);
 		} finally {

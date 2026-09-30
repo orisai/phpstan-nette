@@ -38,10 +38,10 @@ final class LattePhpstanConfig
 	 * tmpDir.
 	 * @param array<string, bool|int|string|list<string>> $extraParameters additional `parameters:`
 	 * entries, keyed by the DOTTED path a NEON `%…%` reference would use (e.g.
-	 * `orisaiNette.latte.discovery.enabled`) - every dotted key sharing a prefix is grouped under one nested
+	 * `orisai.nette.latte.discovery.enabled`) - every dotted key sharing a prefix is grouped under one nested
 	 * block (later entries win on key collision, matching NEON's own semantics) - so callers must not
 	 * repeat a base key here. Values are real PHP values, encoded by Neon::encode(): pass a bool for a
-	 * flag, not the string 'true'. orisaiNette.latte.narrowing.storePath always defaults to a scratch path under
+	 * flag, not the string 'true'. orisai.nette.latte.narrowing.storePath always defaults to a scratch path under
 	 * $tmpDir; pass it explicitly here only to point a spawn at a real/shared store on purpose.
 	 * @param list<string> $extraBootstrapFiles files appended to the included config's own
 	 * bootstrapFiles - a scratch corpus whose classes must be class_exists()-visible (Latte's
@@ -63,7 +63,7 @@ final class LattePhpstanConfig
 		$configPath = $tmpDir . '/wrapper.neon';
 		// Defaulted here (merged BEFORE $extraParameters, so an explicit override still wins on
 		// NEON's own later-key-wins semantics) rather than left unset: an unset
-		// orisaiNette.latte.narrowing.storePath silently inherits config/latte.neon's
+		// orisai.nette.latte.narrowing.storePath silently inherits config/latte.neon's
 		// %currentWorkingDirectory%-rooted default, so any spawn a future test author forgets to think
 		// about the store for would read/write the REAL committed store instead of scratch - the
 		// exact pollution bug a prior fix had to patch call-site by call-site. Safe by construction
@@ -71,9 +71,9 @@ final class LattePhpstanConfig
 		// the real %tmpDir%.
 		$mergedParameters = array_merge(
 			[
-				'orisaiNette.latte.enabled' => true,
-				'orisaiNette.latte.narrowing.storePath' => $tmpDir . '/sitescope-unused',
-				'orisaiNette.latte.discovery.storePath' => $tmpDir . '/discovery-unused',
+				'orisai.nette.latte.enabled' => true,
+				'orisai.nette.latte.narrowing.storePath' => $tmpDir . '/sitescope-unused',
+				'orisai.nette.latte.discovery.storePath' => $tmpDir . '/discovery-unused',
 			],
 			$extraParameters,
 		);
@@ -103,7 +103,7 @@ final class LattePhpstanConfig
 
 	/**
 	 * Folds a flat `dotted.path => value` map into nested `parameters:` entries - every key sharing a
-	 * dotted prefix (e.g. `orisaiNette.latte.discovery.enabled`, `orisaiNette.latte.discovery.storePath`)
+	 * dotted prefix (e.g. `orisai.nette.latte.discovery.enabled`, `orisai.nette.latte.discovery.storePath`)
 	 * lands in one nested block, mirroring the extension's own namespaced parameter schema. A key with
 	 * no dot stays a plain top-level entry.
 	 *

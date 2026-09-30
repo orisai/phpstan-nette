@@ -39,7 +39,7 @@ services:
 	-
 		class: OriPhpstan\Nette\LatteForms\LatteFormsRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 			collector: @latteFormsMacroCollector
 			pairing: @latteFormsPairing
 			suitability: @latteFormsMacroSuitability
@@ -52,7 +52,7 @@ services:
 	-
 		class: OriPhpstan\Nette\LatteForms\FormMacroTypeResolver
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 			collector: @latteFormsMacroCollector
 			pairing: @latteFormsPairing
 			universe: @latteUniverse

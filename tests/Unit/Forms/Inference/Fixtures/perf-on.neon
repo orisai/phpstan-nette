@@ -2,6 +2,7 @@ includes:
 	- integration-snapshot.neon
 
 parameters:
-	orisaiNette:
-		forms:
-			enabled: true
+	orisai:
+		nette:
+			forms:
+				enabled: true

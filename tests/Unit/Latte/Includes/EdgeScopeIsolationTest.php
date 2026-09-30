@@ -23,7 +23,7 @@ use function getmypid;
 use function sys_get_temp_dir;
 use function uniqid;
 
-// orisaiNette.latte.includeIsolation switches EdgeScope::resolve() from the union every Latte line runs
+// orisai.nette.latte.includeIsolation switches EdgeScope::resolve() from the union every Latte line runs
 // (includer's scope + explicit args) to explicit args only. The probes fix what the flag changes
 // (file-form include/embed) and what it must not (block dispatch, layout/extends, import, sandbox,
 // namedKeys/open).

@@ -176,7 +176,7 @@ final class CorpusManifestTest extends BaseTestCase
 		$result = $this->project->analyse(
 			[
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => ['enabled' => true]],
+				'orisai' => ['nette' => ['latte' => ['enabled' => true]]],
 			],
 			['templates'],
 			[],

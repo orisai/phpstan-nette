@@ -54,7 +54,9 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 	{
 		$root = dirname(__DIR__, 3);
 		$extension = Neon::decode(self::read($root . '/extension.neon'));
-		$schema = $extension['parametersSchema']['orisaiNette'];
+		$orisai = $extension['parametersSchema']['orisai'];
+		self::assertInstanceOf(Entity::class, $orisai);
+		$schema = $orisai->attributes[0]['nette'];
 		self::assertInstanceOf(Entity::class, $schema);
 
 		$schemaPaths = self::schemaPaths($schema, '');
@@ -65,13 +67,13 @@ final class ConfigReferenceCoverageTest extends BaseTestCase
 		$inNeon = [];
 		foreach (self::neonBlocks($section) as $block) {
 			$decoded = Neon::decode($block);
-			$orisaiNette = $decoded['parameters']['orisaiNette'] ?? $decoded['orisaiNette'] ?? null;
-			if (is_array($orisaiNette)) {
-				$inNeon = array_merge($inNeon, self::documentedPaths($orisaiNette, '', $schemaPaths));
+			$nette = $decoded['parameters']['orisai']['nette'] ?? $decoded['orisai']['nette'] ?? null;
+			if (is_array($nette)) {
+				$inNeon = array_merge($inNeon, self::documentedPaths($nette, '', $schemaPaths));
 			}
 		}
 
-		preg_match_all('~orisaiNette\.([A-Za-z][A-Za-z.]*[A-Za-z])~', $section, $mentions);
+		preg_match_all('~orisai\.nette\.([A-Za-z][A-Za-z.]*[A-Za-z])~', $section, $mentions);
 
 		$missing = array_values(array_diff($schemaLeaves, $inNeon));
 		$unknown = array_values(array_unique(array_diff(

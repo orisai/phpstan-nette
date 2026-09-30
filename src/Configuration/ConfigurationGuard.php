@@ -114,11 +114,11 @@ final class ConfigurationGuard
 
 		$latte = $this->config['latte'];
 		if ($latte['enabled'] && !in_array('latte', $this->fileExtensions, true)) {
-			throw new InvalidConfiguration('orisaiNette.latte.enabled requires "latte" in fileExtensions.');
+			throw new InvalidConfiguration('orisai.nette.latte.enabled requires "latte" in fileExtensions.');
 		}
 
 		if ($latte['narrowing']['enabled'] && !$latte['enabled']) {
-			throw new InvalidConfiguration('orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.');
+			throw new InvalidConfiguration('orisai.nette.latte.narrowing.enabled requires orisai.nette.latte.enabled.');
 		}
 
 		if ($latte['enabled']) {
@@ -132,14 +132,14 @@ final class ConfigurationGuard
 		];
 		foreach ($loaders as $key => $path) {
 			if ($path !== null && (!is_file($path) || !is_readable($path))) {
-				throw new InvalidConfiguration(sprintf('orisaiNette.%s "%s" is not a readable file.', $key, $path));
+				throw new InvalidConfiguration(sprintf('orisai.nette.%s "%s" is not a readable file.', $key, $path));
 			}
 		}
 
 		foreach ($this->config['forms']['catalogs'] as $catalog) {
 			if (!$this->reflectionProvider->hasClass($catalog)) {
 				throw new InvalidConfiguration(
-					sprintf('orisaiNette.forms.catalogs: class "%s" does not exist.', $catalog),
+					sprintf('orisai.nette.forms.catalogs: class "%s" does not exist.', $catalog),
 				);
 			}
 		}
@@ -151,7 +151,7 @@ final class ConfigurationGuard
 			$name = $options['formula'] ?? null;
 			if (!in_array($name, self::FORMULAS, true)) {
 				throw new InvalidConfiguration(sprintf(
-					'orisaiNette.latte.discovery.formulas: unknown formula "%s" for %s.',
+					'orisai.nette.latte.discovery.formulas: unknown formula "%s" for %s.',
 					(string) $name,
 					$class,
 				));
@@ -160,7 +160,7 @@ final class ConfigurationGuard
 			foreach (array_keys($options) as $option) {
 				if (!in_array($option, self::FORMULA_OPTIONS, true)) {
 					throw new InvalidConfiguration(sprintf(
-						'orisaiNette.latte.discovery.formulas: unknown option "%s" for %s.',
+						'orisai.nette.latte.discovery.formulas: unknown option "%s" for %s.',
 						$option,
 						$class,
 					));
@@ -170,7 +170,7 @@ final class ConfigurationGuard
 			$required = self::REQUIRED_FORMULA_OPTIONS[$name] ?? null;
 			if ($required !== null && !isset($options[$required])) {
 				throw new InvalidConfiguration(sprintf(
-					'orisaiNette.latte.discovery.formulas: formula "%s" for %s requires option "%s".',
+					'orisai.nette.latte.discovery.formulas: formula "%s" for %s requires option "%s".',
 					$name,
 					$class,
 					$required,
@@ -188,7 +188,7 @@ final class ConfigurationGuard
 		$latte = $this->installedVersions->getVersion('latte/latte') ?? Engine::VERSION;
 		if (!ShapeFamily::supports($latte)) {
 			throw new InvalidConfiguration(sprintf(
-				'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed %s.',
+				'orisai.nette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed %s.',
 				$this->prettyVersion('latte/latte') ?? $latte,
 			));
 		}
@@ -261,7 +261,7 @@ final class ConfigurationGuard
 				$name = strtolower($method->getName());
 				if (isset($declaredBy[$name]) && $declaredBy[$name] !== $catalog->getName()) {
 					throw new InvalidConfiguration(sprintf(
-						'orisaiNette.forms.catalogs: method "%s" is declared by both %s and %s.',
+						'orisai.nette.forms.catalogs: method "%s" is declared by both %s and %s.',
 						$method->getName(),
 						$declaredBy[$name],
 						$catalog->getName(),

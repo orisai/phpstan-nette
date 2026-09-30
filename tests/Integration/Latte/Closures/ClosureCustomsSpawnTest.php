@@ -36,10 +36,10 @@ final class ClosureCustomsSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => [
+				'orisai' => ['nette' => ['latte' => [
 					'enabled' => true,
 					'engineLoader' => __DIR__ . '/Fixtures/engine-loader.php',
-				]],
+				]]],
 			],
 			['src'],
 		);

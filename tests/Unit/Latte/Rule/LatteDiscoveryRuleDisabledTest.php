@@ -84,7 +84,7 @@ final class LatteDiscoveryRuleDisabledTest extends RuleTestCase
 		return [__DIR__ . '/phpstan-test.neon'];
 	}
 
-	// Dormancy pin (the SP2 Task-4 lesson): orisaiNette.latte.enabled off means no findings AND no
+	// Dormancy pin (the SP2 Task-4 lesson): orisai.nette.latte.enabled off means no findings AND no
 	// walk/cache cost - both fixtures that fire in LatteDiscoveryRuleTest stay silent, and the cache
 	// directory is never even created (the short-circuit precedes remember()).
 	public function testFlagOffIsFullyDormantOnAnOpaqueFixture(): void

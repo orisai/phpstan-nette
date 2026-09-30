@@ -270,7 +270,7 @@ final class LatteDebugDumpRule implements Rule
 				$lines[] = 'harvest problem: ' . $problem;
 			}
 		} else {
-			$lines[] = 'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)';
+			$lines[] = 'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)';
 		}
 
 		$templateTypeClass = $this->templateTypeClassFor($scope->getFile());

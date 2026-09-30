@@ -63,7 +63,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 	public function testLatteWithoutDiscovery(): void
 	{
 		$parameters = $this->quickStartParameters();
-		$parameters['orisaiNette']['latte']['discovery'] = ['enabled' => false];
+		$parameters['orisai']['nette']['latte']['discovery'] = ['enabled' => false];
 		$result = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
@@ -78,7 +78,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 	public function testDiscoveryOptOutSilencesOpaqueDiscovery(): void
 	{
 		$parameters = $this->quickStartParameters();
-		$parameters['orisaiNette']['latte']['templateFactoryContainerLoader'] = $this->project->path(
+		$parameters['orisai']['nette']['latte']['templateFactoryContainerLoader'] = $this->project->path(
 			'container-loader.php',
 		);
 
@@ -92,7 +92,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 			ConfigurationCorpus::findings($this->project, $enabled['messages'], 'orisaiNette.latte.'),
 		);
 
-		$parameters['orisaiNette']['latte']['discovery'] = ['enabled' => false];
+		$parameters['orisai']['nette']['latte']['discovery'] = ['enabled' => false];
 		$disabled = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
 		self::assertSame([], $disabled['errors'], $disabled['stderr']);
 		self::assertSame(
@@ -137,7 +137,7 @@ final class MinimalConfigurationTest extends BaseTestCase
 	public function testLatteFormsWithoutForms(): void
 	{
 		$parameters = $this->quickStartParameters();
-		$parameters['orisaiNette']['forms'] = ['enabled' => false];
+		$parameters['orisai']['nette']['forms'] = ['enabled' => false];
 		$result = $this->project->analyse($parameters, ConfigurationCorpus::PATHS);
 		self::assertSame([], $result['errors'], $result['stderr']);
 
@@ -154,10 +154,10 @@ final class MinimalConfigurationTest extends BaseTestCase
 	{
 		return ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 			'fileExtensions' => ['php', 'latte'],
-			'orisaiNette' => [
+			'orisai' => ['nette' => [
 				'latte' => ['enabled' => true],
 				'dic' => ['containerLoader' => $this->project->path('container-loader.php')],
-			],
+			]],
 		];
 	}
 

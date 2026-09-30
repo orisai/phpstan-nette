@@ -1,7 +1,8 @@
 parameters:
-	orisaiNette:
-		component:
-			enabled: true
+	orisai:
+		nette:
+			component:
+				enabled: true
 
 services:
 	# Tags expressions that are compared to null with === or !==, so rules can fold
@@ -32,23 +33,23 @@ services:
 	-
 		class: OriPhpstan\Nette\Component\Attachment\ParentAccessorReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.component.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.component.enabled%
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Component\UnattachedParentAccessRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.component.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.component.enabled%
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Component\MagicMethodReturnTypeRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.component.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.component.enabled%
 		tags:
 			- phpstan.rules.rule

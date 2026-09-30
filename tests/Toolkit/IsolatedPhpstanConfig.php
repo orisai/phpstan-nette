@@ -40,7 +40,7 @@ final class IsolatedPhpstanConfig
 	 * scenario) can share the same resultCachePath, which defaults under tmpDir.
 	 * @param array<string, bool|int|string|list<string>> $extraParameters additional `parameters:`
 	 * entries, keyed by the DOTTED path a NEON `%…%` reference would use (e.g.
-	 * `orisaiNette.forms.enabled`) so a scenario can vary a namespaced NEON parameter
+	 * `orisai.nette.forms.enabled`) so a scenario can vary a namespaced NEON parameter
 	 * between two spawns of the same corpus - every dotted key sharing a prefix is grouped under one
 	 * nested block. Values are real PHP values, encoded by Neon::encode(): pass a bool for a flag, not
 	 * the string 'true'.
@@ -78,7 +78,7 @@ final class IsolatedPhpstanConfig
 
 	/**
 	 * Folds a flat `dotted.path => value` map into nested `parameters:` entries - every key sharing a
-	 * dotted prefix (e.g. `orisaiNette.forms.enabled`, `orisaiNette.forms.defaultContainerClass`) lands
+	 * dotted prefix (e.g. `orisai.nette.forms.enabled`, `orisai.nette.forms.defaultContainerClass`) lands
 	 * in one nested block, mirroring the extension's own namespaced parameter schema. A key with no
 	 * dot stays a plain top-level entry.
 	 *

@@ -9,9 +9,10 @@ parameters:
 	netteFormContainerValuesDynamicReturnType: false
 	bootstrapFiles:
 		- ../../../../tests/autoload.php
-	orisaiNette:
-		forms:
-			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
+	orisai:
+		nette:
+			forms:
+				defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
 
 includes:
 	- ../../../../%env.COMPOSER_VENDOR_DIR%/phpstan/phpstan-nette/extension.neon

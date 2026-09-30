@@ -18,7 +18,7 @@ use function substr_compare;
 // because collected data is the only channel from an analysis worker to it.
 //
 // An entry is emitted for EVERY analysed template, including one with no {templateType} at all -
-// orisaiNette.latte.templateTypeRequired's whole subject is the absence.
+// orisai.nette.latte.templateTypeRequired's whole subject is the absence.
 //
 // Deliberately re-reads and re-scans the source instead of reusing LatteRoutingParser's memo:
 // reaching that memo means reaching the defaultAnalysisParser! service (the DI cycle documented on

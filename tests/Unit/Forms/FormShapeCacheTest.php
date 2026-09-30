@@ -233,7 +233,7 @@ final class FormShapeCacheTest extends BaseTestCase
 		self::assertCount(
 			2,
 			$dirs,
-			'a different orisaiNette.forms.defaultContainerClass must rotate the code-version directory',
+			'a different orisai.nette.forms.defaultContainerClass must rotate the code-version directory',
 		);
 	}
 

@@ -383,7 +383,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			self::assertCount(1, $errors);
 			self::assertSame('orisaiNette.latte.debugDump', $errors[0]->getIdentifier());
 			self::assertSame(
-				'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)'
+				'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)'
 				. "\ntemplate: (none)\ntemplate filters: (none)\ntemplate functions: (none)",
 				$errors[0]->getMessage(),
 			);
@@ -410,7 +410,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 
 			self::assertCount(1, $errors);
 			self::assertSame(
-				'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)'
+				'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)'
 				. "\ntemplate: (none)\ntemplate filters: (none)\ntemplate functions: (none)",
 				$errors[0]->getMessage(),
 			);
@@ -536,7 +536,7 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 
 			self::assertCount(1, $errors);
 			self::assertSame(
-				'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)'
+				'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)'
 				. "\ntemplate: $fqcn"
 				. "\ntemplate filters: myTplFilter ($fqcn)"
 				. "\ntemplate functions: myTplFunction ($fqcn)",

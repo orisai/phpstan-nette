@@ -48,7 +48,7 @@ final class LatteVersionSelectionTest extends BaseTestCase
 		$output = implode("\n", $result['errors']) . "\n" . $result['stderr'];
 		self::assertNotFalse(strpos(
 			$output,
-			'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed dev-master.',
+			'orisai.nette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed dev-master.',
 		), $output);
 		self::assertFalse(strpos($output, 'Unsupported latte/latte version'), $output);
 	}
@@ -77,11 +77,11 @@ final class LatteVersionSelectionTest extends BaseTestCase
 		return $this->project->analyse(
 			[
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => ['enabled' => $latteEnabled]],
+				'orisai' => ['nette' => ['latte' => ['enabled' => $latteEnabled]]],
 			],
 			['src'],
 			[
-				'orisaiNette.installedVersions' => [
+				'orisai.nette.installedVersions' => [
 					'factory' => new Entity(
 						ProjectInstalledVersions::class . '::fromRawData',
 						[[['root' => [], 'versions' => $installed]]],

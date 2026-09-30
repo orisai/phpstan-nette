@@ -3,9 +3,10 @@ parameters:
 	bootstrapFiles:
 		- ../../../../tests/autoload.php
 	fileExtensions: [php, latte]
-	orisaiNette:
-		latte:
-			enabled: true
+	orisai:
+		nette:
+			latte:
+				enabled: true
 
 includes:
 	- ../../../../extension.neon

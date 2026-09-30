@@ -34,12 +34,12 @@ final class ConfigurationGuardVersionPairsTest extends BaseTestCase
 	{
 		yield 'latte branch without a number' => [
 			['latte/latte' => 'dev-master', 'nette/forms' => '3.3.0.0', 'nette/application' => '3.3.0.0'],
-			'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed dev-master.',
+			'orisai.nette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed dev-master.',
 		];
 
 		yield 'latte 3.2' => [
 			['latte/latte' => '3.2.0.0', 'nette/forms' => '3.3.0.0', 'nette/application' => '3.3.0.0'],
-			'orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed v3.2.0.',
+			'orisai.nette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed v3.2.0.',
 		];
 
 		yield 'latte 3.0 with forms before FormsExtension' => [

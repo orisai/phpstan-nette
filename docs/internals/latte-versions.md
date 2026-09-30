@@ -136,9 +136,9 @@ Selection rules:
   `ProjectInstalledVersions` (the project's own install data, never the Composer view PHPStan's phar merges in).
 - Nothing version-dependent runs while the DI container is built. `LatteVersionAdapterAccessor::get()` resolves the
   adapter on the first `.latte` parse, and `CustomsHarvester` asks the factory for the reader on its first harvest. An
-  unsupported install is therefore inert with `orisaiNette.latte.enabled` off, and with it on `ConfigurationGuard`
+  unsupported install is therefore inert with `orisai.nette.latte.enabled` off, and with it on `ConfigurationGuard`
   rejects it with its own message before any parse. `LatteVersionSelectionTest` pins this with spawns whose
-  `orisaiNette.installedVersions` service is overridden through `ProjectInstalledVersions::fromRawData()`.
+  `orisai.nette.installedVersions` service is overridden through `ProjectInstalledVersions::fromRawData()`.
 - The Latte 3 classes (`src/Latte/Version/Latte3/`) are never referenced by a type: the factory constructs them by
   reflection from the class-name constants `LATTE3_ADAPTER_CLASS` and `LATTE3_ENGINE_READER_CLASS`
   (`Latte3Adapter::create(ShapeFamily, AdapterCollaborators)`, `Latte3EngineReader::create()`). The primary PHPStan
@@ -290,7 +290,7 @@ per template with a committed manifest, so any change in what compiles is a visi
 
 `make smoke-dmonitor [APP=<dir>]` (local only) analyses a real Latte 3 application — by default
 `../../../apps/fr/dmonitor` — with that application's own vendor and PHPStan, the engine from its own container, and
-`orisaiNette.installedVersions` overridden with its install data; it fails on any internal error.
+`orisai.nette.installedVersions` overridden with its install data; it fails on any internal error.
 
 ## Adding a family
 

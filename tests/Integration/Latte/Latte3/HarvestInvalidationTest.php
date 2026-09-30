@@ -100,7 +100,7 @@ final class HarvestInvalidationTest extends BaseTestCase
 				self::REAL_CONFIG_PATH,
 				$paths,
 				$tmpDir,
-				['orisaiNette.latte.engineLoader' => dirname($paths[0]) . '/engine-loader.php'],
+				['orisai.nette.latte.engineLoader' => dirname($paths[0]) . '/engine-loader.php'],
 			)->getConfigPath(),
 		);
 

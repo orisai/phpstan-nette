@@ -80,7 +80,7 @@ final class IncludeSemanticsParityTest extends BaseTestCase
 				['inherited' => 'INHERITED'],
 			),
 			'an embedded file receives its explicit args only, like {sandbox}; the analysis'
-				. ' over-approximates it as an include-like union unless orisaiNette.latte.includeIsolation'
+				. ' over-approximates it as an include-like union unless orisai.nette.latte.includeIsolation'
 				. ' is on.',
 		);
 	}

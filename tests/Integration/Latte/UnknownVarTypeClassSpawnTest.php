@@ -33,7 +33,7 @@ final class UnknownVarTypeClassSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => ['enabled' => true]],
+				'orisai' => ['nette' => ['latte' => ['enabled' => true]]],
 			],
 			['src'],
 		);
@@ -66,7 +66,7 @@ final class UnknownVarTypeClassSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => ['enabled' => true]],
+				'orisai' => ['nette' => ['latte' => ['enabled' => true]]],
 			],
 			['src'],
 		);

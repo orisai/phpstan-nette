@@ -174,7 +174,7 @@ final class AnalysisPipeline
 	// scanForms() after it - both populate this same list, reset on every process()/dump() call
 	// exactly like getDiagnostics() above. Both passes are skipped entirely when
 	// $providerScanEnabled is false (see processParsedStatements()) - callers that never wire a
-	// ProviderAvailabilityChecker (or run with orisaiNette.latte.discovery.enabled off) get an empty list
+	// ProviderAvailabilityChecker (or run with orisai.nette.latte.discovery.enabled off) get an empty list
 	// here, never a paid-for-nothing pair of NodeFinder walks.
 
 	/**
@@ -187,7 +187,7 @@ final class AnalysisPipeline
 
 	// Lazy: AnalysisPipeline is a constructor-injected, eagerly-instantiated dependency of
 	// LatteRoutingParser (defaultAnalysisParser!), constructed on every run regardless of
-	// orisaiNette.latte.enabled - harvesting here, on first actual use, keeps a disabled/unused pipeline
+	// orisai.nette.latte.enabled - harvesting here, on first actual use, keeps a disabled/unused pipeline
 	// from ever paying the harvester's container-load/engine-create cost.
 	private function filterTable(): FilterTable
 	{
@@ -254,7 +254,7 @@ final class AnalysisPipeline
 		// ifCurrent are read here too rather than off two different passes for no reason - see
 		// ProviderMacroScanner's own class doc for the {form}/{control} ambiguities this ordering avoids.
 		// Opt-in gate, same precedent as $narrowingEnabled below: no consumer ever reads a site unless
-		// a ProviderAvailabilityChecker is wired AND orisaiNette.latte.discovery.enabled is on, so with the flag
+		// a ProviderAvailabilityChecker is wired AND orisai.nette.latte.discovery.enabled is on, so with the flag
 		// off this (and the scanForms() pass below) never runs its NodeFinder walk at all.
 		$providerMacroSites = $this->providerScanEnabled ? $this->providerMacroScanner->scanRaw($stmts) : [];
 

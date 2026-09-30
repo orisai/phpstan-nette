@@ -642,12 +642,12 @@ final class ContextResolverTest extends BaseTestCase
 					'parameters' => [
 						'tmpDir' => $scratchDir,
 						'fileExtensions' => ['php', 'latte'],
-						'orisaiNette' => [
+						'orisai' => ['nette' => [
 							'latte' => [
 								'enabled' => true,
 								'narrowing' => ['storePath' => $storeDir],
 							],
-						],
+						]],
 						'paths!' => [dirname(__DIR__, 3) . '/Unit/Latte/Includes/Fixtures/NarrowingConsume'],
 					],
 				],

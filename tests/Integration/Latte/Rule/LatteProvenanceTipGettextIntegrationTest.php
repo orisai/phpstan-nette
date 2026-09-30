@@ -64,7 +64,7 @@ final class LatteProvenanceTipGettextIntegrationTest extends RuleTestCase
 	}
 
 	// Written once per process into a fixed scratch path (not per-call __DIR__-relative neon,
-	// which would need orisaiNette.latte.engineLoader resolved against an unpredictable CWD under RuleTestCase
+	// which would need orisai.nette.latte.engineLoader resolved against an unpredictable CWD under RuleTestCase
 	// - see config/latte.neon's currentWorkingDirectory-rooted defaults) - every path embedded is absolute,
 	// so the generated file's own location never matters.
 	private static function generatedConfigPath(): string
@@ -78,12 +78,12 @@ final class LatteProvenanceTipGettextIntegrationTest extends RuleTestCase
 						'customRulesetUsed' => true,
 						'bootstrapFiles' => [__DIR__ . '/../../../../tests/autoload.php'],
 						'fileExtensions' => ['php', 'latte'],
-						'orisaiNette' => [
+						'orisai' => ['nette' => [
 							'latte' => [
 								'enabled' => true,
 								'engineLoader' => __DIR__ . '/../../../Unit/Latte/Customs/Fixtures/engine-loader-gettext.php',
 							],
-						],
+						]],
 					],
 					'includes' => [__DIR__ . '/../../../../extension.neon'],
 				],

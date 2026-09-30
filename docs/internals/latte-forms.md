@@ -32,21 +32,22 @@ below before you draw any conclusion from a clean run.
 ## Enabling it
 
 The bridge has no flag of its own. `ConfigurationGuard::isBridgeEnabled()` answers
-`orisaiNette.forms.enabled && orisaiNette.latte.enabled`, and both `LatteFormsRule` and
+`orisai.nette.forms.enabled && orisai.nette.latte.enabled`, and both `LatteFormsRule` and
 `FormMacroTypeResolver` additionally require `isLatteDiscoveryEnabled()`:
 
 | Parameter | Library default | Why the bridge needs it |
 |---|---|---|
-| `orisaiNette.forms.enabled` | `true` | the shapes the join reads come from the Forms index |
-| `orisaiNette.latte.enabled` | `false` | without it no `.latte` file is analysed, so there is no reportable template set |
-| `orisaiNette.latte.discovery.enabled` | `true` | the store holds the template → renderer links the join starts from |
+| `orisai.nette.forms.enabled` | `true` | the shapes the join reads come from the Forms index |
+| `orisai.nette.latte.enabled` | `false` | without it no `.latte` file is analysed, so there is no reportable template set |
+| `orisai.nette.latte.discovery.enabled` | `true` | the store holds the template → renderer links the join starts from |
 
 ```neon
 parameters:
 	fileExtensions: [php, latte]
-	orisaiNette:
-		latte:
-			enabled: true
+	orisai:
+		nette:
+			latte:
+				enabled: true
 ```
 
 Both services are registered either way — the aggregate-rule discipline the Latte extension keeps —
@@ -121,7 +122,7 @@ If you need to know which one you are looking at, the answer has to come from
 closed?), not from the absence of an error.
 
 **3. A wrong discovery-store entry costs detection, silently.** The derived store
-(`orisaiNette.latte.discovery.storePath`) links templates to renderer classes. An entry naming a class that
+(`orisai.nette.latte.discovery.storePath`) links templates to renderer classes. An entry naming a class that
 no longer exists, or a link that should never have been written, makes that class unresolvable —
 which by rule 1 silences the whole site rather than mis-reporting it. That is the right direction to
 fail in, but it means a bad link shows up as *lost checking*, never as a wrong finding, and never as

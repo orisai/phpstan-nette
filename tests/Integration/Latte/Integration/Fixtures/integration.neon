@@ -4,11 +4,12 @@ parameters:
 	# being live - the opt-in flag's own library default is false, so this shared fixture opts back
 	# in to keep every test in this directory byte-for-byte unaffected. Flag-off behaviour has its
 	# own dedicated test/config (NarrowingFlagTest) that overrides
-	# orisaiNette.latte.narrowing.enabled explicitly instead of relying on this file.
-	orisaiNette:
-		latte:
-			narrowing:
-				enabled: true
+	# orisai.nette.latte.narrowing.enabled explicitly instead of relying on this file.
+	orisai:
+		nette:
+			latte:
+				narrowing:
+					enabled: true
 	bootstrapFiles:
 		- ../../../../../tests/autoload.php
 	# Support/ classes (e.g. TypedFixtureTemplate, a {templateType} target) exist to be reflected,

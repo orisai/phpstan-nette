@@ -20,7 +20,7 @@ services:
 	-
 		class: OriPhpstan\Nette\Dic\Type\HasServiceTypeSpecifyingExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 			registry: @dicNarrowingRegistry
 		tags:
 			- phpstan.typeSpecifier.methodTypeSpecifyingExtension

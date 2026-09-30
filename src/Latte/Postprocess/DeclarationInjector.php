@@ -660,7 +660,7 @@ final class DeclarationInjector
 		// (safe dictionary misses), factsFor() falls through to a raw sha1_file() on ANY absolute
 		// path it's given, so a $relativePath this instance's own universe never indexed must
 		// degrade to no body-varType facts rather than reach that fallback - see wiring.neon's own
-		// orisaiNette.latte.narrowing.storePath comment for why a RuleTestCase-built container's projectRoot can
+		// orisai.nette.latte.narrowing.storePath comment for why a RuleTestCase-built container's projectRoot can
 		// disagree with $relativePath's real coordinate system this way. This method (unlike
 		// EdgeAnchorInjector's own forBlock() call, gated by $narrowingEnabled) runs unconditionally,
 		// which is why only this call site needed the guard.

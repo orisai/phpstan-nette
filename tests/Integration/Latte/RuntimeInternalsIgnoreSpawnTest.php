@@ -96,7 +96,7 @@ final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + $parameters + [
 				'fileExtensions' => ['php', 'latte'],
 				'reportUnmatchedIgnoredErrors' => true,
-				'orisaiNette' => ['latte' => ['enabled' => true]],
+				'orisai' => ['nette' => ['latte' => ['enabled' => true]]],
 			],
 			['src'],
 		);

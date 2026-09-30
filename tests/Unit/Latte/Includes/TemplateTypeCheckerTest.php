@@ -203,7 +203,7 @@ final class TemplateTypeCheckerTest extends PHPStanTestCase
 	/**
 	 * @group latte2
 	 */
-	// === orisaiNette.latte.templateTypeRequired ===
+	// === orisai.nette.latte.templateTypeRequired ===
 	public function testFloorRendererWithoutTemplateTypeIsDormantWhileTheFlagIsOff(): void
 	{
 		$this->assertPairingDiagnostics("body\n", [PairingDefaultsSilentPresenter::class], []);

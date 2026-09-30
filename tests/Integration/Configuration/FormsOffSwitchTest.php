@@ -74,13 +74,13 @@ final class FormsOffSwitchTest extends BaseTestCase
 	private function parameters(bool $formsEnabled): array
 	{
 		return ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
-			'orisaiNette' => [
+			'orisai' => ['nette' => [
 				'forms' => [
 					'enabled' => $formsEnabled,
 					'reportUnannotatedRegistrars' => true,
 					'internals' => ['indexShadowCompare' => true],
 				],
-			],
+			]],
 		];
 	}
 

@@ -10,7 +10,7 @@ final class EdgeScope
 
 	private const LAYOUT_TAGS = ['layout', 'extends'];
 
-	// The tags orisaiNette.latte.includeIsolation restricts to their explicit args. {includeblock} is
+	// The tags orisai.nette.latte.includeIsolation restricts to their explicit args. {includeblock} is
 	// absent: a Latte-2-only alias Latte 3 removed.
 	private const ISOLATING_TAGS = ['include', 'embed'];
 
@@ -72,7 +72,7 @@ final class EdgeScope
 
 		// On every supported Latte line a file {include} gives its target the includer's render params
 		// overlaid with the site's explicit args, never its {var} locals (IncludeSemanticsParityTest).
-		// orisaiNette.latte.includeIsolation is an opt-in stricter model: explicit args only, the sandbox
+		// orisai.nette.latte.includeIsolation is an opt-in stricter model: explicit args only, the sandbox
 		// shape. Block dispatch, layout/extends and import are separate mechanisms it leaves alone.
 		if (
 			$includeIsolation

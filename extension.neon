@@ -6,60 +6,62 @@ includes:
 	- config/latteForms.neon
 
 parametersSchema:
-	orisaiNette: structure([
-		forms: structure([
-			enabled: bool()
-			defaultContainerClass: string()
-			reportUnannotatedRegistrars: bool()
-			catalogs: listOf(string())
-			internals: structure([
-				indexShadowCompare: bool()
-			])
-		])
-		component: structure([
-			enabled: bool()
-		])
-		latte: structure([
-			enabled: bool()
-			narrowing: structure([
+	orisai: structure([
+		nette: structure([
+			forms: structure([
 				enabled: bool()
-				storePath: string()
+				defaultContainerClass: string()
+				reportUnannotatedRegistrars: bool()
+				catalogs: listOf(string())
+				internals: structure([
+					indexShadowCompare: bool()
+				])
 			])
-			discovery: structure([
+			component: structure([
 				enabled: bool()
-				storePath: string()
-				coarseInvalidationAccepted: bool()
-				formulas: arrayOf(anyOf(string(), arrayOf(string(), string())), string())
 			])
-			engineLoader: schema(string(), nullable())
-			templateFactoryContainerLoader: schema(string(), nullable())
-			firstPartyPaths: listOf(string())
-			templateTypeRequired: bool()
-			includeIsolation: bool()
-			allowNarrowingOverride: bool()
-			reportWrongPhpDocTypeInVarType: bool()
-			reportAnyTypeWideningInVarType: bool()
-		])
-		dic: structure([
-			containerLoader: schema(string(), nullable())
+			latte: structure([
+				enabled: bool()
+				narrowing: structure([
+					enabled: bool()
+					storePath: string()
+				])
+				discovery: structure([
+					enabled: bool()
+					storePath: string()
+					coarseInvalidationAccepted: bool()
+					formulas: arrayOf(anyOf(string(), arrayOf(string(), string())), string())
+				])
+				engineLoader: schema(string(), nullable())
+				templateFactoryContainerLoader: schema(string(), nullable())
+				firstPartyPaths: listOf(string())
+				templateTypeRequired: bool()
+				includeIsolation: bool()
+				allowNarrowingOverride: bool()
+				reportWrongPhpDocTypeInVarType: bool()
+				reportAnyTypeWideningInVarType: bool()
+			])
+			dic: structure([
+				containerLoader: schema(string(), nullable())
+			])
 		])
 	])
 
 services:
-	orisaiNette.installedVersions:
+	orisai.nette.installedVersions:
 		factory: OriPhpstan\Nette\Support\ProjectInstalledVersions::get()
 		autowired: false
 
-	orisaiNette.configurationGuard:
+	orisai.nette.configurationGuard:
 		class: OriPhpstan\Nette\Configuration\ConfigurationGuard
 		arguments:
-			orisaiNette: %orisaiNette%
+			orisaiNette: %orisai.nette%
 			fileExtensions: %fileExtensions%
-			installedVersions: @orisaiNette.installedVersions
+			installedVersions: @orisai.nette.installedVersions
 		autowired: false
 
 	-
 		class: OriPhpstan\Nette\Configuration\ConfigurationGuardRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags: [phpstan.rules.rule]

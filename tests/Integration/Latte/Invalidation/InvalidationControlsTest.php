@@ -118,7 +118,7 @@ final class InvalidationControlsTest extends LatteInvalidationMatrixCase
 	// Scenario 22 - a Latte NEON PARAMETER change. PHPStan hashes the project config into the result
 	// cache metadata, so this one legitimately discards the whole cache - the assertion is that the
 	// new value actually reaches the consumer, which is also the only coverage
-	// orisaiNette.latte.templateTypeRequired has anywhere: the flag is off in this repo's own phpstan.neon, so
+	// orisai.nette.latte.templateTypeRequired has anywhere: the flag is off in this repo's own phpstan.neon, so
 	// the identifier is inert there and the probe could not tell holed from immune for it.
 	public function testLatteParameterChangeReachesTheConsumer(): void
 	{
@@ -127,7 +127,7 @@ final class InvalidationControlsTest extends LatteInvalidationMatrixCase
 			[
 				[
 					'mutate' => function (): void {
-						$this->setParameter('orisaiNette.latte.templateTypeRequired', true);
+						$this->setParameter('orisai.nette.latte.templateTypeRequired', true);
 					},
 					'expect' => [
 						'floor.latte:1 :: ' . TemplateTypeChecker::REQUIRED_IDENTIFIER

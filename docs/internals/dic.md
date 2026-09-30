@@ -9,7 +9,7 @@ runtime profiles) is caught statically instead of surfacing as a runtime `Missin
 
 ## What is analysed
 
-The loader configured in `orisaiNette.dic.containerLoader` returns one compiled container per
+The loader configured in `orisai.nette.dic.containerLoader` returns one compiled container per
 runtime *profile* — e.g. one for the console and one for HTTP, or one per API variant. Every query
 is answered per profile and reported with the profiles it concerns, so a service registered only in
 the HTTP container is caught where console code asks for it.
@@ -25,7 +25,7 @@ The loader file returns `array<string, Nette\DI\Container>` keyed by profile nam
 `MultiContainerRegistry` also accepts a bare `Nette\DI\Container` as shorthand for
 `['default' => $container]`; `DiscoveryResolver::doResolveMapping()` and
 `TemplateFactoryDefaultResolver` (the Latte side, which reads
-`orisaiNette.latte.templateFactoryContainerLoader`) accept the same two shapes. A relative loader path
+`orisai.nette.latte.templateFactoryContainerLoader`) accept the same two shapes. A relative loader path
 resolves against the working directory, not against the config file. The loader may be required more
 than once per process, so it must be idempotent.
 
@@ -60,7 +60,7 @@ stale-cache incident (a freshly registered service reported as `orisaiNette.dic.
   (`Container_3c4ef1ebb9_80c80a31`), so any rebuild — a comment-only edit included, even one with identical config —
   gives a new class name and invalidates the cache. The registry loads containers
   lazily at meta-computation time — after the loader has rebuilt them — so the hash always
-  reflects current config. With no loader configured (`orisaiNette.dic.containerLoader: null`) the hash is the
+  reflects current config. With no loader configured (`orisai.nette.dic.containerLoader: null`) the hash is the
   constant `inactive`.
 
 ## Components
@@ -127,7 +127,7 @@ to all profiles, and one on a known-class receiver stays with that class's profi
 
 ## Rules
 
-All three rules only activate when `$registry->isActive()` (i.e. `orisaiNette.dic.containerLoader` is
+All three rules only activate when `$registry->isActive()` (i.e. `orisai.nette.dic.containerLoader` is
 configured), only match `MethodCall`s on a receiver typed `Nette\DI\Container` (or a subtype),
 resolve the receiver's profile subset per *Receiver classes* above (bailing on unknown
 containers), and skip first-class callables (`$container->getService(...)`) — the callable escapes

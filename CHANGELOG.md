@@ -23,13 +23,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   analysed
 - Latte: a harvested Latte 3 extension is identified by its package version or by every PHP file under its directory;
   an unreadable directory there is reported as `orisaiNette.latte.customsHarvest`
-- Validation: `orisaiNette.latte.enabled` rejects an unsupported `latte/latte` line and nette/forms or
+- Validation: `orisai.nette.latte.enabled` rejects an unsupported `latte/latte` line and nette/forms or
   nette/application releases without the Latte 3 or 3.1 bridges
 - phpstan-nette patch verified against phpstan/phpstan-nette 2.0.8–2.0.12
 - Latte discovery follows `Presenter::switch()` (nette/application 3.2) as a view mutation
 
 ### Changed
 
+- Parameters are nested under `orisai: nette:` instead of `orisaiNette:`, and the services are named `orisai.nette.*`
 - `symfony/polyfill-php80` is required: the extension calls `str_starts_with()` and names `Stringable` on PHP 7.4
 - Development: the primary dependency set (`composer update`) is the newest one — Latte 3.1 with nette/application and
   nette/forms 3.3 — and PHPStan analyses it for PHP 8.4; the former default set is the `latte2` profile, the `latte31`

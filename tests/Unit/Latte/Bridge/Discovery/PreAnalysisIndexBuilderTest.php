@@ -117,7 +117,7 @@ final class PreAnalysisIndexBuilderTest extends PHPStanTestCase
 	}
 
 	// The store directory is itself inside the universe here - the layout a consumer who points
-	// orisaiNette.latte.discovery.storePath back inside %paths% gets, to keep the granular invalidation channel. The
+	// orisai.nette.latte.discovery.storePath back inside %paths% gets, to keep the granular invalidation channel. The
 	// second build therefore enumerates the first build's OWN generated LatteDiscovery_* files, and
 	// byte-identity is what proves that output never feeds back into the index.
 	public function testBuildingTwiceOverAnUnchangedTreeWritesIdenticalBytes(): void

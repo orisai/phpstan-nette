@@ -49,7 +49,7 @@ use const STDERR;
 // cache on every single record change, which is why task 4 rejected it. Config PARAMETERS need
 // nothing here either: PHPStan's own result-cache meta already carries the whole project config
 // array (ResultCacheManager::getMeta()'s `projectConfig` key, minus %parametersNotInvalidatingCache%,
-// which does not list any latte* parameter), so a orisaiNette.latte.discovery.formulas reassignment already
+// which does not list any latte* parameter), so a orisai.nette.latte.discovery.formulas reassignment already
 // discards the cache wholesale - a salt of ours would be dead weight.
 //
 // The compiled DI CONTAINER is the one live input that qualifies on every clause of that doctrine
@@ -166,7 +166,7 @@ final class LatteResultCacheMeta implements ResultCacheMetaExtension
 		// That granular channel EXISTS only while the store directory is itself analysed: a store
 		// file's changed RECORDS_HASH reaches its self-referencing template through PHPStan's own
 		// dependency machinery, which tracks nothing outside the analysed set. A consumer whose
-		// orisaiNette.latte.discovery.storePath sits outside %paths% therefore has no channel at all, and its
+		// orisai.nette.latte.discovery.storePath sits outside %paths% therefore has no channel at all, and its
 		// per-file consumers (orisaiNette.latte.templateTypeMismatch/templateTypeRequired) would serve a
 		// verdict computed from records that have since moved - proven in task 7c, where a second
 		// renderer's mismatch never surfaced on any number of warm runs while a cold run reported
@@ -245,12 +245,12 @@ final class LatteResultCacheMeta implements ResultCacheMetaExtension
 	}
 
 	// An EMPTY %paths% (PHPStan's own default - the analysed set arrives on the command line) is the
-	// one coarse case no layout can undo: orisaiNette.latte.discovery.storePath cannot be inside a set that was
+	// one coarse case no layout can undo: orisai.nette.latte.discovery.storePath cannot be inside a set that was
 	// never declared, so the whole-store salt is forced on every run for good and the parameter's own
 	// "keep it inside %paths%" advice is unfollowable. Every other coarse case IS a layout the
 	// consumer can move; this one only looks like one, so it gets said out loud - once per process,
 	// on STDERR, leaving machine-readable stdout and the [OK] verdict untouched, and silenced
-	// outright by orisaiNette.latte.discovery.coarseInvalidationAccepted for a workflow that means it.
+	// outright by orisai.nette.latte.discovery.coarseInvalidationAccepted for a workflow that means it.
 	private function noticeGranularRegimeIsUnreachable(): void
 	{
 		if ($this->analysedPaths !== [] || $this->coarseInvalidationAccepted || $this->coarseRegimeNoticed) {
@@ -263,8 +263,8 @@ final class LatteResultCacheMeta implements ResultCacheMetaExtension
 			$this->noticeStream ?? STDERR,
 			"Note: no paths are declared in the configuration, so the Latte discovery store can never sit\n"
 			. "inside the analysed set - its per-record result-cache channel does not exist and every\n"
-			. "record change discards the WHOLE result cache. Declare paths: with orisaiNette.latte.discovery.storePath\n"
-			. "inside one of them, or set orisaiNette.latte.discovery.coarseInvalidationAccepted: true to accept\n"
+			. "record change discards the WHOLE result cache. Declare paths: with orisai.nette.latte.discovery.storePath\n"
+			. "inside one of them, or set orisai.nette.latte.discovery.coarseInvalidationAccepted: true to accept\n"
 			. "the cost and silence this notice.\n",
 		);
 	}

@@ -15,7 +15,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 
 /**
- * End-of-run index exposure behind the orisaiNette.forms.internals.indexShadowCompare flag (off, this rule and its collector do
+ * End-of-run index exposure behind the orisai.nette.forms.internals.indexShadowCompare flag (off, this rule and its collector do
  * nothing).
  *
  * Every interprocedural kind is now flipped — readers consult the RegistrationIndex / the on-demand twins

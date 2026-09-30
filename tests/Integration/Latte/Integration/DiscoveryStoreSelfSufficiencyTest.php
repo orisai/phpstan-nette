@@ -242,9 +242,9 @@ final class DiscoveryStoreSelfSufficiencyTest extends BaseTestCase
 			[$srcDir],
 			$tmpDir,
 			[
-				'orisaiNette.latte.discovery.enabled' => $storeEnabled,
-				'orisaiNette.latte.discovery.storePath' => $storeDir,
-				'orisaiNette.latte.firstPartyPaths' => [$srcDir],
+				'orisai.nette.latte.discovery.enabled' => $storeEnabled,
+				'orisai.nette.latte.discovery.storePath' => $storeDir,
+				'orisai.nette.latte.firstPartyPaths' => [$srcDir],
 			],
 		);
 

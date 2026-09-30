@@ -308,10 +308,10 @@ PHP;
 			[$srcDir],
 			$tmpDir,
 			[
-				'orisaiNette.latte.discovery.enabled' => true,
-				'orisaiNette.latte.discovery.storePath' => $storeDir,
-				'orisaiNette.latte.firstPartyPaths' => [$srcDir],
-				'orisaiNette.latte.templateFactoryContainerLoader' => $mappingLoader,
+				'orisai.nette.latte.discovery.enabled' => true,
+				'orisai.nette.latte.discovery.storePath' => $storeDir,
+				'orisai.nette.latte.firstPartyPaths' => [$srcDir],
+				'orisai.nette.latte.templateFactoryContainerLoader' => $mappingLoader,
 			],
 			[$bootstrapFile],
 		);

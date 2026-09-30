@@ -48,7 +48,7 @@ final class HarvestedGettextMacroIntegrationTest extends BaseTestCase
 
 	private function spawnWithGettext(string $latte): string
 	{
-		return $this->spawn($latte, ['orisaiNette.latte.engineLoader' => self::GETTEXT_ENGINE_LOADER]);
+		return $this->spawn($latte, ['orisai.nette.latte.engineLoader' => self::GETTEXT_ENGINE_LOADER]);
 	}
 
 	/**

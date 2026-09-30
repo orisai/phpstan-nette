@@ -5,7 +5,7 @@ Maintainer documentation; the user-facing guide is ../README.md.
 Static analysis of one question: **is this component attached to a parent at this program point?**
 
 The answer is three-valued — **Yes**, **No**, **Maybe** — and every unproven edge is Maybe. The
-machinery lives in `src/Component/Attachment/` and is switched by `orisaiNette.component.enabled`.
+machinery lives in `src/Component/Attachment/` and is switched by `orisai.nette.component.enabled`.
 The extension consumes it in three places today: to decide whether a `getComponent()` read registers
 a child, to decide whether an
 [existence check is constant](forms.md#existence-checks-whose-answer-is-already-known)

@@ -9,7 +9,7 @@ use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use function dirname;
 use function strpos;
 
-// orisaiNette.latte.firstPartyPaths is a config value, not a file: PhpRenderWalk's app-root gate
+// orisai.nette.latte.firstPartyPaths is a config value, not a file: PhpRenderWalk's app-root gate
 // reads it for every class, and the persisted render facts live under %tmpDir%, where a parameter
 // change does not reach them. The facts envelope therefore carries the normalised value and a flip
 // between two spawns over a byte-identical corpus has to recompute - the stale envelope would keep
@@ -42,8 +42,8 @@ final class FirstPartyPathsInvalidationTest extends BaseTestCase
 				$paths,
 				$tmpDir,
 				[
-					'orisaiNette.latte.discovery.enabled' => false,
-					'orisaiNette.latte.firstPartyPaths' => $this->firstPartyPaths ?? [$paths[0]],
+					'orisai.nette.latte.discovery.enabled' => false,
+					'orisai.nette.latte.firstPartyPaths' => $this->firstPartyPaths ?? [$paths[0]],
 				],
 				[dirname($paths[0]) . '/corpus-autoload.php'],
 			)->getConfigPath(),

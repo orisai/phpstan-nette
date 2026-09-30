@@ -3,13 +3,14 @@ includes:
 	- ../../../../extension.neon
 
 expandRelativePaths:
-	- '[parameters][orisaiNette][dic][containerLoader]'
+	- '[parameters][orisai][nette][dic][containerLoader]'
 
 parameters:
 	customRulesetUsed: true
-	orisaiNette:
-		dic:
-			containerLoader: ../Fixtures/fixture-container-loader.php
+	orisai:
+		nette:
+			dic:
+				containerLoader: ../Fixtures/fixture-container-loader.php
 	netteComponentModelDynamicReturnType: false
 	netteFormContainerValuesDynamicReturnType: false
 	netteServiceLocatorDynamicReturnType: false

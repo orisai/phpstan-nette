@@ -1671,7 +1671,7 @@ not annotatable — extraction loses information there too, but no tag could hav
 Neither finality nor visibility is consulted; both say nothing, a build method being as often non-final and public as a
 generic adder. A **trait**'s method is reported against the trait, not against each class using it.
 
-The rule is on by default and switched off with `orisaiNette.forms.reportUnannotatedRegistrars: false`.
+The rule is on by default and switched off with `orisai.nette.forms.reportUnannotatedRegistrars: false`.
 
 **Outside the analysed paths — the tag is the only channel, and its absence opens.** There the body is not the
 project's to read, so the walk falls back on its own convention: one component, named by the call's **first argument**.
@@ -1959,7 +1959,7 @@ following changes (`FormsCodeVersion`):
 
 - Any `.php` file under `src/Forms/` or `src/Component/Attachment/` (`FormsCodeVersion::roots()` — every source tree
   a persisted shape can have been derived by; adding a tree there costs one full invalidation).
-- The `orisaiNette.forms.defaultContainerClass` parameter — the class a custom container/replicator falls back to when its
+- The `orisai.nette.forms.defaultContainerClass` parameter — the class a custom container/replicator falls back to when its
   concrete type can't be resolved from the call site.
 - The declared `paths` (`FormsCodeVersion::pathsDigest()`: resolved, deduplicated, sorted). `AnalysedPaths::isAnalysed()`
   decides which files count as project code — `ContainerModel`'s vendor-method gates, the registrar convention check in
@@ -1968,7 +1968,7 @@ following changes (`FormsCodeVersion`):
   files would otherwise be served stale. A respelling of the same universe keeps the store.
 - The installed `phpstan/phpstan` version — its serialized `Type` layout can change across releases.
 
-The `-<catalogs>` suffix is `CatalogIdentity`: a sha1 over the sorted `orisaiNette.forms.catalogs` class names, each
+The `-<catalogs>` suffix is `CatalogIdentity`: a sha1 over the sorted `orisai.nette.forms.catalogs` class names, each
 with `sha1_file()` of its declaring file. It is empty without user catalogs. It is resolved on first use, not at
 container build, because the reflection provider knows analysed classes only once analysis runs. The same identity is
 folded into `FormsResultCacheMeta`, so editing a catalog also discards PHPStan's result cache.
@@ -2087,7 +2087,7 @@ Beyond inference, a few rules flag misuse:
   class is extracted into a package. Only annotatable methods are reported — several components, a literal name or a
   conditional registration is a build method no tag could summarise — and a trait's method is reported against the
   trait. See [Where the tag is asked for](#where-the-tag-is-asked-for-and-where-it-is-the-only-channel); switched off
-  with `orisaiNette.forms.reportUnannotatedRegistrars: false`.
+  with `orisai.nette.forms.reportUnannotatedRegistrars: false`.
 - **Reaching a field on an open shape** — when the shape could not be fully enumerated (an `extensionMethod()` /
   undefined-method call, a dynamic name, an unfollowed helper), an unknown name is reported as `Form value 'nope' may
   not exist; the form shape is open.` with a **tip** naming why it opened (e.g. `Form shape opened by: extension_method`)

@@ -14,7 +14,7 @@ use function is_object;
 use function is_string;
 use function property_exists;
 
-// Same optional orisaiNette.dic.containerLoader seam as Customs\EngineSource: no loader file (or any failure
+// Same optional orisai.nette.dic.containerLoader seam as Customs\EngineSource: no loader file (or any failure
 // on the way to a bridge TemplateFactory) degrades to null, which drops the factory-default rung
 // of the template-class resolution ladder.
 //

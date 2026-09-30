@@ -20,8 +20,8 @@ use function uniqid;
 use const PHP_BINARY;
 use const SORT_STRING;
 
-// Opt-in gate: orisaiNette.latte.narrowing.enabled defaults false and is
-// independent of orisaiNette.latte.enabled. Both scenarios below reuse
+// Opt-in gate: orisai.nette.latte.narrowing.enabled defaults false and is
+// independent of orisai.nette.latte.enabled. Both scenarios below reuse
 // ResultCacheInvalidationTest::testSliceFileContentChangePropagatesToItsTargetOnAPlainWarmRun's
 // exact fixture shape (an {if $x !== null} guard around an {include} into an undeclared-var
 // target). Rather than hand-deriving TemplateContext::canonicalHash() to construct a store entry
@@ -188,8 +188,8 @@ final class NarrowingFlagTest extends BaseTestCase
 			[$srcDir],
 			$tmpDir,
 			[
-				'orisaiNette.latte.narrowing.storePath' => $storeDir,
-				'orisaiNette.latte.narrowing.enabled' => $narrowingEnabled,
+				'orisai.nette.latte.narrowing.storePath' => $storeDir,
+				'orisai.nette.latte.narrowing.enabled' => $narrowingEnabled,
 			],
 		);
 

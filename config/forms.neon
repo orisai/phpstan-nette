@@ -1,13 +1,14 @@
 parameters:
-	orisaiNette:
-		forms:
-			enabled: true
-			defaultContainerClass: Nette\Forms\Container
-			reportUnannotatedRegistrars: true
-			catalogs: []
-			internals:
-				indexShadowCompare: false
-	# Loaded even with orisaiNette.forms.enabled off: stubFiles cannot be conditional, and it only adds @form-* tags.
+	orisai:
+		nette:
+			forms:
+				enabled: true
+				defaultContainerClass: Nette\Forms\Container
+				reportUnannotatedRegistrars: true
+				catalogs: []
+				internals:
+					indexShadowCompare: false
+	# Loaded even with orisai.nette.forms.enabled off: stubFiles cannot be conditional, and it only adds @form-* tags.
 	stubFiles:
 		- ../stubs/forms-control-value-types.stub
 	scanFiles:
@@ -41,7 +42,7 @@ services:
 	formCatalogIdentity:
 		class: OriPhpstan\Nette\Forms\Cache\CatalogIdentity
 		arguments:
-			catalogs: %orisaiNette.forms.catalogs%
+			catalogs: %orisai.nette.forms.catalogs%
 		autowired: false
 
 	formShapeCache:
@@ -50,7 +51,7 @@ services:
 			baseDirectory: %tmpDir%/form-shape-cache
 			recorder: @formShapeDependencyRecorder
 			shapeDependencies: @formShapeDependencyCollector
-			defaultContainerClass: %orisaiNette.forms.defaultContainerClass%
+			defaultContainerClass: %orisai.nette.forms.defaultContainerClass%
 			catalogIdentity: @formCatalogIdentity
 			# The config's declared paths, as every consumer below: they decide which files count as
 			# project code, so they are part of the store's identity (see FormsCodeVersion::pathsDigest).
@@ -72,7 +73,7 @@ services:
 	formsResultCacheMeta:
 		class: OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta
 		arguments:
-			enabled: %orisaiNette.forms.enabled%
+			enabled: %orisai.nette.forms.enabled%
 			salt: @formFactSalt
 			catalogIdentity: @formCatalogIdentity
 		tags:
@@ -82,7 +83,7 @@ services:
 		class: OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader
 		arguments:
 			reflectionProvider: @reflectionProvider
-			catalogs: %orisaiNette.forms.catalogs%
+			catalogs: %orisai.nette.forms.catalogs%
 
 	-
 		class: OriPhpstan\Nette\Forms\Graph\ComponentAffectingNodeVisitor
@@ -97,8 +98,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Inference\FormAccessExpressionTypeResolver
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			# The config's declared paths, shared by every consumer of the one FormShapeCache: the
 			# analysed/vendor line the registrar detector draws must be the same in all of them (see
 			# AnalyzerStackFactory), and a property of the project rather than of the invocation.
@@ -117,16 +118,16 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormWriteAccessRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormShapeUnknownAccessRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 		tags:
 			- phpstan.rules.rule
 
@@ -135,8 +136,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormExistenceCheckConstantRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 		tags:
 			- phpstan.rules.rule
 
@@ -148,8 +149,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\ComponentShapeDumpRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			describer: @componentShapeDescriber
 		tags:
 			- phpstan.rules.rule
@@ -157,8 +158,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\ComponentShapeAssertRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			describer: @componentShapeDescriber
 		tags:
 			- phpstan.rules.rule
@@ -171,8 +172,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormValuesDumpRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			describer: @formValuesDescriber
 		tags:
 			- phpstan.rules.rule
@@ -180,8 +181,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormValuesAssertRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			describer: @formValuesDescriber
 		tags:
 			- phpstan.rules.rule
@@ -189,24 +190,24 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\CreateComponentReturnsUiFormRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Forms\Rule\ComponentNameRegistrationRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormAddsAnnotationRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			reader: @formControlValueTypeReader
 		tags:
 			- phpstan.rules.rule
@@ -214,8 +215,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\UnannotatedRegistrarRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.reportUnannotatedRegistrars%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.reportUnannotatedRegistrars%
 			# The config's declared paths, not the CLI-narrowed %analysedPaths%: which code is OURS is a
 			# property of the project, so a single-file/IDE run must draw the line exactly where a whole
 			# project run does (mirrors containerModel / indexShapeResolver above).
@@ -227,8 +228,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Rule\FormValuesMappedTypeRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.rules.rule
@@ -236,8 +237,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\ComponentAccessTypeResolver
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			# The config's declared paths, shared by every consumer of the one FormShapeCache: the
 			# analysed/vendor line the registrar detector draws must be the same in all of them (see
 			# AnalyzerStackFactory), and a property of the project rather than of the invocation.
@@ -253,7 +254,7 @@ services:
 	containerModel:
 		class: OriPhpstan\Nette\Forms\Component\ContainerModel
 		arguments:
-			enabled: %orisaiNette.forms.enabled%
+			enabled: %orisai.nette.forms.enabled%
 			parser: @formShapeRecordingParser
 			richParser: @formShapeRecordingRichParser
 			# The config's declared paths, not the CLI-narrowed analysedPaths (mirrors registrationIndex
@@ -267,8 +268,8 @@ services:
 	componentModelAccessExtension:
 		class: OriPhpstan\Nette\Forms\Component\ComponentModelAccessDynamicReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
@@ -276,8 +277,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\HandlerParamFormTypeResolver
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.expressionTypeResolverExtension
@@ -285,8 +286,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\ReplicatorMethodReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
@@ -294,8 +295,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\FormGetValuesDynamicReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
@@ -303,8 +304,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\WizardGetValuesDynamicReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
@@ -312,8 +313,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\FormControlGetValueTypeResolver
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.expressionTypeResolverExtension
@@ -321,8 +322,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\FormValidatedTypeSpecifyingExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.typeSpecifier.methodTypeSpecifyingExtension
@@ -330,8 +331,8 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\FormValuesParamTypeResolver
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.enabled%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.enabled%
 			model: @containerModel
 		tags:
 			- phpstan.broker.expressionTypeResolverExtension
@@ -339,7 +340,7 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Component\SmartObjectEventPropertyReflectionExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.propertiesClassReflectionExtension
 
@@ -399,16 +400,16 @@ services:
 	-
 		class: OriPhpstan\Nette\Forms\Index\ShadowCandidateCollector
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.internals.indexShadowCompare%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.internals.indexShadowCompare%
 		tags:
 			- phpstan.collector
 
 	-
 		class: OriPhpstan\Nette\Forms\Index\ShadowDivergenceRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
-			enabled: %orisaiNette.forms.internals.indexShadowCompare%
+			guard: @orisai.nette.configurationGuard
+			enabled: %orisai.nette.forms.internals.indexShadowCompare%
 			resolver: @indexShapeResolver
 		tags:
 			- phpstan.rules.rule

@@ -20,7 +20,7 @@ use const SORT_STRING;
 // Static path algebra of every known template-file discovery formula, mirrored byte-for-byte from
 // its origin (FormulaParityTest is the committed tripwire): the vendor formulas from
 // Nette\Application\UI\Presenter::formatTemplateFiles()/formatLayoutTemplateFiles(), the app
-// formulas from the locator overrides tests/phpstan.neon assigns via orisaiNette.latte.discovery.formulas.
+// formulas from the locator overrides tests/phpstan.neon assigns via orisai.nette.latte.discovery.formulas.
 // Runtime-only inputs are projected to their static defaults: $this->view is the resolved view
 // name, $this->layout is unset ('layout'), a control's $this->file override is unset (short class
 // name) - the file_exists gate on that override is invisible per-class, so the derived

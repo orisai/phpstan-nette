@@ -57,7 +57,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 	{
 		$message = $this->dumpOne($this->spawn(
 			"{do \\OriPhpstan\\Nette\\Latte\\Testing\\dumpLatteCustoms()}\nHello.\n",
-			['orisaiNette.latte.engineLoader' => self::ENGINE_LOADER],
+			['orisai.nette.latte.engineLoader' => self::ENGINE_LOADER],
 		));
 
 		self::assertSame(self::EXPECTED_POPULATED_MESSAGE, $message['message']);
@@ -75,7 +75,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 		$message = $this->dumpOne($this->spawn("{do dumpLatteCustoms()}\nHello.\n", []));
 
 		self::assertSame(
-			'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)'
+			'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)'
 			. "\ntemplate: (none)\ntemplate filters: (none)\ntemplate functions: (none)",
 			$message['message'],
 		);
@@ -86,7 +86,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 	{
 		$message = $this->dumpOne($this->spawn(
 			"{do \\OriPhpstan\\Nette\\Latte\\Testing\\dumpLatteCustoms()}\nHello.\n",
-			['orisaiNette.latte.engineLoader' => self::ENGINE_LOADER_THROWING],
+			['orisai.nette.latte.engineLoader' => self::ENGINE_LOADER_THROWING],
 		));
 
 		self::assertSame(
@@ -105,7 +105,7 @@ final class LatteDebugDumpCustomsIntegrationTest extends BaseTestCase
 		));
 
 		self::assertSame(
-			'global: no harvest source configured (orisaiNette.dic.containerLoader / orisaiNette.latte.engineLoader)'
+			'global: no harvest source configured (orisai.nette.dic.containerLoader / orisai.nette.latte.engineLoader)'
 			. "\ntemplate: " . self::TEMPLATE_TYPE_CLASS
 			. "\ntemplate filters: myTplFilter (" . self::TEMPLATE_TYPE_CLASS . ')'
 			. "\ntemplate functions: myTplFunction (" . self::TEMPLATE_TYPE_CLASS . ')',

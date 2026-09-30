@@ -18,7 +18,7 @@ use const PHP_BINARY;
 /**
  * The store→read seam is dead: readers consult the RegistrationIndex directly, so there is no collector
  * store to shadow-compare against. This test now pins the index itself. It drives the DumpType +
- * MatrixAssert corpus with the orisaiNette.forms.internals.indexShadowCompare flag on (ShadowDivergenceRule renders the index's
+ * MatrixAssert corpus with the orisai.nette.forms.internals.indexShadowCompare flag on (ShadowDivergenceRule renders the index's
  * answer for every handler-param key the corpus produces) and asserts:
  *
  *   1. the SET of keys the index resolves cold is exactly the pinned set — a key that stops resolving

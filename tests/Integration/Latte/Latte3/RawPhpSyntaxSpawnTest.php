@@ -38,12 +38,12 @@ final class RawPhpSyntaxSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => [
+				'orisai' => ['nette' => [
 					'latte' => [
 						'enabled' => true,
 						'engineLoader' => __DIR__ . '/Fixtures/raw-php/engine-loader.php',
 					],
-				],
+				]],
 			],
 			['src'],
 		);

@@ -93,7 +93,7 @@ PHP);
 				$projectRoot,
 				$srcDir,
 				$scratch . '/pstmp',
-				['orisaiNette.latte.firstPartyPaths' => [$srcDir]],
+				['orisai.nette.latte.firstPartyPaths' => [$srcDir]],
 			);
 
 			self::assertCount(2, $messages);

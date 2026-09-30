@@ -27,7 +27,7 @@ final class SiteScopeStore
 
 	// Lazy, never read at construction time: every public method below that needs the loaded
 	// entries goes through entries() - a caller that never calls get()/sliceHash()/
-	// replaceForIncluders() (e.g. every narrowing consumer when orisaiNette.latte.narrowing.enabled is off,
+	// replaceForIncluders() (e.g. every narrowing consumer when orisai.nette.latte.narrowing.enabled is off,
 	// which short-circuits BEFORE reaching this class at all) never touches the store directory,
 	// keeping the opt-in flag's "no store reads" claim literally true regardless of whether a
 	// store directory happens to exist on disk for a downstream consumer who hasn't opted in.

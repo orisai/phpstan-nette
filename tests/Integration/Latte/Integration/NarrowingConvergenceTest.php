@@ -220,7 +220,7 @@ final class NarrowingConvergenceTest extends BaseTestCase
 			self::REAL_CONFIG_PATH,
 			[$srcDir],
 			$tmpDir,
-			['orisaiNette.latte.narrowing.storePath' => $storeDir],
+			['orisai.nette.latte.narrowing.storePath' => $storeDir],
 		);
 
 		$process = new Process(

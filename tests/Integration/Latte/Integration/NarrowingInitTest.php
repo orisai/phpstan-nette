@@ -26,7 +26,7 @@ use const SORT_STRING;
 // exists for this: LatteSiteScopeWriterRule's pre-existing "materialize an empty slice for every
 // analyzed includer" behavior (SiteScopeStore::replaceForIncluders()), combined with
 // LatteAnalyzedFileMarkerCollector firing on every analyzed .latte file whenever
-// orisaiNette.latte.narrowing.enabled is on (true on this test's own config, same as the real gate), already
+// orisai.nette.latte.narrowing.enabled is on (true on this test's own config, same as the real gate), already
 // produces the full universe once the store directory exists before the run starts.
 /**
  * @group latte2
@@ -56,7 +56,7 @@ final class NarrowingInitTest extends BaseTestCase
 				self::REAL_CONFIG_PATH,
 				[$srcDir],
 				$scratch . '/pstmp',
-				['orisaiNette.latte.narrowing.storePath' => $storeDir],
+				['orisai.nette.latte.narrowing.storePath' => $storeDir],
 			);
 
 			$process = new Process(

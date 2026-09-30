@@ -93,7 +93,7 @@ final class PerfBudgetTest extends BaseTestCase
 	private function spawn(string $projectRoot, string $tmpDir): array
 	{
 		// integration.neon turns narrowing on; LattePhpstanConfig::create() defaults
-		// orisaiNette.latte.narrowing.storePath to scratch under $tmpDir, so this spawn never touches the
+		// orisai.nette.latte.narrowing.storePath to scratch under $tmpDir, so this spawn never touches the
 		// default phpstan-latte-store/.
 		$isolated = LattePhpstanConfig::create(
 			self::REAL_CONFIG_PATH,

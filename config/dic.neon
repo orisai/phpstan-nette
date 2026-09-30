@@ -1,101 +1,102 @@
 parameters:
-	orisaiNette:
-		dic:
-			containerLoader: null
+	orisai:
+		nette:
+			dic:
+				containerLoader: null
 
 services:
 	dicContainerRegistry:
 		class: OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry
 		arguments:
-			loaderFile: %orisaiNette.dic.containerLoader%
+			loaderFile: %orisai.nette.dic.containerLoader%
 
 	-
 		class: OriPhpstan\Nette\Dic\Cache\ContainerResultCacheMetaExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.resultCacheMetaExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Rule\ServiceNameCallRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Dic\Rule\TypeLookupCallRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Dic\Rule\TagCallRule
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.rules.rule
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\ServiceReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\HasServiceTypeSpecifyingExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.typeSpecifier.methodTypeSpecifyingExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\HasServiceReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\TypeLookupReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\FindByTypeReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\FindByTagReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\GetServiceTypeReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\GetParametersReturnTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Type\ParametersPropertyTypeExtension
 		arguments:
-			guard: @orisaiNette.configurationGuard
+			guard: @orisai.nette.configurationGuard
 		tags:
 			- phpstan.broker.expressionTypeResolverExtension

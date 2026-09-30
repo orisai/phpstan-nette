@@ -47,9 +47,9 @@ final class SingleFileReentrancySpawnTest extends BaseTestCase
 			DiscoveryStore::bootstrap($storeDir, ["$relSrc/reentrant.latte"]);
 
 			$parameters = [
-				'orisaiNette.latte.discovery.enabled' => true,
-				'orisaiNette.latte.discovery.storePath' => $storeDir,
-				'orisaiNette.latte.firstPartyPaths' => [$srcDir],
+				'orisai.nette.latte.discovery.enabled' => true,
+				'orisai.nette.latte.discovery.storePath' => $storeDir,
+				'orisai.nette.latte.firstPartyPaths' => [$srcDir],
 			];
 
 			// Run 1 analyses the whole scratch directory, which is what links the renderer to the

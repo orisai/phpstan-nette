@@ -142,9 +142,9 @@ abstract class LatteInvalidationMatrixCase extends BaseTestCase
 				$paths,
 				$tmpDir,
 				[
-					'orisaiNette.latte.discovery.enabled' => true,
-					'orisaiNette.latte.discovery.storePath' => $paths[0] . '/discovery',
-					'orisaiNette.latte.firstPartyPaths' => [$paths[0]],
+					'orisai.nette.latte.discovery.enabled' => true,
+					'orisai.nette.latte.discovery.storePath' => $paths[0] . '/discovery',
+					'orisai.nette.latte.firstPartyPaths' => [$paths[0]],
 				] + $this->extraParameters,
 				[dirname($paths[0]) . '/corpus-autoload.php'],
 			)->getConfigPath(),

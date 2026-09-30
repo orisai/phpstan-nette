@@ -130,7 +130,7 @@ abstract class DicInvalidationMatrixCase extends BaseTestCase
 					$parameters['bootstrapFiles'] = [self::writeCorpusAutoloader($scratchDir, $paths)];
 				}
 
-				$parameters['orisaiNette'] = ['dic' => ['containerLoader' => $scratchDir . '/dic/loader.php']];
+				$parameters['orisai']['nette'] = ['dic' => ['containerLoader' => $scratchDir . '/dic/loader.php']];
 				FileSystem::write($configPath, Neon::encode(
 					[
 						'includes' => [self::REAL_CONFIG_PATH],

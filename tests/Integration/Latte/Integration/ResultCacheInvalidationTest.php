@@ -278,7 +278,7 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 	private function spawn(string $projectRoot, string $srcDir, string $tmpDir): string
 	{
 		// integration.neon turns narrowing on; LattePhpstanConfig::create() defaults
-		// orisaiNette.latte.narrowing.storePath to scratch under $tmpDir, so this spawn never touches the default
+		// orisai.nette.latte.narrowing.storePath to scratch under $tmpDir, so this spawn never touches the default
 		// phpstan-latte-store/.
 		$isolated = LattePhpstanConfig::create(
 			self::REAL_CONFIG_PATH,
@@ -318,7 +318,7 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 			self::REAL_CONFIG_PATH,
 			[$srcDir],
 			$tmpDir,
-			['orisaiNette.latte.narrowing.storePath' => $storeDir],
+			['orisai.nette.latte.narrowing.storePath' => $storeDir],
 		);
 
 		$process = new Process(

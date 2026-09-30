@@ -108,7 +108,7 @@ final class HarvestedCustomsIntegrationTest extends BaseTestCase
 
 	private function spawnWithTypedCustoms(string $latte): string
 	{
-		return $this->spawn($latte, ['orisaiNette.latte.engineLoader' => self::TYPED_CUSTOMS_ENGINE_LOADER]);
+		return $this->spawn($latte, ['orisai.nette.latte.engineLoader' => self::TYPED_CUSTOMS_ENGINE_LOADER]);
 	}
 
 	/**

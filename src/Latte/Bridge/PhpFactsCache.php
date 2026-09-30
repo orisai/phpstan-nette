@@ -43,7 +43,7 @@ final class PhpFactsCache
 	// gained createTemplate()'s resolved control argument - a version-9 envelope lacks the key
 	// fromArray() now requires. Version 11: the envelope gained the normalised first-party paths the
 	// walk's app-root gate reads - a version-10 envelope would keep serving facts computed under a
-	// superseded orisaiNette.latte.firstPartyPaths value.
+	// superseded orisai.nette.latte.firstPartyPaths value.
 	public const FORMAT_VERSION = 11;
 
 	private const NAMESPACE_PREFIX = 'phpfacts|';
@@ -175,7 +175,7 @@ final class PhpFactsCache
 
 		// Same live-config discipline for the first-party boundary the walk's app-root gate reads:
 		// whether a class qualifies at all, and which ancestors and callees it may follow, depend on
-		// orisaiNette.latte.firstPartyPaths, which no read-set file reflects.
+		// orisai.nette.latte.firstPartyPaths, which no read-set file reflects.
 		if (
 			!array_key_exists('firstPartyPaths', $stored)
 			|| $stored['firstPartyPaths'] !== $this->firstPartyPaths

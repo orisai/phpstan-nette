@@ -200,8 +200,8 @@ final class LatteFormsSpawnIntegrationTest extends BaseTestCase
 			[$srcDir],
 			$tmpDir,
 			[
-				'orisaiNette.latte.discovery.storePath' => $storeDir,
-				'orisaiNette.latte.firstPartyPaths' => [$srcDir],
+				'orisai.nette.latte.discovery.storePath' => $storeDir,
+				'orisai.nette.latte.firstPartyPaths' => [$srcDir],
 			],
 		);
 

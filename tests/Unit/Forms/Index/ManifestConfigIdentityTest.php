@@ -27,7 +27,7 @@ use const PHP_BINARY;
  * under php7.4 and to real facts under php8.4). Both the fold-blob manifest AND every per-file fact
  * entry are salted with FileFactIndex::configIdentity(); this spawns a php7.4 and a php8.4 config
  * over one shared, unwrapped form-shape-cache directory (both configs resolve the same
- * orisaiNette.forms.defaultContainerClass, so they land in the same code-versioned subdirectory) and asserts:
+ * orisai.nette.forms.defaultContainerClass, so they land in the same code-versioned subdirectory) and asserts:
  * distinct blobs (manifest salt), the php7.4 blob untouched by the php8.4 run, and — the content
  * observable that catches an un-salted fact entry — the php8.4 blob carries the php8-only file's
  * registration while the php7.4 blob does not. Regidx blobs are identified by their on-disk

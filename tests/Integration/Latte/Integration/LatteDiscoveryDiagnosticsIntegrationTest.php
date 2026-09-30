@@ -96,8 +96,8 @@ PHP);
 				$srcDir,
 				$scratch . '/pstmp',
 				[
-					'orisaiNette.latte.firstPartyPaths' => [$srcDir],
-					'orisaiNette.latte.templateFactoryContainerLoader' => $scratch . '/mapping-loader.php',
+					'orisai.nette.latte.firstPartyPaths' => [$srcDir],
+					'orisai.nette.latte.templateFactoryContainerLoader' => $scratch . '/mapping-loader.php',
 				],
 			);
 

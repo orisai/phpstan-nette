@@ -83,9 +83,9 @@ final class MetaPhaseStubReflectionSpawnTest extends BaseTestCase
 				[$srcDir],
 				$scratch . '/tmp',
 				[
-					'orisaiNette.latte.discovery.enabled' => true,
-					'orisaiNette.latte.discovery.storePath' => $srcDir . '/discovery',
-					'orisaiNette.latte.firstPartyPaths' => [$srcDir],
+					'orisai.nette.latte.discovery.enabled' => true,
+					'orisai.nette.latte.discovery.storePath' => $srcDir . '/discovery',
+					'orisai.nette.latte.firstPartyPaths' => [$srcDir],
 				],
 			);
 

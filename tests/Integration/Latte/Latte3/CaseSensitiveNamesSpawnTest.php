@@ -89,10 +89,10 @@ final class CaseSensitiveNamesSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => [
+				'orisai' => ['nette' => ['latte' => [
 					'enabled' => true,
 					'engineLoader' => __DIR__ . '/Fixtures/case-sensitive/engine-loader.php',
-				]],
+				]]],
 			],
 			['src'],
 		);

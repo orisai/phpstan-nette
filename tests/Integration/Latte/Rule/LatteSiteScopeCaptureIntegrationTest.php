@@ -18,7 +18,7 @@ use const PHP_BINARY;
 
 // A real subprocess spawn (mirrors IntegrationSnapshotTest), not RuleTestCase: RuleTestCase's own
 // container pins %currentWorkingDirectory% to the phpstan library's internal root (see
-// wiring.neon's orisaiNette.latte.narrowing.storePath comment), so LatteUniverse's own project-root containment
+// wiring.neon's orisai.nette.latte.narrowing.storePath comment), so LatteUniverse's own project-root containment
 // guard rejects every fixture path before EdgeAnchorInjector ever runs. Only a spawn from the real
 // repo root exercises the collector against genuinely narrowed PHPStan types.
 /**
@@ -98,12 +98,12 @@ final class LatteSiteScopeCaptureIntegrationTest extends BaseTestCase
 					'parameters' => [
 						'tmpDir' => $scratchDir,
 						'fileExtensions' => ['php', 'latte'],
-						'orisaiNette' => [
+						'orisai' => ['nette' => [
 							'latte' => [
 								'enabled' => true,
 								'narrowing' => ['storePath' => $storeDir],
 							],
-						],
+						]],
 						'paths!' => [self::FixtureDir],
 					],
 				],

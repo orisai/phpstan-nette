@@ -18,7 +18,7 @@ final class TestGuard
 
 	public static function of(Container $container): ConfigurationGuard
 	{
-		$guard = $container->getService('orisaiNette.configurationGuard');
+		$guard = $container->getService('orisai.nette.configurationGuard');
 		assert($guard instanceof ConfigurationGuard);
 
 		return $guard;
@@ -26,7 +26,7 @@ final class TestGuard
 
 	public static function withContainerLoader(Container $container, string $loaderFile): ConfigurationGuard
 	{
-		$config = $container->getParameter('orisaiNette');
+		$config = $container->getParameter('orisai')['nette'];
 		assert(is_array($config));
 		$config['dic']['containerLoader'] = $loaderFile;
 

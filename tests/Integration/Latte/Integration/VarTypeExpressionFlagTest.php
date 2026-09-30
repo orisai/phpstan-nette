@@ -17,7 +17,7 @@ use function uniqid;
 use const PHP_BINARY;
 use const SORT_STRING;
 
-// End-to-end proof that orisaiNette.latte.reportWrongPhpDocTypeInVarType and orisaiNette.latte.reportAnyTypeWideningInVarType
+// End-to-end proof that orisai.nette.latte.reportWrongPhpDocTypeInVarType and orisai.nette.latte.reportAnyTypeWideningInVarType
 // reach LatteVarTypeExpressionRule through DI - LatteVarTypeExpressionRuleTest pins the checker's own
 // behaviour by constructing it directly, which cannot catch a parameter wired to the wrong argument.
 // Each fixture is analysed twice, its own flag off then on; the OTHER flag stays on both times, so a
@@ -30,9 +30,9 @@ final class VarTypeExpressionFlagTest extends BaseTestCase
 
 	private const REAL_CONFIG_PATH = __DIR__ . '/Fixtures/integration.neon';
 
-	private const WIDENING_PARAMETER = 'orisaiNette.latte.reportAnyTypeWideningInVarType';
+	private const WIDENING_PARAMETER = 'orisai.nette.latte.reportAnyTypeWideningInVarType';
 
-	private const WRONG_PHPDOC_TYPE_PARAMETER = 'orisaiNette.latte.reportWrongPhpDocTypeInVarType';
+	private const WRONG_PHPDOC_TYPE_PARAMETER = 'orisai.nette.latte.reportWrongPhpDocTypeInVarType';
 
 	public function testWideningOptionOffIsSilentAndOnReportsTheWidenedDeclaration(): void
 	{

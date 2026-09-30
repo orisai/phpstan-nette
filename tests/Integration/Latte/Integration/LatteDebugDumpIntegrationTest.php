@@ -182,7 +182,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 				$projectRoot,
 				$srcDir,
 				$scratch . '/pstmp',
-				['orisaiNette.latte.firstPartyPaths' => [$projectRoot . '/tests/Unit/Latte/Bridge/Fixtures/App']],
+				['orisai.nette.latte.firstPartyPaths' => [$projectRoot . '/tests/Unit/Latte/Bridge/Fixtures/App']],
 			);
 
 			self::assertCount(1, $messages);
@@ -226,7 +226,7 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 				$projectRoot,
 				$srcDir,
 				$scratch . '/pstmp',
-				['orisaiNette.latte.firstPartyPaths' => [$projectRoot . '/tests/Unit/Latte/Bridge/Pairing/Fixtures/App']],
+				['orisai.nette.latte.firstPartyPaths' => [$projectRoot . '/tests/Unit/Latte/Bridge/Pairing/Fixtures/App']],
 			);
 
 			self::assertCount(1, $messages);
@@ -273,8 +273,8 @@ final class LatteDebugDumpIntegrationTest extends BaseTestCase
 				$srcDir,
 				$scratch . '/pstmp',
 				[
-					'orisaiNette.latte.firstPartyPaths' => [$projectRoot . '/' . $fixtureDir . '/App'],
-					'orisaiNette.latte.templateFactoryContainerLoader' => $projectRoot . '/' . $fixtureDir
+					'orisai.nette.latte.firstPartyPaths' => [$projectRoot . '/' . $fixtureDir . '/App'],
+					'orisai.nette.latte.templateFactoryContainerLoader' => $projectRoot . '/' . $fixtureDir
 						. '/presenter-mapping-container-loader.php',
 				],
 			);

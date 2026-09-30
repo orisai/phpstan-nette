@@ -177,9 +177,10 @@ Register the loader:
 
 ```neon
 parameters:
-	orisaiNette:
-		dic:
-			containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
+	orisai:
+		nette:
+			dic:
+				containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
 ```
 
 The whole contract is in [DI loader contract](#di-loader-contract).
@@ -196,9 +197,10 @@ Latte analysis is off by default. Add `latte` to the analysed file extensions an
 ```neon
 parameters:
 	fileExtensions: [php, latte]
-	orisaiNette:
-		latte:
-			enabled: true
+	orisai:
+		nette:
+			latte:
+				enabled: true
 ```
 
 Every `.latte` file in your analysed paths is now analysed.
@@ -208,9 +210,10 @@ analysis reads from a container. Point `templateFactoryContainerLoader` at a loa
 
 ```neon
 parameters:
-	orisaiNette:
-		latte:
-			templateFactoryContainerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
+	orisai:
+		nette:
+			latte:
+				templateFactoryContainerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
 ```
 
 Without it, presenter templates are linked only through [discovery formulas](#latte-discovery-formulas), and a
@@ -221,11 +224,12 @@ Optionally, turn on call-site narrowing — an included template is then analyse
 
 ```neon
 parameters:
-	orisaiNette:
-		latte:
-			narrowing:
-				enabled: true
-				storePath: %currentWorkingDirectory%/tests/phpstan/latte-narrowing
+	orisai:
+		nette:
+			latte:
+				narrowing:
+					enabled: true
+					storePath: %currentWorkingDirectory%/tests/phpstan/latte-narrowing
 ```
 
 Create the directory and commit it together with the files the analysis writes into it. See
@@ -246,16 +250,17 @@ Good to go!
 
 ## Configuration
 
-All options live under one `orisaiNette` key. Defaults are shown in each block. Unknown keys and values of a wrong
+All options live under the `orisai.nette` key. Defaults are shown in each block. Unknown keys and values of a wrong
 type are rejected by PHPStan when the config is loaded.
 
 ### DI options
 
 ```neon
 parameters:
-	orisaiNette:
-		dic:
-			containerLoader: null
+	orisai:
+		nette:
+			dic:
+				containerLoader: null
 ```
 
 - `containerLoader` – PHP file returning your compiled containers; DI analysis is off while it is `null`
@@ -265,16 +270,17 @@ parameters:
 
 ```neon
 parameters:
-	orisaiNette:
-		forms:
-			enabled: true
-			defaultContainerClass: Nette\Forms\Container
-			reportUnannotatedRegistrars: true
-			catalogs: []
-			internals:
-				indexShadowCompare: false
-		component:
-			enabled: true
+	orisai:
+		nette:
+			forms:
+				enabled: true
+				defaultContainerClass: Nette\Forms\Container
+				reportUnannotatedRegistrars: true
+				catalogs: []
+				internals:
+					indexShadowCompare: false
+			component:
+				enabled: true
 ```
 
 - `forms.enabled` – form and component shape inference, typing and every Forms rule; `false` switches all of them off
@@ -292,30 +298,31 @@ parameters:
 
 ```neon
 parameters:
-	orisaiNette:
-		latte:
-			enabled: false
-			narrowing:
+	orisai:
+		nette:
+			latte:
 				enabled: false
-				storePath: %currentWorkingDirectory%/phpstan-latte-store
-			discovery:
-				enabled: true
-				storePath: %tmpDir%/orisai-nette/latte-discovery
-				coarseInvalidationAccepted: false
-				formulas: []
-			engineLoader: null
-			templateFactoryContainerLoader: null
-			firstPartyPaths: %paths%
-			templateTypeRequired: false
-			includeIsolation: false
-			allowNarrowingOverride: false
-			reportWrongPhpDocTypeInVarType: true
-			reportAnyTypeWideningInVarType: true
+				narrowing:
+					enabled: false
+					storePath: %currentWorkingDirectory%/phpstan-latte-store
+				discovery:
+					enabled: true
+					storePath: %tmpDir%/orisai-nette/latte-discovery
+					coarseInvalidationAccepted: false
+					formulas: []
+				engineLoader: null
+				templateFactoryContainerLoader: null
+				firstPartyPaths: %paths%
+				templateTypeRequired: false
+				includeIsolation: false
+				allowNarrowingOverride: false
+				reportWrongPhpDocTypeInVarType: true
+				reportAnyTypeWideningInVarType: true
 ```
 
 - `enabled` – analyses `.latte` files; requires `latte` in `fileExtensions`
 - `narrowing.enabled` – analyses an included template with the types proven at its `{include}` sites; requires
-  `orisaiNette.latte.enabled`
+  `orisai.nette.latte.enabled`
 - `narrowing.storePath` – committed directory holding the captured types (see
   [narrowing store lifecycle](#narrowing-store-lifecycle))
 - `discovery.enabled` – links templates to the presenters and controls rendering them; it does nothing while Latte is
@@ -329,7 +336,7 @@ parameters:
   [Latte engine loader](#latte-engine-loader))
 - `templateFactoryContainerLoader` – PHP file returning your containers, read for the presenter mapping, the template
   factory's default template class and the variables it provides (`$user`, `$baseUrl`, `$basePath`, `$flashes`); it
-  may be the same file as `orisaiNette.dic.containerLoader`
+  may be the same file as `orisai.nette.dic.containerLoader`
 - `firstPartyPaths` – classes and templates checked by the template-linking rules; code outside is used, never reported
 - `templateTypeRequired` – reports a linked template without `{templateType}` whose renderer uses the default template
   class
@@ -342,20 +349,21 @@ parameters:
 
 ### Bridges options
 
-The bridge has no options of its own. It runs when `orisaiNette.forms.enabled`, `orisaiNette.latte.enabled` and
-`orisaiNette.latte.discovery.enabled` are all on.
+The bridge has no options of its own. It runs when `orisai.nette.forms.enabled`, `orisai.nette.latte.enabled` and
+`orisai.nette.latte.discovery.enabled` are all on.
 
 ### Loader paths
 
-`orisaiNette.dic.containerLoader`, `orisaiNette.latte.engineLoader` and
-`orisaiNette.latte.templateFactoryContainerLoader` are read as plain file paths. A relative path resolves against the
+`orisai.nette.dic.containerLoader`, `orisai.nette.latte.engineLoader` and
+`orisai.nette.latte.templateFactoryContainerLoader` are read as plain file paths. A relative path resolves against the
 directory PHPStan runs from, not against the config file. Anchor them:
 
 ```neon
 parameters:
-	orisaiNette:
-		dic:
-			containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
+	orisai:
+		nette:
+			dic:
+				containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
 ```
 
 A Latte loader (`engineLoader`, `templateFactoryContainerLoader`) that throws still counts as configured — the file is
@@ -367,7 +375,7 @@ when a Latte feature stays silent. A throwing `dic.containerLoader` fails the an
 The narrowing store is versioned like a baseline: generated by ordinary runs, committed with the change that moved it,
 conflicts resolved by regenerating it.
 
-- Create the directory at `orisaiNette.latte.narrowing.storePath`. The analysis never creates it — without it nothing
+- Create the directory at `orisai.nette.latte.narrowing.storePath`. The analysis never creates it — without it nothing
   is written.
 - Run the analysis. The first run writes an empty file for every including template.
 - Run it again until `git status` on the directory is clean, then commit it.
@@ -387,34 +395,34 @@ includes:
 	- vendor/orisai/phpstan-nette/config/dic-dead-code.neon
 ```
 
-It needs `orisaiNette.dic.containerLoader`.
+It needs `orisai.nette.dic.containerLoader`.
 
 ### Validation
 
 Checks beyond the schema run when the first file is analysed. Each rejection is a one-sentence message:
 
-- `orisaiNette.latte.enabled requires "latte" in fileExtensions.`
-- `orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.`
-- `orisaiNette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed <v>.`
+- `orisai.nette.latte.enabled requires "latte" in fileExtensions.`
+- `orisai.nette.latte.narrowing.enabled requires orisai.nette.latte.enabled.`
+- `orisai.nette.latte.enabled requires a supported latte/latte version (2.11, 3.0 or 3.1); installed <v>.`
 - `Latte 3 requires nette/forms >= 3.1.7 (FormsExtension); installed <v>.` — the Latte 3 rows are checked only with
-  `orisaiNette.latte.enabled` on and Latte 3 installed
+  `orisai.nette.latte.enabled` on and Latte 3 installed
 - `Latte 3 requires nette/application >= 3.1.6 (UIExtension); installed <v>.`
 - `Latte 3.1 requires nette/forms >= 3.2.7 and nette/application >= 3.2.7; installed <v>/<v>.`
-- `orisaiNette.dic.containerLoader "<path>" is not a readable file.` — the same for `orisaiNette.latte.engineLoader`
-  and `orisaiNette.latte.templateFactoryContainerLoader`
-- `orisaiNette.forms.catalogs: class "<name>" does not exist.`
-- `orisaiNette.forms.catalogs: method "<method>" is declared by both <catalog> and <catalog>.` — method names are
+- `orisai.nette.dic.containerLoader "<path>" is not a readable file.` — the same for `orisai.nette.latte.engineLoader`
+  and `orisai.nette.latte.templateFactoryContainerLoader`
+- `orisai.nette.forms.catalogs: class "<name>" does not exist.`
+- `orisai.nette.forms.catalogs: method "<method>" is declared by both <catalog> and <catalog>.` — method names are
   compared case-insensitively and inherited methods count, so a catalog extending a built-in one is rejected too
-- `orisaiNette.latte.discovery.formulas: unknown formula "<name>" for <class>.`
-- `orisaiNette.latte.discovery.formulas: unknown option "<option>" for <class>.` — only `formula`, `sharedFallback` and
+- `orisai.nette.latte.discovery.formulas: unknown formula "<name>" for <class>.`
+- `orisai.nette.latte.discovery.formulas: unknown option "<option>" for <class>.` — only `formula`, `sharedFallback` and
   `nameProperty` are read
-- `orisaiNette.latte.discovery.formulas: formula "<name>" for <class> requires option "<option>".` — `sharedFallback`
+- `orisai.nette.latte.discovery.formulas: formula "<name>" for <class> requires option "<option>".` — `sharedFallback`
   for `dirname-templates-lcfirst-fallback`, `nameProperty` for `dirname-property-lcfirst`
 
 PHPStan reports the rejection as an internal error and exits with code 1:
 
 ```
-Internal error: orisaiNette.latte.enabled requires "latte" in fileExtensions. while analysing file /path/to/src/a.php
+Internal error: orisai.nette.latte.enabled requires "latte" in fileExtensions. while analysing file /path/to/src/a.php
 ```
 
 Fix the configuration; the suggestion to report the internal error to PHPStan does not apply. The checks do not run
@@ -510,7 +518,7 @@ dumpLatteDiscovery(HomePresenter::class);
 
 ### DI loader contract
 
-`orisaiNette.dic.containerLoader` is a PHP file which returns either:
+`orisai.nette.dic.containerLoader` is a PHP file which returns either:
 
 - `array<string, Nette\DI\Container>` – containers keyed by profile name; all of them are analysed together
 - `Nette\DI\Container` – a shorthand for `['default' => $container]`
@@ -534,7 +542,7 @@ return [
 
 The result cache depends on the compiled container files, so a change of the DI config invalidates it.
 
-The same file may serve `orisaiNette.latte.templateFactoryContainerLoader`. Latte also reads your filters, functions
+The same file may serve `orisai.nette.latte.templateFactoryContainerLoader`. Latte also reads your filters, functions
 and macros from the first container with a `Nette\Bridges\ApplicationLatte\ILatteFactory` service.
 
 ### Forms annotations
@@ -626,7 +634,7 @@ public function addPhone(string $name): TextInput
 
 Inside your analysed paths, an unannotated helper registering one component under a parameter is reported
 (`orisaiNette.forms.unannotatedRegistrar`). It works today, but the day the class moves into a package its body is not
-read any more and the registration disappears. Turn the report off with `orisaiNette.forms.reportUnannotatedRegistrars`.
+read any more and the registration disappears. Turn the report off with `orisai.nette.forms.reportUnannotatedRegistrars`.
 
 **`@form-wizard [stepPrefix]`** – a forms wizard; its `createStep1()`, `createStep2()`, … methods are its steps and
 `getValues()` returns their values keyed by step number. The optional argument replaces the `createStep` prefix:
@@ -646,10 +654,11 @@ Register it:
 
 ```neon
 parameters:
-	orisaiNette:
-		forms:
-			catalogs:
-				- App\PHPStan\FormsCatalog
+	orisai:
+		nette:
+			forms:
+				catalogs:
+					- App\PHPStan\FormsCatalog
 ```
 
 ```php
@@ -681,7 +690,7 @@ The interface is never implemented — only its methods and their tags are read.
 Filters, functions and macros registered on your Latte engine are read from the engine itself — calls through them are
 checked against their real signatures.
 
-With `orisaiNette.dic.containerLoader` set, the engine comes from the container's
+With `orisai.nette.dic.containerLoader` set, the engine comes from the container's
 `Nette\Bridges\ApplicationLatte\ILatteFactory`. Without nette/application, return the engine from a file — it is used
 when no container provides one:
 
@@ -698,9 +707,10 @@ return $latte;
 
 ```neon
 parameters:
-	orisaiNette:
-		latte:
-			engineLoader: %currentWorkingDirectory%/tests/phpstan/latte-engine-loader.php
+	orisai:
+		nette:
+			latte:
+				engineLoader: %currentWorkingDirectory%/tests/phpstan/latte-engine-loader.php
 ```
 
 With neither, only Latte's built-in filters, functions and macros are known. Filters added at render time
@@ -761,18 +771,19 @@ deriving its template path by convention, is your code — assign it a formula:
 
 ```neon
 parameters:
-	orisaiNette:
-		latte:
-			discovery:
-				formulas:
-					App\Presentation\TemplateLocator: samedir-single
-					App\Component\BaseControl: dirname-lcfirst
-					App\Component\BaseGridControl:
-						formula: dirname-templates-lcfirst-fallback
-						sharedFallback: '@@grid.latte'
-					App\Component\ContentControl:
-						formula: dirname-property-lcfirst
-						nameProperty: layout
+	orisai:
+		nette:
+			latte:
+				discovery:
+					formulas:
+						App\Presentation\TemplateLocator: samedir-single
+						App\Component\BaseControl: dirname-lcfirst
+						App\Component\BaseGridControl:
+							formula: dirname-templates-lcfirst-fallback
+							sharedFallback: '@@grid.latte'
+						App\Component\ContentControl:
+							formula: dirname-property-lcfirst
+							nameProperty: layout
 ```
 
 The key is the class declaring the method — for a method declared in a trait, the trait.
@@ -881,7 +892,7 @@ The shape of a form — its children, their classes and values — is inferred w
 | `setValue()` on an upload control                                             | `orisaiNette.forms.writeNoEffect`                 |                                                         |
 | Form values not mappable to the mapped type                                   | `orisaiNette.forms.mappedTypeWrite`               | missing property, required member unset, type mismatch  |
 | `createComponent*()` returning `Nette\Forms\Form` instead of a UI form        | `orisaiNette.forms.createComponentNonUiForm`      | signals and submission would be lost                    |
-| Generic `add*` helper without `@form-adds`                                    | `orisaiNette.forms.unannotatedRegistrar`          | `orisaiNette.forms.reportUnannotatedRegistrars`         |
+| Generic `add*` helper without `@form-adds`                                    | `orisaiNette.forms.unannotatedRegistrar`          | `orisai.nette.forms.reportUnannotatedRegistrars`         |
 | `@form-adds` outside a `Nette\Forms\Container` subclass                       | `orisaiNette.forms.outsideContainer`              |                                                         |
 | `@form-adds` which does not parse                                             | `orisaiNette.forms.malformed`                     |                                                         |
 | `@form-adds` naming no parameter of the method                                | `orisaiNette.forms.unknownParameter`              |                                                         |
@@ -962,7 +973,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | `setView()` or another template write made when it has no effect (PHP side) | `orisaiNette.latte.ineffectiveTemplateMutation` |                                                    |
 | `{templateType}` other than the renderer's template class                | `orisaiNette.latte.templateTypeMismatch`        | needs discovery                                    |
 | View with no existing template file                                      | `orisaiNette.latte.templateMissing`             | needs discovery                                    |
-| Linked template without `{templateType}`                                 | `orisaiNette.latte.templateTypeRequired`        | needs discovery, `latte.templateTypeRequired`      |
+| Linked template without `{templateType}`                                 | `orisai.nette.latte.templateTypeRequired`        | needs discovery, `latte.templateTypeRequired`      |
 | Template no render, include or layout reaches                            | `orisaiNette.latte.orphanTemplate`              | needs discovery; advisory                          |
 | `{control}`, `{link}`, `{snippet}`, … where no control renders the template | `orisaiNette.latte.providerUnavailable`       | needs discovery                                    |
 | Debugging function output                                                | `orisaiNette.latte.debugDump`                   | [debugging](#latte-debugging)                      |

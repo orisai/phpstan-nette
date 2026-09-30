@@ -37,7 +37,7 @@ final class DiscoveryStore
 	private string $storeDirPath;
 
 	// Lazy, never read at construction time (SiteScopeStore's own discipline): every consumer with
-	// orisaiNette.latte.discovery.enabled off short-circuits before calling any method below, so a stray
+	// orisai.nette.latte.discovery.enabled off short-circuits before calling any method below, so a stray
 	// pre-existing store directory is never glob()'d or include()'d when the flag is off.
 
 	/** @var array<string, list<DiscoveryRecord>>|null */

@@ -64,7 +64,7 @@ final class HarvestedExtensionSpawnTest extends BaseTestCase
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => ['latte' => ['enabled' => true, 'engineLoader' => $engineLoader]],
+				'orisai' => ['nette' => ['latte' => ['enabled' => true, 'engineLoader' => $engineLoader]]],
 			],
 			['src'],
 		);

@@ -34,7 +34,7 @@ final class EngineSource
 	}
 
 	// True whenever either knob is SET, independent of whether resolve() eventually succeeds - a
-	// containerLoaderFile pointing at a real file with no ILatteFactory (or a orisaiNette.latte.engineLoader
+	// containerLoaderFile pointing at a real file with no ILatteFactory (or a orisai.nette.latte.engineLoader
 	// throwing) still counts as configured, degrading to an EMPTY harvest rather than to the
 	// distinct "nothing configured at all" state dumpLatteCustoms() reports.
 	public function isConfigured(): bool

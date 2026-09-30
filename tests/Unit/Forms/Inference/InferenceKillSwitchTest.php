@@ -32,7 +32,7 @@ final class InferenceKillSwitchTest extends TypeInferenceTestCase
 
 	public function testParameterIsFalse(): void
 	{
-		self::assertFalse(self::getContainer()->getParameter('orisaiNette')['forms']['enabled']);
+		self::assertFalse(self::getContainer()->getParameter('orisai')['nette']['forms']['enabled']);
 	}
 
 }

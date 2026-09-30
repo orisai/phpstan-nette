@@ -123,7 +123,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 	// held fixed, while "no harvester wired at all" and "a harvester with nothing configured" must
 	// be BYTE-IDENTICAL - both degrade to HarvestedCustoms::empty(), mirroring
 	// SiteScopeStore::emptySliceHash()'s own store-absent-vs-present-but-empty discipline, so a
-	// spawn that never wires orisaiNette.dic.containerLoader/orisaiNette.latte.engineLoader never sees its cache churn.
+	// spawn that never wires orisai.nette.dic.containerLoader/orisai.nette.latte.engineLoader never sees its cache churn.
 	public function testHarvestChangeChangesTheHashWithTopologyHeldConstant(): void
 	{
 		$dir = $this->scratchDir();
@@ -237,7 +237,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 	 */
 	// No resolver wired at all must stay byte-identical to a resolver with no loader file, the same
 	// absent-vs-unconfigured discipline the harvest salt above already holds to: a spawn that never
-	// configures orisaiNette.latte.templateFactoryContainerLoader must never see its cache churn.
+	// configures orisai.nette.latte.templateFactoryContainerLoader must never see its cache churn.
 	public function testAbsentResolverAndUnconfiguredResolverAreByteIdentical(): void
 	{
 		$dir = $this->scratchDir();
@@ -402,7 +402,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 			$notice = $this->readStream($stream);
 
 			self::assertSame(1, substr_count($notice, 'Note: no paths are declared'));
-			self::assertStringContainsString('orisaiNette.latte.discovery.coarseInvalidationAccepted', $notice);
+			self::assertStringContainsString('orisai.nette.latte.discovery.coarseInvalidationAccepted', $notice);
 		} finally {
 			FileSystem::delete($dir);
 		}

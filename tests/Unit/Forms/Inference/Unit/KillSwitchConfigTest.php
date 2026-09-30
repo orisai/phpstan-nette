@@ -18,7 +18,7 @@ final class KillSwitchConfigTest extends PHPStanTestCase
 
 	public function testParameterDeclared(): void
 	{
-		self::assertTrue(self::getContainer()->getParameter('orisaiNette')['forms']['enabled']);
+		self::assertTrue(self::getContainer()->getParameter('orisai')['nette']['forms']['enabled']);
 	}
 
 }

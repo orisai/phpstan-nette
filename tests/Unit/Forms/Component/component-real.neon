@@ -15,9 +15,10 @@ parameters:
 	netteServiceLocatorDynamicReturnType: false
 	# This harness analyses the self-enclosed library fixtures, so the fallback container is the
 	# library's sample container.
-	orisaiNette:
-		forms:
-			defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
+	orisai:
+		nette:
+			forms:
+				defaultContainerClass: Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer
 	excludePaths!:
 		analyse: []
 		analyseAndScan: []

@@ -12,7 +12,7 @@ final class CatalogInvalidationTest extends FormsInvalidationMatrixCase
 
 	public function testEditingAUserCatalogTagMovesTheShape(): void
 	{
-		$this->setParameter('orisaiNette.forms.catalogs', ['ScratchRuleCatalog']);
+		$this->setParameter('orisai.nette.forms.catalogs', ['ScratchRuleCatalog']);
 
 		$this->assertScenario(
 			'catalog-tag',

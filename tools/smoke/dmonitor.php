@@ -35,15 +35,15 @@ FileSystem::write($scratch . '/phpstan.neon', Neon::encode([
 		'paths' => [$app . '/src'],
 		'tmpDir' => $scratch . '/tmp',
 		'fileExtensions' => ['php', 'latte'],
-		'orisaiNette' => [
+		'orisai' => ['nette' => [
 			'latte' => [
 				'enabled' => true,
 				'engineLoader' => __DIR__ . '/dmonitor-engine.php',
 			],
-		],
+		]],
 	],
 	'services' => [
-		'orisaiNette.installedVersions' => [
+		'orisai.nette.installedVersions' => [
 			'factory' => new Entity(
 				ProjectInstalledVersions::class . '::fromRawData',
 				[[['root' => [], 'versions' => $versions]]],

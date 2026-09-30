@@ -39,7 +39,7 @@ final class InvalidConfigurationTest extends BaseTestCase
 	{
 		$result = $this->project->analyse([
 			'fileExtensions' => ['php', 'latte'],
-			'orisaiNette' => [
+			'orisai' => ['nette' => [
 				'forms' => ['catalogs' => ['X']],
 				'latte' => [
 					'enabled' => true,
@@ -55,7 +55,7 @@ final class InvalidConfigurationTest extends BaseTestCase
 					'templateFactoryContainerLoader' => $this->project->path('loader.php'),
 				],
 				'dic' => ['containerLoader' => $this->project->path('container-loader.php')],
-			],
+			]],
 		], ['src']);
 
 		self::assertSame([], $result['errors'], $result['stderr']);
@@ -66,23 +66,23 @@ final class InvalidConfigurationTest extends BaseTestCase
 	public function testLatteWithoutExtension(): void
 	{
 		$this->assertRejected(
-			['orisaiNette' => ['latte' => ['enabled' => true]]],
-			'orisaiNette.latte.enabled requires "latte" in fileExtensions.',
+			['orisai' => ['nette' => ['latte' => ['enabled' => true]]]],
+			'orisai.nette.latte.enabled requires "latte" in fileExtensions.',
 		);
 	}
 
 	public function testNarrowingWithoutLatte(): void
 	{
 		$this->assertRejected(
-			['orisaiNette' => ['latte' => ['narrowing' => ['enabled' => true]]]],
-			'orisaiNette.latte.narrowing.enabled requires orisaiNette.latte.enabled.',
+			['orisai' => ['nette' => ['latte' => ['narrowing' => ['enabled' => true]]]]],
+			'orisai.nette.latte.narrowing.enabled requires orisai.nette.latte.enabled.',
 		);
 	}
 
 	public function testDiscoveryWithoutLatteIsInert(): void
 	{
 		$result = $this->project->analyse(
-			['orisaiNette' => ['latte' => ['discovery' => ['enabled' => true]]]],
+			['orisai' => ['nette' => ['latte' => ['discovery' => ['enabled' => true]]]]],
 			['src'],
 		);
 
@@ -94,8 +94,8 @@ final class InvalidConfigurationTest extends BaseTestCase
 	{
 		$path = $this->project->path('missing.php');
 		$this->assertRejected(
-			['orisaiNette' => ['dic' => ['containerLoader' => $path]]],
-			sprintf('orisaiNette.dic.containerLoader "%s" is not a readable file.', $path),
+			['orisai' => ['nette' => ['dic' => ['containerLoader' => $path]]]],
+			sprintf('orisai.nette.dic.containerLoader "%s" is not a readable file.', $path),
 		);
 	}
 
@@ -103,8 +103,8 @@ final class InvalidConfigurationTest extends BaseTestCase
 	{
 		$path = $this->project->path('missing.php');
 		$this->assertRejected(
-			['orisaiNette' => ['latte' => ['engineLoader' => $path]]],
-			sprintf('orisaiNette.latte.engineLoader "%s" is not a readable file.', $path),
+			['orisai' => ['nette' => ['latte' => ['engineLoader' => $path]]]],
+			sprintf('orisai.nette.latte.engineLoader "%s" is not a readable file.', $path),
 		);
 	}
 
@@ -112,16 +112,16 @@ final class InvalidConfigurationTest extends BaseTestCase
 	{
 		$path = $this->project->path('missing.php');
 		$this->assertRejected(
-			['orisaiNette' => ['latte' => ['templateFactoryContainerLoader' => $path]]],
-			sprintf('orisaiNette.latte.templateFactoryContainerLoader "%s" is not a readable file.', $path),
+			['orisai' => ['nette' => ['latte' => ['templateFactoryContainerLoader' => $path]]]],
+			sprintf('orisai.nette.latte.templateFactoryContainerLoader "%s" is not a readable file.', $path),
 		);
 	}
 
 	public function testMissingCatalogClass(): void
 	{
 		$this->assertRejected(
-			['orisaiNette' => ['forms' => ['catalogs' => ['Nope\Missing']]]],
-			'orisaiNette.forms.catalogs: class "Nope\Missing" does not exist.',
+			['orisai' => ['nette' => ['forms' => ['catalogs' => ['Nope\Missing']]]]],
+			'orisai.nette.forms.catalogs: class "Nope\Missing" does not exist.',
 		);
 	}
 
@@ -130,14 +130,14 @@ final class InvalidConfigurationTest extends BaseTestCase
 		$this->assertRejected(
 			[
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => [
+				'orisai' => ['nette' => [
 					'latte' => [
 						'enabled' => true,
 						'discovery' => ['enabled' => true, 'formulas' => ['X' => 'unknown-formula']],
 					],
-				],
+				]],
 			],
-			'orisaiNette.latte.discovery.formulas: unknown formula "unknown-formula" for X.',
+			'orisai.nette.latte.discovery.formulas: unknown formula "unknown-formula" for X.',
 		);
 	}
 
@@ -146,7 +146,7 @@ final class InvalidConfigurationTest extends BaseTestCase
 		$this->assertRejected(
 			[
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => [
+				'orisai' => ['nette' => [
 					'latte' => [
 						'enabled' => true,
 						'discovery' => [
@@ -154,9 +154,9 @@ final class InvalidConfigurationTest extends BaseTestCase
 							'formulas' => ['X' => ['formula' => 'samedir-single', 'sharedFallbak' => 'form.latte']],
 						],
 					],
-				],
+				]],
 			],
-			'orisaiNette.latte.discovery.formulas: unknown option "sharedFallbak" for X.',
+			'orisai.nette.latte.discovery.formulas: unknown option "sharedFallbak" for X.',
 		);
 	}
 
@@ -165,14 +165,14 @@ final class InvalidConfigurationTest extends BaseTestCase
 		$this->assertRejected(
 			[
 				'fileExtensions' => ['php', 'latte'],
-				'orisaiNette' => [
+				'orisai' => ['nette' => [
 					'latte' => [
 						'enabled' => true,
 						'discovery' => ['enabled' => true, 'formulas' => ['X' => 'dirname-property-lcfirst']],
 					],
-				],
+				]],
 			],
-			'orisaiNette.latte.discovery.formulas: formula "dirname-property-lcfirst" for X requires option "nameProperty".',
+			'orisai.nette.latte.discovery.formulas: formula "dirname-property-lcfirst" for X requires option "nameProperty".',
 		);
 	}
 
@@ -185,8 +185,8 @@ final class InvalidConfigurationTest extends BaseTestCase
 		);
 
 		$this->assertRejected(
-			['orisaiNette' => ['forms' => ['catalogs' => ['DuplicateCatalog']]]],
-			'orisaiNette.forms.catalogs: method "ADDTEXT" is declared by both '
+			['orisai' => ['nette' => ['forms' => ['catalogs' => ['DuplicateCatalog']]]]],
+			'orisai.nette.forms.catalogs: method "ADDTEXT" is declared by both '
 				. 'OriPhpstan\\Nette\\Forms\\Catalog\\Stub\\FormValueTypeCatalog and DuplicateCatalog.',
 		);
 	}
@@ -200,8 +200,8 @@ final class InvalidConfigurationTest extends BaseTestCase
 		);
 
 		$this->assertRejected(
-			['orisaiNette' => ['forms' => ['catalogs' => ['ExtendingCatalog']]]],
-			'orisaiNette.forms.catalogs: method "addText" is declared by both '
+			['orisai' => ['nette' => ['forms' => ['catalogs' => ['ExtendingCatalog']]]]],
+			'orisai.nette.forms.catalogs: method "addText" is declared by both '
 				. 'OriPhpstan\\Nette\\Forms\\Catalog\\Stub\\FormValueTypeCatalog and ExtendingCatalog.',
 		);
 	}

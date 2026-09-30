@@ -21,7 +21,7 @@ use function usort;
 use const PHP_BINARY;
 
 /**
- * Determinism torture: the same fixture corpus, analysed with orisaiNette.forms.internals.indexShadowCompare on, must
+ * Determinism torture: the same fixture corpus, analysed with orisai.nette.forms.internals.indexShadowCompare on, must
  * report byte-identical (file, line, identifier, message) error sets regardless of the order the
  * files are handed to phpstan on the command line — glob order, reversed, and a sha1-of-basename
  * sort (a deterministic "shuffle", no randomness). Each order runs fully cold in its own

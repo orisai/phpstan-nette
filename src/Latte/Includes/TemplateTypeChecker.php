@@ -47,7 +47,7 @@ use const SORT_STRING;
 //     over the whole template graph and the missing-view host is the renderer's lexicographically
 //     first linked template across the whole store, so a warm run that reanalysed only the changed
 //     files could serve a verdict computed from a graph that no longer exists.
-//   - orisaiNette.latte.templateTypeMismatch / orisaiNette.latte.templateTypeRequired compare the template's own
+//   - orisaiNette.latte.templateTypeMismatch / orisai.nette.latte.templateTypeRequired compare the template's own
 //     {templateType} against the renderer's PAIRING VERDICT, whose primary channel
 //     (PhpRenderWalk::CONVENTION_HOOK_METHODS) is a `return X::class;` inside a METHOD BODY, and
 //     against the class HIERARCHY of the paired class. A body-only edit leaves every signature

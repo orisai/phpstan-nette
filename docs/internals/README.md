@@ -7,7 +7,7 @@ Maintainer documentation; the user-facing guide is ../README.md.
 Architecture, invariants, cache design, test layout and known limitations, for someone changing the code.
 
 - [forms.md](forms.md) – form and component shape inference, the shape store and result-cache salt
-- [component.md](component.md) – component attachment and the `orisaiNette.component.*` rules
+- [component.md](component.md) – component attachment and the `orisai.nette.component.*` rules
 - [dic.md](dic.md) – DI container analysis: registry, receiver classes, rules, type inference, dead-code usage
 - [latte.md](latte.md) – Latte template analysis: compile pipeline, cross-file model, narrowing, customs, discovery
 - [latte-versions.md](latte-versions.md) – Latte 2/3 version seam, shape families, the Latte 3 compile, the upstream
@@ -23,7 +23,7 @@ The notes below concern every area.
 
 ### Configuration guard
 
-`ConfigurationGuard` (`src/Configuration/`, service `orisaiNette.configurationGuard`) holds the cross-field checks the
+`ConfigurationGuard` (`src/Configuration/`, service `orisai.nette.configurationGuard`) holds the cross-field checks the
 schema in `extension.neon` cannot express; the user guide lists their messages. It is also the one place services ask
 whether an area is on (`isFormsEnabled()`, `isLatteDiscoveryEnabled()`, `isBridgeEnabled()`, …), so a new switch
 belongs there rather than in a service argument.
@@ -37,10 +37,10 @@ belongs there rather than in a service argument.
   filter; if a stub ever trips it, move the call further behind the filter.
 - Collectors take the guard but do not validate: they are built before rules, and the guard rule reports.
 - The Latte version rows (a supported `latte/latte` line, then the nette/forms and nette/application releases Latte 3
-  and 3.1 need) run only with `orisaiNette.latte.enabled` on and read the installed versions through
-  `ProjectInstalledVersions` (service `orisaiNette.installedVersions`), which tests override with
+  and 3.1 need) run only with `orisai.nette.latte.enabled` on and read the installed versions through
+  `ProjectInstalledVersions` (service `orisai.nette.installedVersions`), which tests override with
   `ProjectInstalledVersions::fromRawData()`.
-- The routing parser and the template source locator take plain `%orisaiNette.latte.*%` parameters instead of the guard.
+- The routing parser and the template source locator take plain `%orisai.nette.latte.*%` parameters instead of the guard.
   Injecting the guard there created a DI cycle through the reflection provider.
 
 ### Result-cache meta services

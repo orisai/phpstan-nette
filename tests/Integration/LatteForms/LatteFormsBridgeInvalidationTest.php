@@ -301,7 +301,7 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 		);
 		self::assertIsArray($service['arguments'] ?? null);
 		self::assertSame(
-			'%orisaiNette.forms.enabled%',
+			'%orisai.nette.forms.enabled%',
 			$service['arguments'][self::SALT_ARGUMENT] ?? null,
 			'the ' . self::SALT_ARGUMENT . ' argument of ' . FormsResultCacheMeta::class . ' is no longer '
 				. 'the Forms switch' . $consequence,
@@ -333,8 +333,8 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 				$paths,
 				$tmpDir,
 				[
-					'orisaiNette.latte.discovery.storePath' => $paths[0] . '/discovery',
-					'orisaiNette.latte.firstPartyPaths' => [$paths[0]],
+					'orisai.nette.latte.discovery.storePath' => $paths[0] . '/discovery',
+					'orisai.nette.latte.firstPartyPaths' => [$paths[0]],
 				],
 			)->getConfigPath(),
 		);

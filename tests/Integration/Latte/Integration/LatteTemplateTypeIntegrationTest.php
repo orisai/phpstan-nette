@@ -77,7 +77,7 @@ final class LatteTemplateTypeIntegrationTest extends BaseTestCase
 		}
 	}
 
-	// The flag-on half of the dormancy pin: the SAME corpus, with orisaiNette.latte.templateTypeRequired flipped,
+	// The flag-on half of the dormancy pin: the SAME corpus, with orisai.nette.latte.templateTypeRequired flipped,
 	// reports the floor-verdict renderer's untyped template and nothing else new - a renderer whose
 	// verdict names a real template class never qualifies however the flag is set.
 	public function testStrictFlagOnReportsOnlyTheFloorVerdictRenderer(): void
@@ -94,7 +94,7 @@ final class LatteTemplateTypeIntegrationTest extends BaseTestCase
 				$projectRoot,
 				$srcDir,
 				$scratch,
-				['orisaiNette.latte.templateTypeRequired' => true],
+				['orisai.nette.latte.templateTypeRequired' => true],
 			);
 
 			$required = [];
@@ -206,9 +206,9 @@ PHP);
 		]);
 
 		$parameters = $extraParameters + [
-			'orisaiNette.latte.discovery.enabled' => true,
-			'orisaiNette.latte.discovery.storePath' => $storeDir,
-			'orisaiNette.latte.firstPartyPaths' => [$srcDir],
+			'orisai.nette.latte.discovery.enabled' => true,
+			'orisai.nette.latte.discovery.storePath' => $storeDir,
+			'orisai.nette.latte.firstPartyPaths' => [$srcDir],
 		];
 
 		// Run 1 writes the store; run 2 is the one whose diagnostics the checker derives from it.

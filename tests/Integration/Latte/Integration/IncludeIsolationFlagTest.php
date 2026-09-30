@@ -17,7 +17,7 @@ use function uniqid;
 use const PHP_BINARY;
 use const SORT_STRING;
 
-// End-to-end proof that orisaiNette.latte.includeIsolation reaches a real analysis through DI (EdgeScopeIsolationTest
+// End-to-end proof that orisai.nette.latte.includeIsolation reaches a real analysis through DI (EdgeScopeIsolationTest
 // pins the seam itself). The same fixture pair is analysed twice, flag off then on: under Latte 2's
 // union semantics the includer's own $shared satisfies the target's declaration, under Latte 3's
 // isolated params it does not - and that difference IS the migration worklist the flag exists to
@@ -69,7 +69,7 @@ final class IncludeIsolationFlagTest extends BaseTestCase
 			self::REAL_CONFIG_PATH,
 			[$srcDir],
 			$tmpDir,
-			['orisaiNette.latte.includeIsolation' => $includeIsolation],
+			['orisai.nette.latte.includeIsolation' => $includeIsolation],
 		);
 
 		$process = new Process(

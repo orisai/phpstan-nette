@@ -33,11 +33,12 @@ parameters:
 	netteFormContainerValuesDynamicReturnType: false
 	netteServiceLocatorDynamicReturnType: false
 	fileExtensions: [php, latte]
-	orisaiNette:
-		latte:
-			enabled: true
-		dic:
-			containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
+	orisai:
+		nette:
+			latte:
+				enabled: true
+			dic:
+				containerLoader: %currentWorkingDirectory%/tests/phpstan/container-loader.php
 ```
 
 ```php

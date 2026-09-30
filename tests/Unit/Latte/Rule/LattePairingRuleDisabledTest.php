@@ -81,7 +81,7 @@ final class LattePairingRuleDisabledTest extends RuleTestCase
 		return [__DIR__ . '/phpstan-test.neon'];
 	}
 
-	// Dormancy pin (Task-4 review I1): orisaiNette.latte.enabled off means no findings AND no walk/cache
+	// Dormancy pin (Task-4 review I1): orisai.nette.latte.enabled off means no findings AND no walk/cache
 	// cost - the conflict fixture that fires in LattePairingRuleTest stays silent, and the cache
 	// directory is never even created (the short-circuit precedes remember()).
 	public function testFlagOffIsFullyDormantOnAConflictFixture(): void
