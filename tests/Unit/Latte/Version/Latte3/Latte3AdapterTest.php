@@ -11,6 +11,10 @@ use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
+use function gc_collect_cycles;
+use function gc_disable;
+use function gc_enable;
+use function memory_get_usage;
 use function preg_match;
 
 /**
@@ -131,6 +135,28 @@ final class Latte3AdapterTest extends BaseTestCase
 				new ShapeFamily(ShapeFamily::LATTE_30, ShapeFamily::FORMS_ITEM),
 			))->lineMarkerPattern(),
 		);
+	}
+
+	public function testParsesDoNotPileUpWithTheCycleCollectorDisabled(): void
+	{
+		$adapter = $this->adapter();
+		$source = "{block content}\n{foreach \$items as \$item}<p n:if=\"\$item\">{\$item|upper}</p>{/foreach}\n{/block}\n";
+
+		gc_collect_cycles();
+		gc_disable();
+		try {
+			$before = memory_get_usage();
+			for ($i = 0; $i < 400; $i++) {
+				$adapter->compile($source, 'LatteTpl_gc', 'a.latte');
+				$adapter->extractFacts($source, 'a.latte');
+			}
+
+			$grown = memory_get_usage() - $before;
+		} finally {
+			gc_enable();
+		}
+
+		self::assertLessThan(96 * 1024 * 1024, $grown);
 	}
 
 	private function adapter(): Latte3Adapter

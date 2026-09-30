@@ -15,7 +15,9 @@ use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use OriPhpstan\Nette\Latte\Version\ExtractedFacts;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
+use function gc_collect_cycles;
 use function implode;
+use function memory_get_usage;
 use function sha1;
 
 // Holds no Latte 3 object itself: LatteVersionAdapterFactory may class_exists() and construct it
@@ -24,6 +26,10 @@ final class Latte3Adapter implements LatteVersionAdapter
 {
 
 	private const CACHE_NODE_ID = 'latte3-compile';
+
+	private const COLLECT_AFTER_BYTES = 64 * 1024 * 1024;
+
+	private static int $collectedAtUsage = 0;
 
 	private Latte3Compiler $compiler;
 
@@ -102,7 +108,10 @@ final class Latte3Adapter implements LatteVersionAdapter
 
 	public function extractFacts(string $source, string $relativePath): ExtractedFacts
 	{
-		return $this->factsOf($this->compiler->parse($source), $source, $relativePath);
+		$facts = $this->factsOf($this->compiler->parse($source), $source, $relativePath);
+		self::collectParserCycles();
+
+		return $facts;
 	}
 
 	public function lineMarkerPattern(): string
@@ -132,8 +141,24 @@ final class Latte3Adapter implements LatteVersionAdapter
 	{
 		$parsed = $this->compiler->parse($source);
 		$facts = $this->factsOf($parsed, $source, $relativePath);
+		$compiled = new CompiledTemplate($this->compiler->generate($parsed, $className, $relativePath), $facts);
+		unset($parsed);
+		self::collectParserCycles();
 
-		return new CompiledTemplate($this->compiler->generate($parsed, $className, $relativePath), $facts);
+		return $compiled;
+	}
+
+	// Latte 3's parser leaves every parse behind as reference cycles (engine, parser, tags, nodes),
+	// about 0.4 MB apiece, and PHPStan runs with the cycle collector disabled. A collection walks
+	// everything PHPStan holds, so it runs only once enough garbage may have piled up.
+	private static function collectParserCycles(): void
+	{
+		if (memory_get_usage() - self::$collectedAtUsage < self::COLLECT_AFTER_BYTES) {
+			return;
+		}
+
+		gc_collect_cycles();
+		self::$collectedAtUsage = memory_get_usage();
 	}
 
 	// Read before generate(): the passes mutate the parsed tree in place.
