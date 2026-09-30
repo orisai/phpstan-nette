@@ -9,6 +9,7 @@ use Nette\DI\ContainerLoader;
 use Nette\DI\Extensions\DIExtension;
 use Nette\DI\Extensions\ExtensionsExtension;
 use Nette\Utils\FileSystem;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function basename;
 use function get_class;
 use function is_file;
@@ -56,7 +57,7 @@ final class FixtureContainerFactory
 				$compiler->addExtension('di', new DIExtension());
 				$compiler->loadConfig($configFile);
 			},
-			['dic-fixture', $profile],
+			['dic-fixture', $profile, VendorDirectory::name()],
 		);
 
 		$container = new $className([]);
