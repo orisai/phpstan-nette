@@ -268,6 +268,25 @@ final class ContextResolver
 
 		$provenance = $this->edgeProvenance($includerRel, $includerAbsolute, $site, $context, $scope['namedKeys']);
 
+		// EDGE-LOCAL, and the one factory variable pair that is: $control/$presenter name the
+		// RENDERER'S OWN IDENTITY, so an includer's value describes the includer, never the target.
+		// Latte 2 really does hand the target the includer's whole param set, so keeping it would not
+		// be wrong - it would be one context per includer for every shared partial, since each
+		// carries a different class. Measured on this corpus: app/templates/@layout.latte went from 4
+		// contexts to 41, multiplying every one of its findings (and its baseline counts) by ten. The
+		// target's OWN records answer for it instead, right after this in overlayFactoryVars(), and a
+		// target with no records of its own is left saying nothing - a missed detection, which is the
+		// safe direction. Only the still-inherited factory value is dropped: an include site passing
+		// $control explicitly has overwritten the provenance and keeps its value. Dropped BEFORE the
+		// captured overlay below: a capture re-observes or narrows a name the edge provides, it must
+		// never carry the includer's identity back in (an {include}d partial that is also an
+		// auto-layout extender would otherwise hand every layout one more context per renderer).
+		foreach (FactoryProvidedVars::RENDERER_IDENTITY_VARIABLES as $name) {
+			if (strpos($provenance[$name] ?? '', self::FACTORY_PROVENANCE_PREFIX) === 0) {
+				unset($scope['vars'][$name], $provenance[$name]);
+			}
+		}
+
 		// Narrowing overlay, delegated to the shared helper so ContextResolver and
 		// IncludeContractChecker can never independently drift (see EdgeScope's own drift-warning
 		// comment for the hazard this avoids). The declared-target overlay below always runs after
@@ -306,22 +325,6 @@ final class ContextResolver
 			$vars = array_merge($vars, $declaredTarget);
 			foreach (array_keys($declaredTarget) as $name) {
 				$provenance[$name] = $declaredProvenance[$name] ?? 'declared:varType';
-			}
-		}
-
-		// EDGE-LOCAL, and the one factory variable pair that is: $control/$presenter name the
-		// RENDERER'S OWN IDENTITY, so an includer's value describes the includer, never the target.
-		// Latte 2 really does hand the target the includer's whole param set, so keeping it would not
-		// be wrong - it would be one context per includer for every shared partial, since each
-		// carries a different class. Measured on this corpus: app/templates/@layout.latte went from 4
-		// contexts to 41, multiplying every one of its findings (and its baseline counts) by ten. The
-		// target's OWN records answer for it instead, right after this in overlayFactoryVars(), and a
-		// target with no records of its own is left saying nothing - a missed detection, which is the
-		// safe direction. Only the still-inherited factory value is dropped: an include site passing
-		// $control explicitly has overwritten the provenance and keeps its value.
-		foreach (FactoryProvidedVars::RENDERER_IDENTITY_VARIABLES as $name) {
-			if (strpos($provenance[$name] ?? '', self::FACTORY_PROVENANCE_PREFIX) === 0) {
-				unset($vars[$name], $provenance[$name]);
 			}
 		}
 
