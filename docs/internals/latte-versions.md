@@ -267,12 +267,12 @@ per template with a committed manifest, so any change in what compiles is a visi
   nearest preceding loader containing the key. The heuristic can misattribute when a later `setLoader()` lacks the
   key or a different engine variable renders it; sibling entries of the rendered one stay `null`.
 - **Manifest.** `tests/Corpus/manifest.<profile>.json` (`default` for the primary set in `vendor/`, and the profiles
-  `latte2`, `latte2-nette32`, `latte30`; the test takes the profile from `COMPOSER_VENDOR_DIR`) holds a header with the pretty versions of latte/latte, nette/application and nette/forms, and per template
-  `"analysed"`, `"compileError"` (an `orisaiNette.latte.parseError` on the file) or `{"expectedFail": "<reason>"}`
-  (a compile error the analysis accepts, with a reason kept across regenerations). The test fails on any
-  `orisaiNette.latte.internalError` or `phpstan.parse` finding, any run-level internal error, any finding outside the
-  harvested set, and a header which differs from the installed versions. It skips when the profile's corpus is not
-  harvested.
+  `latte2`, `latte2-nette32`, `latte30`; the test takes the profile from `COMPOSER_VENDOR_DIR`) holds a header with the
+  pretty versions of latte/latte, nette/application and nette/forms, and per template `"analysed"`, `"compileError"` (an
+  `orisaiNette.latte.parseError` on the file) or `{"expectedFail": "<reason>"}` (a compile error the analysis accepts,
+  with a reason kept across regenerations). The test fails on any `orisaiNette.latte.internalError` or `phpstan.parse`
+  finding, any run-level internal error, any finding outside the harvested set, and a header which differs from the
+  installed versions. It skips when the profile's corpus is not harvested, and on a set with no manifest (`lowest`).
 - **Regenerate.** `make corpus-manifest [PROFILE=…]` runs the test with `CORPUS_MANIFEST_WRITE=1`: it rewrites the
   manifest and prints the per-state counts, the state diff and two review lists — templates analysed although the
   upstream test asserts a `CompileException`, and compile errors the upstream test does not assert. Every entry of
@@ -284,9 +284,9 @@ per template with a committed manifest, so any change in what compiles is a visi
   `composer.<profile>.json` (`tools/profile.php`), so a CI corpus row's PHPStan spawn locates vendor classes through
   the same Composer file as a local `make corpus-manifest`. The `corpus` CI job runs `corpus-install`,
   `corpus-harvest` and `make tests PROFILE=… ARGS=tests/Corpus` per profile.
-- **Refresh rule.** Refreshing a profile's corpus is `make profile` (floating) + `make corpus-harvest` +
-  `make corpus-manifest`, committed together in **one** commit; otherwise the manifest header no longer matches what
-  `corpus-install` pins.
+- **Refresh rule.** Refreshing a corpus is `make update` (the primary set) or `make profile PROFILE=…` (floating) +
+  `make corpus-harvest [PROFILE=…]` + `make corpus-manifest [PROFILE=…]`, committed together in **one** commit;
+  otherwise the manifest header no longer matches what `corpus-install` pins.
 
 `make smoke-dmonitor [APP=<dir>]` (local only) analyses a real Latte 3 application — by default
 `../../../apps/fr/dmonitor` — with that application's own vendor and PHPStan, the engine from its own container, and
