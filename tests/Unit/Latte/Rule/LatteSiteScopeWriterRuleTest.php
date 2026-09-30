@@ -502,6 +502,12 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 						. 'Prune with the paths your configuration analyses.',
 					$nothing,
 				);
+				self::assertInstanceOf(FileRuleError::class, $nothing[0]);
+				self::assertSame(
+					$storeDir . '/' . SliceClassName::forPath('a.latte') . '.php',
+					$nothing[0]->getFile(),
+					'with nothing analysed the refusal is anchored in the store directory',
+				);
 				self::assertFileExists($orphan, 'a run which analysed no template must not empty the store');
 
 				$errors = $this->writer($storeDir)->processNode($data, $this->scope());
@@ -548,6 +554,83 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				$errors,
 			);
 			self::assertFileExists($storeDir . '/' . SliceClassName::forPath('gone.latte') . '.php');
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testWritesTheReportMarkerExactlyWhenTheStoreBytesMoved(): void
+	{
+		$dir = $this->scratchDir();
+		$report = $dir . '/report';
+
+		try {
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, ['a.latte', 'gone.latte']);
+			$capture = $this->collectedDataNode([$this->entry('a.latte#1#t.latte#ctx', 'sha', ['x' => 'int'], [])]);
+
+			putenv(StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE . '=' . $report);
+			try {
+				$this->writer($storeDir)->processNode($capture, $this->scope());
+				self::assertSame(
+					'The Latte narrowing store changed for 1 including template: a.latte. '
+						. "Run the analysis again until this error disappears, then commit the store.\n",
+					FileSystem::read($report),
+				);
+				self::assertFileDoesNotExist($report . '.prune', 'no prune was requested');
+				FileSystem::delete($report);
+
+				$this->writer($storeDir)->processNode($capture, $this->scope());
+				self::assertFileDoesNotExist($report, 'an unchanged store writes no marker');
+
+				putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE . '=1');
+				$refused = $this->writer($storeDir, ['/project/app/Admin'])->processNode($capture, $this->scope());
+				self::assertSame(StoreChangeSignal::PRUNE_REFUSED_IDENTIFIER, $refused[0]->getIdentifier());
+				self::assertFileDoesNotExist($report, 'a refusal moves no bytes, so the run settles and reports it');
+				self::assertFileExists($report . '.prune');
+				FileSystem::delete($report . '.prune');
+
+				$this->writer($storeDir)->processNode($capture, $this->scope());
+				self::assertStringStartsWith(
+					'The Latte narrowing store pruned 1 orphaned slice: ',
+					FileSystem::read($report),
+				);
+				self::assertFileExists($report . '.prune');
+			} finally {
+				putenv(StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE);
+				putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE);
+			}
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testAnInertWriterWritesNoMarker(): void
+	{
+		$dir = $this->scratchDir();
+		$report = $dir . '/report';
+
+		try {
+			$capture = $this->collectedDataNode([$this->entry('a.latte#1#t.latte#ctx', 'sha', ['x' => 'int'], [])]);
+			putenv(StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE . '=' . $report);
+			putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE . '=1');
+			try {
+				(new LatteSiteScopeWriterRule(
+					TestGuard::latte(true, false),
+					$dir . '/store',
+					new SiteScopeStore($dir . '/store'),
+					[],
+					[],
+				))
+					->processNode($capture, $this->scope());
+				$this->writer($dir . '/missing-store')->processNode($capture, $this->scope());
+			} finally {
+				putenv(StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE);
+				putenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE);
+			}
+
+			self::assertFileDoesNotExist($report);
+			self::assertFileDoesNotExist($report . '.prune');
 		} finally {
 			FileSystem::delete($dir);
 		}

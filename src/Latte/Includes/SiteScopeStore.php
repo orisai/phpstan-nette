@@ -85,6 +85,18 @@ final class SiteScopeStore
 		return self::sliceFilePath($this->storeDirPath, $includerRel);
 	}
 
+	public function firstSlicePath(): ?string
+	{
+		$files = glob($this->storeDirPath . '/LatteSlice_*.php');
+		if ($files === false || $files === []) {
+			return null;
+		}
+
+		sort($files, SORT_STRING);
+
+		return $files[0];
+	}
+
 	/**
 	 * @param list<string> $analyzedIncluderRels
 	 * @param array<string, array{sha: string, vars: array<string, string>, args: array<string, string>}> $entries

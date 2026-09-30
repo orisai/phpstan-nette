@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Rule;
 
+use Nette\Utils\FileSystem;
 use Nette\Utils\Strings;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Converge\StoreChangeSignal;
@@ -32,8 +33,6 @@ use const SORT_STRING;
  */
 final class LatteSiteScopeWriterRule implements Rule
 {
-
-	public const PRUNE_REFUSED_IDENTIFIER = 'orisai.nette.latte.narrowingPruneRefused';
 
 	private const LISTED_MAX = 10;
 
@@ -95,6 +94,7 @@ final class LatteSiteScopeWriterRule implements Rule
 		// recording an InternalError and continuing - so a write failure here is never fatal to
 		// the run but stays diagnosable, instead of vanishing into a silent catch.
 		[$analysed, $changed, $pruned, $pruneRefusal] = $this->write($node);
+		$this->report($changed, $pruned);
 		if ($changed === [] && $pruned === []) {
 			if ($pruneRefusal === null) {
 				return [];
@@ -104,7 +104,7 @@ final class LatteSiteScopeWriterRule implements Rule
 				'The Latte narrowing store was not pruned: %s. Prune with the paths your configuration analyses.',
 				$pruneRefusal,
 			))
-				->identifier(self::PRUNE_REFUSED_IDENTIFIER)
+				->identifier(StoreChangeSignal::PRUNE_REFUSED_IDENTIFIER)
 				->line(1)
 				->nonIgnorable();
 		} else {
@@ -116,8 +116,9 @@ final class LatteSiteScopeWriterRule implements Rule
 		}
 
 		$anchor = $changed[0] ?? $analysed[0] ?? null;
-		if ($anchor !== null) {
-			$builder->file($this->store->slicePath($anchor));
+		$anchorFile = $anchor !== null ? $this->store->slicePath($anchor) : $this->store->firstSlicePath();
+		if ($anchorFile !== null) {
+			$builder->file($anchorFile);
 		}
 
 		return [$builder->build()];
@@ -168,6 +169,7 @@ final class LatteSiteScopeWriterRule implements Rule
 		$pruned = [];
 		$pruneRefusal = null;
 		if (getenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE) === '1') {
+			$this->touchReport(StoreChangeSignal::PRUNE_EVALUATED_SUFFIX, '');
 			if (!$this->analysesConfiguredPaths) {
 				$pruneRefusal = 'the run analysed other paths than the configured ones';
 			} elseif ($includerRels === []) {
@@ -180,6 +182,29 @@ final class LatteSiteScopeWriterRule implements Rule
 		sort($includerRels, SORT_STRING);
 
 		return [$includerRels, $changed, $pruned, $pruneRefusal];
+	}
+
+	/**
+	 * @param list<string> $changed
+	 * @param list<string> $pruned
+	 */
+	private function report(array $changed, array $pruned): void
+	{
+		if ($changed === [] && $pruned === []) {
+			return;
+		}
+
+		$this->touchReport('', $this->changedMessage($changed, $pruned, null) . "\n");
+	}
+
+	private function touchReport(string $suffix, string $contents): void
+	{
+		$report = getenv(StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE);
+		if ($report === false || $report === '') {
+			return;
+		}
+
+		FileSystem::write($report . $suffix, $contents);
 	}
 
 	/**

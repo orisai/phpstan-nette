@@ -4,7 +4,6 @@
 use OriPhpstan\Nette\Latte\Converge\ConvergeRunner;
 
 require_once __DIR__ . '/../src/Latte/Converge/StoreChangeSignal.php';
-require_once __DIR__ . '/../src/Latte/Converge/StoreDigest.php';
 require_once __DIR__ . '/../src/Latte/Converge/ConvergeRunner.php';
 
 $runner = new ConvergeRunner(

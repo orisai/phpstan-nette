@@ -3,24 +3,28 @@
 $scenario = (string) getenv('FAKE_PHPSTAN_SCENARIO');
 $state = json_decode((string) file_get_contents($scenario), true);
 $arguments = array_slice($argv, 1);
-$state['calls'][] = ['arguments' => $arguments, 'prune' => getenv('ORISAI_NETTE_LATTE_NARROWING_PRUNE')];
+$report = getenv('ORISAI_NETTE_LATTE_CONVERGE_REPORT');
+$state['calls'][] = [
+	'arguments' => $arguments,
+	'prune' => getenv('ORISAI_NETTE_LATTE_NARROWING_PRUNE'),
+	'reportIsFresh' => is_string($report) && $report !== '' && !file_exists($report),
+];
 
-if ($arguments[0] === 'dump-parameters') {
-	$response = $state['dumpParameters'];
-} elseif ($arguments[0] === 'clear-result-cache') {
-	$response = ['exitCode' => 0, 'stdout' => "cleared\n", 'stderr' => ''];
+if ($arguments[0] === 'clear-result-cache') {
+	$response = ['exitCode' => 0, 'stdout' => "cleared\n"];
 } else {
 	$response = $state['runs'][$state['run']] ?? $state['runs'][count($state['runs']) - 1];
 	$state['run']++;
-	foreach ($response['write'] ?? [] as $name => $content) {
-		file_put_contents($state['store'] . '/' . $name, $content);
+	if (isset($response['report'])) {
+		file_put_contents((string) $report, $response['report']);
 	}
 
-	foreach ($response['delete'] ?? [] as $name) {
-		unlink($state['store'] . '/' . $name);
+	if (($response['pruneEvaluated'] ?? false) === true) {
+		file_put_contents($report . '.prune', '');
 	}
 }
 
+$state['reports'][] = $report;
 file_put_contents($scenario, json_encode($state));
 
 fwrite(STDERR, $response['stderr'] ?? '');

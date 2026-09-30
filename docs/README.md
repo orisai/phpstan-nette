@@ -408,21 +408,17 @@ vendor/bin/latte-converge analyse -c phpstan.neon
 ```
 
 Every run gets your arguments unchanged — error format, paths, `-b`, `--fix` — and its progress stays on the terminal.
-The command compares the store files before and after each run and runs again when they changed; it prints the output
-of the first run which left the store as it was and exits with that run's code, so nothing costs an extra run.
-Findings of earlier runs are one run behind and are not printed; the settled run reports them. A crash, an internal
-error or an interrupt stops at once with PHPStan's own output and exit code. A store which still changes on run
-`--max-runs` (default 6) prints that run and fails. On a terminal, `--ansi` is added unless you passed `--ansi` or
-`--no-ansi`. Another process writing the store at the same time (an IDE running PHPStan) can cause an extra run, never
-more than the cap. Options go before `analyse`:
+The analysis tells the command, through a temporary file, when it rewrote the store; the command then runs again and
+prints the changed templates on stderr. It prints the output of the first run which left the store as it was and exits
+with that run's code, so an unchanged store costs a single run. Findings of earlier runs are one run behind and are not
+printed; the settled run reports them. A crash, an internal error or an interrupt stops at once with PHPStan's own
+output and exit code. A store which still changes on run `--max-runs` (default 6) prints that run and fails. On a
+terminal, `--ansi` is added unless you passed `--ansi` or `--no-ansi`. Without narrowing, or without the store
+directory, the analysis runs once. Options go before `analyse`:
 
 - `--max-runs=<n>` – runs at most `n` analyses
-- `--store=<dir>` – the store directory; read from `phpstan dump-parameters` by default and remembered in the system
-  temporary directory until one of the configuration files changes
 - `--phpstan=<path>` – the PHPStan executable; defaults to `phpstan` next to `latte-converge` in `vendor/bin`
 - `--prune` – see below
-
-Without narrowing, or without the store directory, the command runs the analysis once.
 
 #### Pruning deleted templates
 
@@ -434,8 +430,9 @@ vendor/bin/latte-converge --prune analyse -c phpstan.neon
 ```
 
 It clears the result cache, analyses the whole project and removes every store file whose including template was not
-analysed; the removal is reported as a store change. A run given other paths than the configured ones, or one which
-analysed no template, removes nothing and reports `narrowingPruneRefused` instead.
+analysed; the removal is reported as a store change and the removed files are listed on stderr. A run given other paths
+than the configured ones, or one which analysed no template, removes nothing and reports `narrowingPruneRefused`. Without narrowing or without the store directory, the command says that nothing was
+pruned.
 
 ### Dead code detection
 

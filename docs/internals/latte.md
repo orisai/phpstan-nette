@@ -670,15 +670,13 @@ template content can decide it — only "the analysis of this tree would rewrite
 comes from a `Rule<CollectedDataNode>`, recomputed on every run from the tree and the store on disk and
 never stored in the result cache, so cold and warm runs agree on it. It is non-ignorable because a
 baseline entry would silence a stale store for good. `bin/latte-converge` (`Latte\Converge\ConvergeRunner`)
-never parses the error: it digests the store (`StoreDigest`: slice basename → sha1, plus whether the
-directory exists) before and after each unmodified `phpstan analyse` and reruns while the digest moves.
-That is race-free against PHPStan's own workers because the writer runs in the coordinator after them, and
-it is equivalent to the error, because the writer reports exactly the slices it rewrote or deleted — a
-spawn test pins the equivalence run by run. The store path comes from `--store` or one `dump-parameters
---json` call, cached in the system temporary directory and keyed by the working directory, the PHPStan
-binary and the configuration options; the entry holds sha1 of every file in `allConfigFiles` except PHPStan's
-own `phar://` ones, which cannot set these parameters, and is discarded when one changes. The call is not free: with a large baseline, Symfony's output formatter makes
-it take longer than a warm analysis.
+never parses the error and never reads the configuration: it passes a fresh temporary path in
+`ORISAI_NETTE_LATTE_CONVERGE_REPORT` to each unmodified `phpstan analyse`, and the writer writes the error
+message there whenever it rewrote or deleted slice bytes. The runner reruns while the file appears and removes
+it after every run, on every exit path. Only the coordinator writes it: workers inherit the variable but never
+run `Rule<CollectedDataNode>` rules. A spawn test pins, run by run, that the bytes moved ⇔ the error was
+reported ⇔ the file was written. A crash or internal error skips the finalizer's rules, so no file appears
+and the run is forwarded as it is.
 
 Slices of deleted includers are never pruned by ordinary runs: a run over a subset of the paths sees
 only part of the includers, and nothing tells it apart from a deletion. `latte-converge --prune` clears
@@ -686,7 +684,8 @@ the result cache and sets `ORISAI_NETTE_LATTE_NARROWING_PRUNE=1` for its first r
 every `LatteSlice_*.php` not named for an includer analysed in that run and reports the deletion as a store
 change. It refuses (`orisai.nette.latte.narrowingPruneRefused`) when the normalised `%analysedPaths%`
 differ from `%analysedPathsFromConfig%` or when no includer was analysed, since either would delete slices of
-templates the run never saw.
+templates the run never saw. A refusal moves no bytes, so it writes no marker. Whenever the writer evaluated a prune it also creates `<report>.prune`, which is how the
+runner tells "nothing to prune" from "narrowing off or store missing".
 
 ### Where captures are taken
 
