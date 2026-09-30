@@ -137,7 +137,7 @@ final class FilterTable
 			return null;
 		}
 
-		return (string) array_key_first($spellings);
+		return array_key_first($spellings);
 	}
 
 	/**
