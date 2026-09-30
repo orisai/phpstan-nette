@@ -116,12 +116,32 @@ final class EdgeAnchorInBlockTest extends BaseTestCase
 		}
 	}
 
-	private function project(string $target): string
+	// A named arg's expression is evaluated in the shared block method, whose $extra is typed from
+	// the one context that provides it: captured under the other context's key it would be that
+	// context's type, so a name any context lacks counts as disagreement and no anchor is emitted.
+	public function testNameMissingFromOneContextGetsNoBlockAnchorWhenArgsAreCaptured(): void
+	{
+		$projectRoot = $this->project("{\$user}{\$item}\n", "{include 'x.latte', item: \$extra}");
+
+		try {
+			$contexts = [
+				TemplateContext::root(['user' => 'string']),
+				TemplateContext::root(['user' => 'string', 'extra' => 'int']),
+			];
+			[, $anchors] = $this->processWith($projectRoot, $contexts);
+
+			self::assertSame([], $anchors);
+		} finally {
+			FileSystem::delete($projectRoot);
+		}
+	}
+
+	private function project(string $target, string $include = "{include 'x.latte'}"): string
 	{
 		$projectRoot = sys_get_temp_dir() . '/latte-edge-anchor-block-' . uniqid('', true);
 		FileSystem::write(
 			$projectRoot . '/includer.latte',
-			"{varType string \$user}\n{block title}T{/block}\n{block content}\n\t{include 'x.latte'}\n{/block}\n",
+			"{varType string \$user}\n{block title}T{/block}\n{block content}\n\t" . $include . "\n{/block}\n",
 		);
 		FileSystem::write($projectRoot . '/x.latte', $target);
 

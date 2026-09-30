@@ -218,7 +218,10 @@ final class EdgeAnchorInjector
 			} elseif (
 				!$this->tryInsertAtLine($method, $site->getLatteLine(), $anchor)
 				&& $site->getKind() === IncludeTarget::KIND_STATIC_FILE
-				&& $this->contextsAgreeOn($this->capturedNames($site, $includerAbsolute, $context), $allContexts)
+				&& $this->contextsAgreeOn(
+					$this->capturedNames($site, $includerAbsolute, $context, $allContexts),
+					$allContexts,
+				)
 			) {
 				// A file-form site inside a {block}/{define}/{snippet} body has its line-tagged
 				// statement in that block's own method, never in a clone: the anchor goes next to it
@@ -546,19 +549,34 @@ final class EdgeAnchorInjector
 		}
 	}
 
-	// The names a block anchor would record: the manifest, plus every provided name once explicit
-	// args are captured too (their expressions may read any of them).
+	// The names a block anchor would record: the manifest, or - once explicit args are captured
+	// too, their expressions may read any provided name - every name ANY context provides: a name
+	// one context lacks types the shared block method from the other, and would be captured under
+	// the wrong key.
 
 	/**
+	 * @param list<TemplateContext> $allContexts
 	 * @return list<string>
 	 */
-	private function capturedNames(IncludeTarget $site, string $includerAbsolute, TemplateContext $context): array
+	private function capturedNames(
+		IncludeTarget $site,
+		string $includerAbsolute,
+		TemplateContext $context,
+		array $allContexts
+	): array
 	{
-		if ($this->argTyper->namedArgSources($site) !== []) {
-			return array_keys($context->getVars());
+		if ($this->argTyper->namedArgSources($site) === []) {
+			return $this->buildManifest($site, $includerAbsolute, $context);
 		}
 
-		return $this->buildManifest($site, $includerAbsolute, $context);
+		$names = [];
+		foreach ($allContexts as $other) {
+			foreach (array_keys($other->getVars()) as $name) {
+				$names[$name] = true;
+			}
+		}
+
+		return array_keys($names);
 	}
 
 	/**
