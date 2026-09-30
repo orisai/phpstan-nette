@@ -714,8 +714,8 @@ final class DeclarationInjector
 	// call sites/contexts disagreeing on a captured type widen the doc to `Foo|Bar` rather than
 	// picking one arbitrarily - deduped, sorted for determinism.
 	// Only sees sites edgeIndex->outgoingSites() reports WITH a real anchor: a block-to-block or
-	// imported-block dispatch site never got one (EdgeAnchorInjector::insertAtLineStrict/
-	// buildImportedBlockManifest), so it silently contributes nothing here - fixing that is an
+	// imported-block dispatch site never got one (EdgeAnchorInjector::injectIntoMethod skips
+	// them/buildImportedBlockManifest), so it silently contributes nothing here - fixing that is an
 	// anchor-side change, not a capturedBlockArgTypes one.
 	// $declaredNames (this block's own body-depth-0 {varType}s) is threaded into CapturedOverlay's
 	// own declared filter rather than re-checked here: an old-store-version entry for a name the

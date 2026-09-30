@@ -653,6 +653,18 @@ directory, run until `git status` is clean, fail CI on a dirty store) is in the 
 directory itself: `LatteSiteScopeWriterRule` writes into an existing directory only, so a missing directory
 means no captures, never an error.
 
+### Where captures are taken
+
+An edge anchor is a statement `EdgeAnchorInjector` splices right before the include's own
+statement, in the `latteMain_ctx{i}` clone of the context it records. A file include inside a
+`{block}`/`{define}`/`{snippet}` body has that statement in the block's own method, so the anchor
+goes there — one per context, since every clone visits the shared block method. Block params are
+the union of the contexts' types (`mixed` on disagreement), so such an anchor is emitted only when
+every context declares the same type for each name it would record (the manifest, or every
+provided name once explicit args are captured); otherwise the edge's per-context type already
+beats anything the block scope could prove and the anchor is skipped — a missed capture, the safe
+direction.
+
 ### One-run capture lag and convergence
 
 A capture is born during analysis (a PHPStan Collector records the type proven at the edge) and

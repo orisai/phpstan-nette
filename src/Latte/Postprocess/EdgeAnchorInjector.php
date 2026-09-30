@@ -102,7 +102,7 @@ final class EdgeAnchorInjector
 	// own rewrite attempts fail identically: methodsByName lookup misses, and the vendor-compiled
 	// args are already a literal [] for a cross-file target, never a get_defined_vars() FuncCall
 	// dropGetDefinedVarsArg() could match) - either way the dispatch stays IN PLACE at the site's
-	// line, in the enclosing clone, so the same insertAtLineStrict() line-search finds it. See
+	// line, in the enclosing clone, so the same tryInsertAtLine() line-search finds it. See
 	// buildBlockAnchor()'s own comment for how same-file vs. imported changes the manifest shape.
 
 	/**
@@ -157,6 +157,7 @@ final class EdgeAnchorInjector
 				$sites,
 				$context->canonicalHash(),
 				$context,
+				$contexts,
 				$methodsByName,
 			);
 		}
@@ -192,6 +193,7 @@ final class EdgeAnchorInjector
 
 	/**
 	 * @param list<IncludeTarget> $sites
+	 * @param list<TemplateContext> $allContexts
 	 * @param array<string, ClassMethod> $methodsByName
 	 */
 	private function injectIntoMethod(
@@ -201,6 +203,7 @@ final class EdgeAnchorInjector
 		array $sites,
 		string $contextId,
 		TemplateContext $context,
+		array $allContexts,
 		array $methodsByName
 	): void
 	{
@@ -215,14 +218,19 @@ final class EdgeAnchorInjector
 			} elseif (
 				!$this->tryInsertAtLine($method, $site->getLatteLine(), $anchor)
 				&& $site->getKind() === IncludeTarget::KIND_STATIC_FILE
+				&& $this->contextsAgreeOn($this->capturedNames($site, $includerAbsolute, $context), $allContexts)
 			) {
 				// A file-form site inside a {block}/{define}/{snippet} body has its line-tagged
 				// statement in that block's own method, never in a clone: the anchor goes next to it
-				// there, where the scope holds the block's params - the same declared names the
-				// clone threads in. A block-dispatch site nested in a non-cloned block method stays
-				// unanchored (a wrong-scope capture would be worse than none), as does a file-form
-				// site whose statement vanished; insertAtEnd() is never a fallback here, it could
-				// capture a manifest var AFTER a reassignment below the site's real line.
+				// there. The block method is shared by every clone and its params are the UNION of
+				// the contexts' types (DeclarationInjector::buildUnionParams, `mixed` on
+				// disagreement), so a capture there is only the per-context truth when every context
+				// declares the same type for each name it would record - otherwise the edge already
+				// knows better than the block scope and the anchor is skipped (a missed capture is
+				// the safe direction). A block-dispatch site nested in a non-cloned block method
+				// stays unanchored (a wrong-scope capture would be worse than none), as does a
+				// file-form site whose statement vanished; insertAtEnd() is never a fallback here,
+				// it could capture a manifest var AFTER a reassignment below the site's real line.
 				$this->insertIntoBlockMethod($methodsByName, $site->getLatteLine(), $anchor);
 			}
 		}
@@ -517,27 +525,10 @@ final class EdgeAnchorInjector
 		return $first instanceof Expression ? $first->expr : null;
 	}
 
-	// A NOT-FOUND result here must never fall back to insertAtEnd(): an end-of-body capture can
-	// observe a DIFFERENT program state than the site itself did - either a manifest var
-	// reassigned somewhere below the site's real line (file-form callers - the line-tagged
-	// statement vanishing is the only way this method ever misses, since every include-family
-	// emission keeps one at the mapped line), or the wrong method's scope entirely (block-dispatch
-	// callers, whose site lives in a DIFFERENT, non-cloned method than $method - see the
-	// injectIntoMethod() call site comment). Both are strictly worse than no anchor at all: no
-	// anchor degrades to today's declared-wide behavior, which is always safe; a misplaced one
-	// might not be. Skips silently instead.
-	//
-	// Residual constraint (block-dispatch only): this searches EVERY latteMain_ctx{i} clone for a
-	// block-to-block site's line, and Latte line numbers are the shared source-file numbering
-	// space (main body and block bodies in the same .latte file can share line numbers with
-	// unrelated statements in a clone). A same-numbered false match inside a currently-iterated
-	// clone would splice the anchor there instead of skipping - safety then rests on where a false
-	// match can land, not on the entry being unread: every real, still-line-tagged candidate for
-	// such a collision sits at or above the guard's own nesting level (e.g. the method's trailing
-	// auto-appended return), strictly after every conditional's control-flow join, so PHPStan's
-	// proven type there is the union of all incoming branches - a supertype (or equal) of what the
-	// guarded branch alone would show. A misplaced capture can only widen, never narrow, what the
-	// collector/writer later persist.
+	// The block method holding a file-form site's statement: any non-clone method with a statement
+	// at the site's line ({block}/{define}/{snippet} bodies keep their own line numbers), never
+	// lattePrepare (its statements borrow the head's last line). Every clone inserts its own
+	// anchor here, one per context, all right before the same statement.
 
 	/**
 	 * @param array<string, ClassMethod> $methodsByName
@@ -553,6 +544,45 @@ final class EdgeAnchorInjector
 				return;
 			}
 		}
+	}
+
+	// The names a block anchor would record: the manifest, plus every provided name once explicit
+	// args are captured too (their expressions may read any of them).
+
+	/**
+	 * @return list<string>
+	 */
+	private function capturedNames(IncludeTarget $site, string $includerAbsolute, TemplateContext $context): array
+	{
+		if ($this->argTyper->namedArgSources($site) !== []) {
+			return array_keys($context->getVars());
+		}
+
+		return $this->buildManifest($site, $includerAbsolute, $context);
+	}
+
+	/**
+	 * @param list<string> $names
+	 * @param list<TemplateContext> $contexts
+	 */
+	private function contextsAgreeOn(array $names, array $contexts): bool
+	{
+		if (count($contexts) <= 1) {
+			return true;
+		}
+
+		foreach ($names as $name) {
+			$types = [];
+			foreach ($contexts as $context) {
+				$types[$context->getVars()[$name] ?? ''] = true;
+			}
+
+			if (count($types) !== 1) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	// A returned array from leaveNode() replaces the matched node in whatever Stmt-array property
