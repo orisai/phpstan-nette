@@ -19,13 +19,11 @@ final class TemplateFactories
 		?string $templateClass = null
 	): TemplateFactory
 	{
-		if (InstalledVersionsGuard::satisfies('nette/application', '>=3.3')) {
-			return (new ReflectionClass(TemplateFactory::class))->newInstanceArgs(
-				[$latteFactory, $httpRequest, $user, $templateClass],
-			);
-		}
+		$args = InstalledVersionsGuard::satisfies('nette/application', '>=3.3')
+			? [$latteFactory, $httpRequest, $user, $templateClass]
+			: [$latteFactory, $httpRequest, $user, null, $templateClass];
 
-		return new TemplateFactory($latteFactory, $httpRequest, $user, null, $templateClass);
+		return (new ReflectionClass(TemplateFactory::class))->newInstanceArgs($args);
 	}
 
 }

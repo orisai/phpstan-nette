@@ -1,0 +1,49 @@
+includes:
+	- phpstan.common.neon
+	- phpstan.latte2.baseline.neon
+
+# The Latte 2 profiles (latte2, latte2-nette32), analysed for their highest compatible PHP.
+parameters:
+	phpVersion: 80300
+	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.latte2.php
+
+	# Latte-3-only code is analysed against Latte 3 by phpstan.neon; tests/**/Latte3/ stays scanned so the
+	# version-neutral tests calling into it resolve.
+	excludePaths:
+		analyse:
+			- ../tests/*/Latte3/*
+		analyseAndScan:
+			- ../src/Latte/Version/Latte3 (?)
+
+	ignoreErrors:
+		# The extension-harvest accessors are called from the Latte 3 seam and its tests, which phpstan.neon analyses.
+		-
+			identifier: shipmonk.deadMethod
+			message: '#^Unused OriPhpstan\\Nette\\Latte\\Customs\\HarvestedCustoms::(fromExtensions|getExtensions|getFeatures|getProviderTypes)$#'
+			path: ../src/Latte/Customs/HarvestedCustoms.php
+		# Latte ships no public accessor for its filter/function registry or macro-tag tokenizer.
+		-
+			identifiers: [new.internalClass, method.internalClass, classConstant.internalClass]
+			path: ../src/Latte/Version/Latte2/Latte2Adapter.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../tests/Unit/Latte/Version/Latte2/Latte2AdapterTest.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../src/Latte/Postprocess/CaseMismatchScanner.php
+		-
+			identifiers: [new.internalClass, method.internalClass]
+			path: ../src/Latte/Compile/LatteCompiler.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Declarations/DeclarationScanner.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Includes/TemplateFactExtractor.php
+		-
+			identifier: method.internalClass
+			path: ../src/Latte/Version/Latte2/MacroTokensArguments.php
+		# Resolves a filter callable the way Engine::invokeFilter() does, through Latte's @internal FilterExecutor.
+		-
+			identifiers: [instanceof.internalClass, property.internalClass, property.dynamicName]
+			path: ../src/Latte/Version/Latte2/Latte2EngineReader.php

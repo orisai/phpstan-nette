@@ -1,15 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			rawMessage: '''
-				Fetching deprecated class constant VERSION of class Latte\Engine:
-				use Engine::Version
-			'''
-			identifier: classConstant.deprecated
-			count: 1
-			path: ../src/Configuration/ConfigurationGuard.php
-
-		-
 			rawMessage: Unused OriPhpstan\Nette\Configuration\ConfigurationGuard::isComponentEnabled
 			identifier: shipmonk.deadMethod
 			count: 1
@@ -38,12 +29,6 @@ parameters:
 			identifier: method.nonObject
 			count: 1
 			path: ../src/Forms/Component/ContainerModel.php
-
-		-
-			rawMessage: 'Parameter #1 $native of method OriPhpstan\Nette\Forms\Index\IndexShapeResolver::locatedMethods() expects ReflectionClass<object>, PHPStan\BetterReflection\Reflection\Adapter\ReflectionClass|PHPStan\BetterReflection\Reflection\Adapter\ReflectionEnum given.'
-			identifier: argument.type
-			count: 1
-			path: ../src/Forms/Index/IndexShapeResolver.php
 
 		-
 			rawMessage: 'Calling PHPStan\Type\VerbosityLevel::isPrecise() is not covered by backward compatibility promise. The method might change in a minor PHPStan version.'
@@ -115,25 +100,10 @@ parameters:
 			path: ../src/Latte/Rule/LatteProvenanceTipRegistry.php
 
 		-
-			rawMessage: '''
-				Fetching deprecated class constant VERSION of class Latte\Engine:
-				use Engine::Version
-			'''
-			identifier: classConstant.deprecated
-			count: 1
-			path: ../src/Latte/Version/LatteVersionAdapterFactory.php
-
-		-
-			rawMessage: 'AnonymousClass0bced098c264b8adb58da0bd9f26e17a::__construct() does not call parent constructor from Nette\Security\User.'
+			message: '#^AnonymousClass[0-9a-f]+\:\:__construct\(\) does not call parent constructor from Nette\\Security\\User\.$#'
 			identifier: constructor.missingParentCall
 			count: 1
 			path: ../tests/Integration/Latte/Parity/Factory/TemplateFactoryInjectionParityTest.php
-
-		-
-			rawMessage: Use of constant E_STRICT is deprecated.
-			identifier: constant.deprecated
-			count: 1
-			path: ../tests/Integration/Latte/RuntimeParity/CrossFileScopeParityTest.php
 
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''Nette\\ComponentModel\\Container'' and Nette\ComponentModel\Container will always evaluate to true.'
@@ -218,12 +188,3 @@ parameters:
 			identifier: staticMethod.alreadyNarrowedType
 			count: 1
 			path: ../tests/Unit/Latte/Rule/LatteProvenanceTipRuleFileErrorTest.php
-
-		-
-			rawMessage: '''
-				Fetching deprecated class constant VERSION of class Latte\Engine:
-				use Engine::Version
-			'''
-			identifier: classConstant.deprecated
-			count: 1
-			path: ../tests/Unit/Toolkit/ScratchProjectVendorTest.php

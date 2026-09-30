@@ -1,255 +1,66 @@
 includes:
-	- phar://phpstan.phar/conf/bleedingEdge.neon
+	- phpstan.common.neon
 	- phpstan.baseline.neon
-	- ../extension.neon
-	- ../config/dic-dead-code.neon
 
+# Primary: the newest dependency set (Latte 3.1), analysed for the highest supported PHP.
 parameters:
-	phpVersion:
-		min: 70400
-		max: 80400
-	level: 8
-	tmpDir: ../var/tools/PHPStan
+	phpVersion: 80400
 	resultCachePath: %currentWorkingDirectory%/var/tools/PHPStan/resultCache.php
 
+	# Code built on Latte 2 internals is analysed against Latte 2 by phpstan.latte2.neon.
 	excludePaths:
-		# Latte-3-only test code (tests/**/Latte3/) is analysed against Latte 3 by phpstan.latte3.neon; it
-		# stays scanned here so the version-neutral tests calling into it resolve.
 		analyse:
-			- ../tests/*/Latte3/*
-		analyseAndScan:
-			# Analysed against Latte 3 by phpstan.latte3.neon.
-			- ../src/Latte/Version/Latte3 (?)
-			- ../tests/Fixtures
-			- ../tests/Doubles
-			- ../tests/Unit/Forms/Support
-			- ../tests/Unit/Forms/Component/Fixtures
-			- ../tests/Unit/Forms/Component/Unit/Support
-			- ../tests/Unit/Forms/Index/Fixtures
-			- ../tests/Unit/Forms/Inference/Fixtures
-			- ../tests/Unit/Forms/Inference/Unit/Support
-			- ../tests/Unit/Dic/Fixtures
-			- ../tests/Unit/Dic/Metadata/Fixtures
-			- ../tests/Unit/Dic/Rule/Fixtures
-			- ../tests/Unit/Dic/Type/Fixtures
-			- ../tests/Unit/Latte/Fixtures
-			- ../tests/Unit/Latte/Bridge/Fixtures
-			- ../tests/Unit/Latte/Bridge/Discovery/Fixtures
-			- ../tests/Unit/Latte/Bridge/Pairing/Fixtures
-			- ../tests/Unit/Latte/Customs/Fixtures
-			- ../tests/Unit/Latte/Customs/Latte3/Fixtures/__snapshots__
-			- ../tests/Unit/Latte/Declarations/Fixtures
-			- ../tests/Unit/Latte/Includes/Fixtures
-			- ../tests/Integration/Latte/Closures/Fixtures
-			- ../tests/Integration/Latte/Integration/Fixtures
-			- ../tests/Integration/Latte/Parity/Factory/Fixtures
-			- ../tests/Integration/Latte/Parity/Includes/Fixtures
-			- ../tests/Integration/Latte/Parity/Lifecycle/Fixtures
-			- ../tests/Integration/Latte/RuntimeParity/Fixtures
-			- ../tests/Unit/LatteForms/Fixtures
-
-	checkBenevolentUnionTypes: true
-	checkMissingCallableSignature: true
-	checkInternalClassCaseSensitivity: true
-	checkTooWideReturnTypesInProtectedAndPublicMethods: true
-	reportAnyTypeWideningInVarTag: true
-	reportPossiblyNonexistentConstantArrayOffset: true
-
-	exceptions:
-		check:
-			tooWideThrowType: true
+			- ../src/Latte/Version/Latte2
+			- ../src/Latte/Compile/DeterministicCacheMacro.php
+			- ../src/Latte/Compile/LatteCompiler.php
+			- ../src/Latte/Compile/PassthroughMacro.php
+			- ../src/Latte/Declarations/DeclarationScanner.php
+			- ../src/Latte/Includes/MacroPairing.php
+			- ../src/Latte/Includes/TemplateFactExtractor.php
+			- ../src/Latte/Postprocess/CaseMismatchScanner.php
+			- ../tests/*/Latte2/*
 
 	ignoreErrors:
-		# The analysed-paths universe walk reuses PHPStan's own file finder.
-		-
-			identifier: phpstanApi.method
-			path: ../src/Forms/Index/RegistrationIndex.php
-		-
-			identifier: phpstanApi.method
-			path: ../src/Forms/Cache/FormFactSalt.php
-
-		# Catalogs are read by reflection only, never called.
+		# Invoked by reflection from LatteVersionAdapterFactory.
 		-
 			identifier: shipmonk.deadMethod
-			path: ../src/Forms/Catalog/Stub/FormValueTypeCatalog.php
+			message: '#^Unused OriPhpstan\\Nette\\Latte\\Version\\Latte3\\Latte3EngineReader::create$#'
+			path: ../src/Latte/Version/Latte3/Latte3EngineReader.php
+		# Latte\Compiler\Block is @internal for its construction, yet it is the public payload of
+		# BlockNode::$block, DefineNode::$block, SnippetNode::$block and SnippetAreaNode::$block; the
+		# node facts read its name, dynamic-ness and parameters exactly as Latte's own passes do.
 		-
-			identifier: shipmonk.deadMethod
-			path: ../src/Forms/Catalog/Stub/FormModifierCatalog.php
+			message: '#Latte\\Compiler\\Block#'
+			identifier: parameter.internalClass
+			path: ../src/Latte/Version/Latte3/*
 		-
-			identifier: shipmonk.deadMethod
-			path: ../src/Forms/Catalog/Stub/FormRuleTypeCatalog.php
+			message: '#internal class Latte\\Compiler\\Block#'
+			identifier: property.internalClass
+			path: ../src/Latte/Version/Latte3/*
 		-
-			identifier: shipmonk.deadMethod
-			path: ../src/Forms/Catalog/Stub/FormReplicatorCatalog.php
-
-		# The freshness gate calls every accessor in ParentAccessors off a data provider, which is
-		# the point: a table entry is only pinned if the installed method behind it is really run.
+			message: '#internal class Latte\\Compiler\\Block#'
+			identifier: method.internalClass
+			path: ../src/Latte/Version/Latte3/*
+		# Latte ships no public accessor for its filter loaders; the reader asks the executor as the runtime does.
 		-
-			identifier: method.dynamicName
-			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
-
-		# Runtime parity pins what the compiled container really does, so it asserts what the types already say.
+			identifiers: [instanceof.internalClass, classConstant.internalClass, method.internalClass]
+			message: '#internal class Latte\\Runtime\\FilterExecutor#'
+			path: ../src/Latte/Version/Latte3/Latte3EngineReader.php
+		# The Latte 3.1-only feature the scoped-foreach fixture enables; the latte30 profile analyses it too.
 		-
-			identifier: staticMethod.alreadyNarrowedType
-			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
-		# Container::initialize() is declared on the base class only by newer nette/di releases.
-		-
-			message: '#^Call to an undefined method Nette\\DI\\Container::initialize\(\)\.$#'
-			identifier: method.notFound
-			path: ../tests/Integration/Dic/ContainerRuntimeParityTest.php
+			identifier: classConstant.notFound
+			message: '#^Access to undefined constant Latte\\Feature::ScopedLoopVariables\.$#'
+			path: ../tests/Unit/Latte/Customs/Latte3/Fixtures/engine-loader-scoped-loops.php
 			reportUnmatched: false
-
-		# The bridge's rule test synthesizes PHPStan's CollectedDataNode directly (the aggregation seam is
-		# the mechanism under test) and names FixableNodeRuleError to assert its absence.
+		# Deprecated by Latte 3.1 and nette/forms 3.3 only; the latte30 profile analyses these files too.
 		-
-			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
-			path: ../tests/Unit/LatteForms/LatteFormsRuleTest.php
-
-		# Latte: the extension-harvest accessors are called from the Latte 3 seam and its tests, which
-		# phpstan.latte3.neon analyses.
+			identifier: classConstant.deprecated
+			message: '#^Fetching deprecated class constant CONTENT_TEXT of class Latte\\Engine:#'
+			path: ../tests/Integration/Latte/RuntimeParity/RuntimeParityTest.php
 		-
-			identifier: shipmonk.deadMethod
-			message: '#^Unused OriPhpstan\\Nette\\Latte\\Customs\\HarvestedCustoms::(fromExtensions|getExtensions|getFeatures|getProviderTypes)$#'
-			path: ../src/Latte/Customs/HarvestedCustoms.php
-
-		# Latte: runtime helpers are called only from generated template code.
-		-
-			identifier: shipmonk.deadMethod
-			path: ../src/Latte/Runtime/
-		# Latte: the source locator, cache and rule-registry decorators wrap PHPStan's own services;
-		# there is no BC-promised way to answer a BetterReflection identifier, intercept its cache
-		# storage or decorate rule dispatch.
-		-
-			identifier: return.internalInterface
-			path: ../src/Latte/Reflection/LatteTemplateSourceLocator.php
-		-
-			identifier: phpstanApi.method
-			path: ../src/Latte/Reflection/LatteTemplateSourceLocator.php
-		-
-			identifiers: [phpstanApi.class, phpstanApi.classConstant, phpstanApi.method]
-			path: ../src/Latte/Reflection/InnerSourceLocatorFactory.php
-		# Called through its neon factory reference only.
-		-
-			identifier: shipmonk.deadMethod
-			path: ../src/Latte/Reflection/InnerSourceLocatorFactory.php
-		-
-			identifiers: [phpstanApi.interface, phpstanApi.method]
-			path: ../src/Latte/Cache/LatteReflectionCacheBypass.php
-		-
-			identifiers: [phpstanApi.interface, phpstanApi.method]
-			path: ../src/Latte/Rule/LatteFixStrippingRegistry.php
-		-
-			identifier: phpstanApi.interface
-			path: ../src/Latte/Rule/LatteFixStrippingRule.php
-		-
-			identifiers: [phpstanApi.interface, phpstanApi.method]
-			path: ../src/Latte/Rule/LatteProvenanceTipRegistry.php
-		# Mirrors RichParser's tagged-visitor loop; the tag name is only exposed as this constant.
-		-
-			identifier: phpstanApi.classConstant
-			path: ../src/Latte/Postprocess/RichAttributeDecorator.php
-		# Ports WrongVariableNameInVarTagRule + VarTagTypeRuleHelper, which have no BC-promised equivalent.
-		-
-			identifiers: [phpstanApi.instanceofType, phpstanApi.method]
-			path: ../src/Latte/Rule/VarTypeExpressionChecker.php
-		# The pre-analysis index build reuses PHPStan's own analyse excluder.
-		-
-			identifier: phpstanApi.method
-			path: ../src/Latte/Bridge/Discovery/PreAnalysisIndexBuilder.php
-		# Latte ships no public accessor for its filter/function registry or macro-tag tokenizer.
-		-
-			identifiers: [new.internalClass, method.internalClass, classConstant.internalClass]
-			path: ../src/Latte/Version/Latte2/Latte2Adapter.php
-		-
-			identifiers: [new.internalClass, method.internalClass]
-			path: ../tests/Unit/Latte/Version/Latte2/Latte2AdapterTest.php
-		-
-			identifiers: [new.internalClass, method.internalClass]
-			path: ../src/Latte/Postprocess/CaseMismatchScanner.php
-		-
-			identifiers: [new.internalClass, method.internalClass]
-			path: ../src/Latte/Compile/LatteCompiler.php
-		-
-			identifier: method.internalClass
-			path: ../src/Latte/Declarations/DeclarationScanner.php
-		-
-			identifier: method.internalClass
-			path: ../src/Latte/Includes/TemplateFactExtractor.php
-		-
-			identifier: method.internalClass
-			path: ../src/Latte/Version/Latte2/MacroTokensArguments.php
-		# Resolves a filter callable the way Engine::invokeFilter() does, through Latte's @internal FilterExecutor.
-		-
-			identifiers: [instanceof.internalClass, property.internalClass, property.dynamicName]
-			path: ../src/Latte/Version/Latte2/Latte2EngineReader.php
-
-		-
-			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
-			path: ../tests/Unit/Latte/Reflection/LatteTemplateSourceLocatorTest.php
-		-
-			identifier: phpstanApi.classConstant
-			path: ../tests/Unit/Latte/Postprocess/RichAttributeDecoratorTest.php
-		-
-			identifier: phpstanApi.classConstant
-			path: ../tests/Unit/Latte/Cache/LatteReflectionCacheBypassTest.php
-		-
-			identifier: phpstanApi.constructor
-			path: ../tests/Unit/Latte/Rule/LatteSiteScopeWriterRuleTest.php
-		-
-			identifier: phpstanApi.constructor
-			path: ../tests/Unit/Latte/Rule/LatteAnalyzedFileMarkerCollectorTest.php
-		-
-			identifier: phpstanApi.constructor
-			path: ../tests/Unit/Latte/Rule/LatteTemplateTypeDeclarationCollectorTest.php
-		-
-			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
-			path: ../tests/Unit/Latte/Rule/LatteTemplateGraphRuleTest.php
-		-
-			identifiers: [phpstanApi.classConstant, staticMethod.dynamicCall]
-			path: ../tests/Unit/Latte/Rule/LatteFixStrippingRegistryTest.php
-		-
-			identifiers: [phpstanApi.classConstant, staticMethod.dynamicCall]
-			path: ../tests/Unit/Latte/Rule/LatteProvenanceTipRegistryTest.php
-		-
-			identifier: phpstanApi.constructor
-			path: ../tests/Unit/Latte/Bridge/Discovery/PreAnalysisIndexBuilderTest.php
-		# fixNode() is the official fixer API despite its @internal tag; the diff getter is how the no-fix pin reads it.
-		-
-			identifier: method.internal
-			path: ../tests/Unit/Latte/Rule/LatteFixStrippingRuleFileErrorTest.php
-		-
-			identifier: method.internal
-			path: ../tests/Unit/Latte/Rule/LatteDiagnosticRuleTest.php
-		-
-			identifier: method.internal
-			path: ../tests/Unit/Latte/Rule/Fixtures/
-
-		# Tests building PHPStan internals by hand.
-		-
-			identifier: phpstanApi.constructor
-			path: ../tests/Unit/Forms/Inference/InferenceDumpParityTest.php
-		-
-			identifier: phpstanApi.classConstant
-			path: ../tests/Unit/Forms/Inference/InferenceReplicatorOffsetAccessRuleTest.php
-		-
-			identifier: phpstanApi.constructor
-			path: ../tests/Toolkit/TestFileFinder.php
-		-
-			identifier: phpstanApi.classConstant
-			path: ../tests/Toolkit/TestFileFinder.php
-		# Version-gated groups: a test's @group set is exposed only by PHPUnit internals, and the guard's
-		# own test runs a nested suite and catches the skip to prove it reaches the result.
-		-
-			identifier: method.internal
-			path: ../tests/Toolkit/VersionGroupGate.php
-		-
-			identifiers: [new.internalClass, method.internalClass, catch.internalInterface]
-			path: ../tests/Unit/Toolkit/InstalledVersionsGuardTest.php
-		# DirectoryWalker is passed only where the installed PHPStan has it.
-		-
-			identifier: arguments.count
-			path: ../tests/Toolkit/TestFileFinder.php
-		# Called from the fixture containers, which are excluded from analysis.
-		-
-			identifier: shipmonk.deadMethod
-			path: ../tests/Toolkit/TemplateFactories.php
+			identifier: classConstant.deprecatedClass
+			message: '#^Access to constant on deprecated class Nette\\Forms\\Controls\\CsrfProtection:#'
+			paths:
+				- ../tests/Unit/Forms/CatalogTest.php
+				- ../tests/Unit/LatteForms/MacroSuitabilityTest.php
+			reportUnmatched: false

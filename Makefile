@@ -22,15 +22,14 @@ PHPCS_CONFIG=var/tools/PHP_CodeSniffer/phpcs.$(PROFILE).xml
 PHPCS_PREPARE=sed -e 's\#\./\.\./vendor/\#$(CURDIR)/$(VENDOR_DIR)/\#g' -e 's\#\./\.\.\#$(CURDIR)\#g' tools/phpcs.xml > $(PHPCS_CONFIG)
 endif
 
-ifneq ($(filter latte3%,$(PROFILE)),)
-PHPSTAN_CONFIG=tools/phpstan.latte3.neon
-PHPSTAN_BASELINE_CONFIG=tools/phpstan.latte3.baseline.neon
-PHPSTAN_PATHS=
+ifneq ($(filter latte2%,$(PROFILE)),)
+PHPSTAN_CONFIG=tools/phpstan.latte2.neon
+PHPSTAN_BASELINE_CONFIG=tools/phpstan.latte2.baseline.neon
 else
 PHPSTAN_CONFIG=tools/phpstan.neon
 PHPSTAN_BASELINE_CONFIG=tools/phpstan.baseline.neon
-PHPSTAN_PATHS=src tests tools/corpus $(SMOKE_PATHS)
 endif
+PHPSTAN_PATHS=src tests tools/corpus $(SMOKE_PATHS)
 
 ## Install
 

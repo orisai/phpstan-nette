@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
+namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess\Latte2;
 
 use Latte\Parser;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;

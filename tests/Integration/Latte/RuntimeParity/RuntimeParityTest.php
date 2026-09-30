@@ -5,7 +5,6 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte\RuntimeParity;
 use DateTimeImmutable;
 use Latte\Engine;
 use Latte\Loaders\StringLoader;
-use Latte\Runtime\Filters;
 use Latte\Sandbox\SecurityPolicy;
 use Nette\Utils\FileSystem;
 use ReflectionMethod;
@@ -281,13 +280,12 @@ final class RuntimeParityTest extends BaseTestCase
 		);
 	}
 
-	// The class the line's FilterTable resolves |date and |batch to (FilterTableTest pins it); the
-	// Latte 3 class does not exist on the Latte 2 vendor this file is analysed against.
+	// The class the line's FilterTable resolves |date and |batch to (FilterTableTest pins it); each exists
+	// on one Latte major only, and this file is analysed against both.
 
 	private static function filtersClass(): string
 	{
-		// @phpstan-ignore classConstant.internalClass (Filters is @internal, same exemption as Postprocess/FilterTable.php)
-		return InstalledVersionsGuard::latteMajor() === 2 ? Filters::class : 'Latte\Essential\Filters';
+		return InstalledVersionsGuard::latteMajor() === 2 ? 'Latte\Runtime\Filters' : 'Latte\Essential\Filters';
 	}
 
 	/**

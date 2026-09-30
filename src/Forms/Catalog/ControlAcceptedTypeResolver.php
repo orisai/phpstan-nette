@@ -99,7 +99,6 @@ final class ControlAcceptedTypeResolver
 				return TypeCombinator::union(
 					new StringType(),
 					new IntegerType(),
-					// @phpstan-ignore class.notFound (BackedEnum is PHP 8.1+; ::class needs no autoload)
 					new ObjectType(BackedEnum::class),
 					new NullType(),
 				);
@@ -113,7 +112,6 @@ final class ControlAcceptedTypeResolver
 							new BooleanType(),
 							new FloatType(),
 							new ObjectType(Stringable::class),
-							// @phpstan-ignore class.notFound (BackedEnum is PHP 8.1+; ::class needs no autoload)
 							new ObjectType(BackedEnum::class),
 						),
 					),
@@ -130,7 +128,6 @@ final class ControlAcceptedTypeResolver
 					new StringType(),
 					new BooleanType(),
 					new ObjectType(Stringable::class),
-					// @phpstan-ignore class.notFound (BackedEnum is PHP 8.1+; ::class needs no autoload)
 					new ObjectType(BackedEnum::class),
 					new NullType(),
 				);

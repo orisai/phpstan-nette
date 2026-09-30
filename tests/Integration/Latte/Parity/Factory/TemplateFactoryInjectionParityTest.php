@@ -153,7 +153,7 @@ final class TemplateFactoryInjectionParityTest extends BaseTestCase
 		InstalledVersionsGuard::requireNetteLine('nette/application', '>=3.2');
 		$presenter = new ParityTemplateVariablePresenter();
 
-		$names = ParityTemplateVariablePresenter::getReflection()->getTemplateVariables( // @phpstan-ignore method.notFound (nette/application 3.2+ API)
+		$names = ParityTemplateVariablePresenter::getReflection()->getTemplateVariables(
 			$presenter,
 		);
 		sort($names);
