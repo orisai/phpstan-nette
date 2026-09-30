@@ -34,11 +34,17 @@ endif
 
 ## Install
 
+# The default set composer.json alone does not pin: on PHP 8 its constraints also resolve Latte 3.
+DEFAULT_SET=--with latte/latte:^2.11.6 --with nette/application:~3.1.15 --with nette/forms:~3.1.11 --with kdyby/forms-replicator:^2.0.0
+
 update: ## Update all dependencies
 	make update-php
 
-update-php: ## Update PHP dependencies
-	composer update
+update-php: ## Update PHP dependencies to the default set
+	make install-default
+
+install-default: ## Install the default set: Latte 2.11, nette/application and nette/forms 3.1, kdyby/forms-replicator 2
+	$(PRE_PHP) "$(shell command -v composer)" update --no-interaction --no-progress --prefer-dist $(DEFAULT_SET) $(ARGS)
 
 profile: ## Install a dependency profile into vendor-<name>: make profile PROFILE=latte31 PRE_PHP="php8.4"
 	test -n "$(PROFILE)" || { echo "PROFILE is required, one of: $(basename $(notdir $(wildcard tools/profiles/*.json)))"; exit 1; }

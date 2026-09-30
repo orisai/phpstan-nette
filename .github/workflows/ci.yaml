@@ -49,6 +49,8 @@ jobs:
 
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
+        with:
+          command: "make install-default PRE_PHP=php"
 
       - name: "PHP_CodeSniffer"
         uses: "orisai/github-workflows/.github/actions/php-codesniffer@v1"
@@ -110,6 +112,8 @@ jobs:
 
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
+        with:
+          command: "make install-default PRE_PHP=php"
 
       - name: "PHPStan"
         uses: "orisai/github-workflows/.github/actions/phpstan@v1"
@@ -191,7 +195,7 @@ jobs:
       - name: "Composer"
         uses: "orisai/github-workflows/.github/actions/setup-composer@v1"
         with:
-          command: "composer update --no-interaction --no-progress --prefer-dist ${{ matrix.composer-flags }}"
+          command: "make install-default PRE_PHP=php ARGS='${{ matrix.composer-flags }}'"
 
       - name: "PHPUnit"
         uses: "orisai/github-workflows/.github/actions/phpunit@v1"

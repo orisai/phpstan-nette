@@ -74,15 +74,20 @@ breaks that fixture, not users.
 
 ### Dependency profiles
 
-`composer.json` installs the default set: Latte 2.11 with nette/application and nette/forms 3.1, on PHP 7.4 up. The
-other supported sets are profiles in `tools/profiles/<name>.json`, each a set of constraint overrides:
+The default set is Latte 2.11 with nette/application and nette/forms 3.1 and kdyby/forms-replicator 2, on PHP 7.4–8.3.
+`composer.json` alone does not pin it — on PHP 8 its constraints also resolve Latte 3 — so `make install-default`
+(also `make update`) runs `composer update` with `--with latte/latte:^2.11.6 --with nette/application:~3.1.15 --with
+nette/forms:~3.1.11 --with kdyby/forms-replicator:^2.0.0` (`DEFAULT_SET` in the `Makefile`), and the CI `tests`,
+`static-analysis` and `coding-standard` jobs install through it. The other supported sets are profiles in
+`tools/profiles/<name>.json`, each a set of constraint overrides:
 
-| Profile          | Installs                                                      | PHP (CI)  |
-|------------------|---------------------------------------------------------------|-----------|
-| (default)        | Latte 2.11, nette/application and nette/forms 3.1             | 7.4–8.3   |
-| `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2            | 8.3       |
-| `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2             | 8.2, 8.3  |
-| `latte31`        | Latte 3.1, nette/application 3.3, nette/forms 3.3, nette/caching 3.4 | 8.3, 8.4 |
+| Profile          | Installs                                                              | PHP (CI)                         |
+|------------------|-----------------------------------------------------------------------|----------------------------------|
+| (default)        | Latte 2.11, nette/application and nette/forms 3.1, forms-replicator 2 | 7.4–8.3                          |
+| `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2                    | 8.3                              |
+| `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                     | 8.2, 8.3                         |
+| `latte31`        | Latte 3.1, nette/application 3.3, nette/forms 3.3, nette/caching 3.4  | 8.3, 8.4                         |
+| —                | Latte 3.0, nette/application and nette/forms 3.1                      | guard-allowed, not covered by CI |
 
 All three profiles install kdyby/forms-replicator 3. `make profile PROFILE=<name>` writes the git-ignored
 `composer.<name>.json` (`tools/profile.php`) and runs `composer update` into `vendor-<name>/`; every other target takes
@@ -111,6 +116,7 @@ The default set develops on PHP 7.4–8.3: Latte 2.11 does not install on 8.4, a
 Latte 3 profiles need PHP 8.2 or newer.
 
 ```
+make install-default PRE_PHP="php7.4"
 make PRE_PHP="XDEBUG_MODE=off php7.4" cs
 make PRE_PHP="XDEBUG_MODE=off php7.4" phpstan
 make lint LINT_PHP=php7.4
