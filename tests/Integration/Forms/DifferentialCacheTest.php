@@ -58,7 +58,7 @@ final class DifferentialCacheTest extends FormShapeTestCase
 		$sharedCache = new FormShapeCache($sharedDir);
 
 		$cold = $this->captureFixtureShapes($file, $sharedCache);
-		self::assertNotEmpty($cold);
+		self::assertNotSame([], $cold);
 
 		// Second pass over the SAME cache dir => warm hits.
 		$warm = $this->captureFixtureShapes($file, $sharedCache);
