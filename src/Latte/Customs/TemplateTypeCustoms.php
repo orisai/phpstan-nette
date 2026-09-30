@@ -5,6 +5,8 @@ namespace OriPhpstan\Nette\Latte\Customs;
 use Latte\Attributes\TemplateFilter;
 use Latte\Attributes\TemplateFunction;
 use OriPhpstan\Nette\Latte\Postprocess\CallableTargetResolution;
+use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory;
+use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -18,23 +20,19 @@ use function class_exists;
 use function strpos;
 use function strtolower;
 
-// Models Latte\Engine::processParams() (vendor Engine.php:531-555) for a {templateType C}
-// declaration: C's own qualifying public methods become per-template filter/function entries.
-// Qualification mirrors the vendor condition exactly - `getMethods(ReflectionMethod::IS_PUBLIC)`
-// filters on the public bit only (a public STATIC method qualifies too, and inherited public
-// methods count via native reflection's own hierarchy walk, both matching vendor's bare
-// `(new \ReflectionClass($params))->getMethods(\ReflectionMethod::IS_PUBLIC)`), and a method
-// counts if its docblock contains '@filter'/'@function' (any PHP version) OR - only when
-// PHPStan's configured PhpVersion is 8.0+ - it carries a #[TemplateFilter]/#[TemplateFunction]
-// attribute. The attribute check cannot use native ReflectionMethod::getAttributes() (PHP 8-only
-// API, absent on this project's own PHP 7.4 analysis runtime regardless of the configured
-// PhpVersion): it re-parses the declaring method's own source via the injected Parser instead,
-// the same AST-attribute-reading approach PresenterForbidInjectRule/ComponentDirectInjectionRule
-// already use for #[Inject].
-// Latte 3 forward note (v3.1.4-verified): processParams() is REMOVED entirely, not tightened -
-// Latte 3's Engine.php has no docblock-tag or attribute scanning left at all, replaced by
-// Extension::getFilters()/getFunctions(). A future Latte 3 migration must retire this class
-// outright, not adjust its matching rules.
+// Models how Latte registers a params object's methods as filters/functions at render time for a
+// {templateType C} declaration: C's own qualifying public methods become per-template filter/function
+// entries. Latte 2 and 3.0 run Engine::processParams(), 3.1 Helpers::resolveParams() over
+// Helpers::inspectParamsClass(). Every line walks `getMethods(ReflectionMethod::IS_PUBLIC)` - the
+// public bit only, so a public STATIC method qualifies too and inherited public methods count via
+// native reflection's own hierarchy walk. A method qualifies by a #[TemplateFilter]/
+// #[TemplateFunction] attribute - on Latte 2 only when PHPStan's configured PhpVersion is 8.0+, the
+// runtime's own PHP_VERSION_ID gate; Latte 3 requires PHP 8 - or by a docblock containing
+// '@filter'/'@function' on Latte 2 and 3.0 (deprecated there); 3.1 reads attributes only. The
+// attribute check cannot use native ReflectionMethod::getAttributes() (PHP 8-only API, absent on
+// this project's own PHP 7.4 analysis runtime regardless of the configured PhpVersion): it re-parses
+// the declaring method's own source via the injected Parser instead, the same AST-attribute-reading
+// approach PresenterForbidInjectRule/ComponentDirectInjectionRule already use for #[Inject].
 final class TemplateTypeCustoms
 {
 
@@ -48,16 +46,19 @@ final class TemplateTypeCustoms
 
 	private Parser $phpParser;
 
+	private LatteVersionAdapterFactory $adapterFactory;
+
 	/** @var array<string, array<string, ClassMethod>> */
 	private array $methodNodesByFile = [];
 
 	/** @var array<string, array{filters: array<string, array{string, string, bool, bool}>, functions: array<string, array{string, string, bool, bool}>}> */
 	private array $cache = [];
 
-	public function __construct(PhpVersion $phpVersion, Parser $phpParser)
+	public function __construct(PhpVersion $phpVersion, Parser $phpParser, LatteVersionAdapterFactory $adapterFactory)
 	{
 		$this->phpVersion = $phpVersion;
 		$this->phpParser = $phpParser;
+		$this->adapterFactory = $adapterFactory;
 	}
 
 	// The 4th tuple element (isStatic) tells FilterRewriter HOW to dispatch a per-template hit:
@@ -106,14 +107,18 @@ final class TemplateTypeCustoms
 		$filters = [];
 		$functions = [];
 
+		$latteLine = $this->adapterFactory->family()->latteLine;
+		$readsDocTags = $latteLine !== ShapeFamily::LATTE_31;
+		$readsAttributes = $latteLine !== ShapeFamily::LATTE_2 || $this->phpVersion->getVersionId() >= 80000;
+
 		foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
 			$doc = (string) $method->getDocComment();
-			$isFilterDoc = strpos($doc, '@filter') !== false;
-			$isFunctionDoc = strpos($doc, '@function') !== false;
+			$isFilterDoc = $readsDocTags && strpos($doc, '@filter') !== false;
+			$isFunctionDoc = $readsDocTags && strpos($doc, '@function') !== false;
 
 			$isFilterAttr = false;
 			$isFunctionAttr = false;
-			if ($this->phpVersion->getVersionId() >= 80000) {
+			if ($readsAttributes) {
 				[$isFilterAttr, $isFunctionAttr] = $this->attributeFlags($method);
 			}
 

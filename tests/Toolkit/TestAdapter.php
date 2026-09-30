@@ -22,6 +22,19 @@ final class TestAdapter
 		return new LatteVersionAdapterFactory(ProjectInstalledVersions::get());
 	}
 
+	// A factory answering for a Latte line that need not be the installed one, for the services
+	// that only ask it which line's semantics to model.
+	public static function factoryFor(string $latteVersion): LatteVersionAdapterFactory
+	{
+		return new LatteVersionAdapterFactory(ProjectInstalledVersions::fromRawData([[
+			'root' => [],
+			'versions' => [
+				ProjectInstalledVersions::PACKAGE => ['version' => '1.0.0.0'],
+				'latte/latte' => ['version' => $latteVersion],
+			],
+		]]));
+	}
+
 	public static function create(?CustomsHarvester $harvester = null): LatteVersionAdapter
 	{
 		return self::accessor($harvester)->get();

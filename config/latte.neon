@@ -152,8 +152,8 @@ services:
 			latteEngineLoaderFile: %orisaiNette.latte.engineLoader%
 		autowired: false
 
-	# The engine reader is version-selected inside harvest() (first use, inside the containment
-	# window) - never at container build.
+	# The engine reader is version-selected inside harvest() (first use, outside the containment
+	# window so a missing reader is loud) - never at container build.
 	latteCustomsHarvester:
 		class: OriPhpstan\Nette\Latte\Customs\CustomsHarvester
 		arguments:
@@ -169,6 +169,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms
 		arguments:
 			phpParser: @currentPhpVersionSimpleDirectParser
+			adapterFactory: @latteVersionAdapterFactory
 		autowired: false
 
 	latteDeclarationScanner:

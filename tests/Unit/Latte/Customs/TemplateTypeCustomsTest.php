@@ -7,8 +7,10 @@ use PHPStan\Parser\Parser;
 use PHPStan\Php\PhpVersion;
 use PHPStan\Testing\PHPStanTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\ProcessParamsQualificationFixture;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Fixtures\TemplateTypeCustomsAttributeFixture;
+use function array_keys;
 
 final class TemplateTypeCustomsTest extends BaseTestCase
 {
@@ -108,12 +110,44 @@ final class TemplateTypeCustomsTest extends BaseTestCase
 		self::assertSame([], $customs->functionsFor(null));
 	}
 
-	private function customs(int $versionId): TemplateTypeCustoms
+	// Latte 3 requires PHP 8, so its attribute channel is never gated on the configured PhpVersion;
+	// 3.0 still reads the deprecated docblock tags, 3.1 does not.
+	public function testLatte30ReadsAttributesAndDocblockTags(): void
+	{
+		$customs = $this->customs(70400, '3.0.26.0');
+
+		self::assertArrayHasKey('attrfilter', $customs->filtersFor(TemplateTypeCustomsAttributeFixture::class));
+		self::assertArrayHasKey('attrfunction', $customs->functionsFor(TemplateTypeCustomsAttributeFixture::class));
+		self::assertArrayHasKey('docfilter', $customs->filtersFor(ProcessParamsQualificationFixture::class));
+		self::assertArrayHasKey('docfunction', $customs->functionsFor(ProcessParamsQualificationFixture::class));
+	}
+
+	public function testLatte31ReadsAttributesOnly(): void
+	{
+		$customs = $this->customs(70400, '3.1.6.0');
+
+		self::assertSame(
+			[TemplateTypeCustomsAttributeFixture::class, 'attrFilter', false, false],
+			$customs->filtersFor(TemplateTypeCustomsAttributeFixture::class)['attrfilter'] ?? null,
+		);
+		self::assertArrayHasKey('attrfunction', $customs->functionsFor(TemplateTypeCustomsAttributeFixture::class));
+		self::assertArrayNotHasKey(
+			'contentawarefilter',
+			$customs->filtersFor(TemplateTypeCustomsAttributeFixture::class),
+		);
+		self::assertSame(
+			['attronlyfilter'],
+			array_keys($customs->filtersFor(ProcessParamsQualificationFixture::class)),
+		);
+		self::assertSame([], $customs->functionsFor(ProcessParamsQualificationFixture::class));
+	}
+
+	private function customs(int $versionId, string $latteVersion = '2.11.7.0'): TemplateTypeCustoms
 	{
 		/** @var Parser $parser */
 		$parser = PHPStanTestCase::getContainer()->getService('currentPhpVersionSimpleParser');
 
-		return new TemplateTypeCustoms(new PhpVersion($versionId), $parser);
+		return new TemplateTypeCustoms(new PhpVersion($versionId), $parser, TestAdapter::factoryFor($latteVersion));
 	}
 
 }

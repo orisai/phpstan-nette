@@ -282,7 +282,7 @@ final class FilterRewriterTest extends BaseTestCase
 		/** @var Parser $parser */
 		$parser = PHPStanTestCase::getContainer()->getService('currentPhpVersionSimpleParser');
 
-		return new TemplateTypeCustoms(new PhpVersion(70400), $parser);
+		return new TemplateTypeCustoms(new PhpVersion(70400), $parser, TestAdapter::factoryFor('2.11.7.0'));
 	}
 
 	/**
