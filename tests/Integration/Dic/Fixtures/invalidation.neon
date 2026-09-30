@@ -9,9 +9,10 @@ parameters:
 	# that can see a hierarchy edit going stale. seedErrors() states the corpus's dead set instead.
 	ignoreErrors:
 		# The corpus reads Container::$parameters on purpose (its typing is under test); nette/di
-		# deprecates the property, which phpstan-deprecation-rules reports.
+		# deprecates the property (since 3.1.4), which phpstan-deprecation-rules reports.
 		-
 			identifier: property.deprecated
+			reportUnmatched: false
 
 includes:
 	- ../../../../extension.neon

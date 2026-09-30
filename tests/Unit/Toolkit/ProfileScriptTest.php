@@ -17,26 +17,32 @@ final class ProfileScriptTest extends BaseTestCase
 		$root = dirname(__DIR__, 3);
 		$composer = Json::decode(FileSystem::read($root . '/composer.json'), Json::FORCE_ARRAY);
 
-		$merged = Json::decode($this->runProfileScript(['latte31', '--stdout']), Json::FORCE_ARRAY);
+		$merged = Json::decode($this->runProfileScript(['latte2', '--stdout']), Json::FORCE_ARRAY);
 
-		self::assertSame('^3.1.4', $merged['require']['latte/latte']);
-		self::assertSame('^3.3.0', $merged['require']['nette/application']);
-		self::assertSame('^3.3.0', $merged['require']['nette/forms']);
-		self::assertSame('^3.0.0', $merged['require-dev']['kdyby/forms-replicator']);
-		self::assertSame('^3.4.0', $merged['require-dev']['nette/caching']);
+		self::assertSame('^2.11.6', $merged['require']['latte/latte']);
+		self::assertSame('~3.1.15', $merged['require']['nette/application']);
+		self::assertSame('~3.1.11', $merged['require']['nette/forms']);
+		self::assertSame('^2.0.0', $merged['require-dev']['kdyby/forms-replicator']);
+		self::assertSame($composer['require-dev']['nette/caching'], $merged['require-dev']['nette/caching']);
 		self::assertArrayNotHasKey('nette/application', $merged['require-dev']);
-		self::assertSame('vendor-latte31', $merged['config']['vendor-dir']);
+		self::assertSame('vendor-latte2', $merged['config']['vendor-dir']);
 		self::assertSame($composer['config']['allow-plugins'], $merged['config']['allow-plugins']);
 		self::assertSame(Json::encode($composer['autoload']), Json::encode($merged['autoload']));
 		self::assertSame(Json::encode($composer['extra']), Json::encode($merged['extra']));
 		self::assertArrayNotHasKey('php', $merged);
 		self::assertArrayNotHasKey('ignore-platform-req', $merged);
+		self::assertArrayNotHasKey('update-flags', $merged);
 	}
 
 	public function testFlagsFollowThePlatformRequirementsIgnored(): void
 	{
-		self::assertSame("--ignore-platform-req=php\n", $this->runProfileScript(['latte2-nette32', '--flags']));
-		self::assertSame("\n", $this->runProfileScript(['latte31', '--flags']));
+		self::assertSame("--ignore-platform-req=php\n", $this->runProfileScript(['latte2', '--flags']));
+		self::assertSame("\n", $this->runProfileScript(['latte30', '--flags']));
+	}
+
+	public function testFlagsIncludeTheProfileUpdateFlags(): void
+	{
+		self::assertSame("--prefer-lowest --prefer-stable\n", $this->runProfileScript(['lowest', '--flags']));
 	}
 
 	public function testUnknownProfileFails(): void
@@ -50,7 +56,7 @@ final class ProfileScriptTest extends BaseTestCase
 
 	public function testUnknownModeFails(): void
 	{
-		$process = new Process([PHP_BINARY, dirname(__DIR__, 3) . '/tools/profile.php', 'latte31', '--print']);
+		$process = new Process([PHP_BINARY, dirname(__DIR__, 3) . '/tools/profile.php', 'latte2', '--print']);
 		$process->run();
 
 		self::assertSame(1, $process->getExitCode());

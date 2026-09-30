@@ -6,8 +6,8 @@ use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
-use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
+use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -141,16 +141,9 @@ final class CorpusManifestTest extends BaseTestCase
 
 	private static function profile(): string
 	{
-		$line = InstalledVersionsGuard::latteLine();
-		if ($line === '3.0') {
-			return 'latte30';
-		}
+		$vendorDir = VendorDirectory::name();
 
-		if ($line === '3.1') {
-			return 'latte31';
-		}
-
-		return InstalledVersionsGuard::satisfies('nette/application', '~3.1.0') ? 'default' : 'latte2-nette32';
+		return $vendorDir === 'vendor' ? 'default' : substr($vendorDir, strlen('vendor-'));
 	}
 
 	/**

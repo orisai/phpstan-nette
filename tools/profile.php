@@ -33,9 +33,13 @@ $decode = static function (string $file) use ($fail): array {
 
 $profile = $decode($profileFile);
 $ignored = $profile['ignore-platform-req'] ?? [];
+$updateFlags = $profile['update-flags'] ?? [];
 
 if ($mode === '--flags') {
-	echo implode(' ', array_map(static fn (string $req): string => '--ignore-platform-req=' . $req, $ignored)), "\n";
+	echo implode(' ', array_merge(
+		$updateFlags,
+		array_map(static fn (string $req): string => '--ignore-platform-req=' . $req, $ignored),
+	)), "\n";
 	exit(0);
 }
 
