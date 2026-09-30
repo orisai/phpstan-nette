@@ -2,12 +2,15 @@
 
 namespace OriPhpstan\Nette\Latte\Version\Latte2;
 
+use Closure;
 use Latte\Engine;
 use Latte\Macro;
 use Latte\Runtime\FilterExecutor;
+use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\OriginalNameCollisionMap;
 use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
+use ReflectionFunction;
 use ReflectionProperty;
 use stdClass;
 use function array_keys;
@@ -15,6 +18,7 @@ use function assert;
 use function end;
 use function get_class;
 use function get_object_vars;
+use function is_callable;
 use function spl_object_id;
 use function strtolower;
 
@@ -26,22 +30,82 @@ final class Latte2EngineReader implements LatteEngineReader
 		[$filters, $filterOriginalNames] = $this->readFilters($engine);
 		[$functions, $functionOriginalNames] = $this->readFunctions($engine);
 
-		// addFilterLoader() dynamic loaders (name === null, resolved lazily per unresolved name)
-		// are opaque to Engine::getFilters() and unused by this app - not modeled here.
 		foreach ($engine->onCompile as $callback) {
 			$callback($engine);
 		}
 
 		$macrosByName = $engine->getCompiler()->getMacros();
 
-		return new HarvestedCustoms(
+		return (new HarvestedCustoms(
 			$filters,
 			$functions,
 			$this->macroSets($macrosByName),
 			$this->macroClassesByName($macrosByName),
 			$filterOriginalNames,
 			$functionOriginalNames,
+		))->withFilterLoaders($this->filterLoaders($engine));
+	}
+
+	// Engine::addFilterLoader() wraps its loader in a dynamic filter that adds the loader's answer as
+	// a static filter, which FilterExecutor then calls; the runtime asks those wrappers in _dynamic
+	// order and the first answer wins. A bare addFilter(null, ...) dynamic filter computes the
+	// filtered value itself instead of naming a callable, so it is no loader and is skipped.
+	private function filterLoaders(Engine $engine): ?FilterLoaderProbe
+	{
+		$property = new ReflectionProperty(Engine::class, 'filters');
+		$property->setAccessible(true);
+
+		$executor = $property->getValue($engine);
+		assert($executor instanceof FilterExecutor);
+
+		$dynamicProperty = new ReflectionProperty($executor, '_dynamic');
+		$dynamicProperty->setAccessible(true);
+
+		/** @var list<callable(mixed...): mixed> $dynamic */
+		$dynamic = $dynamicProperty->getValue($executor);
+
+		$loaders = [];
+		foreach ($dynamic as $filter) {
+			$loader = self::wrappedLoader($filter);
+			if ($loader !== null) {
+				$loaders[] = $loader;
+			}
+		}
+
+		if ($loaders === []) {
+			return null;
+		}
+
+		return new FilterLoaderProbe(
+			static function (string $name) use ($loaders) {
+				foreach ($loaders as $loader) {
+					$filter = $loader($name);
+					if ((bool) $filter) {
+						return $filter;
+					}
+				}
+
+				return null;
+			},
+			false,
 		);
+	}
+
+	/**
+	 * @param callable(mixed...): mixed $filter
+	 * @return (callable(string): mixed)|null
+	 */
+	private static function wrappedLoader(callable $filter): ?callable
+	{
+		if (!$filter instanceof Closure) {
+			return null;
+		}
+
+		$function = new ReflectionFunction($filter);
+		$scope = $function->getClosureScopeClass();
+		$loader = $function->getStaticVariables()['callback'] ?? null;
+
+		return $scope !== null && $scope->getName() === Engine::class && is_callable($loader) ? $loader : null;
 	}
 
 	// Latte's own Compiler::expandMacro() tries $this->macros[$name] in array_reverse() order and

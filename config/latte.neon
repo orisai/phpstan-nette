@@ -160,6 +160,8 @@ services:
 			engineSource: @latteCustomsEngineSource
 			adapterFactory: @latteVersionAdapterFactory
 			extensionSourceSalt: @latteExtensionSourceSalt
+			# Its templates' filter names are what the engine's filter loaders get asked for the salt.
+			universe: @latteUniverse
 		autowired: false
 
 	# What identifies a harvested Latte 3 extension's code in the harvest salt; the walk stays out of

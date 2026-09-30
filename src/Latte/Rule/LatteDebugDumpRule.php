@@ -253,6 +253,10 @@ final class LatteDebugDumpRule implements Rule
 				$harvested->getFilters(),
 				$harvested->getFilterOriginalNames(),
 			);
+			if ($harvested->getFilterLoaders() !== null) {
+				$lines[] = 'loader filters: ' . $this->describeNames(array_keys($harvested->getLoaderFilters()));
+			}
+
 			$lines[] = 'global functions: ' . $this->describeHarvestEntries(
 				$harvested->getFunctions(),
 				$harvested->getFunctionOriginalNames(),

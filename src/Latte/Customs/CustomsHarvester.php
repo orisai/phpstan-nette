@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Customs;
 
 use Latte\Engine;
 use OriPhpstan\Nette\Latte\Compile\VendorErrorContainment;
+use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterFactory;
 use Throwable;
 
@@ -16,17 +17,21 @@ final class CustomsHarvester
 
 	private ExtensionSourceSalt $extensionSourceSalt;
 
+	private ?LatteUniverse $universe;
+
 	private ?HarvestedCustoms $harvested = null;
 
 	public function __construct(
 		EngineSource $engineSource,
 		LatteVersionAdapterFactory $adapterFactory,
-		ExtensionSourceSalt $extensionSourceSalt
+		ExtensionSourceSalt $extensionSourceSalt,
+		?LatteUniverse $universe = null
 	)
 	{
 		$this->engineSource = $engineSource;
 		$this->adapterFactory = $adapterFactory;
 		$this->extensionSourceSalt = $extensionSourceSalt;
+		$this->universe = $universe;
 	}
 
 	public function harvest(): HarvestedCustoms
@@ -58,9 +63,28 @@ final class CustomsHarvester
 
 		$sourceSalt = $this->extensionSourceSalt;
 
-		return $this->contained(
+		$harvested = $this->contained(
 			static fn (): HarvestedCustoms => $reader->read($engine)->withExtensionSources($sourceSalt),
 		) ?? HarvestedCustoms::empty();
+
+		return $this->withLoaderFilters($harvested);
+	}
+
+	// The loaders' answers for every filter name the analysed templates may use join the salt, so a
+	// loader that starts or stops answering one of them invalidates both caches. The same memoised
+	// probe answers FilterTable later, so the salt and the analysis agree within a process.
+	private function withLoaderFilters(HarvestedCustoms $harvested): HarvestedCustoms
+	{
+		$universe = $this->universe;
+		if ($harvested->getFilterLoaders() === null || $universe === null) {
+			return $harvested;
+		}
+
+		return $this->contained(
+			static fn (): HarvestedCustoms => $harvested->withLoaderFilters(
+				FilterNameScan::scan($universe->files()),
+			),
+		) ?? $harvested;
 	}
 
 	// No per-template line exists here - harvest runs once per analysis, not once per compiled

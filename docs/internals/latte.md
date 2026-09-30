@@ -763,8 +763,7 @@ Enumeration reads real vendor state, never re-implements it: filter names from
 `Engine::getFilters()` with real callables resolved through `FilterExecutor`; functions via
 reflection over `Engine`'s private function table; macros by running the engine's own `onCompile`
 hooks against a throwaway `Compiler` and reading back `Compiler::getMacros()`. `addFilterLoader`
-dynamic loaders (a closure that resolves filter names lazily at call time) are opaque to static
-enumeration and harvest as absent.
+loaders cannot be enumerated; they are asked per name instead (*Loader-provided filters* below).
 
 The harvest runs once per PHPStan process and is memoized; two harvests of the same state are
 byte-identical (proven by a dedicated determinism test), which is what makes the salt in
@@ -781,8 +780,9 @@ the static `getFilters()`/`getFunctions()`/`getProviders()` entries and the engi
 the macro-name slot (`getMacroNames()`), and every generator tag parser also contributes the
 `n:name`, `n:inner-name` and `n:tag-name` attributes Latte derives from it, recorded explicitly;
 `getExtensions()`, `getFeatures()` and `getProviderTypes()` are new and empty for a Latte 2
-harvest, whose salt is therefore unchanged. Filter and function loaders stay invisible to
-`Engine::getFilters()`/`getFunctions()`.
+harvest, whose salt is therefore unchanged. Filter loaders are invisible to `Engine::getFilters()`
+and asked per name (*Loader-provided filters* below); Latte 3 has no function loaders, so functions
+come from `getFunctions()` only.
 
 nette/application adds two extensions only at render time: `TemplateFactory` adds
 `UIExtension($control)` when `LatteFactory::create()` ran without a control (application 3.2 —
@@ -817,6 +817,38 @@ other one has it dropped.
 no harvest has; the Latte 3 function table therefore always carries them as typed stand-ins
 (`Helpers::presenterIsLinkCurrent()`/`presenterIsModuleCurrent()`, the `Component`/`Presenter`
 signatures).
+
+### Loader-provided filters
+
+A filter name that neither the stock table, the harvest nor the template's `{templateType}` knows
+goes to the harvested engine's filter loaders, the way the runtime asks them on the name's first
+call. The engine reader hands `HarvestedCustoms` a `FilterLoaderProbe` (none when the engine has no
+loaders, so without an engine loader this is a no-op); `FilterTable::resolveForTemplate()` asks it
+on a miss and reflects the answered callable exactly like a harvested extension callable
+(`resolveDefaultTarget()`: static, instance-bound or named-method; an anonymous closure stays
+unknown), and a decline stays `orisaiNette.latte.unknownFilter`. Latte 3 asks
+`FilterExecutor::__get()`, which consults the loaders in registration order (newest first) and
+throws `LogicException` on a decline; the answered callable is read back from the executor's
+`_static` because `__get()` wraps a FilterInfo-aware one. Latte 2's `__get()` only returns a lazy
+closure that would call the filter itself, so the Latte 2 reader calls the loaders
+`Engine::addFilterLoader()` wrapped (the `callback` of each wrapper closure in `_dynamic`, same
+order); a bare `addFilter(null, ...)` dynamic filter computes the filtered value itself, is no
+loader and is ignored. Case: Latte 3 asks with the name as written (filter names are
+case-sensitive there, and a filter name must start lowercase or it parses as a constant); Latte 2
+asks in lowercase, the key it files the answer under - a Latte 2 loader that only answers another
+spelling is not seen. Answers are memoised per asked name for the process. Limitation (Latte 2): a
+loader filter used only as a block filter (`{block|name}`) goes through `filterContent()`, which on
+Latte 2 never asks the loaders, so it works at runtime only when an earlier `{$x|name}` loaded it;
+the analysis types it either way.
+
+The answers are part of the harvest salt: `CustomsHarvester` scans the analysed templates
+(`LatteUniverse`) for every identifier after a `|` (`FilterNameScan`, a superset of the filter
+names), asks the probe for those the static filters lack, and `HarvestedCustoms::withLoaderFilters()`
+adds a `loaderFilter` line per answered name with the callable's descriptor and its declaring file's
+`sha1_file()` (a closure's file and lines). A loader that starts or stops answering a name the
+templates use therefore changes both the result-cache meta and the compile-cache key; the same
+memoised probe serves the analysis, so the salt and the findings agree. `dumpLatteCustoms()` lists
+those names under `loader filters:` when the engine has loaders.
 
 ### Typed filters and functions
 
@@ -1994,8 +2026,6 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   the same order-dependence landmine as the per-template leak above — a filter registered
   imperatively is available only from the point it's registered onward, in whatever order presenters
   happen to render, which is exactly why phase 3 (not this phase) is where a sound model belongs.
-  `addFilterLoader` dynamic loaders (lazy filter resolution by closure, resolved only at call time)
-  are opaque to static enumeration for the same reason and harvest as absent.
 - **The case-mismatch scanner does not see `n:attribute` expressions.** `CaseMismatchScanner` only
   tokenizes `Latte\Token::MACRO_TAG` text; a filter/function name written exclusively inside an
   `n:attribute` value (e.g. `n:if="$x|upper"`) never reaches it — accepted, documented gap.

@@ -466,6 +466,43 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 		}
 	}
 
+	public function testDumpCustomsListsTheFiltersTheLoadersAnswerForTheTemplatesUnderTheirOwnHeading(): void
+	{
+		$dir = $this->isolatedDir('customs-loader-filters');
+		FileSystem::write($dir . '/loaded.latte', "{\$a|dyn}\n{\$a|nope}\n");
+
+		try {
+			$universe = new LatteUniverse([$dir], $dir);
+			$harvester = TestAdapter::harvester(
+				new EngineSource(null, __DIR__ . '/../Customs/Fixtures/engine-loader-filter-loader.php'),
+				$universe,
+			);
+			$edgeIndex = new TemplateEdgeIndex($universe, TestAdapter::accessor());
+			$resolver = new ContextResolver(
+				$edgeIndex,
+				$universe,
+				new CapturedOverlay(new SiteScopeStore($dir . '/__absent_store__'), true),
+			);
+			$rule = new LatteDebugDumpRule(
+				TestGuard::latte(),
+				$resolver,
+				$edgeIndex,
+				$universe,
+				$harvester,
+			);
+
+			$errors = $rule->processNode(
+				$this->funcCall('OriPhpstan\Nette\Latte\Testing\dumpLatteCustoms'),
+				$this->scopeForFile($dir . '/loaded.latte'),
+			);
+
+			self::assertCount(1, $errors);
+			self::assertStringContainsString("\nloader filters: dyn\nglobal functions: ", $errors[0]->getMessage());
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
 	/**
 	 * @group latte2
 	 */

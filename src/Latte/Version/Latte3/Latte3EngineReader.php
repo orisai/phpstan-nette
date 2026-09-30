@@ -6,7 +6,10 @@ use Closure;
 use Latte\Engine;
 use Latte\Essential\TranslatorExtension;
 use Latte\Extension;
+use Latte\Runtime\FilterExecutor;
+use LogicException;
 use Nette\Bridges\ApplicationLatte\UIExtension;
+use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\OriginalNameCollisionMap;
 use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
@@ -22,7 +25,8 @@ use function strtolower;
 
 // Reads what Engine::parse()/addExtension() would use: the extensions in registration order (their
 // getTags() keys are the tag names), the static filters, functions and providers, and the feature
-// flags. Filter and function loaders are invisible to Engine::getFilters()/getFunctions().
+// flags. Filter loaders are invisible to Engine::getFilters() and are asked per name instead
+// (filterLoaders()); Latte 3 has no function loaders.
 final class Latte3EngineReader implements LatteEngineReader
 {
 
@@ -51,7 +55,50 @@ final class Latte3EngineReader implements LatteEngineReader
 			OriginalNameCollisionMap::build(self::origToLower($functions)),
 			self::features($engine),
 			$providerTypes,
+		)->withFilterLoaders(self::filterLoaders($engine));
+	}
+
+	// FilterExecutor::__get() is the runtime's own question: it answers a static filter, else asks
+	// the loaders in _dynamic order and keeps the first answer as a static one, else throws. The
+	// answer is read back from _static because __get() hands out a FilterInfo-aware filter wrapped.
+	private static function filterLoaders(Engine $engine): ?FilterLoaderProbe
+	{
+		$executor = self::privateValue(Engine::class, 'filters', $engine);
+		if (!$executor instanceof FilterExecutor) {
+			return null;
+		}
+
+		if (self::privateValue(FilterExecutor::class, '_dynamic', $executor) === []) {
+			return null;
+		}
+
+		return new FilterLoaderProbe(
+			static function (string $name) use ($executor) {
+				try {
+					$executor->__get($name);
+				} catch (LogicException $e) {
+					return null;
+				}
+
+				/** @var array<string, array{callable, bool|null}> $static */
+				$static = self::privateValue(FilterExecutor::class, '_static', $executor);
+
+				return $static[$name][0] ?? null;
+			},
+			true,
 		);
+	}
+
+	/**
+	 * @param class-string $class
+	 * @return mixed
+	 */
+	private static function privateValue(string $class, string $name, object $object)
+	{
+		$property = new ReflectionProperty($class, $name);
+		$property->setAccessible(true);
+
+		return $property->getValue($object);
 	}
 
 	// Extensions nette/application adds to the engine only at render time: TemplateFactory adds
@@ -128,11 +175,8 @@ final class Latte3EngineReader implements LatteEngineReader
 	 */
 	private static function features(Engine $engine): array
 	{
-		$property = new ReflectionProperty(Engine::class, 'features');
-		$property->setAccessible(true);
-
 		/** @var array<string, bool> $features */
-		$features = $property->getValue($engine);
+		$features = self::privateValue(Engine::class, 'features', $engine);
 
 		return $features;
 	}

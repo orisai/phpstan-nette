@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\ExtensionSourceSalt;
 use OriPhpstan\Nette\Latte\Declarations\DeclarationScanner;
+use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Version\AdapterCollaborators;
 use OriPhpstan\Nette\Latte\Version\LatteEngineReader;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapter;
@@ -54,12 +55,13 @@ final class TestAdapter
 		return self::factory()->createEngineReader();
 	}
 
-	public static function harvester(EngineSource $engineSource): CustomsHarvester
+	public static function harvester(EngineSource $engineSource, ?LatteUniverse $universe = null): CustomsHarvester
 	{
 		return new CustomsHarvester(
 			$engineSource,
 			self::factory(),
 			new ExtensionSourceSalt(null, null, ProjectInstalledVersions::get()),
+			$universe,
 		);
 	}
 

@@ -3,11 +3,13 @@
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
 use LogicException;
+use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use Throwable;
+use function array_key_exists;
 use function ksort;
 use function strtolower;
 
@@ -21,6 +23,11 @@ final class FilterTable
 
 	/** @var array<string, true> */
 	private array $instanceDispatch = [];
+
+	private ?FilterLoaderProbe $filterLoaders;
+
+	/** @var array<string, array{string, string, bool, bool}|null> */
+	private array $loaderEntries = [];
 
 	// The bridge entries come first: the runtime bridges (nette/application's |modifyDate, the
 	// translator's |translate) register them as closures the tables cannot reference, and |slice is
@@ -37,6 +44,7 @@ final class FilterTable
 		}
 
 		$harvested ??= HarvestedCustoms::empty();
+		$this->filterLoaders = $harvested->getFilterLoaders();
 		foreach ($harvested->getFilters() as $name => $callable) {
 			$this->registerHarvested($name, $callable, $harvested->isExtensionHarvest());
 		}
@@ -59,13 +67,17 @@ final class FilterTable
 	// like Latte 3's |number - through Helpers::templateTypeInstance($class)->method(...) (there is
 	// no real instance at analysis time, see the helper's own docblock).
 
+	// A name neither table knows goes to the harvested engine's filter loaders, asked with the name as
+	// written ($writtenName; FilterLoaderProbe applies the Latte line's case rule).
+
 	/**
 	 * @return array{string, string, bool, bool, bool}|null
 	 */
 	public function resolveForTemplate(
 		string $lowerName,
 		?string $templateTypeClass,
-		?TemplateTypeCustoms $templateTypeCustoms
+		?TemplateTypeCustoms $templateTypeCustoms,
+		?string $writtenName = null
 	): ?array
 	{
 		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
@@ -76,10 +88,52 @@ final class FilterTable
 		}
 
 		$base = $this->resolve($lowerName);
+		if ($base !== null) {
+			return [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
+		}
 
-		return $base === null
-			? null
-			: [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
+		$loaded = $this->resolveFromLoaders($writtenName ?? $lowerName);
+
+		return $loaded === null ? null : [$loaded[0], $loaded[1], $loaded[2], false, $loaded[3]];
+	}
+
+	/**
+	 * @return array{string, string, bool, bool}|null
+	 */
+	private function resolveFromLoaders(string $writtenName): ?array
+	{
+		$filterLoaders = $this->filterLoaders;
+		if ($filterLoaders === null) {
+			return null;
+		}
+
+		$key = $filterLoaders->queryName($writtenName);
+		if (!array_key_exists($key, $this->loaderEntries)) {
+			$callable = $filterLoaders->resolve($writtenName);
+			$this->loaderEntries[$key] = $callable !== null ? $this->loaderEntry($callable) : null;
+		}
+
+		return $this->loaderEntries[$key];
+	}
+
+	/**
+	 * @param callable(mixed...): mixed $callable
+	 * @return array{string, string, bool, bool}|null
+	 */
+	private function loaderEntry(callable $callable): ?array
+	{
+		try {
+			$target = $this->resolveDefaultTarget($callable);
+			if ($target === null) {
+				return null;
+			}
+
+			[$class, $method, $isStatic] = $target;
+
+			return [$class, $method, $this->isContentAware($class, $method), $isStatic];
+		} catch (Throwable $e) {
+			return null;
+		}
 	}
 
 	/**

@@ -36,6 +36,11 @@ parameters:
 				neverWritten: false
 
 	ignoreErrors:
+		# Latte ships no public accessor for its filter loaders; the reader asks the executor as the runtime does.
+		-
+			identifiers: [instanceof.internalClass, classConstant.internalClass, method.internalClass]
+			message: '#internal class Latte\\Runtime\\FilterExecutor#'
+			path: ../src/Latte/Version/Latte3/Latte3EngineReader.php
 		# The Latte 3.1-only feature the scoped-foreach fixture enables; the 3.0 profile analyses it too.
 		-
 			identifier: classConstant.notFound

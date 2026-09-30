@@ -378,10 +378,25 @@ final class FilterRewriter extends NodeVisitorAbstract
 	 */
 	private function rewriteResolvedCall(string $name, array $args, int $line, string $kind): Expr
 	{
-		$table = $kind === 'filter' ? $this->filterTable : $this->functionTable;
-		$resolved = $table !== null
-			? $table->resolveForTemplate(strtolower($name), $this->templateTypeClass, $this->templateTypeCustoms)
-			: null;
+		if ($kind === 'filter') {
+			$resolved = $this->filterTable !== null
+				? $this->filterTable->resolveForTemplate(
+					strtolower($name),
+					$this->templateTypeClass,
+					$this->templateTypeCustoms,
+					$name,
+				)
+				: null;
+		} else {
+			$resolved = $this->functionTable !== null
+				? $this->functionTable->resolveForTemplate(
+					strtolower($name),
+					$this->templateTypeClass,
+					$this->templateTypeCustoms,
+				)
+				: null;
+		}
+
 		// Every replacement node below is newly constructed (never a startLine/endLine attribute
 		// by default) - without this, a rule error reported directly on it (no explicit ->line())
 		// falls back to PHPStan's own node->getStartLine(), landing on line -1.

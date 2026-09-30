@@ -7,6 +7,9 @@ use Latte\Macros\MacroSet;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
+use Throwable;
 use function array_keys;
 use function get_class;
 use function implode;
@@ -16,6 +19,9 @@ use function is_string;
 use function ksort;
 use function sha1;
 use function sha1_file;
+use function strpos;
+use function strtolower;
+use function substr;
 use const SORT_STRING;
 
 final class HarvestedCustoms
@@ -63,6 +69,16 @@ final class HarvestedCustoms
 	/** @var list<string> */
 	private array $sourceProblems;
 
+	/** @var array<string, string> */
+	private array $extensionSources;
+
+	private ?FilterLoaderProbe $filterLoaders;
+
+	// The loader answers for the filter names the analysed templates use (withLoaderFilters()),
+	// keyed by the name the loaders were asked; they reach the salt with their declaring file's hash.
+	/** @var array<string, callable(mixed...): mixed> */
+	private array $loaderFilters;
+
 	private string $saltHash;
 
 	/**
@@ -78,6 +94,7 @@ final class HarvestedCustoms
 	 * @param array<string, string> $extensionSources
 	 * @param list<string> $sourceNotes
 	 * @param list<string> $sourceProblems
+	 * @param array<string, callable(mixed...): mixed> $loaderFilters
 	 */
 	public function __construct(
 		array $filters,
@@ -91,7 +108,9 @@ final class HarvestedCustoms
 		array $providerTypes = [],
 		array $extensionSources = [],
 		array $sourceNotes = [],
-		array $sourceProblems = []
+		array $sourceProblems = [],
+		?FilterLoaderProbe $filterLoaders = null,
+		array $loaderFilters = []
 	)
 	{
 		$this->filters = $filters;
@@ -105,6 +124,9 @@ final class HarvestedCustoms
 		$this->providerTypes = $providerTypes;
 		$this->sourceNotes = $sourceNotes;
 		$this->sourceProblems = $sourceProblems;
+		$this->extensionSources = $extensionSources;
+		$this->filterLoaders = $filterLoaders;
+		$this->loaderFilters = $loaderFilters;
 		$this->saltHash = self::computeSaltHash(
 			$filters,
 			$functions,
@@ -115,6 +137,7 @@ final class HarvestedCustoms
 			$features,
 			$providerTypes,
 			$extensionSources,
+			$loaderFilters,
 		);
 	}
 
@@ -197,7 +220,93 @@ final class HarvestedCustoms
 			$sources,
 			$notes,
 			$problems,
+			$this->filterLoaders,
+			$this->loaderFilters,
 		);
+	}
+
+	public function withFilterLoaders(?FilterLoaderProbe $filterLoaders): self
+	{
+		if ($filterLoaders === null) {
+			return $this;
+		}
+
+		return new self(
+			$this->filters,
+			$this->functions,
+			$this->macroSets,
+			$this->macroClassesByName,
+			$this->filterOriginalNames,
+			$this->functionOriginalNames,
+			$this->extensions,
+			$this->features,
+			$this->providerTypes,
+			$this->extensionSources,
+			$this->sourceNotes,
+			$this->sourceProblems,
+			$filterLoaders,
+			$this->loaderFilters,
+		);
+	}
+
+	/**
+	 * @param list<string> $writtenNames
+	 */
+	public function withLoaderFilters(array $writtenNames): self
+	{
+		$filterLoaders = $this->filterLoaders;
+		if ($filterLoaders === null) {
+			return $this;
+		}
+
+		$static = [];
+		foreach (array_keys($this->filters) as $name) {
+			$static[strtolower($name)] = true;
+		}
+
+		$loaderFilters = [];
+		foreach ($writtenNames as $writtenName) {
+			if (isset($static[strtolower($writtenName)])) {
+				continue;
+			}
+
+			$callable = $filterLoaders->resolve($writtenName);
+			if ($callable !== null) {
+				$loaderFilters[$filterLoaders->queryName($writtenName)] = $callable;
+			}
+		}
+
+		ksort($loaderFilters, SORT_STRING);
+
+		return new self(
+			$this->filters,
+			$this->functions,
+			$this->macroSets,
+			$this->macroClassesByName,
+			$this->filterOriginalNames,
+			$this->functionOriginalNames,
+			$this->extensions,
+			$this->features,
+			$this->providerTypes,
+			$this->extensionSources,
+			$this->sourceNotes,
+			$this->sourceProblems,
+			$filterLoaders,
+			$loaderFilters,
+		);
+	}
+
+	public function getFilterLoaders(): ?FilterLoaderProbe
+	{
+		return $this->filterLoaders;
+	}
+
+	/**
+	 * @return array<string, callable(mixed...): mixed>
+	 */
+	public function getLoaderFilters(): array
+	{
+		return $this->loaderFilters;
 	}
 
 	/**
@@ -308,6 +417,7 @@ final class HarvestedCustoms
 	 * @param array<string, bool> $features
 	 * @param array<string, string> $providerTypes
 	 * @param array<string, string> $extensionSources
+	 * @param array<string, callable(mixed...): mixed> $loaderFilters
 	 */
 	private static function computeSaltHash(
 		array $filters,
@@ -318,7 +428,8 @@ final class HarvestedCustoms
 		array $extensions,
 		array $features,
 		array $providerTypes,
-		array $extensionSources
+		array $extensionSources,
+		array $loaderFilters
 	): string
 	{
 		$lines = self::canonicalCallableLines('filter', $filters);
@@ -352,6 +463,11 @@ final class HarvestedCustoms
 
 		foreach (self::canonicalOriginalNameLines('provider', $providerTypes) as $line) {
 			$lines[] = $line;
+		}
+
+		foreach ($loaderFilters as $name => $callable) {
+			$lines[] = "loaderFilter\x1f" . $name . "\x1f" . self::describeCallable($callable) . "\x1f"
+				. self::describeCallableSource($callable);
 		}
 
 		return sha1(implode("\n", $lines));
@@ -402,6 +518,59 @@ final class HarvestedCustoms
 		$hash = sha1_file($fileName);
 
 		return $hash !== false ? $hash : 'unreadable';
+	}
+
+	/**
+	 * @param callable(mixed...): mixed $callable
+	 */
+	private static function describeCallableSource(callable $callable): string
+	{
+		try {
+			$fileName = self::callableReflection($callable)->getFileName();
+		} catch (Throwable $e) {
+			return 'unreflectable';
+		}
+
+		if ($fileName === false) {
+			return 'internal';
+		}
+
+		$hash = sha1_file($fileName);
+
+		return $hash !== false ? $hash : 'unreadable';
+	}
+
+	/**
+	 * @param callable(mixed...): mixed $callable
+	 */
+	private static function callableReflection(callable $callable): ReflectionFunctionAbstract
+	{
+		if (is_array($callable)) {
+			[$objectOrClass, $method] = $callable;
+
+			return new ReflectionMethod($objectOrClass, $method);
+		}
+
+		if (is_string($callable)) {
+			$separator = strpos($callable, '::');
+
+			return $separator === false
+				? new ReflectionFunction($callable)
+				: new ReflectionMethod(
+					(string) substr($callable, 0, $separator),
+					(string) substr($callable, $separator + 2),
+				);
+		}
+
+		if ($callable instanceof Closure) {
+			return new ReflectionFunction($callable);
+		}
+
+		if (is_object($callable)) {
+			return new ReflectionMethod($callable, '__invoke');
+		}
+
+		throw new ReflectionException('Unsupported callable.');
 	}
 
 	/**
