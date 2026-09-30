@@ -60,6 +60,7 @@ lint: ## Check src parses on PHP 7.4, the oldest supported version (the Latte 3 
 	find src -name '*.php' -not -path 'src/Latte/Version/Latte3/*' -print0 | xargs -0 -n1 -P$(LOGICAL_CORES) $(LINT_PHP) -d display_errors=stderr -l > /dev/null
 
 phpstan: ## Analyse code with PHPStan
+	test "$(PROFILE)" != lowest || { echo "The lowest profile has no static analysis; use PROFILE=latte2."; exit 1; }
 	mkdir -p var/tools
 	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpstan" analyse $(PHPSTAN_PATHS) -c $(PHPSTAN_CONFIG) $(ARGS)
 

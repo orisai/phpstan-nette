@@ -35,6 +35,14 @@ $profile = $decode($profileFile);
 $ignored = $profile['ignore-platform-req'] ?? [];
 $updateFlags = $profile['update-flags'] ?? [];
 
+// PROFILE_PHP_VERSION stands in for the running PHP in tests.
+$phpCeiling = $profile['php-ceiling'] ?? null;
+$runningPhp = getenv('PROFILE_PHP_VERSION');
+$runningPhp = is_string($runningPhp) && $runningPhp !== '' ? $runningPhp : PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+if (is_string($phpCeiling) && version_compare($runningPhp, $phpCeiling, '>')) {
+	$ignored[] = 'php';
+}
+
 if ($mode === '--flags') {
 	echo implode(' ', array_merge(
 		$updateFlags,

@@ -31,18 +31,28 @@ final class ProfileScriptTest extends BaseTestCase
 		self::assertSame(Json::encode($composer['extra']), Json::encode($merged['extra']));
 		self::assertArrayNotHasKey('php', $merged);
 		self::assertArrayNotHasKey('ignore-platform-req', $merged);
-		self::assertArrayNotHasKey('update-flags', $merged);
+		self::assertArrayNotHasKey('php-ceiling', $merged);
 	}
 
-	public function testFlagsFollowThePlatformRequirementsIgnored(): void
+	public function testThePhpRequirementIsIgnoredOnlyAboveTheProfileCeiling(): void
 	{
-		self::assertSame("--ignore-platform-req=php\n", $this->runProfileScript(['latte2', '--flags']));
-		self::assertSame("\n", $this->runProfileScript(['latte30', '--flags']));
+		self::assertSame("--ignore-platform-req=php\n", $this->runProfileScript(['latte2', '--flags'], '8.4'));
+		self::assertSame("\n", $this->runProfileScript(['latte2', '--flags'], '8.3'));
+		self::assertSame("\n", $this->runProfileScript(['latte2', '--flags'], '7.4'));
+		self::assertSame("\n", $this->runProfileScript(['latte30', '--flags'], '8.4'));
 	}
 
 	public function testFlagsIncludeTheProfileUpdateFlags(): void
 	{
-		self::assertSame("--prefer-lowest --prefer-stable\n", $this->runProfileScript(['lowest', '--flags']));
+		self::assertSame("--prefer-lowest --prefer-stable\n", $this->runProfileScript(['lowest', '--flags'], '7.4'));
+	}
+
+	public function testUpdateFlagsStayOutOfTheComposerFile(): void
+	{
+		$merged = Json::decode($this->runProfileScript(['lowest', '--stdout']), Json::FORCE_ARRAY);
+
+		self::assertArrayNotHasKey('update-flags', $merged);
+		self::assertSame('vendor-lowest', $merged['config']['vendor-dir']);
 	}
 
 	public function testUnknownProfileFails(): void
@@ -67,9 +77,13 @@ final class ProfileScriptTest extends BaseTestCase
 	/**
 	 * @param list<string> $arguments
 	 */
-	private function runProfileScript(array $arguments): string
+	private function runProfileScript(array $arguments, ?string $phpVersion = null): string
 	{
-		$process = new Process([PHP_BINARY, dirname(__DIR__, 3) . '/tools/profile.php', ...$arguments]);
+		$process = new Process(
+			[PHP_BINARY, dirname(__DIR__, 3) . '/tools/profile.php', ...$arguments],
+			null,
+			['PROFILE_PHP_VERSION' => $phpVersion ?? false],
+		);
 		$process->mustRun();
 
 		return $process->getOutput();
