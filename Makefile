@@ -79,6 +79,9 @@ corpus-harvest: ## Harvest upstream Latte test templates of the installed versio
 corpus-manifest: ## Rewrite tests/Corpus/manifest.<profile>.json from a corpus analysis and print the state diff
 	CORPUS_MANIFEST_WRITE=1 $(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpunit" -c $(PHPUNIT_CONFIG) tests/Corpus $(ARGS)
 
+smoke-dmonitor: ## Local only: analyse ../../../apps/fr/dmonitor (or APP=<dir>) with its own PHPStan, fail on internal errors
+	$(PRE_PHP) tools/smoke/dmonitor.php $(APP)
+
 ## Utilities
 
 .SILENT: $(shell grep -h -E '^[a-zA-Z_-]+:.*?$$' $(MAKEFILE_LIST) | sort -u | awk 'BEGIN {FS = ":.*?"}; {printf "%s ", $$1}')
