@@ -12,6 +12,7 @@ use function putenv;
 use function rewind;
 use function stream_get_contents;
 use function sys_get_temp_dir;
+use function tmpfile;
 use function uniqid;
 use const PHP_BINARY;
 
@@ -20,160 +21,293 @@ final class ConvergeRunnerTest extends BaseTestCase
 
 	private const FAKE = __DIR__ . '/Fixtures/fake-phpstan.php';
 
+	private string $dir;
+
 	private string $scenario;
+
+	private string $store;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
-		$this->scenario = sys_get_temp_dir() . '/latte-converge-test-' . getmypid() . '-' . uniqid('', true) . '.json';
+		$this->dir = sys_get_temp_dir() . '/latte-converge-test-' . getmypid() . '-' . uniqid('', true);
+		$this->scenario = $this->dir . '/scenario.json';
+		$this->store = $this->dir . '/store';
+		FileSystem::createDir($this->store);
 		putenv('FAKE_PHPSTAN_SCENARIO=' . $this->scenario);
 	}
 
 	protected function tearDown(): void
 	{
 		putenv('FAKE_PHPSTAN_SCENARIO');
-		FileSystem::delete($this->scenario);
+		FileSystem::delete($this->dir);
 		parent::tearDown();
 	}
 
-	public function testRerunsWhileTheStoreChangesThenPrintsTheCallersFormat(): void
+	public function testRerunsWhileTheStoreChangesWithTheCallersArgumentsUnmodified(): void
 	{
-		$this->responses([
-			$this->json(1, [$this->storeChanged()]),
-			$this->json(1, [$this->storeChanged()]),
-			$this->json(0, []),
-			['exitCode' => 0, 'stdout' => "[OK] No errors\n", 'stderr' => ''],
+		$this->scenario([
+			['exitCode' => 1, 'stdout' => "run 1\n", 'write' => ['LatteSlice_a.php' => '1']],
+			['exitCode' => 1, 'stdout' => "run 2\n", 'write' => ['LatteSlice_b.php' => '1']],
+			['exitCode' => 0, 'stdout' => "run 3\n", 'stderr' => 'progress', 'write' => ['LatteSlice_a.php' => '1']],
 		]);
 
-		$result = $this->converge(['analyse', '-c', 'phpstan.neon', '--error-format=table', 'src']);
+		$caller = ['analyse', '-c', 'phpstan.neon', '--error-format=table', 'src'];
+		$result = $this->converge($caller);
 
 		self::assertSame(0, $result['exitCode']);
-		self::assertSame("[OK] No errors\n", $result['stdout']);
+		self::assertSame("run 3\n", $result['stdout']);
 		self::assertSame(
 			"The Latte narrowing store changed, running the analysis again (run 2 of at most 6).\n"
-				. "The Latte narrowing store changed, running the analysis again (run 3 of at most 6).\n",
+				. "The Latte narrowing store changed, running the analysis again (run 3 of at most 6).\n"
+				. 'progress',
 			$result['stderr'],
 		);
-		$json = ['analyse', '-c', 'phpstan.neon', 'src', '--error-format=json'];
 		self::assertSame([
-			['arguments' => $json, 'prune' => false],
-			['arguments' => $json, 'prune' => false],
-			['arguments' => $json, 'prune' => false],
-			['arguments' => ['analyse', '-c', 'phpstan.neon', '--error-format=table', 'src'], 'prune' => false],
-		], $this->calls());
+			['dump-parameters', '--json', '-c', 'phpstan.neon'],
+			$caller,
+			$caller,
+			$caller,
+		], $this->argumentVectors());
 	}
 
-	public function testJsonFormatReusesTheFinalRunOutput(): void
+	public function testAFindingNextToAStoreChangeIsPrintedOnlyFromTheSettledRun(): void
 	{
-		$final = $this->json(0, []);
-		$this->responses([$this->json(1, [$this->storeChanged()]), $final]);
-
-		$result = $this->converge(['analyse', '--error-format', 'json', 'src']);
-
-		self::assertSame(0, $result['exitCode']);
-		self::assertSame($final['stdout'], $result['stdout']);
-		self::assertCount(2, $this->calls());
-		self::assertSame(['analyse', 'src', '--error-format=json'], $this->calls()[1]['arguments']);
-	}
-
-	public function testAFindingNextToAStoreChangeIsReportedOnceTheStoreSettles(): void
-	{
-		$this->responses([
-			$this->json(1, [$this->storeChanged(), $this->finding()]),
-			$this->json(1, [$this->finding()]),
-			['exitCode' => 1, 'stdout' => "finding\n", 'stderr' => 'progress'],
+		$this->scenario([
+			['exitCode' => 1, 'stdout' => "stale finding\n", 'write' => ['LatteSlice_a.php' => '1']],
+			['exitCode' => 1, 'stdout' => "finding\n"],
 		]);
 
-		$result = $this->converge(['analyse', 'src']);
+		$result = $this->converge(['analyse']);
 
 		self::assertSame(1, $result['exitCode']);
 		self::assertSame("finding\n", $result['stdout']);
-		self::assertCount(3, $this->calls());
-		self::assertSame(['analyse', 'src'], $this->calls()[2]['arguments']);
 	}
 
-	public function testAFindingWithoutAStoreChangeIsNotRerun(): void
+	public function testADeletedSliceCountsAsAChange(): void
 	{
-		$this->responses([
-			$this->json(1, [$this->finding()]),
-			['exitCode' => 1, 'stdout' => "finding\n", 'stderr' => ''],
+		FileSystem::write($this->store . '/LatteSlice_gone.php', 'x');
+		$this->scenario([
+			['exitCode' => 1, 'stdout' => "1\n", 'delete' => ['LatteSlice_gone.php']],
+			['exitCode' => 0, 'stdout' => "2\n"],
 		]);
 
-		$result = $this->converge(['analyse', 'src']);
-
-		self::assertSame(1, $result['exitCode']);
-		self::assertSame("finding\n", $result['stdout']);
-		self::assertSame('', $result['stderr']);
-		self::assertCount(2, $this->calls());
+		self::assertSame("2\n", $this->converge(['analyse'])['stdout']);
 	}
 
-	public function testTheRunCapFailsWithTheLastStoreChange(): void
+	public function testTheRunCapPrintsTheLastRunAndFails(): void
 	{
-		$this->responses([$this->json(1, [$this->storeChanged()])]);
+		$this->scenario([
+			['exitCode' => 0, 'stdout' => "1\n", 'write' => ['LatteSlice_a.php' => '1']],
+			['exitCode' => 0, 'stdout' => "2\n", 'write' => ['LatteSlice_a.php' => '2']],
+		]);
 
-		$result = $this->converge(['--max-runs=2', 'analyse', 'src']);
+		$result = $this->converge(['--max-runs=2', 'analyse']);
 
 		self::assertSame(1, $result['exitCode']);
-		self::assertSame('', $result['stdout']);
+		self::assertSame("2\n", $result['stdout']);
 		self::assertSame(
 			"The Latte narrowing store changed, running the analysis again (run 2 of at most 2).\n"
-				. "The Latte narrowing store did not settle within 2 runs (--max-runs); the last run reported:\n"
-				. "The Latte narrowing store changed for 1 including template: a.latte.\n",
+				. "The Latte narrowing store still changed on run 2 of at most 2 (--max-runs).\n",
 			$result['stderr'],
 		);
-		self::assertCount(2, $this->calls());
+		self::assertCount(3, $this->calls());
 	}
 
-	public function testAnUndecodableRunIsPassedThroughWithItsExitCode(): void
+	public function testTheRunCapKeepsANonZeroExitCode(): void
 	{
-		$this->responses([['exitCode' => 255, 'stdout' => 'Fatal error', 'stderr' => 'trace']]);
+		$this->scenario([['exitCode' => 3, 'stdout' => '', 'write' => ['LatteSlice_a.php' => '1']]]);
 
-		$result = $this->converge(['analyse', 'src']);
+		self::assertSame(3, $this->converge(['--max-runs=1', 'analyse'])['exitCode']);
+	}
+
+	public function testACrashIsForwardedUnchanged(): void
+	{
+		$this->scenario([['exitCode' => 255, 'stdout' => 'Fatal error', 'stderr' => 'trace']]);
+
+		$result = $this->converge(['analyse']);
 
 		self::assertSame(255, $result['exitCode']);
 		self::assertSame('Fatal error', $result['stdout']);
 		self::assertSame('trace', $result['stderr']);
-		self::assertCount(1, $this->calls());
+		self::assertCount(2, $this->calls());
+	}
+
+	public function testASignalStopsTheLoopEvenWhenTheStoreChanged(): void
+	{
+		$this->scenario([['exitCode' => 130, 'stdout' => '', 'write' => ['LatteSlice_a.php' => '1']]]);
+
+		self::assertSame(130, $this->converge(['analyse'])['exitCode']);
+		self::assertCount(2, $this->calls());
+	}
+
+	public function testAGeneratedBaselineKeepsExitCodeZero(): void
+	{
+		$this->scenario([['exitCode' => 0, 'stdout' => "Baseline generated with 3 errors.\n"]]);
+
+		$result = $this->converge(['analyse', '-b']);
+
+		self::assertSame(0, $result['exitCode']);
+		self::assertSame("Baseline generated with 3 errors.\n", $result['stdout']);
+		self::assertSame(['analyse', '-b'], $this->argumentVectors()[1]);
+	}
+
+	public function testAnAbsentStoreDirectoryRunsOnce(): void
+	{
+		FileSystem::delete($this->store);
+		$this->scenario([['exitCode' => 0, 'stdout' => "ok\n"]]);
+
+		self::assertSame("ok\n", $this->converge(['analyse'])['stdout']);
+		self::assertCount(2, $this->calls());
+	}
+
+	public function testDisabledNarrowingRunsOnceWithoutDigest(): void
+	{
+		$this->scenario(
+			[['exitCode' => 0, 'stdout' => "ok\n", 'write' => ['LatteSlice_a.php' => '1']]],
+			['latte' => ['enabled' => true, 'narrowing' => ['enabled' => false, 'storePath' => $this->store]]],
+		);
+
+		self::assertSame("ok\n", $this->converge(['analyse'])['stdout']);
+		self::assertCount(2, $this->calls());
+	}
+
+	public function testDisabledLatteRunsOnce(): void
+	{
+		$this->scenario(
+			[['exitCode' => 0, 'stdout' => "ok\n", 'write' => ['LatteSlice_a.php' => '1']]],
+			['latte' => ['enabled' => false, 'narrowing' => ['enabled' => true, 'storePath' => $this->store]]],
+		);
+
+		self::assertSame("ok\n", $this->converge(['analyse'])['stdout']);
+		self::assertCount(2, $this->calls());
+	}
+
+	public function testStoreOptionSkipsDumpParameters(): void
+	{
+		$this->scenario([
+			['exitCode' => 0, 'stdout' => "1\n", 'write' => ['LatteSlice_a.php' => '1']],
+			['exitCode' => 0, 'stdout' => "2\n"],
+		]);
+
+		$result = $this->converge(['--store=' . $this->store, 'analyse']);
+
+		self::assertSame("2\n", $result['stdout']);
+		self::assertSame([['analyse'], ['analyse']], $this->argumentVectors());
+	}
+
+	public function testDumpParametersFailureIsForwarded(): void
+	{
+		$this->scenario([], null, ['exitCode' => 1, 'stdout' => "Invalid configuration\n", 'stderr' => 'details']);
+
+		$result = $this->converge(['analyse', '--configuration=broken.neon']);
+
+		self::assertSame(1, $result['exitCode']);
+		self::assertSame("Invalid configuration\n", $result['stdout']);
+		self::assertSame('details', $result['stderr']);
+		self::assertSame([['dump-parameters', '--json', '--configuration=broken.neon']], $this->argumentVectors());
+	}
+
+	public function testAnsiIsAppendedOnlyForATerminalWithoutAnExplicitFlag(): void
+	{
+		$this->scenario([['exitCode' => 0, 'stdout' => '']]);
+
+		$this->converge(['analyse'], true);
+		$this->converge(['analyse', '--no-ansi'], true);
+		$this->converge(['analyse', '--ansi'], true);
+		$this->converge(['analyse'], false);
+
+		self::assertSame([
+			['dump-parameters', '--json'],
+			['analyse', '--ansi'],
+			['dump-parameters', '--json'],
+			['analyse', '--no-ansi'],
+			['dump-parameters', '--json'],
+			['analyse', '--ansi'],
+			['dump-parameters', '--json'],
+			['analyse'],
+		], $this->argumentVectors());
 	}
 
 	public function testPruneClearsTheResultCacheAndPrunesOnTheFirstRunOnly(): void
 	{
-		$this->responses([
-			['exitCode' => 0, 'stdout' => "cleared\n", 'stderr' => ''],
-			$this->json(1, [$this->storeChanged()]),
-			$this->json(0, []),
-			['exitCode' => 0, 'stdout' => "[OK] No errors\n", 'stderr' => ''],
+		$this->scenario([
+			['exitCode' => 1, 'stdout' => "1\n", 'write' => ['LatteSlice_a.php' => '1']],
+			['exitCode' => 0, 'stdout' => "2\n"],
 		]);
 
-		$result = $this->converge([
-			'--prune',
-			'analyse',
-			'-c',
-			'phpstan.neon',
-			'--memory-limit=2G',
-			'-afile.php',
-			'--level=8',
-			'src',
-		]);
+		$result = $this->converge(
+			['--prune', 'analyse', '-c', 'phpstan.neon', '--memory-limit=2G', '-afile.php', '--level=8'],
+		);
 
 		self::assertSame(0, $result['exitCode']);
-		self::assertSame("[OK] No errors\n", $result['stdout']);
+		self::assertSame("2\n", $result['stdout']);
 		self::assertStringStartsWith("cleared\n", $result['stderr']);
-		$calls = $this->calls();
-		self::assertSame(
+		$analyse = ['analyse', '-c', 'phpstan.neon', '--memory-limit=2G', '-afile.php', '--level=8'];
+		self::assertSame([
+			['arguments' => ['dump-parameters', '--json', '-c', 'phpstan.neon', '--memory-limit=2G', '-afile.php'], 'prune' => false],
 			['arguments' => ['clear-result-cache', '-c', 'phpstan.neon', '--memory-limit=2G', '-afile.php'], 'prune' => false],
-			$calls[0],
+			['arguments' => $analyse, 'prune' => '1'],
+			['arguments' => $analyse, 'prune' => false],
+		], $this->calls());
+	}
+
+	public function testTheStorePathIsCachedUntilAConfigurationFileChanges(): void
+	{
+		$config = $this->dir . '/phpstan.neon';
+		FileSystem::write($config, 'parameters: {}');
+		$this->scenario(
+			[['exitCode' => 0, 'stdout' => "ok\n"]],
+			null,
+			null,
+			[$config, 'phar://phpstan.phar/conf/bleedingEdge.neon'],
 		);
-		self::assertSame('1', $calls[1]['prune']);
-		self::assertFalse($calls[2]['prune']);
-		self::assertFalse($calls[3]['prune']);
+
+		$this->converge(['analyse', '-c', $config]);
+		$this->converge(['analyse', '-c', $config]);
+		FileSystem::write($config, 'parameters: {level: 8}');
+		$this->converge(['analyse', '-c', $config]);
+		$this->converge(['analyse', '-c', 'other.neon']);
+
+		self::assertSame([
+			['dump-parameters', '--json', '-c', $config],
+			['analyse', '-c', $config],
+			['analyse', '-c', $config],
+			['dump-parameters', '--json', '-c', $config],
+			['analyse', '-c', $config],
+			['dump-parameters', '--json', '-c', 'other.neon'],
+			['analyse', '-c', 'other.neon'],
+		], $this->argumentVectors());
+	}
+
+	public function testACachedDisabledNarrowingStillRunsOnce(): void
+	{
+		$config = $this->dir . '/phpstan.neon';
+		FileSystem::write($config, 'parameters: {}');
+		$this->scenario(
+			[['exitCode' => 0, 'stdout' => "ok\n", 'write' => ['LatteSlice_a.php' => '1']]],
+			['enabled' => false],
+			null,
+			[$config],
+		);
+
+		$this->converge(['analyse']);
+		self::assertSame("ok\n", $this->converge(['analyse'])['stdout']);
+		self::assertSame([['dump-parameters', '--json'], ['analyse'], ['analyse']], $this->argumentVectors());
 	}
 
 	public function testPhpstanPathCanBeOverridden(): void
 	{
-		$this->responses([$this->json(0, []), ['exitCode' => 0, 'stdout' => 'ok', 'stderr' => '']]);
+		$this->scenario([['exitCode' => 0, 'stdout' => 'ok']]);
 
-		$runner = new ConvergeRunner(PHP_BINARY, '/nonexistent/phpstan', $this->stream(), $this->stream());
+		$runner = new ConvergeRunner(
+			PHP_BINARY,
+			'/nonexistent/phpstan',
+			$this->memory(),
+			$this->file(),
+			false,
+			$this->dir,
+		);
 
 		self::assertSame(0, $runner->run(['--phpstan=' . self::FAKE, 'analyse']));
 		self::assertCount(2, $this->calls());
@@ -199,11 +333,11 @@ final class ConvergeRunnerTest extends BaseTestCase
 	 * @param list<string> $arguments
 	 * @return array{exitCode: int, stdout: string, stderr: string}
 	 */
-	private function converge(array $arguments): array
+	private function converge(array $arguments, bool $tty = false): array
 	{
-		$stdout = $this->stream();
-		$stderr = $this->stream();
-		$exitCode = (new ConvergeRunner(PHP_BINARY, self::FAKE, $stdout, $stderr))->run($arguments);
+		$stdout = $this->memory();
+		$stderr = $this->file();
+		$exitCode = (new ConvergeRunner(PHP_BINARY, self::FAKE, $stdout, $stderr, $tty, $this->dir))->run($arguments);
 
 		rewind($stdout);
 		rewind($stderr);
@@ -218,7 +352,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 	/**
 	 * @return resource
 	 */
-	private function stream()
+	private function memory()
 	{
 		$stream = fopen('php://memory', 'w+');
 		self::assertNotFalse($stream);
@@ -227,11 +361,44 @@ final class ConvergeRunnerTest extends BaseTestCase
 	}
 
 	/**
-	 * @param list<array{exitCode: int, stdout: string, stderr: string}> $responses
+	 * @return resource
 	 */
-	private function responses(array $responses): void
+	private function file()
 	{
-		FileSystem::write($this->scenario, Json::encode(['calls' => [], 'responses' => $responses]));
+		$stream = tmpfile();
+		self::assertNotFalse($stream);
+
+		return $stream;
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $runs
+	 * @param array<string, mixed>|null $latte
+	 * @param array{exitCode: int, stdout: string, stderr: string}|null $dumpParameters
+	 * @param list<string> $configFiles
+	 */
+	private function scenario(
+		array $runs,
+		?array $latte = null,
+		?array $dumpParameters = null,
+		array $configFiles = []
+	): void
+	{
+		$latte ??= ['enabled' => true, 'narrowing' => ['enabled' => true, 'storePath' => $this->store]];
+		FileSystem::write($this->scenario, Json::encode([
+			'store' => $this->store,
+			'run' => 0,
+			'calls' => [],
+			'runs' => $runs,
+			'dumpParameters' => $dumpParameters ?? [
+				'exitCode' => 0,
+				'stdout' => Json::encode([
+					'allConfigFiles' => $configFiles,
+					'level' => 8,
+					'orisai' => ['nette' => ['latte' => $latte]],
+				]),
+			],
+		]));
 	}
 
 	/**
@@ -243,42 +410,16 @@ final class ConvergeRunnerTest extends BaseTestCase
 	}
 
 	/**
-	 * @param list<array{message: string, identifier: string}> $messages
-	 * @return array{exitCode: int, stdout: string, stderr: string}
+	 * @return list<list<string>>
 	 */
-	private function json(int $exitCode, array $messages): array
+	private function argumentVectors(): array
 	{
-		$files = [];
-		foreach ($messages as $message) {
-			$files['/project/file.php']['messages'][] = $message + ['line' => 1, 'ignorable' => false];
+		$vectors = [];
+		foreach ($this->calls() as $call) {
+			$vectors[] = $call['arguments'];
 		}
 
-		return [
-			'exitCode' => $exitCode,
-			'stdout' => Json::encode(
-				['totals' => ['errors' => 0, 'file_errors' => 0], 'files' => $files, 'errors' => []],
-			),
-			'stderr' => '',
-		];
-	}
-
-	/**
-	 * @return array{message: string, identifier: string}
-	 */
-	private function storeChanged(): array
-	{
-		return [
-			'message' => 'The Latte narrowing store changed for 1 including template: a.latte.',
-			'identifier' => 'orisai.nette.latte.narrowingStoreChanged',
-		];
-	}
-
-	/**
-	 * @return array{message: string, identifier: string}
-	 */
-	private function finding(): array
-	{
-		return ['message' => 'Undefined variable: $x', 'identifier' => 'variable.undefined'];
+		return $vectors;
 	}
 
 }

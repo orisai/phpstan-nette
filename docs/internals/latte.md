@@ -670,7 +670,15 @@ template content can decide it — only "the analysis of this tree would rewrite
 comes from a `Rule<CollectedDataNode>`, recomputed on every run from the tree and the store on disk and
 never stored in the result cache, so cold and warm runs agree on it. It is non-ignorable because a
 baseline entry would silence a stale store for good. `bin/latte-converge` (`Latte\Converge\ConvergeRunner`)
-reruns `phpstan analyse` while its JSON output carries the identifier; it never writes the store itself.
+never parses the error: it digests the store (`StoreDigest`: slice basename → sha1, plus whether the
+directory exists) before and after each unmodified `phpstan analyse` and reruns while the digest moves.
+That is race-free against PHPStan's own workers because the writer runs in the coordinator after them, and
+it is equivalent to the error, because the writer reports exactly the slices it rewrote or deleted — a
+spawn test pins the equivalence run by run. The store path comes from `--store` or one `dump-parameters
+--json` call, cached in the system temporary directory and keyed by the working directory, the PHPStan
+binary and the configuration options; the entry holds sha1 of every file in `allConfigFiles` except PHPStan's
+own `phar://` ones, which cannot set these parameters, and is discarded when one changes. The call is not free: with a large baseline, Symfony's output formatter makes
+it take longer than a warm analysis.
 
 Slices of deleted includers are never pruned by ordinary runs: a run over a subset of the paths sees
 only part of the includers, and nothing tells it apart from a deletion. `latte-converge --prune` clears

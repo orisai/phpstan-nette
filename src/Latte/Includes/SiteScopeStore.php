@@ -173,7 +173,7 @@ final class SiteScopeStore
 		return $this->loadedEntries;
 	}
 
-	// `make phpstan-narrowing-init` bootstrap: materializes the directory plus one
+	// Bootstrap of the directory at orisai.nette.latte.narrowing.storePath: materializes it plus one
 	// empty slice for every includer of the current universe that doesn't already have one - a
 	// target->slice dependency edge must exist BEFORE a capture change can propagate through it.
 	// Never touches a slice that already exists, so re-running this against an

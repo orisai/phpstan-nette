@@ -36,7 +36,7 @@ final class LattePhpstanConfig
 	 * per-call one - the only way two separate create() calls (e.g. one per spawn in a
 	 * result-cache warm/cold test) can share the same resultCachePath, which defaults under
 	 * tmpDir.
-	 * @param array<string, bool|int|string|list<string>> $extraParameters additional `parameters:`
+	 * @param array<string, mixed> $extraParameters additional `parameters:`
 	 * entries, keyed by the DOTTED path a NEON `%…%` reference would use (e.g.
 	 * `orisai.nette.latte.discovery.enabled`) - every dotted key sharing a prefix is grouped under one nested
 	 * block (later entries win on key collision, matching NEON's own semantics) - so callers must not
@@ -107,7 +107,7 @@ final class LattePhpstanConfig
 	 * lands in one nested block, mirroring the extension's own namespaced parameter schema. A key with
 	 * no dot stays a plain top-level entry.
 	 *
-	 * @param array<string, bool|int|string|list<string>> $parameters
+	 * @param array<string, mixed> $parameters
 	 * @return array<string, mixed>
 	 */
 	private static function groupParameters(array $parameters): array
@@ -123,7 +123,7 @@ final class LattePhpstanConfig
 	/**
 	 * @param array<string, mixed> $into
 	 * @param list<string> $path
-	 * @param bool|int|string|list<string> $value
+	 * @param mixed $value
 	 * @return array<string, mixed>
 	 */
 	private static function nest(array $into, array $path, $value): array

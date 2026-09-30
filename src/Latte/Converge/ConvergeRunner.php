@@ -2,24 +2,31 @@
 
 namespace OriPhpstan\Nette\Latte\Converge;
 
+use function array_key_exists;
 use function array_merge;
 use function count;
 use function fclose;
-use function feof;
-use function fread;
+use function file_get_contents;
+use function file_put_contents;
 use function fwrite;
+use function getcwd;
 use function getenv;
+use function getmypid;
+use function in_array;
 use function is_array;
+use function is_file;
 use function is_resource;
 use function is_string;
 use function json_decode;
+use function json_encode;
 use function preg_match;
 use function proc_close;
 use function proc_open;
+use function rename;
+use function sha1;
+use function sha1_file;
 use function sprintf;
-use function stream_select;
-use function stream_set_blocking;
-use function strlen;
+use function stream_get_contents;
 use function strncmp;
 use function substr;
 
@@ -28,13 +35,7 @@ final class ConvergeRunner
 
 	public const DEFAULT_MAX_RUNS = 6;
 
-	private const STDOUT_CAPTURE = 1;
-
-	private const STDOUT_FORWARD = 2;
-
-	private const STDOUT_TO_STDERR = 3;
-
-	private const USAGE = 'Usage: latte-converge [--max-runs=<n>] [--prune] [--phpstan=<path>] analyse [<phpstan options and paths>]';
+	private const USAGE = 'Usage: latte-converge [--max-runs=<n>] [--store=<dir>] [--prune] [--phpstan=<path>] analyse [<phpstan options and paths>]';
 
 	private string $php;
 
@@ -46,16 +47,29 @@ final class ConvergeRunner
 	/** @var resource */
 	private $stderr;
 
+	private bool $stdoutIsTty;
+
+	private string $cacheDirectory;
+
 	/**
 	 * @param resource $stdout
 	 * @param resource $stderr
 	 */
-	public function __construct(string $php, string $phpstan, $stdout, $stderr)
+	public function __construct(
+		string $php,
+		string $phpstan,
+		$stdout,
+		$stderr,
+		bool $stdoutIsTty,
+		string $cacheDirectory
+	)
 	{
 		$this->php = $php;
 		$this->phpstan = $phpstan;
 		$this->stdout = $stdout;
 		$this->stderr = $stderr;
+		$this->stdoutIsTty = $stdoutIsTty;
+		$this->cacheDirectory = $cacheDirectory;
 	}
 
 	/**
@@ -65,6 +79,7 @@ final class ConvergeRunner
 	{
 		$maxRuns = self::DEFAULT_MAX_RUNS;
 		$prune = false;
+		$store = null;
 		$phpstanArguments = [];
 		foreach ($arguments as $argument) {
 			if ($argument === '--prune') {
@@ -76,6 +91,8 @@ final class ConvergeRunner
 				}
 
 				$maxRuns = (int) $value;
+			} elseif (strncmp($argument, '--store=', 8) === 0) {
+				$store = self::absolute(substr($argument, 8));
 			} elseif (strncmp($argument, '--phpstan=', 10) === 0) {
 				$this->phpstan = substr($argument, 10);
 			} else {
@@ -87,14 +104,45 @@ final class ConvergeRunner
 			return $this->usageError('The first PHPStan argument must be the analyse command.');
 		}
 
-		[$format, $jsonArguments] = self::withJsonFormat($phpstanArguments);
+		if (
+			$this->stdoutIsTty
+			&& !in_array('--ansi', $phpstanArguments, true)
+			&& !in_array('--no-ansi', $phpstanArguments, true)
+		) {
+			$phpstanArguments[] = '--ansi';
+		}
+
+		$configurationOptions = self::configurationOptions($phpstanArguments);
+
+		if ($store === null) {
+			$cacheFile = $this->cacheFile($configurationOptions);
+			$cached = self::cachedStore($cacheFile);
+			if ($cached !== null) {
+				$store = $cached['store'];
+			} else {
+				$dump = $this->execute(array_merge(['dump-parameters', '--json'], $configurationOptions), []);
+				if ($dump['exitCode'] !== 0) {
+					fwrite($this->stdout, $dump['stdout']);
+
+					return $dump['exitCode'];
+				}
+
+				$parameters = json_decode($dump['stdout'], true);
+				$store = self::storePath($parameters);
+				self::cacheStore($cacheFile, $parameters, $store);
+			}
+
+			if ($store === null) {
+				$once = $this->execute($phpstanArguments, []);
+				fwrite($this->stdout, $once['stdout']);
+
+				return $once['exitCode'];
+			}
+		}
 
 		if ($prune) {
-			$clear = $this->execute(
-				array_merge(['clear-result-cache'], self::configurationOptions($phpstanArguments)),
-				[],
-				self::STDOUT_TO_STDERR,
-			);
+			$clear = $this->execute(array_merge(['clear-result-cache'], $configurationOptions), []);
+			fwrite($this->stderr, $clear['stdout']);
 			if ($clear['exitCode'] !== 0) {
 				return $clear['exitCode'];
 			}
@@ -103,29 +151,28 @@ final class ConvergeRunner
 		$run = 0;
 		while (true) {
 			$run++;
-			$environment = $prune && $run === 1 ? [StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE => '1'] : [];
-			$result = $this->execute($jsonArguments, $environment, self::STDOUT_CAPTURE);
+			$before = StoreDigest::of($store);
+			$result = $this->execute(
+				$phpstanArguments,
+				$prune && $run === 1 ? [StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE => '1'] : [],
+			);
+			$changed = StoreDigest::of($store) !== $before;
 
-			$decoded = json_decode($result['stdout'], true);
-			if (!is_array($decoded)) {
+			if ($result['exitCode'] >= 128 || !$changed) {
 				fwrite($this->stdout, $result['stdout']);
 
-				return $result['exitCode'] === 0 ? 1 : $result['exitCode'];
-			}
-
-			$storeChanged = self::storeChangedMessage($decoded);
-			if ($storeChanged === null) {
-				break;
+				return $result['exitCode'];
 			}
 
 			if ($run >= $maxRuns) {
+				fwrite($this->stdout, $result['stdout']);
 				fwrite($this->stderr, sprintf(
-					"The Latte narrowing store did not settle within %d runs (--max-runs); the last run reported:\n%s\n",
+					"The Latte narrowing store still changed on run %d of at most %d (--max-runs).\n",
+					$run,
 					$maxRuns,
-					$storeChanged,
 				));
 
-				return 1;
+				return $result['exitCode'] !== 0 ? $result['exitCode'] : 1;
 			}
 
 			fwrite($this->stderr, sprintf(
@@ -134,14 +181,6 @@ final class ConvergeRunner
 				$maxRuns,
 			));
 		}
-
-		if ($format === 'json') {
-			fwrite($this->stdout, $result['stdout']);
-
-			return $result['exitCode'];
-		}
-
-		return $this->execute($phpstanArguments, [], self::STDOUT_FORWARD)['exitCode'];
 	}
 
 	private static function isAnalyseCommand(string $argument): bool
@@ -149,34 +188,95 @@ final class ConvergeRunner
 		return $argument === 'analyse' || $argument === 'analyze';
 	}
 
-	/**
-	 * @param list<string> $arguments
-	 * @return array{string|null, list<string>}
-	 */
-	private static function withJsonFormat(array $arguments): array
+	private static function absolute(string $path): string
 	{
-		$format = null;
-		$kept = [];
-		for ($i = 0; $i < count($arguments); $i++) {
-			$argument = $arguments[$i];
-			if ($argument === '--error-format' && isset($arguments[$i + 1])) {
-				$format = $arguments[++$i];
-
-				continue;
-			}
-
-			if (strncmp($argument, '--error-format=', 15) === 0) {
-				$format = substr($argument, 15);
-
-				continue;
-			}
-
-			$kept[] = $argument;
+		if (strncmp($path, '/', 1) === 0 || preg_match('~^[A-Za-z]:[\\\\/]~', $path) === 1) {
+			return $path;
 		}
 
-		$kept[] = '--error-format=json';
+		return getcwd() . '/' . $path;
+	}
 
-		return [$format, $kept];
+	/**
+	 * @param mixed $parameters
+	 */
+	private static function storePath($parameters): ?string
+	{
+		$latte = is_array($parameters) ? $parameters['orisai']['nette']['latte'] ?? null : null;
+		if (!is_array($latte) || !is_array($latte['narrowing'] ?? null)) {
+			return null;
+		}
+
+		$enabled = $latte['enabled'] ?? null;
+		$narrowingEnabled = $latte['narrowing']['enabled'] ?? null;
+		$storePath = $latte['narrowing']['storePath'] ?? null;
+		if ($enabled !== true || $narrowingEnabled !== true || !is_string($storePath)) {
+			return null;
+		}
+
+		return self::absolute($storePath);
+	}
+
+	/**
+	 * @param list<string> $configurationOptions
+	 */
+	private function cacheFile(array $configurationOptions): string
+	{
+		return $this->cacheDirectory . '/orisai-latte-converge-'
+			. sha1((string) json_encode([getcwd(), $this->php, $this->phpstan, $configurationOptions])) . '.json';
+	}
+
+	/**
+	 * @return array{store: string|null}|null
+	 */
+	private static function cachedStore(string $cacheFile): ?array
+	{
+		$cached = is_file($cacheFile) ? json_decode((string) file_get_contents($cacheFile), true) : null;
+		if (
+			!is_array($cached)
+			|| !array_key_exists('store', $cached)
+			|| !(is_string($cached['store']) || $cached['store'] === null)
+			|| !is_array($cached['files'] ?? null)
+		) {
+			return null;
+		}
+
+		foreach ($cached['files'] as $file => $hash) {
+			if (!is_string($file) || !is_file($file) || sha1_file($file) !== $hash) {
+				return null;
+			}
+		}
+
+		return ['store' => $cached['store']];
+	}
+
+	/**
+	 * @param mixed $parameters
+	 */
+	private static function cacheStore(string $cacheFile, $parameters, ?string $store): void
+	{
+		$configFiles = is_array($parameters) ? $parameters['allConfigFiles'] ?? null : null;
+		if (!is_array($configFiles) || $configFiles === []) {
+			return;
+		}
+
+		$files = [];
+		foreach ($configFiles as $file) {
+			if (is_string($file) && strncmp($file, 'phar://', 7) === 0) {
+				continue;
+			}
+
+			if (!is_string($file) || !is_file($file)) {
+				return;
+			}
+
+			$files[$file] = sha1_file($file);
+		}
+
+		$temporary = $cacheFile . '.' . getmypid() . '.tmp';
+		if (@file_put_contents($temporary, json_encode(['store' => $store, 'files' => $files])) !== false) {
+			@rename($temporary, $cacheFile);
+		}
 	}
 
 	/**
@@ -197,10 +297,12 @@ final class ConvergeRunner
 				continue;
 			}
 
-			if (preg_match(
-				'~^(-c.+|-a.+|--configuration=.*|--autoload-file=.*|--memory-limit=.*|--debug)$~',
-				$argument,
-			) === 1) {
+			if (
+				preg_match(
+					'~^(-c.+|-a.+|--configuration=.*|--autoload-file=.*|--memory-limit=.*|--debug)$~',
+					$argument,
+				) === 1
+			) {
 				$options[] = $argument;
 			}
 		}
@@ -209,48 +311,18 @@ final class ConvergeRunner
 	}
 
 	/**
-	 * @param array<mixed> $decoded
-	 */
-	private static function storeChangedMessage(array $decoded): ?string
-	{
-		if (!is_array($decoded['files'] ?? null)) {
-			return null;
-		}
-
-		foreach ($decoded['files'] as $file) {
-			if (!is_array($file) || !is_array($file['messages'] ?? null)) {
-				continue;
-			}
-
-			foreach ($file['messages'] as $message) {
-				if (
-					is_array($message)
-					&& ($message['identifier'] ?? null) === StoreChangeSignal::IDENTIFIER
-					&& is_string($message['message'] ?? null)
-				) {
-					return $message['message'];
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * @param list<string> $arguments
 	 * @param array<string, string> $environment
-	 * @param self::STDOUT_* $stdoutMode
 	 * @return array{exitCode: int, stdout: string}
 	 */
-	private function execute(array $arguments, array $environment, int $stdoutMode): array
+	private function execute(array $arguments, array $environment): array
 	{
-		$inherited = getenv();
 		$process = proc_open(
 			array_merge([$this->php, $this->phpstan], $arguments),
-			[0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+			[0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => $this->stderr],
 			$pipes,
 			null,
-			$environment === [] ? null : array_merge($inherited, $environment),
+			$environment === [] ? null : array_merge(getenv(), $environment),
 		);
 		if (!is_resource($process)) {
 			fwrite($this->stderr, "Cannot start PHPStan.\n");
@@ -258,38 +330,8 @@ final class ConvergeRunner
 			return ['exitCode' => 1, 'stdout' => ''];
 		}
 
-		fclose($pipes[0]);
-		stream_set_blocking($pipes[1], false);
-		stream_set_blocking($pipes[2], false);
-
-		$stdout = '';
-		$open = [1 => $pipes[1], 2 => $pipes[2]];
-		while ($open !== []) {
-			$read = $open;
-			$write = null;
-			$except = null;
-			if (stream_select($read, $write, $except, null) === false) {
-				break;
-			}
-
-			foreach ($read as $pipe) {
-				$chunk = fread($pipe, 65536);
-				if ($chunk !== false && strlen($chunk) > 0) {
-					if ($pipe === $pipes[1] && $stdoutMode === self::STDOUT_CAPTURE) {
-						$stdout .= $chunk;
-					} elseif ($pipe === $pipes[1] && $stdoutMode === self::STDOUT_FORWARD) {
-						fwrite($this->stdout, $chunk);
-					} else {
-						fwrite($this->stderr, $chunk);
-					}
-				}
-
-				if (feof($pipe)) {
-					fclose($pipe);
-					unset($open[$pipe === $pipes[1] ? 1 : 2]);
-				}
-			}
-		}
+		$stdout = (string) stream_get_contents($pipes[1]);
+		fclose($pipes[1]);
 
 		return ['exitCode' => proc_close($process), 'stdout' => $stdout];
 	}

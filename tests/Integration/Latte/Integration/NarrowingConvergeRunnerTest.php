@@ -3,21 +3,26 @@
 namespace Tests\OriPhpstan\Nette\Integration\Latte\Integration;
 
 use Nette\Utils\FileSystem;
+use OriPhpstan\Nette\Latte\Converge\StoreDigest;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use Symfony\Component\Process\Process;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
+use function array_filter;
+use function array_values;
 use function dirname;
 use function explode;
-use function glob;
+use function file_exists;
 use function implode;
 use function preg_match_all;
 use function preg_replace;
 use function rtrim;
 use function sort;
 use function str_replace;
+use function strpos;
 use function uniqid;
+use function var_export;
 use const PHP_BINARY;
 use const SORT_STRING;
 
@@ -25,6 +30,8 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 {
 
 	private const REAL_CONFIG_PATH = __DIR__ . '/Fixtures/integration.neon';
+
+	private const STORE_CHANGED = 'The Latte narrowing store changed for ';
 
 	private string $projectRoot;
 
@@ -49,30 +56,48 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 		parent::tearDown();
 	}
 
-	public function testATwoLevelChainConvergesInThreeRunsAndStaysSettled(): void
+	public function testATwoLevelChainConvergesInThreeRunsWithoutAFourth(): void
 	{
 		$this->writeChain("{\$x->getMessage()}\n");
 
-		$converge = $this->converge();
+		$converge = $this->converge([], 'table');
 
 		self::assertSame(0, $converge['exitCode'], $converge['output'] . $converge['stderr']);
-		self::assertSame("(no errors)\n", $converge['output']);
+		self::assertStringContainsString('[OK] No errors', $converge['output']);
 		self::assertSame(['2', '3'], $this->reruns($converge['stderr']), $converge['stderr']);
+		self::assertSame(['dump-parameters', 'analyse', 'analyse', 'analyse'], $this->invocations());
 
-		$store = $this->snapshotStore();
+		$store = StoreDigest::of($this->storeDir);
 		$warm = $this->phpstan();
 		self::assertSame(0, $warm['exitCode'], $warm['output']);
 		self::assertSame("(no errors)\n", $warm['output']);
-		self::assertSame($store, $this->snapshotStore());
+		self::assertSame($store, StoreDigest::of($this->storeDir));
 
 		FileSystem::delete($this->scratch . '/pstmp/resultCache.php');
 		$cold = $this->phpstan();
 		self::assertSame($warm, $cold);
-		self::assertSame($store, $this->snapshotStore());
+		self::assertSame($store, StoreDigest::of($this->storeDir));
 
 		$again = $this->converge();
 		self::assertSame(0, $again['exitCode']);
 		self::assertSame([], $this->reruns($again['stderr']), $again['stderr']);
+	}
+
+	public function testAPlainRunReportsTheStoreChangeExactlyWhenTheStoreBytesChanged(): void
+	{
+		$this->writeChain("{\$x->getMessage()}\n");
+
+		$observed = [];
+		for ($run = 1; $run <= 4; $run++) {
+			$before = StoreDigest::of($this->storeDir);
+			$plain = $this->phpstan();
+			$changed = StoreDigest::of($this->storeDir) !== $before;
+			$reported = strpos($plain['output'], self::STORE_CHANGED) !== false;
+			self::assertSame($changed, $reported, "run $run: " . $plain['output']);
+			$observed[] = $changed;
+		}
+
+		self::assertSame([true, true, false, false], $observed);
 	}
 
 	public function testAPlainRunOnAStaleStoreFailsWithTheStoreChange(): void
@@ -83,11 +108,24 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 
 		self::assertSame(1, $plain['exitCode']);
 		self::assertStringContainsString(
-			'The Latte narrowing store changed for 2 including templates: '
+			self::STORE_CHANGED . '2 including templates: '
 				. $this->relSrc() . '/A.latte, ' . $this->relSrc() . '/B.latte. '
 				. 'Run the analysis again until this error disappears, then commit the store.',
 			$plain['output'],
 		);
+	}
+
+	public function testAnIgnoreErrorsEntryDoesNotHideTheStoreChange(): void
+	{
+		$this->writeChain("{\$x->getMessage()}\n");
+
+		$plain = $this->phpstan([
+			'ignoreErrors' => [['identifier' => 'orisai.nette.latte.narrowingStoreChanged']],
+			'reportUnmatchedIgnoredErrors' => false,
+		]);
+
+		self::assertSame(1, $plain['exitCode']);
+		self::assertStringContainsString(self::STORE_CHANGED, $plain['output']);
 	}
 
 	public function testAFindingCoexistingWithAStoreChangeIsReportedOnceTheStoreSettles(): void
@@ -118,7 +156,7 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 		self::assertSame("(no errors)\n", $prune['output']);
 		self::assertSame(['2'], $this->reruns($prune['stderr']), $prune['stderr']);
 		self::assertFileDoesNotExist($orphan);
-		self::assertCount(3, $this->snapshotStore());
+		self::assertCount(3, StoreDigest::of($this->storeDir)['slices']);
 	}
 
 	private function writeChain(string $leaf): void
@@ -143,22 +181,34 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 	 * @param list<string> $options
 	 * @return array{exitCode: int, output: string, stderr: string}
 	 */
-	private function converge(array $options = []): array
+	private function converge(array $options = [], string $format = 'raw'): array
 	{
-		return $this->spawn([
-			PHP_BINARY,
-			$this->projectRoot . '/bin/latte-converge',
-			'--phpstan=' . $this->phpstanBinary(),
-			...$options,
-		]);
+		$counter = $this->scratch . '/counting-phpstan.php';
+		FileSystem::write(
+			$counter,
+			"<?php declare(strict_types = 1);\n\n"
+				. 'file_put_contents(' . var_export($this->scratch . '/invocations', true)
+				. ", \$argv[1] . \"\\n\", FILE_APPEND);\n"
+				. '$process = proc_open(array_merge([PHP_BINARY, ' . var_export($this->phpstanBinary(), true)
+				. '], array_slice($argv, 1)), [STDIN, STDOUT, STDERR], $pipes);' . "\n"
+				. "exit(proc_close(\$process));\n",
+		);
+		FileSystem::delete($this->scratch . '/invocations');
+
+		return $this->spawn(
+			[PHP_BINARY, $this->projectRoot . '/bin/latte-converge', '--phpstan=' . $counter, ...$options],
+			$format,
+			[],
+		);
 	}
 
 	/**
+	 * @param array<string, mixed> $parameters
 	 * @return array{exitCode: int, output: string, stderr: string}
 	 */
-	private function phpstan(): array
+	private function phpstan(array $parameters = []): array
 	{
-		return $this->spawn([PHP_BINARY, $this->phpstanBinary()]);
+		return $this->spawn([PHP_BINARY, $this->phpstanBinary()], 'raw', $parameters);
 	}
 
 	private function phpstanBinary(): string
@@ -167,16 +217,31 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 	}
 
 	/**
+	 * @return list<string>
+	 */
+	private function invocations(): array
+	{
+		$path = $this->scratch . '/invocations';
+
+		return file_exists($path)
+			? array_values(
+				array_filter(explode("\n", FileSystem::read($path)), static fn (string $line): bool => $line !== ''),
+			)
+			: [];
+	}
+
+	/**
 	 * @param list<string> $command
+	 * @param array<string, mixed> $parameters
 	 * @return array{exitCode: int, output: string, stderr: string}
 	 */
-	private function spawn(array $command): array
+	private function spawn(array $command, string $format, array $parameters): array
 	{
 		$config = LattePhpstanConfig::create(
 			self::REAL_CONFIG_PATH,
 			[$this->srcDir],
 			$this->scratch . '/pstmp',
-			['orisai.nette.latte.narrowing.storePath' => $this->storeDir],
+			['orisai.nette.latte.narrowing.storePath' => $this->storeDir] + $parameters,
 		);
 
 		$process = new Process(
@@ -185,18 +250,20 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 				'analyse',
 				'--no-progress',
 				'--level=8',
-				'--error-format=raw',
+				'--error-format=' . $format,
 				'-c',
 				$config->getConfigPath(),
 			],
 			$this->projectRoot,
 			['XDEBUG_MODE' => 'off', 'COMPOSER' => VendorDirectory::composerFile() ?? false],
+			null,
+			null,
 		);
 		$exitCode = $process->run();
 
 		return [
 			'exitCode' => $exitCode,
-			'output' => $this->normalize($process->getOutput()),
+			'output' => $format === 'raw' ? $this->normalize($process->getOutput()) : $process->getOutput(),
 			'stderr' => $process->getErrorOutput(),
 		];
 	}
@@ -209,20 +276,6 @@ final class NarrowingConvergeRunnerTest extends BaseTestCase
 		preg_match_all('~running the analysis again \(run (\d+) of at most 6\)~', $stderr, $matches);
 
 		return $matches[1];
-	}
-
-	/**
-	 * @return array<string, string>
-	 */
-	private function snapshotStore(): array
-	{
-		$snapshot = [];
-		$files = glob($this->storeDir . '/LatteSlice_*.php');
-		foreach ($files === false ? [] : $files as $file) {
-			$snapshot[$file] = FileSystem::read($file);
-		}
-
-		return $snapshot;
 	}
 
 	private function normalize(string $raw): string
