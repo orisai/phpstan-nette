@@ -45,6 +45,91 @@ final class LatteCompilerTest extends BaseTestCase
 		self::assertStringContainsString('if ($show)', $result->getPhpSource());
 	}
 
+	public function testSecurityViolationIsACompileError(): void
+	{
+		$result = (new LatteCompiler())->compile("<p>\n{block html|noescape}<hr>{/block}</p>\n", 'LatteTpl_test');
+
+		self::assertNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.parseError', 'Filter |noescape is not expected here.', 2]],
+			self::describeDiagnostics($result),
+		);
+	}
+
+	public function testUnparsableGeneratedCodeIsACompileErrorOnItsTemplateLine(): void
+	{
+		$result = (new LatteCompiler())->compile("a\n\n{php * }\n", 'LatteTpl_test');
+
+		self::assertNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.parseError', "Error in template: Syntax error, unexpected '*'", 3]],
+			self::describeDiagnostics($result),
+		);
+	}
+
+	public function testRetryAfterAnUnknownAttributeCompilesTheOriginalTokens(): void
+	{
+		$result = (new LatteCompiler())->compile("<textarea n:foo />\n", 'LatteTpl_test');
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertStringContainsString('<textarea></textarea>', $result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			self::describeDiagnostics($result),
+		);
+	}
+
+	public function testUnknownTagWithoutClosingTagIsVoid(): void
+	{
+		$result = (new LatteCompiler())->compile(
+			"{foo}\n<div>{foo \$a}</div>\n<p n:foo>x</p>\n{foo /}\n",
+			'LatteTpl_test',
+		);
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			self::describeDiagnostics($result),
+		);
+	}
+
+	public function testUnknownTagWithClosingTagStaysPaired(): void
+	{
+		$result = (new LatteCompiler())->compile("{foo}\n{if \$a}x{/if}\n{/foo}\n", 'LatteTpl_test');
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			self::describeDiagnostics($result),
+		);
+	}
+
+	public function testUnknownTagClosedByTheGenericClosingTagStaysPaired(): void
+	{
+		$result = (new LatteCompiler())->compile("{foo}\n{if \$a}x{/if}\n{/\n}\n", 'LatteTpl_test');
+
+		self::assertNotNull($result->getPhpSource());
+		self::assertSame(
+			[['orisaiNette.latte.unknownMacro', "Unknown Latte macro or attribute 'foo'.", 1]],
+			self::describeDiagnostics($result),
+		);
+	}
+
+	public function testUnknownTagInAScriptIsAParseError(): void
+	{
+		$result = (new LatteCompiler())->compile("<script>if (true) {return}</script>\n", 'LatteTpl_test');
+
+		self::assertNull($result->getPhpSource());
+		self::assertSame(
+			[[
+				'orisaiNette.latte.parseError',
+				'Unknown tag {return} (in JavaScript or CSS, try to put a space after bracket or use n:syntax=off)',
+				1,
+			]],
+			self::describeDiagnostics($result),
+		);
+	}
+
 	public function testUnclosedTagProducesFailureDiagnostic(): void
 	{
 		$compiler = new LatteCompiler();
@@ -707,6 +792,19 @@ final class LatteCompilerTest extends BaseTestCase
 	private function isolatedCacheDir(): string
 	{
 		return sys_get_temp_dir() . '/latte-compiler-cache-test-' . getmypid() . '-' . uniqid('', true);
+	}
+
+	/**
+	 * @return list<array{string, string, int}>
+	 */
+	private static function describeDiagnostics(CompileResult $result): array
+	{
+		$described = [];
+		foreach ($result->getDiagnostics() as $diagnostic) {
+			$described[] = [$diagnostic->getIdentifier(), $diagnostic->getMessage(), $diagnostic->getLatteLine()];
+		}
+
+		return $described;
 	}
 
 }

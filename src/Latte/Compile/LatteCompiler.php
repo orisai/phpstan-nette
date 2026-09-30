@@ -2,7 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Compile;
 
-use InvalidArgumentException;
 use Latte\CompileException;
 use Latte\Compiler;
 use Latte\Macro;
@@ -10,6 +9,7 @@ use Latte\Macros\BlockMacros;
 use Latte\Macros\CoreMacros;
 use Latte\Parser;
 use Latte\Runtime\Defaults;
+use Latte\Token;
 use LogicException;
 use Nette\Bridges\ApplicationLatte\UIMacros;
 use Nette\Bridges\CacheLatte\CacheMacro;
@@ -27,7 +27,9 @@ use function implode;
 use function in_array;
 use function is_callable;
 use function preg_match;
+use function preg_quote;
 use function sha1;
+use function strpos;
 use const E_USER_DEPRECATED;
 
 final class LatteCompiler
@@ -60,6 +62,8 @@ final class LatteCompiler
 
 	private ?CaseMismatchScanner $caseMismatchScanner = null;
 
+	private GeneratedSyntaxCheck $syntaxCheck;
+
 	public function __construct(
 		?LatteAnalysisCache $cache = null,
 		?CustomsHarvester $harvester = null,
@@ -71,6 +75,7 @@ final class LatteCompiler
 		$this->harvester = $harvester;
 		$this->discoveryStore = $discoveryStore;
 		$this->discoveryStoreEnabled = $discoveryStoreEnabled;
+		$this->syntaxCheck = new GeneratedSyntaxCheck();
 	}
 
 	private function caseMismatchScanner(): CaseMismatchScanner
@@ -130,12 +135,12 @@ final class LatteCompiler
 
 		try {
 			$tokens = $parser->parse($latteSource);
-		} catch (CompileException | InvalidArgumentException $e) {
+		} catch (Throwable $e) {
 			return CompileResult::failure(
 				$className,
 				new Diagnostic(
 					'orisaiNette.latte.parseError',
-					$e->getMessage(),
+					VendorCompileFailure::message($e),
 					$this->recoverLine($parser->getLine()),
 				),
 			);
@@ -164,7 +169,12 @@ final class LatteCompiler
 
 			try {
 				$phpSource = VendorErrorContainment::run(
-					static fn (): string => $compiler->compile($tokens, $className, null, false),
+					static fn (): string => $compiler->compile(
+						self::attemptTokens($tokens, $passthroughNames),
+						$className,
+						null,
+						false,
+					),
 					// Every other severity vendor Latte can trigger_error() - including the
 					// filter/function case-mismatch warnings PhpWriter fires for the stock 7
 					// Defaults functions and the checkUrl filter, which CaseMismatchScanner below
@@ -180,6 +190,11 @@ final class LatteCompiler
 						}
 					},
 				);
+
+				$syntaxError = $this->syntaxCheck->check($phpSource);
+				if ($syntaxError !== null) {
+					return CompileResult::failure($className, $syntaxError);
+				}
 
 				$caseMismatchDiagnostics = $this->caseMismatchScanner()->scan($tokens);
 
@@ -204,13 +219,13 @@ final class LatteCompiler
 					"Unknown Latte macro or attribute '$unknownName'.",
 					$line,
 				);
-				$passthroughNames[$unknownName] = true;
-			} catch (InvalidArgumentException $e) {
+				$passthroughNames[$unknownName] = $this->hasClosingTag($latteSource, $unknownName);
+			} catch (Throwable $e) {
 				return CompileResult::failure(
 					$className,
 					new Diagnostic(
 						'orisaiNette.latte.parseError',
-						$e->getMessage(),
+						VendorCompileFailure::message($e),
 						$this->recoverLine($compiler->getLine()),
 					),
 				);
@@ -221,6 +236,41 @@ final class LatteCompiler
 			$className,
 			new Diagnostic('orisaiNette.latte.parseError', 'Too many unknown macros.', 1),
 		);
+	}
+
+	// A fresh copy per attempt: Compiler rewrites tokens in place (a non-void `<x />` becomes `>`), so
+	// a failed attempt would leave the retry a different template. An unknown tag without any closing
+	// tag in the source is written as `{name /}`, which is how Latte 2 closes a tag on the spot.
+
+	/**
+	 * @param array<Token> $tokens
+	 * @param array<string, bool> $passthroughNames
+	 * @return list<Token>
+	 */
+	private static function attemptTokens(array $tokens, array $passthroughNames): array
+	{
+		$copies = [];
+		foreach ($tokens as $token) {
+			$copy = clone $token;
+			if (
+				$copy->type === Token::MACRO_TAG
+				&& !$copy->closing
+				&& ($passthroughNames[$copy->name] ?? true) === false
+			) {
+				$copy->empty = true;
+			}
+
+			$copies[] = $copy;
+		}
+
+		return $copies;
+	}
+
+	// Paired when a closing tag exists - its own or the generic {/} - and void otherwise, textually,
+	// the way Latte3Compiler decides.
+	private function hasClosingTag(string $source, string $name): bool
+	{
+		return preg_match('~\{/(?:' . preg_quote($name, '~') . '(?![\w:.-])|\s*\})~', $source) === 1;
 	}
 
 	/**
@@ -300,8 +350,13 @@ final class LatteCompiler
 		);
 	}
 
+	// An unknown tag in a <script> or <style> is an unescaped brace, never a custom tag.
 	private function matchUnknownName(string $message): ?string
 	{
+		if (strpos($message, '(in JavaScript or CSS') !== false) {
+			return null;
+		}
+
 		if (preg_match('~Unknown (?:macro|tag) \{(?:/)?([\w:.-]+)~', $message, $m) === 1) {
 			return $m[1];
 		}
