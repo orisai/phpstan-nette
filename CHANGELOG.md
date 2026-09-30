@@ -70,3 +70,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `@property-deprecated`
 - Latte 3: the template compile cache follows the installed nette/caching version, so an upgrade no longer serves
   `{cache}` code printed by the previous bridge
+- Latte 3: a `{cache}` tag whose bridge print carries no quoted key keeps the bridge's own print instead of failing the
+  analysis with an internal error

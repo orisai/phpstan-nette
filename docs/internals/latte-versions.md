@@ -165,8 +165,10 @@ facts are cached under the content-addressed `latte-facts|<family>` node id.
 - **`AnalysisExtension`** is registered last, so its parsers win Latte's last-registration-wins tag dispatch. It
   re-registers every tag the other extensions register through `TagRecorder`, re-implements the declaration tags to
   record their arguments (`TypeCapturingParsers`), replaces `{cache}`'s node with `DeterministicCacheNode` (keyed by
-  tag position instead of random bytes; the bridge's own `print()` output with the key replaced), and gives every
-  claimed unknown name a passthrough parser.
+  tag position instead of random bytes; the bridge's own `print()` output with the key replaced — nette/caching 3.1
+  prints the key after the storage argument, 3.2 and newer first, both pinned against the real prints; a print
+  without a quoted key stays the vendor's, random key included), and gives every claimed unknown name a passthrough
+  parser.
 - **Unknown tags.** Latte 3 has no unknown-tag hook, only the `CompileException` "Unexpected tag {x}" / "Unexpected
   attribute n:x". `matchUnknown()` claims the name and the parse retries (at most 20 times), unless the name is
   known to the engine as a tag or `n:` attribute (a misplaced known tag), is one of `LATTE2_ONLY_TAGS`

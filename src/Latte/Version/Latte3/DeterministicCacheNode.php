@@ -3,7 +3,6 @@
 namespace OriPhpstan\Nette\Latte\Version\Latte3;
 
 use Latte\Compiler\PrintContext;
-use LogicException;
 use Nette\Bridges\CacheLatte\Nodes\CacheNode;
 use function preg_replace;
 use function sprintf;
@@ -11,8 +10,9 @@ use function sprintf;
 // CacheNode::print() draws a random key per compile; the analysis keys a {cache} tag by its
 // position instead, so the generated code is byte-identical across compiles and cacheable. The
 // bridge's own print shape is kept whatever the installed version: the key is the first quoted
-// argument of its createCache() call (nette/caching >= 3.3: `$this->global->cache->createCache(key,
-// ...)`; the 3.1 bridge: `CacheNode::createCache($this->global->cacheStorage, key, ...)`).
+// argument of its createCache() call (nette/caching >= 3.2: `$this->global->cache->createCache(key,
+// ...)`; 3.1: `CacheNode::createCache($this->global->cacheStorage, key, ...)`). A shape without that
+// key keeps the vendor print: a random key only costs the compiled code its cacheability.
 final class DeterministicCacheNode extends CacheNode
 {
 
@@ -44,11 +44,8 @@ final class DeterministicCacheNode extends CacheNode
 	public static function replaceKey(string $code, string $key): string
 	{
 		$replaced = preg_replace(self::KEY_ARGUMENT_PATTERN, "\$1'" . $key . "'", $code, 1, $count);
-		if ($replaced === null || $count !== 1) {
-			throw new LogicException('The cache bridge printed no createCache() key to replace.');
-		}
 
-		return $replaced;
+		return $replaced !== null && $count === 1 ? $replaced : $code;
 	}
 
 }

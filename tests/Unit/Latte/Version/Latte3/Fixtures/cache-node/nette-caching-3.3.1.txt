@@ -1,0 +1,10 @@
+if ($this->global->cache->createCache('2NZ9gpJYaqMceA==', [$k, 'expire' => '1 hour'])) /* line 1 */
+try {
+	echo 'c';
+
+	$this->global->cache->end() /* line 3 */;
+} catch (\Throwable $ʟ_e) {
+	$this->global->cache->rollback();
+	throw $ʟ_e;
+}
+

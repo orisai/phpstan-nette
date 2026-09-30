@@ -8,11 +8,13 @@ use Latte\Compiler\Nodes\Php\Scalar\StringNode;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Compiler\Position;
 use Latte\Compiler\PrintContext;
-use LogicException;
 use Nette\Bridges\CacheLatte\Nodes\CacheNode;
+use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Version\Latte3\DeterministicCacheNode;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function preg_replace;
+use function str_replace;
+use function substr_count;
 
 // The installed bridge's own print, with only the key argument of createCache() replaced.
 /**
@@ -45,42 +47,35 @@ final class DeterministicCacheNodeTest extends BaseTestCase
 		);
 	}
 
-	// nette/caching 3.3+ prints the key first; the 3.1 bridge (Random::generate(), no base64
-	// padding) prints it after the storage argument.
-	public function testReplacesTheKeyOnBothBridgeShapes(): void
+	/**
+	 * @dataProvider provideBridgePrint
+	 */
+	public function testReplacesTheKeyOfTheRealBridgePrint(string $file, string $vendorKey): void
 	{
+		$print = FileSystem::read(__DIR__ . '/Fixtures/cache-node/' . $file);
+		self::assertSame(1, substr_count($print, "'" . $vendorKey . "'"));
+
 		self::assertSame(
-			"if (\$this->global->cache->createCache('latte-analysis-cache-2:1', [\$k, 'expire' => '1 hour'])) /* line 2 */\n"
-			. "try {\n\techo 'c';\n\t\$this->global->cache->end() /* line 2 */;\n} catch (\\Throwable \$ʟ_e) {\n"
-			. "\t\$this->global->cache->rollback();\n\tthrow \$ʟ_e;\n}\n",
-			DeterministicCacheNode::replaceKey(
-				"if (\$this->global->cache->createCache('+1rlmHTDFuCBCA==', [\$k, 'expire' => '1 hour'])) /* line 2 */\n"
-				. "try {\n\techo 'c';\n\t\$this->global->cache->end() /* line 2 */;\n} catch (\\Throwable \$ʟ_e) {\n"
-				. "\t\$this->global->cache->rollback();\n\tthrow \$ʟ_e;\n}\n",
-				'latte-analysis-cache-2:1',
-			),
-		);
-		self::assertSame(
-			"if (Nette\\Bridges\\CacheLatte\\Nodes\\CacheNode::createCache(\$this->global->cacheStorage, 'latte-analysis-cache-2:1', \$this->global->cacheStack, [\$k, 'expire' => '1 hour'])) /* line 2 */\n"
-			. "try {\n\techo 'c';\n\tNette\\Bridges\\CacheLatte\\Nodes\\CacheNode::endCache(\$this->global->cacheStack, [\$k, 'expire' => '1 hour']) /* line 2 */;\n"
-			. "} catch (\\Throwable \$ʟ_e) {\n\tNette\\Bridges\\CacheLatte\\Nodes\\CacheNode::rollback(\$this->global->cacheStack);\n\tthrow \$ʟ_e;\n}\n",
-			DeterministicCacheNode::replaceKey(
-				"if (Nette\\Bridges\\CacheLatte\\Nodes\\CacheNode::createCache(\$this->global->cacheStorage, 'k7x2mq0pza', \$this->global->cacheStack, [\$k, 'expire' => '1 hour'])) /* line 2 */\n"
-				. "try {\n\techo 'c';\n\tNette\\Bridges\\CacheLatte\\Nodes\\CacheNode::endCache(\$this->global->cacheStack, [\$k, 'expire' => '1 hour']) /* line 2 */;\n"
-				. "} catch (\\Throwable \$ʟ_e) {\n\tNette\\Bridges\\CacheLatte\\Nodes\\CacheNode::rollback(\$this->global->cacheStack);\n\tthrow \$ʟ_e;\n}\n",
-				'latte-analysis-cache-2:1',
-			),
+			str_replace("'" . $vendorKey . "'", "'latte-analysis-cache-1:1'", $print),
+			DeterministicCacheNode::replaceKey($print, 'latte-analysis-cache-1:1'),
 		);
 	}
 
-	public function testAShapeWithoutACreateCacheKeyIsRefused(): void
+	/**
+	 * @return iterable<string, array{string, string}>
+	 */
+	public function provideBridgePrint(): iterable
 	{
-		$this->expectException(LogicException::class);
+		yield 'nette/caching 3.1' => ['nette-caching-3.1.4.txt', '6p4a6aw7na'];
+		yield 'nette/caching 3.2' => ['nette-caching-3.2.3.txt', 'VoFdv8w0pGMUdA=='];
+		yield 'nette/caching 3.3' => ['nette-caching-3.3.1.txt', '2NZ9gpJYaqMceA=='];
+	}
 
-		DeterministicCacheNode::replaceKey(
-			"if (\$this->global->cache->createCache(\$dynamicKey, [])) try {} finally {}\n",
-			'k',
-		);
+	public function testAShapeWithoutACreateCacheKeyKeepsTheVendorPrint(): void
+	{
+		$print = "if (\$this->global->cache->createCache(\$dynamicKey, [])) try {} finally {}\n";
+
+		self::assertSame($print, DeterministicCacheNode::replaceKey($print, 'k'));
 	}
 
 }

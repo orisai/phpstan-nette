@@ -1,0 +1,9 @@
+if (Nette\Bridges\CacheLatte\Nodes\CacheNode::createCache($this->global->cacheStorage, '6p4a6aw7na', $this->global->cacheStack, [$k, 'expire' => '1 hour'])) /* line 1 */
+try {
+	echo 'c';
+
+	Nette\Bridges\CacheLatte\Nodes\CacheNode::endCache($this->global->cacheStack) /* line 3 */;
+} catch (\Throwable $ʟ_e) {
+	Nette\Bridges\CacheLatte\Nodes\CacheNode::rollback($this->global->cacheStack); throw $ʟ_e;
+}
+
