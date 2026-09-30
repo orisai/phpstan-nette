@@ -12,7 +12,7 @@ use function assert;
 use function is_array;
 
 /**
- * @phpstan-import-type OrisaiNetteConfig from Configuration
+ * @phpstan-import-type NetteConfig from Configuration
  */
 final class TestGuard
 {
@@ -73,7 +73,7 @@ final class TestGuard
 	}
 
 	/**
-	 * @param OrisaiNetteConfig $config
+	 * @param NetteConfig $config
 	 */
 	private static function create(
 		array $config,
@@ -89,7 +89,7 @@ final class TestGuard
 	}
 
 	/**
-	 * @return OrisaiNetteConfig
+	 * @return NetteConfig
 	 */
 	public static function defaults(): array
 	{

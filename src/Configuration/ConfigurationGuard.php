@@ -20,7 +20,7 @@ use function strtolower;
 use function version_compare;
 
 /**
- * @phpstan-import-type OrisaiNetteConfig from Configuration
+ * @phpstan-import-type NetteConfig from Configuration
  */
 final class ConfigurationGuard
 {
@@ -49,7 +49,7 @@ final class ConfigurationGuard
 		'dirname-property-lcfirst' => 'nameProperty',
 	];
 
-	/** @var OrisaiNetteConfig */
+	/** @var NetteConfig */
 	private array $config;
 
 	/** @var list<string> */

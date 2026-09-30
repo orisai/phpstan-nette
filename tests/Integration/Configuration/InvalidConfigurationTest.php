@@ -7,6 +7,7 @@ use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
 use function implode;
 use function sprintf;
 use function strpos;
+use function substr_count;
 
 final class InvalidConfigurationTest extends BaseTestCase
 {
@@ -61,6 +62,14 @@ final class InvalidConfigurationTest extends BaseTestCase
 		self::assertSame([], $result['errors'], $result['stderr']);
 		self::assertSame([], $result['messages']);
 		self::assertSame(0, $result['exitCode'], $result['stderr']);
+	}
+
+	public function testSchemaErrorIsPrintedOnce(): void
+	{
+		$result = $this->project->analyse(['orisai' => ['nette' => ['forms' => ['enabled' => 3]]]], ['src']);
+
+		self::assertNotSame(0, $result['exitCode']);
+		self::assertSame(1, substr_count($result['stderr'], 'expects to be bool'), $result['stderr']);
 	}
 
 	public function testLatteWithoutExtension(): void

@@ -404,6 +404,13 @@ It needs `orisai.nette.dic.containerLoader`.
 
 ### Validation
 
+A value which breaks the schema (an unknown option, a wrong type) stops PHPStan with a console exception and exit code
+1, not with PHPStan's own `Invalid configuration:` message:
+
+```
+The item 'parameters › orisai › nette › forms › enabled' expects to be bool, 3 given.
+```
+
 Checks beyond the schema run when the first file is analysed. Each rejection is a one-sentence message:
 
 - `orisai.nette.latte.enabled requires "latte" in fileExtensions.`

@@ -13,7 +13,7 @@ use function is_array;
 use function sprintf;
 
 /**
- * @phpstan-type OrisaiNetteConfig array{
+ * @phpstan-type NetteConfig array{
  *     forms: array{
  *         enabled: bool,
  *         defaultContainerClass: string,
@@ -48,7 +48,7 @@ final class Configuration
 
 	private const PATH = ['parameters', 'orisai', 'nette'];
 
-	/** @var OrisaiNetteConfig */
+	/** @var NetteConfig */
 	private array $config;
 
 	/**
@@ -128,7 +128,7 @@ final class Configuration
 	}
 
 	/**
-	 * @return OrisaiNetteConfig
+	 * @return NetteConfig
 	 */
 	public function toArray(): array
 	{
@@ -137,7 +137,7 @@ final class Configuration
 
 	/**
 	 * @param array<mixed> $config
-	 * @return OrisaiNetteConfig
+	 * @return NetteConfig
 	 */
 	private static function validate(array $config): array
 	{
@@ -149,10 +149,10 @@ final class Configuration
 		try {
 			$processor->process(self::schema(), $config);
 		} catch (ValidationException $exception) {
-			throw new InvalidConfiguration($exception->getMessage(), 0, $exception);
+			throw new InvalidConfiguration($exception->getMessage());
 		}
 
-		/** @var OrisaiNetteConfig $config */
+		/** @var NetteConfig $config */
 		return $config;
 	}
 
