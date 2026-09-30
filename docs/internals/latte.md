@@ -796,15 +796,22 @@ own `CoreExtension` and `SandboxExtension` stand for the project engine's), the 
 extensions in the project's order, functions the project added directly with `addFunction()` (so
 CoreExtension's `customFunctions` pass compiles their calls to `$this->global->fn->name(...)` like
 the project's engine does), the harvested features copied as stored — strict types, strict parsing
-and the rest follow the project's engine — and `AnalysisExtension` last. With nothing harvested
+and the rest follow the project's engine — and `AnalysisExtension` last. 3.1's
+`Feature::ScopedLoopVariables` wraps every `{foreach}`/`n:foreach` in a
+`try { $ʟ_fe_N = get_defined_vars(); unset(VARS); LOOP } finally { restore }` shell;
+`ControlFlowEliminator` reduces it to the loop, so the analysis keeps the unscoped semantics (a
+loop variable stays visible after the loop) — an approximation of the scoped runtime that never
+reports on the shell itself. With nothing harvested
 the fixed set stays: `UIExtension(null)`, `FormsExtension`, `CacheExtension` when nette/caching is
 installed, `TranslatorExtension(null)`, strict types off on both lines. The filter/function tables
 keep the fixed set's callables as the stock entries; harvested ones join as `HarvestedCustoms`,
 and from an extension harvest an instance-bound `[$object, 'method']` array or a named-method
-closure (`$this->method(...)`) resolves to that method with an instance dispatch (Latte 2 harvests
-keep the static-only resolution). `FunctionExecutor` hands the template only to a function whose
-first parameter is typed `Latte\Runtime\Template`; such a harvested function keeps the compiled
-call's leading `$this` (`FunctionTable::receivesTemplate()`), every other one has it dropped.
+closure (`$this->method(...)`) resolves to that method with an instance dispatch, a plain-function
+closure (`trim(...)`) to the function (Latte 2 harvests keep the static-only resolution).
+`FunctionExecutor` hands the template only to a function whose first parameter's type prints
+exactly as `Latte\Runtime\Template` (a nullable `?Template` does not count); such a harvested
+function keeps the compiled call's leading `$this` (`FunctionTable::receivesTemplate()`), every
+other one has it dropped.
 
 `isLinkCurrent()`/`isModuleCurrent()` are registered by `UIExtension` only with a presenter, which
 no harvest has; the Latte 3 function table therefore always carries them as typed stand-ins
@@ -1014,12 +1021,19 @@ Two independent caches consume this salt:
   silently keeping the old harvest's shape indefinitely — exactly the failure mode an application
   hits when it deregisters a macro extension.
 
-A Latte 3 harvest adds one line per extension (position, class, `sha1_file()` of its declaring
-file — an edit to an extension's code changes the salt even when its class and tag names do not),
-one per feature flag and one per provider. The Latte 3 compile joins `LatteAnalysisCache` under
+A Latte 3 harvest adds one line per extension, one per feature flag and one per provider. An
+extension's generated code lives in its node classes as much as in the extension, so its line
+identifies the code, not the class: an extension declared inside an installed Composer package
+(`ProjectInstalledVersions::packageContaining()`, the root package excluded) by that package's
+name, version and reference; a first-party extension by the relative path and `sha1_file()` of
+every `*.php` file under its class's directory, recursively (installed packages nested there left
+out) — so an edited node class beside or below the extension changes the salt even when no class or
+tag name does. An extension declared at the project root therefore hashes the whole first-party
+tree once per analysis. The Latte 3 compile joins `LatteAnalysisCache` under
 `Latte3Adapter::compile()` with the key `sha1($source)|$className|$relativePath|$engineSalt|
 $discoverySalt|$family|Latte3Adapter`, where `$engineSalt` is the harvest salt for an extension
-harvest and a constant for the fixed set; the entry holds the `CompileResult` and the resolved facts.
+harvest and, for the fixed set, a constant plus whether nette/caching (its `CacheExtension`) is
+installed; the entry holds the `CompileResult` and the resolved facts.
 
 A harvester with nothing configured and no harvester wired at all produce byte-identical salts
 (both `HarvestedCustoms::empty()`) — wiring the harvester service by itself never causes spurious

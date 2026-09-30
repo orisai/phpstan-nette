@@ -39,21 +39,22 @@ final class FixtureExtension extends Extension
 	}
 
 	/**
-	 * @return array{shout: Closure(string): string}
+	 * @return array{shout: Closure(string): string, trimmed: Closure(string, string=): string}
 	 */
 	public function getFilters(): array
 	{
-		return ['shout' => $this->shout(...)];
+		return ['shout' => $this->shout(...), 'trimmed' => trim(...)];
 	}
 
 	/**
-	 * @return array{twice: Closure(int): int, greet: Closure(Template, string): string}
+	 * @return array{twice: Closure(int): int, greet: Closure(Template, string): string, greetMaybe: Closure(Template|null, string): string}
 	 */
 	public function getFunctions(): array
 	{
 		return [
 			'twice' => $this->twice(...),
 			'greet' => $this->greet(...),
+			'greetMaybe' => $this->greetMaybe(...),
 		];
 	}
 
@@ -75,6 +76,11 @@ final class FixtureExtension extends Extension
 	public function greet(Template $template, string $name): string
 	{
 		return $template->getName() . $name;
+	}
+
+	public function greetMaybe(?Template $template, string $name): string
+	{
+		return ($template !== null ? $template->getName() : '') . $name;
 	}
 
 }

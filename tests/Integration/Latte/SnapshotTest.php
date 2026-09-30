@@ -140,6 +140,41 @@ final class SnapshotTest extends BaseTestCase
 	// `new LatteCompiler()` (no harvester), where the gettext family is genuinely unknown and would
 	// fail the "compiles without diagnostics" assertion every other fixture in that glob relies on.
 
+	// Feature::ScopedLoopVariables is off by default, so its fixture sits outside the shared fixtures
+	// and compiles through an engine loader that turns the feature on.
+
+	/**
+	 * @group latte31
+	 */
+	public function testScopedForeachSnapshots(): void
+	{
+		$fixtures = dirname(__DIR__, 2) . '/Unit/Latte/Customs/Latte3/Fixtures';
+		$lattePath = $fixtures . '/scoped-foreach.latte';
+		$harvester = TestAdapter::harvester(new EngineSource(null, $fixtures . '/engine-loader-scoped-loops.php'));
+		$relativePath = 'fixtures/' . basename($lattePath);
+
+		$compiled = TestAdapter::create($harvester)->compile(
+			FileSystem::read($lattePath),
+			TemplateClassName::forPath($relativePath),
+			$relativePath,
+		);
+		$result = $compiled->getResult();
+		self::assertNotNull($result->getPhpSource(), 'fixture must compile');
+		self::assertSame([], $result->getDiagnostics());
+
+		$snapshots = $fixtures . '/__snapshots__/';
+		$this->assertSnapshot(
+			$snapshots . 'raw/scoped-foreach.latte.php',
+			self::withoutPatchVersion($result->getPhpSource()),
+		);
+		$this->assertSnapshot(
+			$snapshots . 'processed/scoped-foreach.latte.php',
+			self::withoutPatchVersion(
+				PipelineFactory::create()->dump($result, $compiled->getFacts()->getDeclarations()),
+			),
+		);
+	}
+
 	/**
 	 * @group latte2
 	 */

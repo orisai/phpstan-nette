@@ -1,0 +1,16 @@
+{varType array<int, string> $items}
+{varType array<int, array{int, string}> $pairs}
+{foreach $items as $key => $item}
+	{$key}: {$item}
+{/foreach}
+<ul>
+	<li n:foreach="$items as $item">{$item}</li>
+</ul>
+{foreach $items as $item}
+	{$iterator->counter} {$item}
+{else}
+	empty
+{/foreach}
+{foreach $pairs as [$number, $label]}
+	{foreach $items as $item}{$number}{$label}{$item}{/foreach}
+{/foreach}

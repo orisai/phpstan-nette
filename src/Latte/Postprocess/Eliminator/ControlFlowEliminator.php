@@ -23,9 +23,11 @@ use PhpParser\Node\Stmt\Finally_;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\TryCatch;
+use PhpParser\Node\Stmt\Unset_;
 use PhpParser\NodeVisitor;
 use function array_slice;
 use function array_unshift;
+use function array_values;
 use function count;
 use function is_string;
 use function strpos;
@@ -57,6 +59,9 @@ final class ControlFlowEliminator extends EliminatorVisitor
 	// n:tag-if's own temp (Latte 2; Latte 3 reuses n:tag's $ʟ_tag).
 	public const ROLE_TAG_IF_TEMP = 'tagIfTemp';
 
+	// The loop-variable backup prefix of 3.1's Feature::ScopedLoopVariables foreach shell.
+	public const ROLE_SCOPED_LOOP_BACKUP = 'scopedLoopBackup';
+
 	public function describePattern(): string
 	{
 		return 'capture-form {if} ob_start/try/finally shell -> plain if (COND) { BODY }; '
@@ -64,14 +69,21 @@ final class ControlFlowEliminator extends EliminatorVisitor
 			. 'stash+restore dropped, catch (\Throwable $ʟ_e) renamed to $latteException, finally dropped; '
 			. '{ifchanged} $ʟ_loc compare shell -> if (true) { compared expr assigned; BODY }'
 			. ($this->patterns()->has(self::ROLE_TAG_IF_TEMP) ? '; n:tag-if $ʟ_if[n] temp renamed' : '')
+			. ($this->patterns()->has(self::ROLE_SCOPED_LOOP_BACKUP)
+				? '; scoped {foreach} try { $ʟ_fe_n = get_defined_vars(); unset(VARS); LOOP } finally { restore } -> LOOP'
+				: '')
 			. ': ' . $this->patterns()->describe();
 	}
 
 	/**
-	 * @return Node|int|null
+	 * @return Node|list<Stmt>|int|null
 	 */
 	public function leaveNode(Node $node)
 	{
+		if ($node instanceof TryCatch && $this->isScopedLoopShell($node)) {
+			return array_values(array_slice($node->stmts, 2));
+		}
+
 		if ($node instanceof ClassMethod && $node->stmts !== null) {
 			$node->stmts = $this->normalizeStmts($node->stmts);
 		}
@@ -151,6 +163,39 @@ final class ControlFlowEliminator extends EliminatorVisitor
 		}
 
 		return $result;
+	}
+
+	// The loop the shell wraps keeps the unscoped semantics: a loop variable stays visible after the
+	// loop, as it does without the feature (the analysis approximation of the scoped runtime).
+	private function isScopedLoopShell(TryCatch $node): bool
+	{
+		if (
+			!$this->patterns()->has(self::ROLE_SCOPED_LOOP_BACKUP)
+			|| $node->catches !== []
+			|| $node->finally === null
+			|| count($node->stmts) < 3
+		) {
+			return false;
+		}
+
+		$backup = $node->stmts[0];
+		if (
+			!$backup instanceof Expression
+			|| !$backup->expr instanceof Assign
+			|| !$backup->expr->var instanceof Variable
+			|| !is_string($backup->expr->var->name)
+			|| strpos($backup->expr->var->name, $this->patterns()->name(self::ROLE_SCOPED_LOOP_BACKUP)) !== 0
+			|| !$this->isBareFuncCallExpr($backup->expr->expr, 'get_defined_vars')
+		) {
+			return false;
+		}
+
+		$lastRestore = $node->finally->stmts[count($node->finally->stmts) - 1] ?? null;
+
+		return $node->stmts[1] instanceof Unset_
+			&& $lastRestore instanceof Unset_
+			&& count($lastRestore->vars) === 1
+			&& $this->isVariableNamed($lastRestore->vars[0], $backup->expr->var->name);
 	}
 
 	private function isTryStash(Expr $expr): bool

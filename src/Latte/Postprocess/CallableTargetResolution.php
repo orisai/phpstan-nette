@@ -9,6 +9,8 @@ use LogicException;
 use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionNamedType;
+use ReflectionParameter;
+use function function_exists;
 use function get_class;
 use function is_array;
 use function is_object;
@@ -44,7 +46,7 @@ trait CallableTargetResolution
 
 	// A stock entry as the installed Latte hands it out: Latte 2 lists "Class::method" arrays, Latte
 	// 3.0 [$filtersInstance, 'method'] arrays and Latte 3.1 first-class callables of both static and
-	// instance methods. The third element says whether Class::method() is a valid dispatch.
+	// instance methods (a harvested extension also of plain functions, trim(...)). The third element says whether Class::method() is a valid dispatch.
 
 	/**
 	 * @param callable(mixed...): mixed $callable
@@ -65,8 +67,16 @@ trait CallableTargetResolution
 			$function = new ReflectionFunction($callable);
 			$scope = $function->getClosureScopeClass();
 			$name = $function->getName();
-			if ($scope !== null && strpos($name, '{closure') === false && method_exists($scope->getName(), $name)) {
+			if (strpos($name, '{closure') !== false) {
+				return null;
+			}
+
+			if ($scope !== null && method_exists($scope->getName(), $name)) {
 				return $this->methodTarget($scope->getName(), $name);
+			}
+
+			if ($scope === null && function_exists($name)) {
+				return ['', $name, true];
 			}
 		}
 
@@ -99,11 +109,17 @@ trait CallableTargetResolution
 		return $this->firstParameterTypeIs($class, $method, FilterInfo::class);
 	}
 
-	// Latte 3's FunctionExecutor hands the template only to a function whose first parameter is typed
-	// Latte\Runtime\Template; every other one is wrapped to skip it.
+	// Latte 3's FunctionExecutor hands the template only to a function whose first parameter's type
+	// prints exactly as Latte\Runtime\Template (so not ?Template); every other one is wrapped to
+	// skip it.
 	private function isTemplateAware(string $class, string $method): bool
 	{
-		return $this->firstParameterTypeIs($class, $method, Template::class);
+		$parameters = $this->parametersOf($class, $method);
+		$type = $parameters !== [] ? $parameters[0]->getType() : null;
+
+		return $type instanceof ReflectionNamedType
+			&& !$type->allowsNull()
+			&& $type->getName() === Template::class;
 	}
 
 	// A harvested Latte 3 extension hands out instance-bound callables ([$this, 'm'], $this->m(...))
@@ -124,11 +140,19 @@ trait CallableTargetResolution
 		return $static !== null ? [$static[0], $static[1], true] : null;
 	}
 
-	private function firstParameterTypeIs(string $class, string $method, string $typeName): bool
+	/**
+	 * @return list<ReflectionParameter>
+	 */
+	private function parametersOf(string $class, string $method): array
 	{
-		$parameters = $class === ''
+		return $class === ''
 			? (new ReflectionFunction($method))->getParameters()
 			: (new ReflectionMethod($class, $method))->getParameters();
+	}
+
+	private function firstParameterTypeIs(string $class, string $method, string $typeName): bool
+	{
+		$parameters = $this->parametersOf($class, $method);
 
 		if ($parameters === []) {
 			return false;

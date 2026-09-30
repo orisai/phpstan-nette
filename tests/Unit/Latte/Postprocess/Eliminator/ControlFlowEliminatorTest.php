@@ -154,6 +154,56 @@ PHP);
 PHP), self::eliminate(ShapeFamily::LATTE_2, $php));
 	}
 
+	// Feature::ScopedLoopVariables (3.1): the backup/unset/restore shell goes, the loop stays - also
+	// nested in an else branch, which no statement-list normalisation reaches.
+	public function testLatte31ScopedForeachShellIsReducedToTheLoop(): void
+	{
+		$php = EliminatorRun::template(<<<'PHP'
+		if ($flag) {
+			echo 'a';
+		} else {
+			try {
+				$ʟ_fe_0 = get_defined_vars();
+				unset($k, $item);
+
+				foreach ($items as $k => $item) /* pos 2:1 */ {
+					echo LR\HtmlHelpers::escapeText($item) /* pos 2:32 */;
+				}
+
+			} finally {
+				unset($k, $item);
+				if (array_key_exists('k', $ʟ_fe_0)) {
+					$k = &$ʟ_fe_0['k'];
+				}
+				if (array_key_exists('item', $ʟ_fe_0)) {
+					$item = &$ʟ_fe_0['item'];
+				}
+
+				unset($ʟ_fe_0);
+			}
+		}
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        if ($flag) {
+            echo 'a';
+        } else {
+            foreach ($items as $k => $item) {
+                echo \Latte\Runtime\HtmlHelpers::escapeText($item);
+            }
+        }
+PHP), self::eliminate(ShapeFamily::LATTE_31, $php));
+
+		self::assertStringContainsString(
+			'$ʟ_fe_0 = \\get_defined_vars()',
+			self::eliminate(ShapeFamily::LATTE_30, $php),
+		);
+		self::assertStringContainsString(
+			'$ʟ_fe_0 = \\get_defined_vars()',
+			self::eliminate(ShapeFamily::LATTE_2, $php),
+		);
+	}
+
 	/**
 	 * @return iterable<string, array{string}>
 	 */

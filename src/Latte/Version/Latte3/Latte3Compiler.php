@@ -58,13 +58,17 @@ final class Latte3Compiler
 		$this->harvester = $harvester;
 	}
 
-	// What the compile engine depends on beyond the source: the harvested extensions (class and
-	// declaring-file hash), functions and features, or the fixed set.
+	// What the compile engine depends on beyond the source: the harvested extensions, functions and
+	// features, or the fixed set - whose CacheExtension depends on nette/caching being installed.
 	public function engineSalt(): string
 	{
 		$harvested = $this->harvested();
 
-		return $harvested->isExtensionHarvest() ? $harvested->getSaltHash() : self::FIXED_SET_SALT;
+		if ($harvested->isExtensionHarvest()) {
+			return $harvested->getSaltHash();
+		}
+
+		return self::FIXED_SET_SALT . (class_exists(CacheExtension::class) ? '|cache' : '');
 	}
 
 	public function parse(string $source): ParsedTemplate

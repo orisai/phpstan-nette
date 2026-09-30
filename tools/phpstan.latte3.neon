@@ -21,7 +21,8 @@ parameters:
 	excludePaths!:
 		analyse:
 			- ../src/Latte/Version/Latte2
-		analyseAndScan: []
+		analyseAndScan:
+			- ../tests/Unit/Latte/Customs/Latte3/Fixtures/__snapshots__
 
 	# Partial analysis: usages and ignored errors outside the seam are not visible here.
 	reportUnmatchedIgnoredErrors: false
@@ -33,3 +34,10 @@ parameters:
 			deadProperties:
 				neverRead: false
 				neverWritten: false
+
+	ignoreErrors:
+		# The Latte 3.1-only feature the scoped-foreach fixture enables; the 3.0 profile analyses it too.
+		-
+			identifier: classConstant.notFound
+			message: '#^Access to undefined constant Latte\\Feature::ScopedLoopVariables\.$#'
+			path: ../tests/Unit/Latte/Customs/Latte3/Fixtures/engine-loader-scoped-loops.php

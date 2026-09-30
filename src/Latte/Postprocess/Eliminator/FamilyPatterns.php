@@ -169,6 +169,7 @@ final class FamilyPatterns
 			ControlFlowEliminator::ROLE_TRY_CATCH_OPEN => [$latte2 ? 'ob_end_clean' : 'ob_clean'],
 			ControlFlowEliminator::ROLE_TRY_CATCH_CLOSE => $latte2 ? ['ob_start'] : [],
 			ControlFlowEliminator::ROLE_TAG_IF_TEMP => $latte2 ? ["\u{29F}_if"] : [],
+			ControlFlowEliminator::ROLE_SCOPED_LOOP_BACKUP => $line === ShapeFamily::LATTE_31 ? ["\u{29F}_fe_"] : [],
 		]);
 	}
 

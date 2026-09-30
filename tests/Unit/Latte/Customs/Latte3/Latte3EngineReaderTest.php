@@ -4,15 +4,18 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Customs\Latte3;
 
 use Latte\Essential\TranslatorExtension;
 use Nette\Bridges\ApplicationLatte\UIExtension;
+use Nette\Bridges\CacheLatte\CacheExtension;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\EngineSource;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FilterTable;
 use OriPhpstan\Nette\Latte\Postprocess\FunctionTable;
+use OriPhpstan\Nette\Latte\Version\Latte3\Latte3Compiler;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Customs\Latte3\Fixtures\FixtureExtension;
 use function array_map;
+use function class_exists;
 use function get_class;
 use function strpos;
 
@@ -131,7 +134,22 @@ final class Latte3EngineReaderTest extends BaseTestCase
 		);
 		self::assertFalse($functions->receivesTemplate('twice'));
 		self::assertTrue($functions->receivesTemplate('greet'));
+		self::assertFalse($functions->receivesTemplate('greetmaybe'));
 		self::assertFalse($functions->receivesTemplate('hasblock'));
+		self::assertSame(['', 'trim', false, false, true], $filters->resolveForTemplate('trimmed', null, null));
+	}
+
+	// The fixed set's CacheExtension exists only with nette/caching installed.
+	public function testFixedSetSaltFollowsTheCacheBridge(): void
+	{
+		self::assertSame(
+			'fixed-set' . (class_exists(CacheExtension::class) ? '|cache' : ''),
+			(new Latte3Compiler())->engineSalt(),
+		);
+		self::assertNotSame(
+			(new Latte3Compiler())->engineSalt(),
+			(new Latte3Compiler($this->harvester(self::EngineLoaderFile)))->engineSalt(),
+		);
 	}
 
 	public function testSaltFollowsTheExtensionsAndFeatures(): void
