@@ -345,13 +345,15 @@ be unsound — nette/forms 3.3 declares `getControls(): iterable` and returns an
 |--------------------------------|-------------------|-----------------|
 | component-model 3.0, forms 3.1 | `Iterator`        | `Iterator`      |
 | component-model 3.2, forms 3.2 | `iterable`        | `Iterator`      |
+| component-model 3.2, forms 3.3 | `iterable`        | `iterable`      |
 | component-model 4, forms 3.3   | `array`           | `iterable`      |
 
 On component-model 4 the unnarrowed `getComponents()` is `array<int|string, Nette\ComponentModel\IComponent>` too, with
 Forms analysis on or off: phpstan-nette's `Container.stub` declares `Iterator`, which PHPStan drops against the native
-`array`, leaving the children `mixed`. `CmGetComponentsControls`, `CmGetComponentsIterable` and `CmGetComponentsArray`
-pin one row each (the last also pins `->current()` being reported); `CmGetComponentsFormsDisabled` pins the fallback with
-Forms analysis off.
+`array`, leaving the children `mixed`. Composer can install component-model 3.2 with forms 3.3, but no profile does, so
+that row follows from the declarations without a test. `CmGetComponentsControls`, `CmGetComponentsIterable` and
+`CmGetComponentsArray` pin one of the other rows each (the last also pins `->current()` being reported);
+`CmGetComponentsFormsDisabled` pins the fallback with Forms analysis off.
 
 ## Navigating across `createComponentX`
 

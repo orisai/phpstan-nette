@@ -8,8 +8,13 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\IsolatedPhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
 use function array_map;
+use function array_merge;
+use function array_values;
 use function basename;
 use function dirname;
+use function explode;
+use function ksort;
+use function preg_match;
 use function preg_match_all;
 use function sprintf;
 use function strpos;
@@ -23,6 +28,10 @@ use const PREG_SET_ORDER;
  * container boot dominate, so one run for all fixtures is ~80x faster than spawning a
  * process per fixture) and asserts each fixture's dumped types against its comments. The
  * batched result is memoised per concrete test class.
+ *
+ * A `// !! message` comment expects exactly that error reported on its own line. A fixture with
+ * at least one of them must match every non-dumpType error reported in it, line by line; the
+ * errors of a fixture without them are not checked.
  */
 abstract class BatchedDumpTypeTestCase extends BaseTestCase
 {
@@ -72,11 +81,17 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 			sprintf('dumpType mismatch in %s', basename($file)),
 		);
 
-		preg_match_all('~//\s*!!\s*(.+)$~m', $source, $reported);
-		if ($reported[1] !== []) {
+		$expectedReported = [];
+		foreach (explode("\n", $source) as $index => $line) {
+			if (preg_match('~//\s*!!\s*(.+)$~', $line, $match) === 1) {
+				$expectedReported[] = ($index + 1) . ': ' . trim($match[1]);
+			}
+		}
+
+		if ($expectedReported !== []) {
 			self::dumpedTypes();
 			self::assertSame(
-				array_map('trim', $reported[1]),
+				$expectedReported,
 				self::$reportedByClass[static::class][basename($file)] ?? [],
 				sprintf('reported errors mismatch in %s', basename($file)),
 			);
@@ -137,11 +152,14 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 			foreach ($lines as $line) {
 				$message = trim($line['message']);
 				if (strpos($message, 'Dumped type:') !== 0) {
-					$reported[basename($line['file'])][] = $message;
+					$reported[basename($line['file'])][(int) $line['line']][] = $line['line'] . ': ' . $message;
 				}
 			}
 
-			self::$reportedByClass[static::class] = $reported;
+			foreach ($reported as $fixture => $byLine) {
+				ksort($byLine);
+				self::$reportedByClass[static::class][$fixture] = array_merge(...array_values($byLine));
+			}
 
 			return self::$dumpedByClass[static::class] = $result;
 		} finally {
