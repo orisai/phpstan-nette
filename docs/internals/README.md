@@ -189,8 +189,6 @@ make corpus-manifest PROFILE=latte2 PRE_PHP="XDEBUG_MODE=off php8.4"
 make smoke-dmonitor PRE_PHP="XDEBUG_MODE=off php8.4"
 ```
 
-Run one suite at a time: `InferencePerfBudgetTest` is timed and flakes under a concurrent suite.
-
 ### Benchmarks
 
 `tests/Benchmark/` holds phpbench benchmarks. They are informational: run them by hand, CI does not, and nothing fails
@@ -199,6 +197,8 @@ on a slower machine. `make bench` runs them on the primary vendor, `make bench P
 corpus. `LatteSpawnBench` is the slow one: it times a cold and a warm `phpstan analyse` spawn over the Latte
 integration fixtures, one revolution of a few seconds each, with the installed Latte line as the parameter set.
 `ColdWarmSpawnAgreementTest` keeps the correctness half of those spawns, that a warm run reports what the cold one did.
+`InferenceSeamBench` times a cold analysis of the Forms inference corpus with Forms off and on (`seam: off`,
+`seam: on`), so the cost of the seam reads off the report.
 
 Compare two runs by tagging the first and referencing it from the second; the runs are stored in
 `var/tools/phpbench`:
