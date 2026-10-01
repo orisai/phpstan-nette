@@ -104,17 +104,6 @@ final class ConvergeRunner
 			$phpstanArguments[] = '--ansi';
 		}
 
-		if ($prune) {
-			$clear = $this->execute(
-				array_merge(['clear-result-cache'], self::configurationOptions($phpstanArguments)),
-				[],
-			);
-			fwrite($this->stderr, $clear['stdout']);
-			if ($clear['exitCode'] !== 0) {
-				return $clear['exitCode'];
-			}
-		}
-
 		$directory = $this->temporaryDirectory . '/orisai-latte-converge-' . bin2hex(random_bytes(8));
 		if (!@mkdir($directory, 0700)) {
 			fwrite($this->stderr, sprintf("Cannot create a private directory in %s.\n", $this->temporaryDirectory));
@@ -123,6 +112,17 @@ final class ConvergeRunner
 		}
 
 		try {
+			if ($prune) {
+				$clear = $this->execute(
+					array_merge(['clear-result-cache'], self::configurationOptions($phpstanArguments)),
+					[],
+				);
+				fwrite($this->stderr, $clear['stdout']);
+				if ($clear['exitCode'] !== 0) {
+					return $clear['exitCode'];
+				}
+			}
+
 			return $this->converge($phpstanArguments, $directory . '/report', $prune, $maxRuns);
 		} finally {
 			self::remove($directory . '/report');

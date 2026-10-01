@@ -27,12 +27,12 @@ final class ColdWarmSpawnAgreementTest extends BaseTestCase
 
 		self::assertTrue(
 			in_array($cold['exitCode'], [0, 1], true),
-			"cold spawn must complete without crashing, got exit code {$cold['exitCode']}. Output: "
+			'cold spawn must complete without crashing, got exit code ' . ($cold['exitCode'] ?? 'null') . '. Output: '
 			. substr($cold['output'], 0, 500),
 		);
 		self::assertTrue(
 			in_array($warm['exitCode'], [0, 1], true),
-			"warm spawn must complete without crashing, got exit code {$warm['exitCode']}. Output: "
+			'warm spawn must complete without crashing, got exit code ' . ($warm['exitCode'] ?? 'null') . '. Output: '
 			. substr($warm['output'], 0, 500),
 		);
 		self::assertSame(

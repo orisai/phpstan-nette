@@ -2,6 +2,7 @@
 
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Converge;
 
+use Generator;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
 use OriPhpstan\Nette\Latte\Converge\ConvergeRunner;
@@ -229,7 +230,21 @@ final class ConvergeRunnerTest extends BaseTestCase
 		self::assertStringStartsWith('--max-runs expects a positive integer, "0" given.', $result['stderr']);
 	}
 
-	public function testAnUnwritableTemporaryDirectoryFailsWithOneMessageAndNoAnalysis(): void
+	/**
+	 * @return Generator<string, array{list<string>}>
+	 */
+	public function provideUnwritableTemporaryDirectoryArguments(): Generator
+	{
+		yield 'analyse' => [['analyse']];
+		yield 'prune' => [['--prune', 'analyse']];
+	}
+
+	/**
+	 * @param list<string> $arguments
+	 *
+	 * @dataProvider provideUnwritableTemporaryDirectoryArguments
+	 */
+	public function testAnUnwritableTemporaryDirectoryFailsWithOneMessageAndNoAnalysis(array $arguments): void
 	{
 		if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
 			self::markTestSkipped('Root writes into a read-only directory.');
@@ -239,7 +254,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 		chmod($this->temp, 0500);
 
 		try {
-			$result = $this->converge(['analyse']);
+			$result = $this->converge($arguments);
 		} finally {
 			chmod($this->temp, 0700);
 		}

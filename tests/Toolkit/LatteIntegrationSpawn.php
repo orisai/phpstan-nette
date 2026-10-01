@@ -37,7 +37,7 @@ final class LatteIntegrationSpawn
 			],
 			$projectRoot,
 		);
-		$process->setTimeout(null);
+		$process->setTimeout(600.0);
 		$process->run();
 
 		return [
