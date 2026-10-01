@@ -1,10 +1,12 @@
 <?php declare(strict_types = 1);
 
 $vendorDir = getenv('COMPOSER_VENDOR_DIR');
+$tmpDir = dirname(__DIR__) . '/var/tools/PHPStan/'
+	. basename(is_string($vendorDir) && $vendorDir !== '' ? $vendorDir : 'vendor');
 
 return [
 	'parameters' => [
-		'resultCachePath' => dirname(__DIR__) . '/var/tools/PHPStan/resultCache.'
-			. basename(is_string($vendorDir) && $vendorDir !== '' ? $vendorDir : 'vendor') . '.php',
+		'tmpDir' => $tmpDir,
+		'resultCachePath' => $tmpDir . '/resultCache.php',
 	],
 ];

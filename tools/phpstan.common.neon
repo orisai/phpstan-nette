@@ -2,12 +2,11 @@ includes:
 	- phar://phpstan.phar/conf/bleedingEdge.neon
 	- ../extension.neon
 	- ../config/dic-dead-code.neon
-	# One result cache per vendor directory (COMPOSER_VENDOR_DIR, vendor/ without it), so the sets do not evict each other.
+	# One tmpDir and result cache per vendor directory (COMPOSER_VENDOR_DIR, vendor/ without it), so the sets do not evict each other.
 	- phpstan.cache.php
 
 parameters:
 	level: 8
-	tmpDir: ../var/tools/PHPStan
 
 	excludePaths:
 		analyseAndScan:

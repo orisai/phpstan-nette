@@ -151,8 +151,10 @@ the code and the vendor it calls use; PHP 7.4 compatibility is covered by the `l
   one). A finding only one set of a config reports (e.g. a deprecation only nette/forms 3.3 declares) is an ignore with
   `reportUnmatched: false` in the config, not a baseline entry. The `(string) substr()` casts PHP 7.4 needs are
   ignored per file with a count.
-- The result cache is kept per vendor directory (`var/tools/PHPStan/resultCache.<vendor-dir>.php`, set by
+- The `tmpDir` and the result cache are kept per vendor directory (`var/tools/PHPStan/<vendor-dir>/`, set by
   `tools/phpstan.cache.php` from `COMPOSER_VENDOR_DIR`, `vendor` without it), so the sets do not evict each other.
+  shipmonk/dead-code-detector 1.x keeps its usage data in `<tmpDir>/dcd/` and deletes the files a run did not read, so
+  a shared `tmpDir` broke the next warm run of every other set.
 
 CI runs cs, phpstan and the tests on the primary set, phpstan on `latte2`, `latte2-nette32` and `latte30`, the tests on
 every profile row above (`php74` is the one row running the newest PHPStan on PHP 7.4, where
