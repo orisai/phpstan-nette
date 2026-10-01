@@ -93,14 +93,19 @@ are profiles in `tools/profiles/<name>.json`, each a set of constraint overrides
 update flags (`update-flags`), ignored platform requirements (`ignore-platform-req`) and a PHP ceiling
 (`php-ceiling`). Each profile runs in CI on its highest compatible PHP:
 
-| Profile          | Installs                                                                   | PHP (CI) |
-|------------------|----------------------------------------------------------------------------|----------|
-| (primary)        | Latte 3.1, nette/application and nette/forms 3.3, nette/caching 3.4        | 8.3, 8.4 |
-| `lowest`         | the lowest dependencies (`--prefer-lowest --prefer-stable`)                | 7.4      |
-| `php74`          | the newest set PHP 7.4 resolves: Latte 2.11, nette 3.1, the newest PHPStan | 7.4      |
-| `latte2`         | Latte 2.11, nette/application and nette/forms 3.1, forms-replicator 2      | 8.3      |
-| `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2                         | 8.3      |
-| `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                          | 8.4      |
+| Profile          | Installs                                                                   | component-model | dead-code-detector | PHP (CI) |
+|------------------|----------------------------------------------------------------------------|-----------------|--------------------|----------|
+| (primary)        | Latte 3.1, nette/application and nette/forms 3.3, nette/caching 3.4        | 4.0             | 1.4                | 8.3, 8.4 |
+| `lowest`         | the lowest dependencies (`--prefer-lowest --prefer-stable`)                | 3.0             | 0.15               | 7.4      |
+| `php74`          | the newest set PHP 7.4 resolves: Latte 2.11, nette 3.1, the newest PHPStan | 3.0             | 0.15               | 7.4      |
+| `latte2`         | Latte 2.11, nette/application and nette/forms 3.1, forms-replicator 2      | 3.0             | 1.4                | 8.3      |
+| `latte2-nette32` | Latte 2.11, nette/application 3.2, nette/forms 3.2                         | 3.2             | 1.4                | 8.3      |
+| `latte30`        | Latte 3.0, nette/application 3.2, nette/forms 3.2                          | 3.2             | 1.4                | 8.4      |
+
+nette/component-model 4 needs nette/application and nette/forms 3.3 and PHP 8.3, so only the primary set installs it;
+shipmonk/dead-code-detector 1.x needs PHP 8.1, so `lowest` and `php74` keep 0.15. Code which differs between the
+component-model majors reads the installed declaration (`ComponentModelAccessDynamicReturnTypeExtension`, see
+[forms.md](forms.md#iterating-children)); `DicUsageProvider` uses only API both detector majors share.
 
 Latte 3.0 with nette/application and nette/forms 3.1 is allowed by the guard but not covered by CI. `lowest` resolves
 the floors `composer.json` declares — Latte 2.11.7, nette/application and nette/forms 3.1.15, phpstan/phpstan 2.2.0 on
@@ -119,9 +124,9 @@ adds `--ignore-platform-req=php` only when the running PHP is above it, so they 
 the same `PROFILE=` and runs against that vendor directory (`COMPOSER` and `COMPOSER_VENDOR_DIR` set).
 
 Version groups gate tests at runtime (`VersionGroupGate`, `InstalledVersionsGuard::GROUPS`): `latte2`, `latte3`,
-`latte30`, `latte31`, `nette32`, `nette33`. A test carrying a group is skipped, visibly, when the installed versions do
-not match it, so each suite runs everything its versions support — the primary set skips about 760 tests. An unknown
-group name throws.
+`latte30`, `latte31`, `nette32`, `nette33`, `componentModel3`, `componentModel4`. A test carrying a group is skipped,
+visibly, when the installed versions do not match it, so each suite runs everything its versions support — the primary
+set skips about 760 tests. An unknown group name throws.
 
 Coverage (`make coverage-clover`) does not process uncovered files (`processUncoveredFiles="false"` in
 `tools/phpunit.xml`): loading them would include the other Latte line's classes.

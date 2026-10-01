@@ -53,6 +53,7 @@ use PhpParser\NodeFinder;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayTypeBuilder;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\ErrorType;
@@ -285,7 +286,7 @@ final class ContainerModel
 		return count($types) === 1 ? $types[0] : TypeCombinator::union(...$types);
 	}
 
-	public function resolveComponentsIterator(Expr $receiver, Scope $scope): ?Type
+	public function resolveComponents(Expr $receiver, Scope $scope, bool $asArray): ?Type
 	{
 		if (!$this->enabled) {
 			return null;
@@ -300,7 +301,11 @@ final class ContainerModel
 
 		$union = $this->immediateChildrenUnion($shape);
 
-		return $union === null ? null : $this->iteratorOf($union);
+		if ($union === null) {
+			return null;
+		}
+
+		return $asArray ? $this->arrayOf($union) : $this->iteratorOf($union);
 	}
 
 	public function resolveControlsIterator(Expr $receiver, Scope $scope): ?Type
@@ -327,7 +332,7 @@ final class ContainerModel
 	/**
 	 * The union of every immediate child type for getComponents(). Returns null when any child
 	 * cannot be typed (an untyped slot, a classless container, a replicator with no recorded
-	 * class), so getComponents() falls back to the native broad iterator rather than a union
+	 * class), so getComponents() falls back to the native broad children type rather than a union
 	 * too narrow to hold all children.
 	 */
 	private function immediateChildrenUnion(FormShape $shape): ?Type
@@ -418,6 +423,11 @@ final class ContainerModel
 		}
 
 		return $complete;
+	}
+
+	private function arrayOf(Type $value): Type
+	{
+		return new ArrayType(TypeCombinator::union(new IntegerType(), new StringType()), $value);
 	}
 
 	private function iteratorOf(Type $value): Type

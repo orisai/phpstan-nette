@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Validation: `orisai.nette.latte.enabled` rejects an unsupported `latte/latte` line and nette/forms or
   nette/application releases without the Latte 3 or 3.1 bridges
 - phpstan-nette patch verified against phpstan/phpstan-nette 2.0.8–2.0.12
+- nette/component-model 4 support next to 3; with 4 `getComponents()` types as an array of the children, as it is
+  declared there
+- shipmonk/dead-code-detector 1.x support for the DI container usage provider (`config/dic-dead-code.neon`), next
+  to 0.15
 - Latte discovery follows `Presenter::switch()` (nette/application 3.2) as a view mutation
 - Latte: `vendor/bin/latte-converge` runs `phpstan analyse` again while the narrowing store changes; `--prune` removes
   the store files of deleted templates

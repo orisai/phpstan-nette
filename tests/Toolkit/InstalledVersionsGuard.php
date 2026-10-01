@@ -22,6 +22,8 @@ final class InstalledVersionsGuard
 		'latte31' => ['latte/latte', '~3.1.0', 'Latte 3.1'],
 		'nette32' => ['nette/application', '~3.2.0', 'nette/application 3.2'],
 		'nette33' => ['nette/application', '~3.3.0', 'nette/application 3.3'],
+		'componentModel3' => ['nette/component-model', '^3.0', 'nette/component-model 3'],
+		'componentModel4' => ['nette/component-model', '^4.0', 'nette/component-model 4'],
 	];
 
 	/** @var array<string, string>|null */
@@ -87,7 +89,7 @@ final class InstalledVersionsGuard
 			if (
 				is_string($group)
 				&& !isset(self::GROUPS[$group])
-				&& preg_match('~^(latte|nette)\d~', $group) === 1
+				&& preg_match('~^(latte|nette|componentModel)\d~', $group) === 1
 			) {
 				throw new LogicException(sprintf('Unknown version group "%s".', $group));
 			}

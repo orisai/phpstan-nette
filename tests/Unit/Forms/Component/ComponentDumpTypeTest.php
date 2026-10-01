@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Unit\Forms\Component;
 
 use PHPStan\Type\IntegerType;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use function assert;
 use function glob;
 
@@ -30,6 +31,14 @@ final class ComponentDumpTypeTest extends BatchedDumpTypeTestCase
 			&& !(new IntegerType())->toString()->isDecimalIntegerString()->yes()
 		) {
 			return 'requires a PHPStan which types (string) $int as decimal-int-string';
+		}
+
+		if ($fixture === 'CmGetComponentsControls.php') {
+			return InstalledVersionsGuard::skipReason(['componentModel3']);
+		}
+
+		if ($fixture === 'CmGetComponentsArray.php') {
+			return InstalledVersionsGuard::skipReason(['componentModel4']);
 		}
 
 		return null;

@@ -11,14 +11,19 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
+use PHPStan\Type\ArrayType;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
+use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
+use ReflectionNamedType;
 use function count;
 use function sprintf;
 use function ucfirst;
@@ -31,6 +36,8 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 	private bool $enabled;
 
 	private ContainerModel $model;
+
+	private ?bool $childrenAreArray = null;
 
 	public function __construct(ConfigurationGuard $guard, bool $enabled, ContainerModel $model)
 	{
@@ -76,9 +83,23 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 		if ($name === 'getComponents') {
 			// Only the no-argument form maps to "all immediate children"; getComponents($deep,
 			// $filter) changes the set, so leave those to the native return type.
-			return $methodCall->getArgs() === []
-				? $this->model->resolveComponentsIterator($methodCall->var, $scope)
-				: null;
+			if ($methodCall->getArgs() !== []) {
+				return null;
+			}
+
+			// nette/component-model 4 declares getComponents(): array, where phpstan-nette's
+			// Iterator stub no longer applies and the children would type as mixed.
+			$asArray = $this->childrenAreArray($methodReflection->getDeclaringClass());
+
+			$children = $this->model->resolveComponents($methodCall->var, $scope, $asArray);
+			if ($children !== null || !$asArray) {
+				return $children;
+			}
+
+			return new ArrayType(
+				TypeCombinator::union(new IntegerType(), new StringType()),
+				new ObjectType(IComponent::class),
+			);
 		}
 
 		$receiverType = $scope->getType($methodCall->var);
@@ -95,6 +116,23 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 		}
 
 		return $this->createComponentFallback($methodReflection, $methodCall, $scope);
+	}
+
+	/**
+	 * nette/component-model 3 declares getComponents(): iterable (\Iterator before 3.1), 4 declares getComponents(): array.
+	 */
+	private function childrenAreArray(ClassReflection $declaringClass): bool
+	{
+		if ($this->childrenAreArray !== null) {
+			return $this->childrenAreArray;
+		}
+
+		$container = $declaringClass->getAncestorWithClassName(ComponentModelContainer::class);
+		$returnType = $container !== null
+			? $container->getNativeReflection()->getMethod('getComponents')->getReturnType()
+			: null;
+
+		return $this->childrenAreArray = $returnType instanceof ReflectionNamedType && $returnType->getName() === 'array';
 	}
 
 	private function createComponentFallback(

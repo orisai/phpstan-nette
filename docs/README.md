@@ -84,6 +84,7 @@ Supported versions:
 - nette/application and nette/forms 3.1, 3.2 and 3.3 (3.3 installs with Latte 3.1 only). Latte 3.1 needs nette/forms
   and nette/application 3.2.7 or newer — older releases do not support it; an unsupported pair is rejected with a
   [validation](#validation) message.
+- nette/component-model 3 and 4 (4 installs with nette/application and nette/forms 3.3, on PHP 8.3 or newer).
 - PHP 7.4 to 8.4, as far as the installed Latte line allows.
 
 With [phpstan/extension-installer](https://github.com/phpstan/extension-installer) the extension is registered

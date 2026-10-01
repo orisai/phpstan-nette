@@ -365,15 +365,13 @@ prior scope, on leaving the node.
   points. When that happens the report is simply not produced; the safe failure direction is
   losing a report, never fabricating one on unguarded code.
 - **Dead-code usage resolves through the class hierarchy.** `ContainerUsageExtractor` records
-  `new`/setup-call usages under the `new`-target (concrete) class, but `shipmonk`'s
-  `ReflectionBasedMemberUsageProvider` only invokes the hook once per method, keyed by the method's
-  actual *declaring* class. `DicUsageProvider::shouldMarkMethodAsUsed()` bridges the two: if the
-  declaring class has no direct usage entry, it walks the recorded usages for any class that both
-  has the method used and `is_a()`-satisfies the declaring class (a "constructed subclass declares
-  no override" case — an inherited constructor or setup method, e.g. `new ChildService(...)` where
-  `ChildService extends ParentService` and doesn't redeclare `__construct` or the setup
-  method). Results are memoized per (declaring class, method name). A usage map key that fails to
-  autoload is skipped for that walk rather than passed to `is_a()`.
+  `new`/setup-call usages under the `new`-target (concrete) class, and `DicUsageProvider` emits them
+  against that class for every method its native reflection lists, inherited ones included
+  (`new ChildService(...)` where `ChildService extends ParentService` and does not redeclare
+  `__construct` or the setup method). The hop to the declaring ancestor is left to the dead-code
+  detector's aggregate stage, which resolves it from collected class definitions; deciding it while
+  analysing the ancestor's file would cache a verdict PHPStan never requeues when the child's
+  `extends` clause changes (`DescendantUsageInvalidationTest`).
 - **Dynamic `Nette\DI\Definitions\Statement`-generated code inside a container body isn't
   statically resolvable.** `ContainerUsageVisitor` only recognises literal `new`/method-call/
   static-call syntax; any construction or call assembled at compile time through indirection it

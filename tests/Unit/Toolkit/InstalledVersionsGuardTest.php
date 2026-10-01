@@ -21,6 +21,12 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 
 	private const LATTE31_NETTE33 = ['latte/latte' => '3.1.6.0', 'nette/application' => '3.3.1.0'];
 
+	private const COMPONENT_MODEL30 = ['nette/component-model' => '3.0.3.0'];
+
+	private const COMPONENT_MODEL32 = ['nette/component-model' => '3.2.0.0'];
+
+	private const COMPONENT_MODEL40 = ['nette/component-model' => '4.0.1.0'];
+
 	protected function tearDown(): void
 	{
 		InstalledVersionsGuard::overrideVersions(null);
@@ -71,6 +77,22 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 		yield 'nette33 on 3.2' => [self::LATTE30_NETTE32, ['nette33'], 'requires nette/application 3.3 (installed nette/application 3.2.12.0)'];
 		yield 'nette33 on 3.3' => [self::LATTE31_NETTE33, ['nette33'], null];
 
+		yield 'componentModel3 on 3.0' => [self::COMPONENT_MODEL30, ['componentModel3'], null];
+
+		yield 'componentModel3 on 4.0' => [
+			self::COMPONENT_MODEL40,
+			['componentModel3'],
+			'requires nette/component-model 3 (installed nette/component-model 4.0.1.0)',
+		];
+
+		yield 'componentModel4 on 3.2' => [
+			self::COMPONENT_MODEL32,
+			['componentModel4'],
+			'requires nette/component-model 4 (installed nette/component-model 3.2.0.0)',
+		];
+
+		yield 'componentModel4 on 4.0' => [self::COMPONENT_MODEL40, ['componentModel4'], null];
+
 		yield 'every group must hold' => [
 			self::LATTE30_NETTE32,
 			['latte3', 'nette33'],
@@ -94,6 +116,16 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 		$this->expectExceptionMessage('Unknown version group "latte32".');
 
 		InstalledVersionsGuard::skipReason(['latte3', 'latte32']);
+	}
+
+	public function testUnknownComponentModelGroupFailsLoudly(): void
+	{
+		InstalledVersionsGuard::overrideVersions(self::COMPONENT_MODEL40);
+
+		$this->expectException(LogicException::class);
+		$this->expectExceptionMessage('Unknown version group "componentModel5".');
+
+		InstalledVersionsGuard::skipReason(['componentModel5']);
 	}
 
 	public function testLatteMajorAndLine(): void

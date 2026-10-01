@@ -334,6 +334,13 @@ callback) form parameter, or a factory return. On an open shape, or on a bare lo
 the form class — the same caveat as `getComponent()`), they keep Nette's native iterator type. The filtered overload
 `getComponents($deep, $filter)` is likewise left to Nette's own typing.
 
+nette/component-model 4 declares `getComponents(): array`, where 3 declares `iterable` (`Iterator` in 3.0).
+`ComponentModelAccessDynamicReturnTypeExtension` reads the installed declaration: on 4 the narrowed children are
+`array<int|string, …>` and the unnarrowed fallback is `array<int|string, Nette\ComponentModel\IComponent>` — phpstan-nette's
+`Container.stub` declares `Iterator`, which PHPStan drops against the native `array`, leaving the children `mixed`.
+On 3 the results are the iterator types above, unchanged. `CmGetComponentsArray` and `CmGetComponentsControls` pin
+each major (version groups `componentModel4`, `componentModel3`).
+
 ## Navigating across `createComponentX`
 
 Navigation works across any `createComponentX`, not just forms — controls, presenters, factories, and sub-components all
