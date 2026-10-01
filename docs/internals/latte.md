@@ -670,10 +670,11 @@ template content can decide it — only "the analysis of this tree would rewrite
 comes from a `Rule<CollectedDataNode>`, recomputed on every run from the tree and the store on disk and
 never stored in the result cache, so cold and warm runs agree on it. It is non-ignorable because a
 baseline entry would silence a stale store for good. `bin/latte-converge` (`Latte\Converge\ConvergeRunner`)
-never parses the error and never reads the configuration: it passes a fresh temporary path in
-`ORISAI_NETTE_LATTE_CONVERGE_REPORT` to each unmodified `phpstan analyse`, and the writer writes the error
-message there whenever it rewrote or deleted slice bytes. The runner reruns while the file appears and removes
-it after every run, on every exit path. Only the coordinator writes it: workers inherit the variable but never
+never parses the error and never reads the configuration: it creates one private (0700) directory per
+invocation and passes `<directory>/report` in `ORISAI_NETTE_LATTE_CONVERGE_REPORT` to each unmodified
+`phpstan analyse`; the writer writes the error message there whenever it rewrote or deleted slice bytes. The
+runner clears the file before every run, reruns while it appears and removes the directory on every exit path.
+No other local user can pre-create or replace the path, which the writer would otherwise follow. Only the coordinator writes it: workers inherit the variable but never
 run `Rule<CollectedDataNode>` rules. A spawn test pins, run by run, that the bytes moved ⇔ the error was
 reported ⇔ the file was written. A crash or internal error skips the finalizer's rules, so no file appears
 and the run is forwarded as it is.

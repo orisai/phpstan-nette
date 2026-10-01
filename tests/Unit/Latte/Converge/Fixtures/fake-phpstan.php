@@ -8,6 +8,7 @@ $state['calls'][] = [
 	'arguments' => $arguments,
 	'prune' => getenv('ORISAI_NETTE_LATTE_NARROWING_PRUNE'),
 	'reportIsFresh' => is_string($report) && $report !== '' && !file_exists($report),
+	'directoryMode' => is_string($report) && is_dir(dirname($report)) ? sprintf('%o', fileperms(dirname($report)) & 0777) : null,
 ];
 
 if ($arguments[0] === 'clear-result-cache') {

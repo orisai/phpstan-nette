@@ -11,9 +11,11 @@ use function getenv;
 use function in_array;
 use function is_file;
 use function is_resource;
+use function mkdir;
 use function preg_match;
 use function proc_close;
 use function proc_open;
+use function rmdir;
 use function sprintf;
 use function stream_get_contents;
 use function strncmp;
@@ -112,31 +114,42 @@ final class ConvergeRunner
 			}
 		}
 
+		$directory = tempnam($this->temporaryDirectory, 'orisai-latte-converge-');
+		if ($directory === false || !unlink($directory) || !mkdir($directory, 0700)) {
+			fwrite($this->stderr, sprintf("Cannot create a private directory in %s.\n", $this->temporaryDirectory));
+
+			return 1;
+		}
+
+		try {
+			return $this->converge($phpstanArguments, $directory . '/report', $prune, $maxRuns);
+		} finally {
+			self::remove($directory . '/report');
+			self::remove($directory . '/report' . StoreChangeSignal::PRUNE_EVALUATED_SUFFIX);
+			rmdir($directory);
+		}
+	}
+
+	/**
+	 * @param list<string> $phpstanArguments
+	 */
+	private function converge(array $phpstanArguments, string $report, bool $prune, int $maxRuns): int
+	{
+		$environment = [StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE => $report];
+		if ($prune) {
+			$environment[StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE] = '1';
+		}
+
 		$pruneEvaluated = false;
 		$run = 0;
 		while (true) {
 			$run++;
-			$report = tempnam($this->temporaryDirectory, 'orisai-latte-converge-');
-			if ($report === false) {
-				fwrite($this->stderr, sprintf("Cannot create a temporary file in %s.\n", $this->temporaryDirectory));
-
-				return 1;
-			}
-
 			self::remove($report);
-			$environment = [StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE => $report];
-			if ($prune) {
-				$environment[StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE] = '1';
-			}
+			self::remove($report . StoreChangeSignal::PRUNE_EVALUATED_SUFFIX);
 
-			try {
-				$result = $this->execute($phpstanArguments, $environment);
-				$change = is_file($report) ? trim((string) file_get_contents($report)) : null;
-				$pruneEvaluated = $pruneEvaluated || is_file($report . StoreChangeSignal::PRUNE_EVALUATED_SUFFIX);
-			} finally {
-				self::remove($report);
-				self::remove($report . StoreChangeSignal::PRUNE_EVALUATED_SUFFIX);
-			}
+			$result = $this->execute($phpstanArguments, $environment);
+			$change = is_file($report) ? trim((string) file_get_contents($report)) : null;
+			$pruneEvaluated = $pruneEvaluated || is_file($report . StoreChangeSignal::PRUNE_EVALUATED_SUFFIX);
 
 			if ($result['exitCode'] >= 128 || $change === null) {
 				break;

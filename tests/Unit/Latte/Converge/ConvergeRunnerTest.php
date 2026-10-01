@@ -7,7 +7,6 @@ use Nette\Utils\Json;
 use OriPhpstan\Nette\Latte\Converge\ConvergeRunner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_unique;
-use function array_values;
 use function fopen;
 use function getmypid;
 use function glob;
@@ -69,7 +68,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 			$result['stderr'],
 		);
 		self::assertSame([$caller, $caller, $caller], $this->argumentVectors());
-		$this->assertFreshDistinctReportsAllRemoved(3);
+		$this->assertPrivateReportRemoved(3);
 	}
 
 	public function testAFindingNextToAStoreChangeIsPrintedOnlyFromTheSettledRun(): void
@@ -99,7 +98,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 			$result['stderr'],
 		);
 		self::assertCount(2, $this->calls());
-		$this->assertFreshDistinctReportsAllRemoved(2);
+		$this->assertPrivateReportRemoved(2);
 	}
 
 	public function testTheRunCapKeepsANonZeroExitCode(): void
@@ -119,7 +118,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 		self::assertSame('Fatal error', $result['stdout']);
 		self::assertSame('trace', $result['stderr']);
 		self::assertCount(1, $this->calls());
-		$this->assertFreshDistinctReportsAllRemoved(1);
+		$this->assertPrivateReportRemoved(1);
 	}
 
 	public function testASignalStopsTheLoopEvenWhenTheWriterReported(): void
@@ -128,7 +127,7 @@ final class ConvergeRunnerTest extends BaseTestCase
 
 		self::assertSame(130, $this->converge(['analyse'])['exitCode']);
 		self::assertCount(1, $this->calls());
-		$this->assertFreshDistinctReportsAllRemoved(1);
+		$this->assertPrivateReportRemoved(1);
 	}
 
 	public function testAGeneratedBaselineKeepsExitCodeZero(): void
@@ -227,18 +226,20 @@ final class ConvergeRunnerTest extends BaseTestCase
 		self::assertStringStartsWith('--max-runs expects a positive integer, "0" given.', $result['stderr']);
 	}
 
-	private function assertFreshDistinctReportsAllRemoved(int $runs): void
+	private function assertPrivateReportRemoved(int $runs): void
 	{
 		$state = Json::decode(FileSystem::read($this->scenario), Json::FORCE_ARRAY);
 		$reports = [];
 		foreach ($state['calls'] as $i => $call) {
 			self::assertTrue($call['reportIsFresh'], 'the report path must not exist when the run starts');
+			self::assertSame('700', $call['directoryMode'], 'the report lives in a private directory');
 			$reports[] = $state['reports'][$i];
 		}
 
 		self::assertCount($runs, $reports);
-		self::assertSame($reports, array_values(array_unique($reports)));
-		self::assertSame([], glob($this->temp . '/*'), 'every report file is removed');
+		self::assertCount(1, array_unique($reports), 'one private directory per invocation');
+		self::assertStringStartsWith($this->temp . '/orisai-latte-converge-', $reports[0]);
+		self::assertSame([], glob($this->temp . '/*'), 'the private directory is removed');
 	}
 
 	/**
