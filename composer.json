@@ -2,12 +2,14 @@
 	"name": "orisai/phpstan-nette",
 	"description": "PHPStan understands Nette DI containers, Nette Forms, Latte templates and how they connect",
 	"keywords": [
+		"dependency-injection",
+		"di",
+		"forms",
+		"latte",
+		"nette",
 		"orisai",
 		"phpstan",
-		"nette",
-		"latte",
-		"forms",
-		"static analysis"
+		"static-analysis"
 	],
 	"type": "phpstan-extension",
 	"license": "MPL-2.0",
