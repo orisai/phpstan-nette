@@ -71,13 +71,9 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 		Scope $scope
 	): ?Type
 	{
-		if (!$this->enabled) {
-			return null;
-		}
-
 		$name = $methodReflection->getName();
 		if ($name === 'getControls') {
-			return $this->model->resolveControlsIterator($methodCall->var, $scope);
+			return $this->enabled ? $this->model->resolveControlsIterator($methodCall->var, $scope) : null;
 		}
 
 		if ($name === 'getComponents') {
@@ -91,7 +87,7 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 			// Iterator stub no longer applies and the children would type as mixed.
 			$asArray = $this->childrenAreArray($methodReflection->getDeclaringClass());
 
-			$children = $this->model->resolveComponents($methodCall->var, $scope, $asArray);
+			$children = $this->enabled ? $this->model->resolveComponents($methodCall->var, $scope, $asArray) : null;
 			if ($children !== null || !$asArray) {
 				return $children;
 			}
@@ -100,6 +96,10 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 				TypeCombinator::union(new IntegerType(), new StringType()),
 				new ObjectType(IComponent::class),
 			);
+		}
+
+		if (!$this->enabled) {
+			return null;
 		}
 
 		$receiverType = $scope->getType($methodCall->var);
@@ -118,9 +118,6 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 		return $this->createComponentFallback($methodReflection, $methodCall, $scope);
 	}
 
-	/**
-	 * nette/component-model 3 declares getComponents(): iterable (\Iterator before 3.1), 4 declares getComponents(): array.
-	 */
 	private function childrenAreArray(ClassReflection $declaringClass): bool
 	{
 		if ($this->childrenAreArray !== null) {

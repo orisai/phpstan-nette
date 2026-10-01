@@ -1,0 +1,10 @@
+includes:
+	- component-real.neon
+
+parameters:
+	orisai:
+		nette:
+			forms:
+				enabled: false
+	paths!:
+		- Fixtures/DumpTypeFormsDisabled
