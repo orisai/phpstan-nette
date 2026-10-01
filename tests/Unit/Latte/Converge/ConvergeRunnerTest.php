@@ -7,9 +7,12 @@ use Nette\Utils\Json;
 use OriPhpstan\Nette\Latte\Converge\ConvergeRunner;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function array_unique;
+use function chmod;
 use function fopen;
+use function function_exists;
 use function getmypid;
 use function glob;
+use function posix_geteuid;
 use function putenv;
 use function rewind;
 use function stream_get_contents;
@@ -224,6 +227,27 @@ final class ConvergeRunnerTest extends BaseTestCase
 
 		self::assertSame(2, $result['exitCode']);
 		self::assertStringStartsWith('--max-runs expects a positive integer, "0" given.', $result['stderr']);
+	}
+
+	public function testAnUnwritableTemporaryDirectoryFailsWithOneMessageAndNoAnalysis(): void
+	{
+		if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+			self::markTestSkipped('Root writes into a read-only directory.');
+		}
+
+		$this->scenario([['exitCode' => 0, 'stdout' => 'ok']]);
+		chmod($this->temp, 0500);
+
+		try {
+			$result = $this->converge(['analyse']);
+		} finally {
+			chmod($this->temp, 0700);
+		}
+
+		self::assertSame(1, $result['exitCode']);
+		self::assertSame('', $result['stdout']);
+		self::assertSame("Cannot create a private directory in {$this->temp}.\n", $result['stderr']);
+		self::assertSame([], $this->calls());
 	}
 
 	private function assertPrivateReportRemoved(int $runs): void
