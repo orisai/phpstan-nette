@@ -2,6 +2,7 @@
 
 .github export-ignore
 docs export-ignore
+patches export-ignore
 tests export-ignore
 tools export-ignore
 
@@ -10,6 +11,3 @@ tools export-ignore
 .gitignore export-ignore
 Makefile export-ignore
 README.md export-ignore
-/composer.lock export-ignore
-/var export-ignore
-/vendor export-ignore
