@@ -12,6 +12,7 @@ use function basename;
 use function dirname;
 use function preg_match_all;
 use function sprintf;
+use function strpos;
 use function trim;
 use function usort;
 use const PHP_BINARY;
@@ -28,6 +29,9 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 
 	/** @var array<class-string, array<string, list<string>>> */
 	private static array $dumpedByClass = [];
+
+	/** @var array<class-string, array<string, list<string>>> */
+	private static array $reportedByClass = [];
 
 	/** @return list<string> */
 	abstract protected static function fixtureFiles(): array;
@@ -67,6 +71,16 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 			self::dumpedTypes()[basename($file)] ?? [],
 			sprintf('dumpType mismatch in %s', basename($file)),
 		);
+
+		preg_match_all('~//\s*!!\s*(.+)$~m', $source, $reported);
+		if ($reported[1] !== []) {
+			self::dumpedTypes();
+			self::assertSame(
+				array_map('trim', $reported[1]),
+				self::$reportedByClass[static::class][basename($file)] ?? [],
+				sprintf('reported errors mismatch in %s', basename($file)),
+			);
+		}
 	}
 
 	/**
@@ -117,6 +131,17 @@ abstract class BatchedDumpTypeTestCase extends BaseTestCase
 				usort($entries, static fn (array $a, array $b): int => $a['line'] <=> $b['line']);
 				$result[$name] = array_map(static fn (array $e): string => $e['type'], $entries);
 			}
+
+			preg_match_all('~^(?<file>.+?\.php):(?<line>\d+):(?<message>.+)$~m', $out, $lines, PREG_SET_ORDER);
+			$reported = [];
+			foreach ($lines as $line) {
+				$message = trim($line['message']);
+				if (strpos($message, 'Dumped type:') !== 0) {
+					$reported[basename($line['file'])][] = $message;
+				}
+			}
+
+			self::$reportedByClass[static::class] = $reported;
 
 			return self::$dumpedByClass[static::class] = $result;
 		} finally {

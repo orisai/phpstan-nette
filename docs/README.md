@@ -458,7 +458,7 @@ set to `null` it marks nothing.
 The provider marks as used:
 
 - the constructor of every class a container creates with `new` — services, and the classes created by generated
-  factories and accessors (`implement:`)
+  factories (`implement:`)
 - methods the container calls on a service right after creating it with `new` — `setup:` calls, decorator setups and
   `inject*()` methods
 - static methods the container calls, e.g. `factory: App\FooFactory::create()`
@@ -470,6 +470,7 @@ usages carry the note "Called by compiled Nette DI container", which the detecto
 It does not mark:
 
 - properties the container sets (`setup: - $property = …`, `inject` properties) — only methods
+- instance factory methods (`factory: @other::create()`) — only static factory methods are marked
 - methods called on a service the container did not create with `new` itself, e.g. one returned by
   `factory: @other::create()` or by a static factory method
 - services added at runtime with `addService()`

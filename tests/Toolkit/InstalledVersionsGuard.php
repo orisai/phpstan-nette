@@ -80,6 +80,11 @@ final class InstalledVersionsGuard
 		self::requireVersion($package, $constraint, $package . ' ' . $constraint);
 	}
 
+	public static function unmetReason(string $package, string $constraint): ?string
+	{
+		return self::satisfies($package, $constraint) ? null : self::reason($package, $package . ' ' . $constraint);
+	}
+
 	/**
 	 * @param array<mixed> $groups
 	 */

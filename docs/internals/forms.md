@@ -309,7 +309,7 @@ A shape with no known children has nothing to union, so the offset degrades to w
 
 ## Iterating children
 
-`getComponents()` (no arguments) types as an iterator over the **immediate** children — a union of their types — so a
+`getComponents()` (no arguments) types as a collection of the **immediate** children — a union of their types — so a
 method shared by all of them, or an `instanceof` check, type-checks inside the loop:
 
 ```php
@@ -326,20 +326,32 @@ A child container is included as its own type. `getControls()` instead descends 
 control** — containers and replicators are flattened away:
 
 ```php
-$form->getControls(); // => Iterator<int|string, Nette\Forms\Controls\TextInput>
+$form->getControls(); // => iterable<int|string, Nette\Forms\Controls\TextInput> (nette/forms 3.3)
 ```
 
 Both narrow only when the shape is **closed** and reached directly — through `$this[...]`, an `onSuccess` (or other
 callback) form parameter, or a factory return. On an open shape, or on a bare local form variable (whose type is just
-the form class — the same caveat as `getComponent()`), they keep Nette's native iterator type. The filtered overload
+the form class — the same caveat as `getComponent()`), they keep their declared type. The filtered overload
 `getComponents($deep, $filter)` is likewise left to Nette's own typing.
 
-nette/component-model 4 declares `getComponents(): array`, where 3 declares `iterable` (`Iterator` in 3.0).
-`ComponentModelAccessDynamicReturnTypeExtension` reads the installed declaration: on 4 the narrowed children are
-`array<int|string, …>` and the unnarrowed fallback is `array<int|string, Nette\ComponentModel\IComponent>` — phpstan-nette's
-`Container.stub` declares `Iterator`, which PHPStan drops against the native `array`, leaving the children `mixed`.
-On 3 the results are the iterator types above, unchanged. `CmGetComponentsArray` and `CmGetComponentsControls` pin
-each major (version groups `componentModel4`, `componentModel3`).
+The narrowed type keeps the collection type the installed method declares, with the children as its value type:
+`ComponentModelAccessDynamicReturnTypeExtension` reads the native return type of the called `getComponents()` or
+`getControls()`. `array` gives `array<int|string, …>`, `iterable` gives `iterable<int|string, …>` and `\Iterator` gives
+`Iterator<int|string, …>`; any other declaration is not narrowed. A collection type the method does not declare would
+be unsound — nette/forms 3.3 declares `getControls(): iterable` and returns an `IteratorAggregate`, so a narrowed
+`Iterator` let `->current()` through. The lines differ:
+
+| Installed                      | `getComponents()` | `getControls()` |
+|--------------------------------|-------------------|-----------------|
+| component-model 3.0, forms 3.1 | `Iterator`        | `Iterator`      |
+| component-model 3.2, forms 3.2 | `iterable`        | `Iterator`      |
+| component-model 4, forms 3.3   | `array`           | `iterable`      |
+
+On component-model 4 the unnarrowed `getComponents()` is `array<int|string, Nette\ComponentModel\IComponent>` too, with
+Forms analysis on or off: phpstan-nette's `Container.stub` declares `Iterator`, which PHPStan drops against the native
+`array`, leaving the children `mixed`. `CmGetComponentsControls`, `CmGetComponentsIterable` and `CmGetComponentsArray`
+pin one row each (the last also pins `->current()` being reported); `CmGetComponentsFormsDisabled` pins the fallback with
+Forms analysis off.
 
 ## Navigating across `createComponentX`
 

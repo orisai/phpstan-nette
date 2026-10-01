@@ -22,10 +22,11 @@ final class CmGetComponentsArray extends Control
 	public function go(Container $unknown): void
 	{
 		dumpType($this['form']->getComponents()); // => array<int|string, Nette\Forms\Controls\TextInput>
-		dumpType($this['form']->getControls()); // => Iterator<int|string, Nette\Forms\Controls\TextInput>
+		dumpType($this['form']->getControls()); // => iterable<int|string, Nette\Forms\Controls\TextInput>
 		$form = $this['form'];
 		dumpType($form->getComponents()); // => array<int|string, Nette\Forms\Controls\TextInput>
 		dumpType($unknown->getComponents()); // => array<int|string, Nette\ComponentModel\IComponent>
+		$this['form']->getControls()->current(); // !! Cannot call method current() on iterable<int|string, Nette\Forms\Controls\TextInput>.
 	}
 
 }

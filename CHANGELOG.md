@@ -80,6 +80,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Forms: a narrowed `getControls()` (nette/forms 3.3) and `getComponents()` (nette/component-model 3.2) type as the
+  `iterable` the methods declare instead of `Iterator`, so `->current()` on them is reported
 - PHP 7.4: no crash "Class 'ReflectionAttribute' not found" with PHPStan 2.2.10+, which runs result-cache meta
   extensions before the `bootstrapFiles` loading its PHP < 8 runtime polyfills; the Latte discovery index reflects
   methods there, and an attributed one needs the polyfills

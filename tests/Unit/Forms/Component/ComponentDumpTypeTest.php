@@ -34,11 +34,18 @@ final class ComponentDumpTypeTest extends BatchedDumpTypeTestCase
 		}
 
 		if ($fixture === 'CmGetComponentsControls.php') {
-			return InstalledVersionsGuard::skipReason(['componentModel3']);
+			return InstalledVersionsGuard::unmetReason('nette/component-model', '~3.0.0')
+				?? InstalledVersionsGuard::unmetReason('nette/forms', '<3.3');
+		}
+
+		if ($fixture === 'CmGetComponentsIterable.php') {
+			return InstalledVersionsGuard::unmetReason('nette/component-model', '~3.2.0')
+				?? InstalledVersionsGuard::unmetReason('nette/forms', '<3.3');
 		}
 
 		if ($fixture === 'CmGetComponentsArray.php') {
-			return InstalledVersionsGuard::skipReason(['componentModel4']);
+			return InstalledVersionsGuard::skipReason(['componentModel4'])
+				?? InstalledVersionsGuard::unmetReason('nette/forms', '^3.3');
 		}
 
 		return null;

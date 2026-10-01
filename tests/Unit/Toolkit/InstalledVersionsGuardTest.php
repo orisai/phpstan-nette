@@ -153,6 +153,21 @@ final class InstalledVersionsGuardTest extends BaseTestCase
 		self::assertFalse(InstalledVersionsGuard::satisfies('nette/forms', '*'));
 	}
 
+	public function testUnmetReason(): void
+	{
+		InstalledVersionsGuard::overrideVersions(self::LATTE30_NETTE32);
+
+		self::assertNull(InstalledVersionsGuard::unmetReason('nette/application', '<3.3'));
+		self::assertSame(
+			'requires nette/application ^3.3 (installed nette/application 3.2.12.0)',
+			InstalledVersionsGuard::unmetReason('nette/application', '^3.3'),
+		);
+		self::assertSame(
+			'requires nette/forms ^3.3 (installed nette/forms none)',
+			InstalledVersionsGuard::unmetReason('nette/forms', '^3.3'),
+		);
+	}
+
 	public function testRequireLatteMajorSkips(): void
 	{
 		InstalledVersionsGuard::overrideVersions(self::LATTE2_NETTE32);

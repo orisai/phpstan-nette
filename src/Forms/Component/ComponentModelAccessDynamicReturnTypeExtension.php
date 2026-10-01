@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Component;
 
+use Iterator;
 use Nette\Application\UI\Component as UiComponent;
 use Nette\ComponentModel\Container as ComponentModelContainer;
 use Nette\ComponentModel\IComponent;
@@ -11,12 +12,13 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
-use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
+use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\IntegerType;
+use PHPStan\Type\IterableType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
@@ -24,7 +26,9 @@ use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use ReflectionNamedType;
+use function array_key_exists;
 use function count;
+use function ltrim;
 use function sprintf;
 use function ucfirst;
 
@@ -37,7 +41,8 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 
 	private ContainerModel $model;
 
-	private ?bool $childrenAreArray = null;
+	/** @var array<string, string|null> */
+	private array $declaredReturnTypeNames = [];
 
 	public function __construct(ConfigurationGuard $guard, bool $enabled, ContainerModel $model)
 	{
@@ -73,7 +78,9 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 	{
 		$name = $methodReflection->getName();
 		if ($name === 'getControls') {
-			return $this->enabled ? $this->model->resolveControlsIterator($methodCall->var, $scope) : null;
+			$controls = $this->enabled ? $this->model->resolveLeafControls($methodCall->var, $scope) : null;
+
+			return $controls === null ? null : $this->declaredIterable($methodReflection, $controls);
 		}
 
 		if ($name === 'getComponents') {
@@ -83,19 +90,16 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 				return null;
 			}
 
-			// nette/component-model 4 declares getComponents(): array, where phpstan-nette's
-			// Iterator stub no longer applies and the children would type as mixed.
-			$asArray = $this->childrenAreArray($methodReflection->getDeclaringClass());
-
-			$children = $this->enabled ? $this->model->resolveComponents($methodCall->var, $scope, $asArray) : null;
-			if ($children !== null || !$asArray) {
-				return $children;
+			$children = $this->enabled ? $this->model->resolveImmediateChildren($methodCall->var, $scope) : null;
+			if ($children !== null) {
+				return $this->declaredIterable($methodReflection, $children);
 			}
 
-			return new ArrayType(
-				TypeCombinator::union(new IntegerType(), new StringType()),
-				new ObjectType(IComponent::class),
-			);
+			// nette/component-model 4 declares getComponents(): array, where phpstan-nette's
+			// Iterator stub no longer applies and the children would type as mixed.
+			return $this->declaredReturnTypeName($methodReflection) === 'array'
+				? $this->declaredIterable($methodReflection, new ObjectType(IComponent::class))
+				: null;
 		}
 
 		if (!$this->enabled) {
@@ -118,18 +122,34 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 		return $this->createComponentFallback($methodReflection, $methodCall, $scope);
 	}
 
-	private function childrenAreArray(ClassReflection $declaringClass): bool
+	private function declaredIterable(MethodReflection $methodReflection, Type $value): ?Type
 	{
-		if ($this->childrenAreArray !== null) {
-			return $this->childrenAreArray;
+		$key = TypeCombinator::union(new IntegerType(), new StringType());
+
+		switch ($this->declaredReturnTypeName($methodReflection)) {
+			case 'array':
+				return new ArrayType($key, $value);
+			case 'iterable':
+				return new IterableType($key, $value);
+			case Iterator::class:
+				return new GenericObjectType(Iterator::class, [$key, $value]);
+			default:
+				return null;
+		}
+	}
+
+	private function declaredReturnTypeName(MethodReflection $methodReflection): ?string
+	{
+		$class = $methodReflection->getDeclaringClass();
+		$key = $class->getName() . '::' . $methodReflection->getName();
+		if (!array_key_exists($key, $this->declaredReturnTypeNames)) {
+			$returnType = $class->getNativeReflection()->getMethod($methodReflection->getName())->getReturnType();
+			$this->declaredReturnTypeNames[$key] = $returnType instanceof ReflectionNamedType
+				? ltrim($returnType->getName(), '\\')
+				: null;
 		}
 
-		$container = $declaringClass->getAncestorWithClassName(ComponentModelContainer::class);
-		$returnType = $container !== null
-			? $container->getNativeReflection()->getMethod('getComponents')->getReturnType()
-			: null;
-
-		return $this->childrenAreArray = $returnType instanceof ReflectionNamedType && $returnType->getName() === 'array';
+		return $this->declaredReturnTypeNames[$key];
 	}
 
 	private function createComponentFallback(

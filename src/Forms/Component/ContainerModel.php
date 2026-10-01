@@ -2,7 +2,6 @@
 
 namespace OriPhpstan\Nette\Forms\Component;
 
-use Iterator;
 use Nette\Application\UI\Component as UiComponent;
 use Nette\Forms\Container as NetteContainer;
 use Nette\Forms\Form as NetteForm;
@@ -53,15 +52,11 @@ use PhpParser\NodeFinder;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Reflection\ClassReflection;
-use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayTypeBuilder;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\ErrorType;
-use PHPStan\Type\Generic\GenericObjectType;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
-use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use function array_intersect;
@@ -286,7 +281,7 @@ final class ContainerModel
 		return count($types) === 1 ? $types[0] : TypeCombinator::union(...$types);
 	}
 
-	public function resolveComponents(Expr $receiver, Scope $scope, bool $asArray): ?Type
+	public function resolveImmediateChildren(Expr $receiver, Scope $scope): ?Type
 	{
 		if (!$this->enabled) {
 			return null;
@@ -299,16 +294,10 @@ final class ContainerModel
 			return null;
 		}
 
-		$union = $this->immediateChildrenUnion($shape);
-
-		if ($union === null) {
-			return null;
-		}
-
-		return $asArray ? $this->arrayOf($union) : $this->iteratorOf($union);
+		return $this->immediateChildrenUnion($shape);
 	}
 
-	public function resolveControlsIterator(Expr $receiver, Scope $scope): ?Type
+	public function resolveLeafControls(Expr $receiver, Scope $scope): ?Type
 	{
 		if (!$this->enabled) {
 			return null;
@@ -326,13 +315,13 @@ final class ContainerModel
 			return null;
 		}
 
-		return $this->iteratorOf(count($types) === 1 ? $types[0] : TypeCombinator::union(...$types));
+		return count($types) === 1 ? $types[0] : TypeCombinator::union(...$types);
 	}
 
 	/**
 	 * The union of every immediate child type for getComponents(). Returns null when any child
 	 * cannot be typed (an untyped slot, a classless container, a replicator with no recorded
-	 * class), so getComponents() falls back to the native broad children type rather than a union
+	 * class), so getComponents() keeps its declared type rather than a union
 	 * too narrow to hold all children.
 	 */
 	private function immediateChildrenUnion(FormShape $shape): ?Type
@@ -423,19 +412,6 @@ final class ContainerModel
 		}
 
 		return $complete;
-	}
-
-	private function arrayOf(Type $value): Type
-	{
-		return new ArrayType(TypeCombinator::union(new IntegerType(), new StringType()), $value);
-	}
-
-	private function iteratorOf(Type $value): Type
-	{
-		return new GenericObjectType(Iterator::class, [
-			TypeCombinator::union(new IntegerType(), new StringType()),
-			$value,
-		]);
 	}
 
 	/**
