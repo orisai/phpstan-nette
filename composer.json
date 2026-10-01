@@ -59,7 +59,7 @@
 	},
 	"suggest": {
 		"kdyby/forms-replicator": "Typed replicator containers and rows",
-		"shipmonk/dead-code-detector": "Container service and template-only method usage detection"
+		"shipmonk/dead-code-detector": "Members called only by the compiled DI container are not reported as dead (config/dic-dead-code.neon)"
 	},
 	"autoload": {
 		"psr-4": {

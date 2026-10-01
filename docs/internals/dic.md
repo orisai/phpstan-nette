@@ -322,7 +322,11 @@ marks as used:
 
 This replaces a blanket `#^Unused ...__construct$#` ignore that would otherwise suppress *every*
 unused-constructor finding project-wide. Consumers include it through `config/dic-dead-code.neon`,
-which is kept out of `extension.neon` so that shipmonk/dead-code-detector stays optional.
+which is kept out of `extension.neon` so that shipmonk/dead-code-detector stays optional. The provider
+uses only API both supported detector majors share (0.15 and 1.x: `MemberUsageProvider::getUsages()`, the
+positional `ClassMethodUsage` and `ClassMethodRef` constructors, `UsageOrigin::createVirtual()`,
+`VirtualUsageData::withNote()`), so it needs no version switch; 1.x moved member and access types to enums,
+which it never reads.
 
 `ContainerUsageVisitor` tracks local variable-to-class bindings with a scope stack, not one flat
 map: entering a `ClassMethod` (including an inline anonymous class's methods) pushes a fresh empty

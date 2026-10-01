@@ -438,15 +438,49 @@ pruned.
 
 ### Dead code detection
 
-With [shipmonk/dead-code-detector](https://github.com/shipmonk-rnd/dead-code-detector), include the container usage
-provider, so constructors and setup methods your containers call are not reported as dead:
+[shipmonk/dead-code-detector](https://github.com/shipmonk-rnd/dead-code-detector) reports class members nothing calls.
+Members which only the compiled DI container calls, such as a service's constructor or a `setup:` method, have no call
+site in your code, so it reports them as dead. The container usage provider reads your compiled containers and passes
+those calls to the detector as usages.
+
+Supported versions: shipmonk/dead-code-detector 0.15 and 1.4 or newer 1.x (1.x requires PHP 8.1).
+
+The provider is opt-in. extension-installer registers only `extension.neon`, so include the provider's config yourself:
 
 ```neon
 includes:
 	- vendor/orisai/phpstan-nette/config/dic-dead-code.neon
 ```
 
-It needs `orisai.nette.dic.containerLoader`.
+It reads the containers your loader returns, so [set up DI](#set-up-di) first. With `orisai.nette.dic.containerLoader`
+set to `null` it marks nothing.
+
+The provider marks as used:
+
+- the constructor of every class a container creates with `new` — services, and the classes created by generated
+  factories and accessors (`implement:`)
+- methods the container calls on a service right after creating it with `new` — `setup:` calls, decorator setups and
+  `inject*()` methods
+- static methods the container calls, e.g. `factory: App\FooFactory::create()`
+
+A member counts as used when any of your containers calls it. An inherited constructor or setup method is covered too:
+the usage is recorded on the created class and the detector resolves it to the class that declares the member. The
+usages carry the note "Called by compiled Nette DI container", which the detector's `debug.usagesOf` output shows.
+
+It does not mark:
+
+- properties the container sets (`setup: - $property = …`, `inject` properties) — only methods
+- methods called on a service the container did not create with `new` itself, e.g. one returned by
+  `factory: @other::create()` or by a static factory method
+- services added at runtime with `addService()`
+- presenter and component convention methods (`action*()`, `render*()`, `handle*()`, `createComponent*()`,
+  `inject*()`): the detector's own Nette usage provider handles them
+- methods only templates call: with [Latte analysis](#set-up-latte) on, templates are analysed as PHP and these calls are
+  ordinary usages; turn Latte analysis off and the detector reports such methods as dead
+
+The analysis sees the containers your loader builds on the current machine, so a service registered only in a local
+config file counts as used only where that file exists. A change of a compiled container invalidates PHPStan's result
+cache, so the next run evaluates the usages again.
 
 ### Validation
 
