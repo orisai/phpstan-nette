@@ -1,6 +1,10 @@
 # IDE
 /.idea
 
+# Local agent notes
+/.superpowers
+/docs/superpowers
+
 # Composer
 /vendor
 /composer.lock
