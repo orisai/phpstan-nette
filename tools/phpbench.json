@@ -1,0 +1,4 @@
+{
+	"runner.bootstrap": "../tests/bootstrap.php",
+	"storage.xml_storage_path": "var/tools/phpbench"
+}

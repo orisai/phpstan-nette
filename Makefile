@@ -6,6 +6,7 @@ _: list
 SMOKE_PATHS=tools/smoke/dmonitor.php tools/smoke/dmonitor-bootstrap.php
 
 PHPUNIT_CONFIG=tools/phpunit.xml
+PHPBENCH_CONFIG=tools/phpbench.json
 
 LINT_PHP ?= php7.4
 
@@ -79,6 +80,9 @@ coverage-clover: ## Generate code coverage in XML format
 
 coverage-html: ## Generate code coverage in HTML format
 	$(PROFILE_ENV) $(PRE_PHP) $(PHPUNIT_COVERAGE) --coverage-html=var/coverage/html $(ARGS)
+
+bench: ## Run the benchmarks, by hand only: make bench [PROFILE=latte2] [ARGS="--tag=before"]
+	$(PROFILE_ENV) $(PRE_PHP) "$(VENDOR_DIR)/bin/phpbench" run --config $(PHPBENCH_CONFIG) tests/Benchmark --report=default $(ARGS)
 
 ## Corpus
 

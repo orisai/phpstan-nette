@@ -189,7 +189,24 @@ make corpus-manifest PROFILE=latte2 PRE_PHP="XDEBUG_MODE=off php8.4"
 make smoke-dmonitor PRE_PHP="XDEBUG_MODE=off php8.4"
 ```
 
-Run one suite at a time: the performance-budget tests are timed and flake under a concurrent suite.
+Run one suite at a time: `InferencePerfBudgetTest` is timed and flakes under a concurrent suite.
+
+### Benchmarks
+
+`tests/Benchmark/` holds phpbench benchmarks. They are informational: run them by hand, CI does not, and nothing fails
+on a slower machine. `make bench` runs them on the primary vendor, `make bench PROFILE=latte2` on a profile.
+`FormShapeCacheBench` times a cold and a warm `FormShapeCache` pass over the `tests/Doubles/Forms/MatrixAssert`
+corpus. `LatteSpawnBench` is the slow one: it times a cold and a warm `phpstan analyse` spawn over the Latte
+integration fixtures, one revolution of a few seconds each, with the installed Latte line as the parameter set.
+`ColdWarmSpawnAgreementTest` keeps the correctness half of those spawns, that a warm run reports what the cold one did.
+
+Compare two runs by tagging the first and referencing it from the second; the runs are stored in
+`var/tools/phpbench`:
+
+```
+make bench ARGS="--tag=before"
+make bench ARGS="--ref=before"
+```
 
 Run a single test class through make, e.g. `make tests ARGS=tests/Unit/Toolkit/ScratchProjectVendorTest.php`, or
 `make tests PROFILE=latte2 ARGS=tests/Unit/Toolkit/ScratchProjectVendorTest.php` for a profile: the target sets

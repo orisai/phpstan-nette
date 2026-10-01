@@ -71,6 +71,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   instead of being typed as the registered one
 - Latte: a filter or function registered as an anonymous closure is known but untyped instead of
   `orisai.nette.latte.unknownFilter`
+- Development: the timed performance budget tests are replaced by phpbench benchmarks (`make bench`), run by hand
 
 ### Fixed
 

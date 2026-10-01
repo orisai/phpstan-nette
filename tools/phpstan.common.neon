@@ -147,10 +147,6 @@ parameters:
 			path: ../tests/Integration/Latte/Integration/DiscoveryStoreSelfSufficiencyTest.php
 		-
 			identifier: cast.useless
-			count: 1
-			path: ../tests/Integration/Latte/PerfBudgetTest.php
-		-
-			identifier: cast.useless
 			count: 2
 			path: ../tests/Toolkit/FactsFixtures.php
 		-
