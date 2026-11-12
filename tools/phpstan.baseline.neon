@@ -129,7 +129,7 @@ parameters:
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''Nette\\ComponentModel\\Container'' and Nette\ComponentModel\Container will always evaluate to true.'
 			identifier: staticMethod.alreadyNarrowedType
-			count: 1
+			count: 2
 			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
 
 		-

@@ -6,8 +6,11 @@ use Nette\ComponentModel\IComponent;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
 use OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\NodeFinder;
 use PHPStan\Analyser\Scope;
@@ -93,6 +96,11 @@ final class ComponentAccessTypeResolver implements ExpressionTypeResolverExtensi
 			// that is exactly bare Nette\ComponentModel\IComponent (phpstan-nette bailed = the real case), so we
 			// cleanly OVERRIDE only there and otherwise DEFER (no regression to already-resolved components).
 			$would = $scope->getType($expr);
+			$read = $this->offsetGetType($expr, $scope, $would);
+			if ($read !== null) {
+				return $read;
+			}
+
 			if (!$would->equals(new ObjectType(IComponent::class))) {
 				return null;
 			}
@@ -130,6 +138,24 @@ final class ComponentAccessTypeResolver implements ExpressionTypeResolverExtensi
 		} finally {
 			unset($this->resolving[$guardKey]);
 		}
+	}
+
+	// PHPStan 2.3 narrows isset($c['x']) through Type::getOffsetValueType(), which never asks the offsetGet()
+	// dynamic return type extensions, and later reads of the offset keep that answer: the declared
+	// IComponent. The plain read's answer is the offsetGet() call's.
+	private function offsetGetType(ArrayDimFetch $expr, Scope $scope, Type $would): ?Type
+	{
+		if ($expr->dim === null || $would->getObjectClassNames() !== [IComponent::class]) {
+			return null;
+		}
+
+		$read = $scope->getType(new MethodCall($expr->var, new Identifier('offsetGet'), [new Arg($expr->dim)]));
+		$component = new ObjectType(IComponent::class);
+		if ($read->equals($component) || !$component->isSuperTypeOf($read)->yes()) {
+			return null;
+		}
+
+		return $read;
 	}
 
 	private function evictOnFileChange(string $file): void
