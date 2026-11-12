@@ -138,6 +138,9 @@ final class ContainerModel
 	/** @var array<string, FormShape|null> */
 	private array $plainFileShapeMemo = [];
 
+	/** @var array<int, true> */
+	private array $eventCallbackShapesComputing = [];
+
 	private ?string $currentFile = null;
 
 	/**
@@ -1853,6 +1856,26 @@ final class ContainerModel
 			return null;
 		}
 
+		// Walking the form-building method types the calls inside this closure, whose receiver is the
+		// parameter being resolved - without the guard the resolution re-enters itself without end.
+		$closureId = spl_object_id($capturingClosure);
+		if (isset($this->eventCallbackShapesComputing[$closureId])) {
+			return null;
+		}
+
+		$this->eventCallbackShapesComputing[$closureId] = true;
+		try {
+			return $this->eventAssignFormShape($assign, $enclosing, $scope);
+		} finally {
+			unset($this->eventCallbackShapesComputing[$closureId]);
+		}
+	}
+
+	/**
+	 * @param array{0: Expr, 1: string} $assign
+	 */
+	private function eventAssignFormShape(array $assign, ClassMethod $enclosing, Scope $scope): ?FormShape
+	{
 		$receiverType = $scope->getType($assign[0]);
 		if ($receiverType instanceof FormShapeType) {
 			return $receiverType->getFormShape();
