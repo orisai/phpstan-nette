@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   an unreadable directory there is reported as `orisai.nette.latte.customsHarvest`
 - Validation: `orisai.nette.latte.enabled` rejects an unsupported `latte/latte` line and nette/forms or
   nette/application releases without the Latte 3 or 3.1 bridges
-- phpstan-nette patch verified against phpstan/phpstan-nette 2.0.8–2.0.12
+- phpstan-nette patch verified against phpstan/phpstan-nette 2.0.8–2.0.15
 - nette/component-model 4 support next to 3; with 4 `getComponents()` types as an array of the children, as it is
   declared there
 - shipmonk/dead-code-detector 1.x support for the DI container usage provider (`config/dic-dead-code.neon`), next
@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   nette/forms 3.3 — and PHPStan analyses it for PHP 8.4; the former default set is the `latte2` profile, the `latte31`
   profile is gone and a `lowest` profile installs the lowest dependencies on PHP 7.4
 - `src/Latte/Version/Latte3/` no longer has to parse on PHP 7.4: it is loaded only with Latte 3, which requires PHP 8
-- Minimum versions raised to the lowest set the test suite passes on: PHPStan ^2.2.0 (API added in 2.2),
+- Minimum versions raised to the lowest set the test suite passes on: PHPStan ^2.3.5,
   latte/latte 2.11.7, nette/forms 3.1.15 and nette/component-model 3.0.3 (the extension reads
   `IComponent::NameSeparator`)
 - Latte 3: tags Latte 3 dropped (`{includeblock}`, `{status}`, `{use}`, and `{ifCurrent}` with nette/application 3.3)

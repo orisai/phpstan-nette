@@ -12,7 +12,9 @@ use function PHPStan\dumpType;
  * enclosing method's params (ContainerModel::paramClassForVariable). A closure declared inside the
  * handler with its own `Form $form` parameter shadows that name with a DIFFERENT binding — the outer
  * registration must not be attributed to it, so the closure's own read stays at its declared base
- * Form rather than being wrongly narrowed to ApplicationForm.
+ * Form rather than being wrongly narrowed to ApplicationForm. The closure is called with a plain Form:
+ * PHPStan 2.3 bleeding edge infers a closure's parameter types from its call, so `$read($form)` would
+ * narrow it to ApplicationForm by itself.
  */
 final class ClosureShadowedHandlerParamStaysDeclared extends Control
 {
@@ -33,7 +35,7 @@ final class ClosureShadowedHandlerParamStaysDeclared extends Control
 		$read = static function (Form $form): void {
 			dumpType($form); // => Nette\Application\UI\Form
 		};
-		$read($form);
+		$read(new Form());
 	}
 
 }

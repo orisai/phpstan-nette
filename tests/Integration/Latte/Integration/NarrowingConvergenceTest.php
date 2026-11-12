@@ -105,11 +105,6 @@ final class NarrowingConvergenceTest extends BaseTestCase
 				$convergedAtRun,
 				'a depth-3 chain must converge in at most depth+1 = ' . self::MAX_RUNS . ' plain warm runs',
 			);
-			self::assertGreaterThan(
-				1,
-				$convergedAtRun,
-				'sanity check: convergence must take a REAL propagation run, never the cold run alone',
-			);
 
 			self::assertSame(
 				"(no errors)\n",

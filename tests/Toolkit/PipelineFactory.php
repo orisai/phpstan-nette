@@ -149,10 +149,10 @@ final class PipelineFactory
 		return new SiteScopeStore($projectRoot . '/__absent_sitescope_store__');
 	}
 
-	// PHPStanTestCase::getContainer()'s generic (project-config-free) container already tags every
-	// #[AutowiredService] PhpParser\NodeVisitor - including ParentStmtTypesVisitor - under
-	// RichParser::VISITOR_SERVICE_TAG: that tagging comes from vendor's own core config.neon
-	// (AutowiredAttributeServicesExtension), not from this project's wiring, so the generic
+	// PHPStanTestCase::getContainer()'s generic (project-config-free) container already registers every
+	// #[AutowiredService] PhpParser\NodeVisitor - including ParentStmtTypesVisitor - in the
+	// PhpParser\NodeVisitor extensions collection: that comes from vendor's own core config.neon
+	// (extensionInterfaces), not from this project's wiring, so the generic
 	// container is a faithful stand-in for production's real one here.
 	public static function createRichAttributeDecorator(): RichAttributeDecorator
 	{

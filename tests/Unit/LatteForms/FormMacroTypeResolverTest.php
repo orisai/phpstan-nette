@@ -30,6 +30,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\CollectedDataEmitter;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\NodeCallbackInvoker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
@@ -379,7 +380,7 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 	// binds it in production too - so a stub would test a binding that never happens.
 
 	/**
-	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker
+	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker
 	 */
 	private function scope(): Scope
 	{
@@ -395,6 +396,7 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 
 		self::assertInstanceOf(CollectedDataEmitter::class, $captured);
 		self::assertInstanceOf(NodeCallbackInvoker::class, $captured);
+		self::assertInstanceOf(DependencyTracker::class, $captured);
 
 		return $captured;
 	}

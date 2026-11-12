@@ -11,6 +11,7 @@ use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
 use OriPhpstan\Nette\Latte\Rule\LatteEdgeScopeCollector;
 use OriPhpstan\Nette\Latte\Rule\LatteSiteScopeWriterRule;
 use PHPStan\Analyser\CollectedDataEmitter;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\NodeCallbackInvoker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -704,11 +705,11 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 	}
 
 	/**
-	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker
+	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker
 	 */
 	private function scope(): Scope
 	{
-		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&Stub $scope */
+		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 
 		return $scope;

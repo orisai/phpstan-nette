@@ -1075,7 +1075,6 @@ final class FormShapeAnalyzer
 		$trackedName = $ctx->getTrackedName();
 		$trackedClass = $ctx->getTrackedClass();
 		$recordsByNode = $ctx->getRecordsByNode();
-		$rootStmts = $ctx->getRootStmts();
 
 		foreach ($this->taggedRecordsIn($stmt, $trackedName, $recordsByNode) as $rec) {
 			$summary = $this->summarizeRecord($rec, $trackedName, $trackedClass);

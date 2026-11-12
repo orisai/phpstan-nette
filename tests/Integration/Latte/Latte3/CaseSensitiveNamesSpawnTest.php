@@ -9,6 +9,7 @@ use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
 use function realpath;
+use const PHP_VERSION_ID;
 
 // Latte 3 resolves filter and function names case-sensitively: a spelling which differs from the
 // registered one only in case is reported and typed as unknown. Latte 3.0 still resolves such a
@@ -88,6 +89,9 @@ final class CaseSensitiveNamesSpawnTest extends BaseTestCase
 	{
 		$result = $this->project->analyse(
 			ConfigurationCorpus::PHPSTAN_NETTE_SWITCHES + [
+				// Without it the scope reads require.php of this library's composer.json (7.4), where the
+				// first-class callable the template compiles to is callable.notSupported.
+				'phpVersion' => PHP_VERSION_ID,
 				'fileExtensions' => ['php', 'latte'],
 				'orisai' => ['nette' => ['latte' => [
 					'enabled' => true,

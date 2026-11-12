@@ -163,7 +163,6 @@ final class DiscoveryResolver
 		$opaques = [];
 
 		$presenterSegment = null;
-		$module = null;
 		$viewFormula = null;
 		$layoutCandidates = [];
 

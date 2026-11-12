@@ -22,6 +22,7 @@ use OriPhpstan\Nette\LatteForms\LatteFormsRule;
 use OriPhpstan\Nette\LatteForms\MacroSuitability;
 use PhpParser\Node;
 use PHPStan\Analyser\CollectedDataEmitter;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\NodeCallbackInvoker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -800,7 +801,7 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 	// binds it in production too - so a stub would test a binding that never happens.
 
 	/**
-	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker
+	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker
 	 */
 	private function scope(): Scope
 	{
@@ -816,6 +817,7 @@ final class LatteFormsRuleTest extends FormShapeTestCase
 
 		self::assertInstanceOf(CollectedDataEmitter::class, $captured);
 		self::assertInstanceOf(NodeCallbackInvoker::class, $captured);
+		self::assertInstanceOf(DependencyTracker::class, $captured);
 
 		return $captured;
 	}

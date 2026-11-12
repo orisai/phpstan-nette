@@ -80,8 +80,6 @@ final class VendorErrorContainmentTest extends BaseTestCase
 		$sentinel = static fn (): bool => true;
 		set_error_handler($sentinel);
 
-		$caught = null;
-
 		try {
 			try {
 				VendorErrorContainment::run(

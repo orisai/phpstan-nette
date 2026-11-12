@@ -6,7 +6,9 @@ use OriPhpstan\Nette\Latte\FixSupport;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Postprocess\FilterRewriter;
 use PhpParser\Node;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
+use PHPStan\Rules\FileDependenciesRuleError;
 use PHPStan\Rules\FileRuleError;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\LineRuleError;
@@ -70,7 +72,7 @@ final class LatteProvenanceTipRule implements Rule
 		return array_map(
 			static fn (IdentifierRuleError $error): IdentifierRuleError => $error->getIdentifier() === LatteDebugDumpRule::IDENTIFIER
 				? $error
-				: self::appendTip($error, $tip),
+				: self::appendTip($error, $tip, $scope),
 			$errors,
 		);
 	}
@@ -133,12 +135,23 @@ final class LatteProvenanceTipRule implements Rule
 	}
 
 	// Mirrors LatteFixStrippingRule::stripFix()'s property-preservation precedent (message,
-	// identifier, line, metadata, nonIgnorable, file) - deliberately omits FixableNodeRuleError:
+	// identifier, line, metadata, nonIgnorable, file, file dependencies through the scope) -
+	// deliberately omits FixableNodeRuleError:
 	// this rule only ever runs on .latte scope (the FixSupport guard above), and
 	// LatteFixStrippingRegistry already strips every fixNode() payload for that scope before this
 	// decorator's own registry wrapping sees the error (see wiring.neon's registry! chain).
-	private static function appendTip(IdentifierRuleError $error, string $tip): IdentifierRuleError
+	private static function appendTip(
+		IdentifierRuleError $error,
+		string $tip,
+		DependencyTracker $scope
+	): IdentifierRuleError
 	{
+		if ($error instanceof FileDependenciesRuleError) {
+			foreach ($error->getFileDependencies() as $file) {
+				$scope->trackFileDependency($file);
+			}
+		}
+
 		$builder = RuleErrorBuilder::message($error->getMessage())
 			->identifier($error->getIdentifier());
 

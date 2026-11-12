@@ -122,19 +122,16 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 			);
 			self::assertSame(["$relSrc/tpl-a.latte"], $storeA->allLinkedTemplates());
 
-			// Run 2: exactly the two store-side files the pre-analysis build rewrote (template file +
-			// class index). ResultCacheManager::restore() hashes every analysed file BEFORE it calls
-			// the meta extensions, so the bytes it recorded for run 1 are the pre-build ones and these
-			// two read as changed - but their EXPORTED NODES do not, because run 1 analysed them after
-			// the build. tpl-a is therefore NOT here: it already saw its record on the cold run, which
-			// is the generational hop this feature removed.
+			// Run 2: nothing. The cold run hashes the analysed files AFTER the meta extensions ran the
+			// pre-analysis build (a warm restore hashes them before), so it recorded the store files
+			// the build rewrote. tpl-a already saw its record on the cold run, which is the
+			// generational hop this feature removed.
 			$run2 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);
 			self::assertSame($run1['output'], $run2['output']);
 			self::assertStringContainsString(
-				'2 files will be reanalysed',
+				'Result cache restored. 0 files will be reanalysed.',
 				$run2['diagnostics'],
-				'run 2 must reanalyse exactly the record-bearing store file and the class index: '
-				. $run2['diagnostics'],
+				'run 2 must reanalyse nothing: ' . $run2['diagnostics'],
 			);
 
 			$run3 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);

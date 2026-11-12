@@ -4,8 +4,10 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Rule;
 
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\FileNode;
+use PHPUnit\Framework\MockObject\Stub;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 
@@ -65,8 +67,12 @@ final class LatteAnalyzedFileMarkerCollectorTest extends BaseTestCase
 		);
 	}
 
+	/**
+	 * @return Scope&DependencyTracker
+	 */
 	private function scope(string $file): Scope
 	{
+		/** @var Scope&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 		$scope->method('getFile')->willReturn($file);
 

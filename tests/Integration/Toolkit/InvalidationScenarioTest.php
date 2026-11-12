@@ -13,19 +13,18 @@ use const PHP_VERSION_ID;
  * The permanent regression pin for the reusable invalidation harness.
  *
  * PHPStan's JSON report has a SECOND top-level key besides `files`: `errors`, holding
- * getNotFileSpecificErrors() - unmatched ignore patterns, a crashed analysis worker, internal
+ * getNotFileSpecificErrors() - invalid ignore entries, a crashed analysis worker, internal
  * errors. A decode path that reads only `files` turns such a report into "(no errors)", which every
  * scenario step whose expectation is the empty set then passes vacuously - in the one class that
  * exists to stop scenarios passing vacuously. The bug was fixed without a test; this is that test.
  *
- * The trigger used here is the cheapest reproducible one: a never-matching `ignoreErrors` pattern
- * over an error-free corpus, which PHPStan reports as `{"files":{},"errors":[…]}` with exit code 1.
+ * The trigger used here is the cheapest reproducible one: an `ignoreErrors` entry with a path but
+ * neither a message nor an identifier, which PHPStan reports as `{"files":{},"errors":[…]}` with
+ * exit code 1. A never-matching pattern no longer does: PHPStan 2.3 reports it at its line in the
+ * config file.
  */
 final class InvalidationScenarioTest extends BaseTestCase
 {
-
-	private const UNMATCHED_PATTERN_ERROR = '(not file-specific) :: '
-		. 'Ignored error pattern #never matched pattern# was not matched in reported errors.';
 
 	public function testNotFileSpecificErrorsAreDecodedAsErrors(): void
 	{
@@ -45,7 +44,7 @@ final class InvalidationScenarioTest extends BaseTestCase
 							// Plain `paths`, not the `paths!` override every other scenario uses: this
 							// config includes nothing, and the override marker has no key to override.
 							'paths' => [$paths[0]],
-							'ignoreErrors' => ['#never matched pattern#'],
+							'ignoreErrors' => [['path' => $paths[0]]],
 						],
 					],
 					true,
@@ -67,7 +66,8 @@ final class InvalidationScenarioTest extends BaseTestCase
 				$run->getErrorText(),
 				'a report the analysis signalled as failing must never decode as the empty error set',
 			);
-			self::assertSame(self::UNMATCHED_PATTERN_ERROR, $run->getErrorText());
+			self::assertStringStartsWith('(not file-specific) :: Ignored error {"path":', $run->getErrorText());
+			self::assertStringEndsWith('} is missing a message or an identifier.', $run->getErrorText());
 		} finally {
 			$scenario->cleanup();
 		}

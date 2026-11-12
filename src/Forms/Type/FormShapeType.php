@@ -5,6 +5,8 @@ namespace OriPhpstan\Nette\Forms\Type;
 use OriPhpstan\Nette\Forms\Shape\ComponentPath;
 use OriPhpstan\Nette\Forms\Shape\FormShape;
 use PHPStan\TrinaryLogic;
+use PHPStan\Type\ErrorType;
+use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\VerbosityLevel;
@@ -75,6 +77,22 @@ final class FormShapeType extends ObjectType
 		}
 
 		return parent::hasOffsetValueType($offsetType);
+	}
+
+	public function getOffsetValueType(Type $offsetType): Type
+	{
+		// PHPStan 2.3 types the value of `$form['x'] ?? …` and isset() from this method instead of the
+		// offsetGet() dynamic return type extensions, and keeps that answer for later reads of the
+		// same offset. ErrorType and mixed stay with the offsetGet() channel and the parent.
+		$strings = $offsetType->getConstantStrings();
+		if (count($strings) === 1) {
+			$type = FormShapeProjector::offsetPath($this->shape, ComponentPath::split($strings[0]->getValue()));
+			if ($type !== null && !$type instanceof ErrorType && !$type instanceof MixedType) {
+				return $type;
+			}
+		}
+
+		return parent::getOffsetValueType($offsetType);
 	}
 
 	public function equals(Type $type): bool

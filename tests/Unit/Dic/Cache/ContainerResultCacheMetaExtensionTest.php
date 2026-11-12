@@ -37,6 +37,7 @@ final class ContainerResultCacheMetaExtensionTest extends PHPStanTestCase
 			TestGuard::of(self::getContainer()),
 			new MultiContainerRegistry(self::LoaderFile),
 		);
+		// @phpstan-ignore classConstant.deprecatedInterface
 		self::assertInstanceOf(ResultCacheMetaExtension::class, $extension);
 	}
 

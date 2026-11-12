@@ -167,6 +167,13 @@ parameters:
 			message: '#^Fetching deprecated class constant PROTECTOR_ID of class Nette\\Forms\\Form:#'
 			path: ../src/Forms/Graph/NodeContributionSummaryFactory.php
 			reportUnmatched: false
+		# ILatteFactory is declared deprecated under `if (false)` and class_alias()ed at runtime; which of the two
+		# PHPStan 2.3 reflects depends on the run (cold or from the result cache), so it is reported only sometimes.
+		-
+			identifier: classConstant.deprecatedInterface
+			message: '#^Access to constant on deprecated interface Nette\\Bridges\\ApplicationLatte\\ILatteFactory:#'
+			path: ../src/Latte/Customs/EngineSource.php
+			reportUnmatched: false
 
 		# The analysed-paths universe walk reuses PHPStan's own file finder.
 		-
@@ -252,9 +259,10 @@ parameters:
 		-
 			identifiers: [phpstanApi.interface, phpstanApi.method]
 			path: ../src/Latte/Rule/LatteProvenanceTipRegistry.php
-		# Mirrors RichParser's tagged-visitor loop; the tag name is only exposed as this constant.
+		# Mirrors RichParser's visitor loop; the collection the @api Container::getExtensionsCollection()
+		# returns is not @api itself.
 		-
-			identifier: phpstanApi.classConstant
+			identifier: phpstanApi.method
 			path: ../src/Latte/Postprocess/RichAttributeDecorator.php
 		# Ports WrongVariableNameInVarTagRule + VarTagTypeRuleHelper, which have no BC-promised equivalent.
 		-
@@ -294,16 +302,10 @@ parameters:
 		-
 			identifier: phpstanApi.constructor
 			path: ../tests/Unit/Latte/Bridge/Discovery/PreAnalysisIndexBuilderTest.php
-		# fixNode() is the official fixer API despite its @internal tag; the diff getter is how the no-fix pin reads it.
-		-
-			identifier: method.internal
-			path: ../tests/Unit/Latte/Rule/LatteFixStrippingRuleFileErrorTest.php
+		# The fixed-diff getter is @internal; it is how the no-fix pin reads it.
 		-
 			identifier: method.internal
 			path: ../tests/Unit/Latte/Rule/LatteDiagnosticRuleTest.php
-		-
-			identifier: method.internal
-			path: ../tests/Unit/Latte/Rule/Fixtures/
 
 		# Tests building PHPStan internals by hand.
 		-
@@ -315,9 +317,6 @@ parameters:
 		-
 			identifier: phpstanApi.constructor
 			path: ../tests/Toolkit/TestFileFinder.php
-		-
-			identifier: phpstanApi.classConstant
-			path: ../tests/Toolkit/TestFileFinder.php
 		# Version-gated groups: a test's @group set is exposed only by PHPUnit internals, and the guard's
 		# own test runs a nested suite and catches the skip to prove it reaches the result.
 		-
@@ -326,10 +325,6 @@ parameters:
 		-
 			identifiers: [new.internalClass, method.internalClass, catch.internalInterface]
 			path: ../tests/Unit/Toolkit/InstalledVersionsGuardTest.php
-		# DirectoryWalker is passed only where the installed PHPStan has it.
-		-
-			identifier: arguments.count
-			path: ../tests/Toolkit/TestFileFinder.php
 		# Called from the fixture containers, which are excluded from analysis.
 		-
 			identifier: shipmonk.deadMethod

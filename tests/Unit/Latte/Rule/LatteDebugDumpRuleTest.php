@@ -33,6 +33,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\CollectedDataEmitter;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\NodeCallbackInvoker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
@@ -2044,16 +2045,16 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	}
 
 	// Rule::processNode()'s own interface docblock overrides $scope's type to the full
-	// Scope&NodeCallbackInvoker&CollectedDataEmitter intersection (see LatteSiteScopeWriterRuleTest's
+	// Scope&NodeCallbackInvoker&CollectedDataEmitter&DependencyTracker intersection (see LatteSiteScopeWriterRuleTest's
 	// identical @return+@var pair) - a bare Scope stub satisfies every method this rule actually
 	// calls, so the extra interfaces are never exercised at runtime.
 
 	/**
-	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker
+	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker
 	 */
 	private function scopeForFile(string $file): Scope
 	{
-		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&Stub $scope */
+		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 		$scope->method('getFile')->willReturn($file);
 
@@ -2061,11 +2062,11 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	}
 
 	/**
-	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker
+	 * @return Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker
 	 */
 	private function scopeForVarOrigin(string $file, string $functionName, string $typeDescription): Scope
 	{
-		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&Stub $scope */
+		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 		$scope->method('getFile')->willReturn($file);
 		$scope->method('getFunctionName')->willReturn($functionName);

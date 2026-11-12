@@ -108,7 +108,7 @@ component-model majors reads the installed declaration (`ComponentModelAccessDyn
 [forms.md](forms.md#iterating-children)); `DicUsageProvider` uses only API both detector majors share.
 
 Latte 3.0 with nette/application and nette/forms 3.1 is allowed by the guard but not covered by CI. `lowest` resolves
-the floors `composer.json` declares — Latte 2.11.7, nette/application and nette/forms 3.1.15, phpstan/phpstan 2.2.0 on
+the floors `composer.json` declares — Latte 2.11.7, nette/application and nette/forms 3.1.15, phpstan/phpstan 2.3.5 on
 PHP 7.4 — which are the lowest versions the suite passes on: raise a floor rather than let the `lowest` suite fail. A
 test whose expectation needs a newer PHPStan skips by capability (e.g.
 `BootstrapFilesRunner::mergeNewAutoloadFunctions()`, `decimal-int-string` typing) or by version

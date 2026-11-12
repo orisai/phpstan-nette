@@ -221,7 +221,7 @@ final class CompositionState
 				$merged = $merged === null ? $slot : $merged->mergeDuplicate($slot);
 			}
 
-			if ($merged === null || $presence === null) {
+			if ($merged === null) {
 				continue;
 			}
 
@@ -331,7 +331,7 @@ final class CompositionState
 				$shape = $shape === null ? $map[$name] : $merge($shape, $map[$name]);
 			}
 
-			if ($shape === null || $pres === null) {
+			if ($shape === null) {
 				continue;
 			}
 

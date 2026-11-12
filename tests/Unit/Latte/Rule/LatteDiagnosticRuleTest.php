@@ -103,7 +103,7 @@ final class LatteDiagnosticRuleTest extends RuleTestCase
 	// NO FIXER, EVER (spec section 9b): this rule materializes every pipeline diagnostic, orphan
 	// findings among them, and those rest on UNDER-detected usage - an auto-fix would delete files
 	// that are genuinely rendered. A fixNode() payload survives into the analyser error as its fixed
-	// diff, so a null diff is the end-to-end proof that none was ever attached.
+	// diffs, so no diff is the end-to-end proof that none was ever attached.
 	public function testReportedErrorsCarryNoFixPayload(): void
 	{
 		foreach ([self::FixtureFile, self::TipFixtureFile] as $file) {
@@ -111,7 +111,7 @@ final class LatteDiagnosticRuleTest extends RuleTestCase
 			self::assertCount(1, $errors, $file);
 
 			foreach ($errors as $error) {
-				self::assertNull($error->getFixedErrorDiff(), $file);
+				self::assertSame([], $error->getFixedErrorDiffs(), $file);
 			}
 		}
 	}

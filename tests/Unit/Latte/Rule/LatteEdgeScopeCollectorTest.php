@@ -14,9 +14,11 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\TrinaryLogic;
 use PHPStan\Type\Type;
+use PHPUnit\Framework\MockObject\Stub;
 use RuntimeException;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
@@ -63,6 +65,7 @@ final class LatteEdgeScopeCollectorTest extends BaseTestCase
 	public function testSkipsWhenClassDoesNotResolveToHelpers(): void
 	{
 		$node = $this->edgeScopeCall('k', []);
+		/** @var Scope&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 		$scope->method('getFile')->willReturn('/project/a.latte');
 		$scope->method('resolveName')->willReturn('Some\\Other\\Class');
@@ -204,6 +207,7 @@ final class LatteEdgeScopeCollectorTest extends BaseTestCase
 	public function testNeverThrowsWhenScopeCooperationFailsUnexpectedly(): void
 	{
 		$node = $this->edgeScopeCall('k', [], ['x']);
+		/** @var Scope&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 		$scope->method('getFile')->willReturn('/project/a.latte');
 		$scope->method('resolveName')->willReturn(Helpers::class);
@@ -235,9 +239,11 @@ final class LatteEdgeScopeCollectorTest extends BaseTestCase
 	/**
 	 * @param array<string, string> $variableTypes
 	 * @param list<array{Expr, string}> $exprTypes
+	 * @return Scope&DependencyTracker
 	 */
 	private function scope(string $file, array $variableTypes, array $exprTypes): Scope
 	{
+		/** @var Scope&DependencyTracker&Stub $scope */
 		$scope = $this->createStub(Scope::class);
 		$scope->method('getFile')->willReturn($file);
 		$scope->method('resolveName')->willReturn(Helpers::class);

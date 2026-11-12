@@ -61,6 +61,7 @@ use const STDERR;
 // and nette/http or it does not - so the coarse channel costs nothing. This is the same
 // live-container discipline PhpFactsCache::isFresh() applies to the factory-default rung, moved to
 // the envelope that guards the consumer this value actually feeds.
+// @phpstan-ignore class.implementsDeprecatedInterface (replaced by scope-declared dependencies)
 final class LatteResultCacheMeta implements ResultCacheMetaExtension
 {
 

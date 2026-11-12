@@ -45,7 +45,11 @@ final class QualifyingTypeVisitor extends AbstractNodeVisitor
 			if ($node->keyName instanceof IdentifierTypeNode) {
 				$this->skipped[spl_object_id($node->keyName)] = true;
 			}
-		} elseif ($node instanceof GenericTypeNode && strtolower($node->type->name) === 'int') {
+		} elseif (
+			$node instanceof GenericTypeNode
+			&& $node->type instanceof IdentifierTypeNode
+			&& strtolower($node->type->name) === 'int'
+		) {
 			foreach ($node->genericTypes as $argument) {
 				if (
 					$argument instanceof IdentifierTypeNode

@@ -27,6 +27,7 @@ use PHPStan\Analyser\ResultCache\ResultCacheMetaExtension;
  * subset of the universe and ignores formatting and `//` comments, so a change outside that subset
  * — or a purely cosmetic one inside it — still restores the cache in full.
  */
+// @phpstan-ignore class.implementsDeprecatedInterface (replaced by scope-declared dependencies)
 final class FormsResultCacheMeta implements ResultCacheMetaExtension
 {
 

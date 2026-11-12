@@ -56,7 +56,7 @@ final class FormValuesParamTypeResolver implements ExpressionTypeResolverExtensi
 			return null;
 		}
 
-		[$param, $closure] = $this->findClosureParam($expr, $scope);
+		$param = $this->findClosureParam($expr, $scope);
 		if ($param === null) {
 			return null;
 		}
@@ -88,18 +88,15 @@ final class FormValuesParamTypeResolver implements ExpressionTypeResolverExtensi
 		return null;
 	}
 
-	/**
-	 * @return array{0: Param|null, 1: Closure|null}
-	 */
-	private function findClosureParam(Variable $node, Scope $scope): array
+	private function findClosureParam(Variable $node, Scope $scope): ?Param
 	{
 		if (!$scope->isInClass() || $scope->getFunctionName() === null) {
-			return [null, null];
+			return null;
 		}
 
 		$pair = $this->model->ownerAndEnclosing($scope);
 		if ($pair === null) {
-			return [null, null];
+			return null;
 		}
 
 		[, $enclosing] = $pair;
@@ -110,14 +107,14 @@ final class FormValuesParamTypeResolver implements ExpressionTypeResolverExtensi
 				if ($param->var instanceof Variable && $param->var->name === $varName) {
 					foreach ((new NodeFinder())->findInstanceOf([$closure], Variable::class) as $v) {
 						if ($v === $node) {
-							return [$param, $closure];
+							return $param;
 						}
 					}
 				}
 			}
 		}
 
-		return [null, null];
+		return null;
 	}
 
 	private function paramTypeName(Param $param): ?string

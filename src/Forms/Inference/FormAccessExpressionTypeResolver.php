@@ -111,7 +111,12 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 			return $this->propertyType($expr, $scope);
 		}
 
-		if (!$expr instanceof Variable || !is_string($expr->name)) {
+		return $expr instanceof Variable ? $this->variableType($expr, $scope) : null;
+	}
+
+	private function variableType(Variable $expr, Scope $scope): ?Type
+	{
+		if (!is_string($expr->name)) {
 			return null;
 		}
 
@@ -169,6 +174,14 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 		}
 	}
 
+	// PHPStan 2.3 resolves a variable's carrier outside Scope::getType(), while the analyzer's own
+	// getType() of that variable inside the resolution caches the uncarried type in the scope, so
+	// a receiver read through the scope can miss the carrier.
+	private function receiverType(Expr $var, Scope $scope): Type
+	{
+		return ($var instanceof Variable ? $this->variableType($var, $scope) : null) ?? $scope->getType($var);
+	}
+
 	private function offsetType(ArrayDimFetch $expr, Scope $scope): ?Type
 	{
 		if ($expr->dim === null) {
@@ -182,7 +195,7 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 		$this->resolving[$guardKey] = true;
 		try {
-			$baseType = $scope->getType($expr->var);
+			$baseType = $this->receiverType($expr->var, $scope);
 			if ($baseType instanceof FormReplicatorType) {
 				// Delegates to the type's own getOffsetValueType(): an integer offset is the inner
 				// row (identical to the old hard-coded reconstruction below), a constant string
@@ -246,7 +259,7 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 		$this->resolving[$guardKey] = true;
 		try {
-			$receiver = $scope->getType($expr->var);
+			$receiver = $this->receiverType($expr->var, $scope);
 			if (!$receiver instanceof FormControlType) {
 				return null;
 			}
@@ -274,7 +287,7 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 			$hasArg = count($args) === 1 && !$scope->getType($args[0]->value)->isNull()->yes();
 			$argType = $hasArg ? $scope->getType($args[0]->value) : null;
 
-			$base = $scope->getType($expr->var);
+			$base = $this->receiverType($expr->var, $scope);
 			if (!$base instanceof FormShapeType) {
 				return null;
 			}
@@ -378,7 +391,7 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 		$this->resolving[$guardKey] = true;
 		try {
-			$base = $scope->getType($expr->var);
+			$base = $this->receiverType($expr->var, $scope);
 			if ($property === 'values' && $base instanceof FormShapeType) {
 				return FormValuesProjector::projectObject($base->getFormShape());
 			}

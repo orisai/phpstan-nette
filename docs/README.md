@@ -124,7 +124,7 @@ includes:
 > 	netteServiceLocatorDynamicReturnType: false
 > ```
 >
-> The patch is verified against phpstan/phpstan-nette 2.0.8 – 2.0.12.
+> The patch is verified against phpstan/phpstan-nette 2.0.8 – 2.0.15.
 
 The patch path above points inside `vendor/`. On a fresh checkout the file does not exist yet when patches are
 applied, so `composer install` has to run twice.

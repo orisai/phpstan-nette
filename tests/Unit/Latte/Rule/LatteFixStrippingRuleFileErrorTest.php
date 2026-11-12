@@ -27,7 +27,7 @@ final class LatteFixStrippingRuleFileErrorTest extends BaseTestCase
 		$reflectionMethod->setAccessible(true);
 
 		/** @var IdentifierRuleError $strippedError */
-		$strippedError = $reflectionMethod->invoke(null, $originalError);
+		$strippedError = $reflectionMethod->invoke(null, $originalError, new RecordingDependencyTracker());
 
 		self::assertInstanceOf(IdentifierRuleError::class, $strippedError);
 		self::assertSame('Test message', $strippedError->getMessage());
@@ -36,6 +36,25 @@ final class LatteFixStrippingRuleFileErrorTest extends BaseTestCase
 		self::assertInstanceOf(FileRuleError::class, $strippedError);
 		self::assertSame(__FILE__, $strippedError->getFile());
 		self::assertSame('Test file description', $strippedError->getFileDescription());
+	}
+
+	public function testFileDependenciesMoveToTheScope(): void
+	{
+		$node = new ConstFetch(new Name('true'));
+		// @phpstan-ignore method.deprecated
+		$originalError = RuleErrorBuilder::message('Test message')
+			->identifier('test.fileDependency')
+			->fileDependency(__FILE__)
+			->fixNode($node, static fn (): ConstFetch => new ConstFetch(new Name('false')))
+			->build();
+
+		$reflectionMethod = new ReflectionMethod(LatteFixStrippingRule::class, 'stripFix');
+		$reflectionMethod->setAccessible(true);
+
+		$tracker = new RecordingDependencyTracker();
+		$reflectionMethod->invoke(null, $originalError, $tracker);
+
+		self::assertSame([__FILE__], $tracker->files);
 	}
 
 }

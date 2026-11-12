@@ -232,7 +232,7 @@ final class PhptTemplateExtractor
 	{
 		$entries = [];
 		$dynamic = false;
-		foreach ($tokens as $i => [, $text, $line]) {
+		foreach ($tokens as $i => [, $text]) {
 			$separator = strrpos($text, '\\');
 			$name = $separator === false ? $text : substr($text, $separator + 1);
 			if ($name !== 'StringLoader' || ($tokens[$i + 1][1] ?? null) !== '(') {

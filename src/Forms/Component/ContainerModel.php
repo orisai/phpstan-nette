@@ -573,30 +573,24 @@ final class ContainerModel
 		}
 
 		$ownerFqcn = $scope->isInClass() ? $scope->getClassReflection()->getName() : null;
-		$shape = null;
-		$component = null;
 		if ($ownerFqcn !== null) {
 			$pair = $this->ownerAndEnclosing($scope);
 			if ($pair !== null && is_string($node->name)) {
 				[$ownerNode, $enclosing] = $pair;
 				$component = $this->tracer->originComponent($ownerNode, $enclosing, $node->name);
-				if ($component !== null) {
-					$shape = $this->classComponentShape($ownerFqcn, $component, $scope);
+				$componentShape = $component !== null
+					? $this->classComponentShape($ownerFqcn, $component, $scope)
+					: null;
+				if ($component !== null && $componentShape !== null) {
+					$r = $this->walk($componentShape, array_merge([$component], $chain), $scope);
+					if ($r !== null) {
+						return $r;
+					}
 				}
 			}
 		}
 
-		if ($shape !== null && $component !== null) {
-			$r = $this->walk($shape, array_merge([$component], $chain), $scope);
-			if ($r !== null) {
-				return $r;
-			}
-
-			$shape = null;
-			$component = null;
-		}
-
-		if ($shape === null && $ownerFqcn !== null && is_string($node->name)) {
+		if ($ownerFqcn !== null && is_string($node->name)) {
 			$pair2 = $this->ownerAndEnclosing($scope);
 			if ($pair2 !== null) {
 				[$ownerNode2, $enclosing2] = $pair2;
@@ -618,12 +612,10 @@ final class ContainerModel
 			}
 		}
 
-		if ($shape === null) {
-			$classes = $scope->getType($node)->getObjectClassNames();
-			$shape = count($classes) === 1
+		$classes = $scope->getType($node)->getObjectClassNames();
+		$shape = count($classes) === 1
 			? $this->classComponentShape($classes[0], $chain[0], $scope)
 			: null;
-		}
 
 		if ($shape === null && is_string($node->name)) {
 			$plainFileShape = $this->plainFileShape($scope->getFile(), $node->name, $scope);

@@ -516,6 +516,7 @@ final class LatteResultCacheMetaTest extends BaseTestCase
 	private function phpstanParametersNotInvalidatingCache(): array
 	{
 		// The phar root off the interface this extension implements - never a hardcoded vendor path.
+		// @phpstan-ignore classConstant.deprecatedInterface
 		$fileName = (new ReflectionClass(ResultCacheMetaExtension::class))->getFileName();
 		self::assertNotFalse($fileName);
 

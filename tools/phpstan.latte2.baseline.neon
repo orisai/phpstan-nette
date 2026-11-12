@@ -55,15 +55,6 @@ parameters:
 			path: ../src/Latte/Cache/LatteResultCacheMeta.php
 
 		-
-			rawMessage: '''
-				Access to constant on deprecated interface Nette\Bridges\ApplicationLatte\ILatteFactory:
-				use Nette\Bridges\ApplicationLatte\LatteFactory
-			'''
-			identifier: classConstant.deprecatedInterface
-			count: 1
-			path: ../src/Latte/Customs/EngineSource.php
-
-		-
 			rawMessage: 'Method OriPhpstan\Nette\Latte\Includes\FactoryProvidedVars::intersect() should return array<string, array{certainty: ''happens''|''maybe''|''never''|''unknown'', type: string, class: string}> but returns array<string, array{certainty: string, type: string, class: non-falsy-string}>.'
 			identifier: return.type
 			count: 1
@@ -108,7 +99,7 @@ parameters:
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''Nette\\ComponentModel\\Container'' and Nette\ComponentModel\Container will always evaluate to true.'
 			identifier: staticMethod.alreadyNarrowedType
-			count: 2
+			count: 1
 			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
 
 		-

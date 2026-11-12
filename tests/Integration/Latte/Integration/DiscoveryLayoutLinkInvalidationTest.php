@@ -119,18 +119,14 @@ PHP);
 				. 'proceed with an empty precondition',
 			);
 
-			// Run 2: the two template store files the pre-analysis build rewrote from
-			// bootstrap-empty to their real content, plus the class index gaining the presenter -
-			// exactly as DiscoveryStoreInvalidationTest's own run 2 (ResultCacheManager::restore()
-			// hashes every analysed file BEFORE the meta extensions run, so the bytes it recorded
-			// for run 1 are the pre-build ones).
+			// Run 2: nothing, exactly as DiscoveryStoreInvalidationTest's own run 2 (the cold run
+			// hashes the analysed files after the pre-analysis build rewrote the store files).
 			$run2 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, $mappingLoader);
 			self::assertSame($run1['output'], $run2['output']);
 			self::assertStringContainsString(
-				'3 files will be reanalysed',
+				'Result cache restored. 0 files will be reanalysed.',
 				$run2['diagnostics'],
-				'run 2 must reanalyse exactly the two record-bearing store files and the class '
-				. 'index: ' . $run2['diagnostics'],
+				'run 2 must reanalyse nothing: ' . $run2['diagnostics'],
 			);
 
 			$run3 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, $mappingLoader);

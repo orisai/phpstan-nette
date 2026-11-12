@@ -4,7 +4,9 @@ namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Latte\FixSupport;
 use PhpParser\Node;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
+use PHPStan\Rules\FileDependenciesRuleError;
 use PHPStan\Rules\FileRuleError;
 use PHPStan\Rules\FixableNodeRuleError;
 use PHPStan\Rules\IdentifierRuleError;
@@ -51,16 +53,25 @@ final class LatteFixStrippingRule implements Rule
 			return $errors;
 		}
 
-		return array_map([self::class, 'stripFix'], $errors);
+		return array_map(
+			static fn (IdentifierRuleError $error): IdentifierRuleError => self::stripFix($error, $scope),
+			$errors,
+		);
 	}
 
 	// Belt-and-braces for rules that do not consult FixSupport (PHPStan core rules ship several
 	// fixNode() callers, e.g. OverridingMethodRule/OverridingPropertyRule/BacktickRule) - rules that
 	// do consult it skip fixNode() themselves, this is the fallback for everything else.
-	private static function stripFix(IdentifierRuleError $error): IdentifierRuleError
+	private static function stripFix(IdentifierRuleError $error, DependencyTracker $scope): IdentifierRuleError
 	{
 		if (!$error instanceof FixableNodeRuleError) {
 			return $error;
+		}
+
+		if ($error instanceof FileDependenciesRuleError) {
+			foreach ($error->getFileDependencies() as $file) {
+				$scope->trackFileDependency($file);
+			}
 		}
 
 		$builder = RuleErrorBuilder::message($error->getMessage())

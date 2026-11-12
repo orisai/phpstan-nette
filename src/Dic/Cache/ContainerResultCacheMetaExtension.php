@@ -13,6 +13,7 @@ use function hash_file;
 use function implode;
 use function sprintf;
 
+// @phpstan-ignore class.implementsDeprecatedInterface (replaced by scope-declared dependencies)
 final class ContainerResultCacheMetaExtension implements ResultCacheMetaExtension
 {
 
