@@ -1,0 +1,50 @@
+{varType bool $cond}
+{varType int $level}
+{varType array $items}
+{varType string $x}
+{varType string $tagName}
+
+{block sub}embedded sub block{/block}
+
+{if $cond}
+	plain
+{elseif $level > 1}
+	<p n:ifcontent>{$x}</p>
+	<div n:attr="data-x => $level"></div>
+	<div n:tag="$tagName">tag</div>
+	{capture $elseifCaptured}{$x}{/capture}
+	{control menu}
+{else}
+	<p n:ifcontent>{$x}</p>
+	{try}risky{/try}
+	{embed block sub}{/embed}
+	<div n:snippet="s1">snippet content</div>
+	{foreach $items as $item}{$item}{/foreach}
+{/if}
+
+{switch $level}
+	{case 1}
+		<p n:ifcontent>{$x}</p>
+		{capture $caseCaptured}{$x}{/capture}
+		{control menu}
+{/switch}
+
+{var $i = 0}
+{while $i < 3}
+	<p n:ifcontent>{$x}</p>
+	{control menu}
+	{do $i++}
+{/while}
+
+{for $j = 0; $j < 3; $j++}
+	<div n:attr="data-j => $j"></div>
+	{try}in for{/try}
+	{foreach $items as $item}{$item}{/foreach}
+{/for}
+
+{try}
+	<p n:ifcontent>{$x}</p>
+	{capture $tryCaptured}{$x}{/capture}
+{else}
+	<div n:tag="$tagName">caught</div>
+{/try}

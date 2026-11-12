@@ -20,9 +20,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use function array_slice;
 use function count;
@@ -60,17 +58,7 @@ final class UiMacroEliminator extends EliminatorVisitor
 	 */
 	public function leaveNode(Node $node)
 	{
-		if ($node instanceof ClassMethod && $node->stmts !== null) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
-
-		if ($node instanceof If_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
-
-		if ($node instanceof Foreach_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
+		self::normalizeStatementList($node, fn (array $stmts): array => $this->normalizeStmts($stmts));
 
 		if ($node instanceof MethodCall && $this->isUiLinkCall($node)) {
 			return new StaticCall(new FullyQualified(self::HELPERS_CLASS), new Identifier('uiLink'), $node->args);

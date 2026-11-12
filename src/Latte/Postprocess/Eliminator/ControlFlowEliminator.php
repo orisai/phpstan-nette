@@ -16,11 +16,9 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Catch_;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Finally_;
-use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\TryCatch;
 use PhpParser\Node\Stmt\Unset_;
@@ -84,21 +82,13 @@ final class ControlFlowEliminator extends EliminatorVisitor
 			return array_values(array_slice($node->stmts, 2));
 		}
 
-		if ($node instanceof ClassMethod && $node->stmts !== null) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
+		self::normalizeStatementList($node, fn (array $stmts): array => $this->normalizeStmts($stmts));
 
 		if ($node instanceof If_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-
 			$ifchanged = $this->rebuildIfchanged($node);
 			if ($ifchanged !== null) {
 				return $ifchanged;
 			}
-		}
-
-		if ($node instanceof Foreach_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
 		}
 
 		if ($node instanceof Expression && $this->isTryStash($node->expr)) {

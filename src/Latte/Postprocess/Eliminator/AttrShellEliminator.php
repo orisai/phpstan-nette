@@ -23,11 +23,9 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Finally_;
-use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\TryCatch;
 use PhpParser\NodeTraverser;
@@ -83,17 +81,7 @@ final class AttrShellEliminator extends EliminatorVisitor
 	 */
 	public function leaveNode(Node $node)
 	{
-		if ($node instanceof ClassMethod && $node->stmts !== null) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
-
-		if ($node instanceof If_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
-
-		if ($node instanceof Foreach_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
+		self::normalizeStatementList($node, fn (array $stmts): array => $this->normalizeStmts($stmts));
 
 		if ($node instanceof Echo_) {
 			$rewritten = $this->rewriteNClassEcho($node);

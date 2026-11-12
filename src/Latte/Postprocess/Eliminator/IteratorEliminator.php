@@ -14,7 +14,6 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\NodeVisitor;
@@ -50,13 +49,9 @@ final class IteratorEliminator extends EliminatorVisitor
 	 */
 	public function leaveNode(Node $node)
 	{
-		if ($node instanceof ClassMethod && $node->stmts !== null) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-		}
+		self::normalizeStatementList($node, fn (array $stmts): array => $this->normalizeStmts($stmts));
 
 		if ($node instanceof Foreach_) {
-			$node->stmts = $this->normalizeStmts($node->stmts);
-
 			return $this->rewriteWrappedForeach($node);
 		}
 
