@@ -49,6 +49,7 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsFullPrese
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsMistypedUserPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNarrowedPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNarrowedTemplateReplica;
+use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNarrowedUserReplica;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNoUserPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsNoUserTemplateReplica;
 use Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App\FactoryVarsPresenterRenderer;
@@ -99,7 +100,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			self::typedDefaultTemplate()
 				? ['flashes' => '\stdClass[]']
 				: [
-					'user' => 'Nette\Security\User|null',
+					'user' => '\Nette\Security\User|null',
 					'baseUrl' => 'string|null',
 					'basePath' => 'string|null',
 					'flashes' => '\stdClass[]',
@@ -113,7 +114,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		InstalledVersionsGuard::requireNetteLine('nette/application', '~3.1.0');
 
 		self::assertSame(
-			'Nette\Security\User|null',
+			'\Nette\Security\User|null',
 			$this->typesFor([FactoryVarsControlRenderer::class], self::FactoryDefaultLoaderFile)['user'],
 		);
 	}
@@ -203,9 +204,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		}
 
 		self::assertSame(Certainty::MAYBE, $vars['presenter']['certainty']);
-		self::assertSame('Nette\Application\UI\Presenter|null', $types['presenter']);
+		self::assertSame('\Nette\Application\UI\Presenter|null', $types['presenter']);
 		self::assertSame(Certainty::MAYBE, $vars['control']['certainty']);
-		self::assertSame('Nette\Application\UI\Control|null', $types['control']);
+		self::assertSame('\Nette\Application\UI\Control|null', $types['control']);
 	}
 
 	// A component that creates templates BOTH ways answers neither shape - the walk's OTHER verdict,
@@ -281,7 +282,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			[
 				'baseUrl' => 'string|null',
 				'basePath' => 'string|null',
-				'flashes' => 'array<stdClass>',
+				'flashes' => 'array<\\stdClass>',
 			],
 			$this->typesFor([FactoryVarsNoUserPresenter::class]),
 		);
@@ -322,20 +323,17 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	public function testDeclaredTypeComesFromTheResolvedTemplateClass(): void
 	{
 		self::assertSame(
-			['user' => 'FactoryVarsNarrowedUserReplica|null'],
+			['user' => '\\' . FactoryVarsNarrowedUserReplica::class . '|null'],
 			$this->typesFor([FactoryVarsNarrowedPresenter::class]),
 		);
 	}
 
-	// PropertyTypeResolver hands back the raw @var string, so an unqualified docblock name reaches
-	// the template scope unqualified - a pre-existing limitation of the shared property surface (the
-	// {templateType} channel resolves types the same way), pinned here because this source is the
-	// first consumer to meet it on a VENDOR-declared property set. The vendor's own DefaultTemplate
-	// writes its @var tags fully qualified, so the four variables it provides are unaffected.
-	public function testShortDocblockNameIsKeptVerbatim(): void
+	// An imported short docblock name reaches the global-namespace template scope qualified against
+	// the template class's own file, the same way the {templateType} channel resolves it.
+	public function testShortDocblockNameIsQualified(): void
 	{
 		self::assertSame(
-			['user' => 'FactoryVarsUserReplica|null'],
+			['user' => '\\' . FactoryVarsUserReplica::class . '|null'],
 			$this->typesFor([FactoryVarsShortNamePresenter::class]),
 		);
 	}
@@ -354,7 +352,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			$this->resolveFor([FactoryVarsFlashlessPresenter::class])['flashes']['certainty'],
 		);
 		self::assertSame(
-			['flashes' => 'array<stdClass>|null'],
+			['flashes' => 'array<\\stdClass>|null'],
 			$this->typesFor([FactoryVarsFlashlessPresenter::class]),
 		);
 	}
@@ -384,16 +382,15 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 	}
 
 	// REFINE, never contradict: the wired class replaces the declared one only where the declaration
-	// ADMITS it. Here it does not - an imported short name does not resolve to a class at all, which is
-	// the shape every project template class's @var has under this project's own coding standard - so
-	// the declaration stands, while availability, which the declaration has no say in, is still
-	// definite. The admitting direction is the vendor DefaultTemplate row above.
+	// ADMITS it. Here it does not - the declared FactoryVarsUserReplica is no supertype of the wired
+	// service - so the declaration stands, while availability, which the declaration has no say in, is
+	// still definite. The admitting direction is the vendor DefaultTemplate row above.
 	public function testWiredUserRefinesOnlyASupertypeDeclaration(): void
 	{
 		$vars = $this->resolveFor([FactoryVarsFullPresenter::class], self::WiredLoaderFile);
 
 		self::assertSame(Certainty::HAPPENS, $vars['user']['certainty']);
-		self::assertSame('FactoryVarsUserReplica', $vars['user']['type']);
+		self::assertSame('\\' . FactoryVarsUserReplica::class, $vars['user']['type']);
 	}
 
 	// NO CONTAINER, NO CLAIM: with no loader file there is nothing to prove the optional
@@ -464,7 +461,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		self::assertSame(Certainty::MAYBE, $vars['baseUrl']['certainty']);
 		self::assertSame(
 			[
-				'user' => 'Nette\Security\User|null',
+				'user' => '\Nette\Security\User|null',
 				'baseUrl' => 'string|null',
 				'basePath' => 'string|null',
 				'flashes' => '\stdClass[]',
@@ -511,13 +508,9 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 		);
 	}
 
-	// Two renderers declaring the same key with imported SHORT class names
-	// (FactoryVarsUserReplica / FactoryVarsNarrowedUserReplica): PropertyTypeResolver hands back the
-	// raw @var string, so class_exists() on either short name answers false and of() returns mixed
-	// through that gate alone, never reaching the ancestor walk - it never even asks whether the two
-	// are related. The genuinely-unrelated-classes branch is covered separately by
-	// CommonClassAncestorTest::testUnrelatedClassesHaveNoCommonAncestor. The related case is the row
-	// below it.
+	// Two renderers declaring the same key with unrelated classes (FactoryVarsUserReplica /
+	// FactoryVarsNarrowedUserReplica): the ancestor walk finds no common class and of() returns mixed.
+	// The related case is the row below it.
 	public function testMultiRendererWidensDisagreeingTypes(): void
 	{
 		$vars = $this->resolveFor([FactoryVarsFullPresenter::class, FactoryVarsNarrowedPresenter::class]);
@@ -624,7 +617,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 						'basePath' => 'string|null',
 						'baseUrl' => 'string|null',
 						'flashes' => '\stdClass[]',
-						'user' => 'Nette\Security\User|null',
+						'user' => '\Nette\Security\User|null',
 					],
 				$contexts[0]->getVars(),
 			);
@@ -683,7 +676,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			self::assertCount(1, $contexts);
 			self::assertSame('\stdClass[]', $contexts[0]->getVars()['flashes']);
 			if (!self::typedDefaultTemplate()) {
-				self::assertSame('Nette\Security\User|null', $contexts[0]->getVars()['user']);
+				self::assertSame('\Nette\Security\User|null', $contexts[0]->getVars()['user']);
 			}
 		} finally {
 			FileSystem::delete($dir);
@@ -772,7 +765,7 @@ final class FactoryProvidedVarsTest extends PHPStanTestCase
 			self::assertArrayNotHasKey('control', $vars);
 			self::assertSame('\stdClass[]', $vars['flashes']);
 			if (!self::typedDefaultTemplate()) {
-				self::assertSame('Nette\Security\User|null', $vars['user']);
+				self::assertSame('\Nette\Security\User|null', $vars['user']);
 			}
 		} finally {
 			FileSystem::delete($dir);

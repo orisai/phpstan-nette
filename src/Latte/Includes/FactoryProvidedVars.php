@@ -528,11 +528,6 @@ final class FactoryProvidedVars
 	// standing: the property is still written, so availability is unaffected, but overruling a
 	// template class's own declared type on the strength of a container read is a claim this source
 	// has no business making.
-	//
-	// The class_exists() half carries more weight than it looks: PropertyTypeResolver hands back the
-	// RAW @var string, and an imported short name - the only form this project's own coding standard
-	// permits its classes to write - never resolves, so a project template class declaring its own
-	// $user is refused refinement by that clause rather than by is_a().
 	private function typeOf(string $name, string $declaredType): string
 	{
 		$dependency = self::FROM_DEPENDENCY[$name] ?? null;

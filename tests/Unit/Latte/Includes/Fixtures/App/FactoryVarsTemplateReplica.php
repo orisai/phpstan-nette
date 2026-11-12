@@ -7,9 +7,7 @@ use stdClass;
 
 // The vendor DefaultTemplate's own declared surface, replicated: every property untyped with a @var
 // docblock, and $flashes the only one carrying a default. The names are IMPORTED rather than spelled
-// out, which this project's own coding standard requires - and PropertyTypeResolver hands back the
-// raw @var string, so the short name is what reaches the template scope (see
-// FactoryProvidedVarsTest::testShortDocblockNameIsKeptVerbatim for that limitation).
+// out, which this project's own coding standard requires.
 class FactoryVarsTemplateReplica extends Template
 {
 

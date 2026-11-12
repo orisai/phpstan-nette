@@ -34,9 +34,8 @@ final class CommonClassAncestor
 		$left = ltrim($a, '\\');
 		$right = ltrim($b, '\\');
 
-		// class_exists() is the same gate FactoryProvidedVars::readTemplateClass() uses, and it is
-		// load-bearing here for a second reason: PropertyTypeResolver hands back the RAW @var string,
-		// so an imported short name never resolves and falls through to the no-answer below.
+		// class_exists() is the same gate FactoryProvidedVars::readTemplateClass() uses; a docblock
+		// type that is no bare class name (a union, a generic) falls through to the no-answer below.
 		if (!class_exists($left) || !class_exists($right)) {
 			return self::NO_COMMON_ANCESTOR;
 		}

@@ -6,9 +6,7 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
 use ReflectionProperty;
-use function in_array;
 use function preg_match;
-use function preg_match_all;
 
 final class PropertyTypeResolver
 {
@@ -41,9 +39,7 @@ final class PropertyTypeResolver
 	{
 		$doc = $property->getDocComment();
 		if ($doc !== false && preg_match('~@var\s+(.+?)(?:\s+\$\w+.*)?\s*(?:\*/)?\s*$~m', $doc, $m) === 1) {
-			$type = $m[1];
-
-			return in_array($type, self::classTemplateParamNames($property), true) ? 'mixed' : $type;
+			return PhpDocTypeQualifier::qualify($m[1], ClassNameScope::forProperty($property));
 		}
 
 		$type = $property->getType();
@@ -54,26 +50,6 @@ final class PropertyTypeResolver
 		}
 
 		return 'mixed';
-	}
-
-	// @extends binding a templateType class's @template parameter (e.g. UITemplate<ChatWindowControl>
-	// binding C) to a concrete class is phase-2 depth this pipeline doesn't have; until then, a
-	// property typed as the bare template parameter name (e.g. `@var C`) must not leak that letter out
-	// as if it were a real class name.
-
-	/**
-	 * @return list<string>
-	 */
-	private static function classTemplateParamNames(ReflectionProperty $property): array
-	{
-		$doc = $property->getDeclaringClass()->getDocComment();
-		if ($doc === false) {
-			return [];
-		}
-
-		preg_match_all('~@template\s+(\w+)~', $doc, $m);
-
-		return $m[1];
 	}
 
 }

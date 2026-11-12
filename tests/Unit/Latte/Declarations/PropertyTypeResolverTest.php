@@ -6,8 +6,14 @@ use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\DeclaredSurfaceFixture;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\Base\BaseOnly;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\Imported\ImportedOption;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\NameScopeTemplate;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\SiblingOption;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\Traits\TraitOnly;
 use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateParamPropertyFixture;
 use Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Support\FixtureTemplate;
+use function ksort;
 
 final class PropertyTypeResolverTest extends BaseTestCase
 {
@@ -55,6 +61,42 @@ final class PropertyTypeResolverTest extends BaseTestCase
 			],
 			PropertyTypeResolver::resolveAllPublic(DeclaredSurfaceFixture::class),
 		);
+	}
+
+	// The generated template class lives in the global namespace, so a docblock type must arrive
+	// there fully qualified against the file that declares the property - the template class's own,
+	// a parent's or a trait's.
+	public function testDocblockTypesResolveAgainstTheDeclaringFilesNameScope(): void
+	{
+		$sibling = '\\' . SiblingOption::class;
+		$imported = '\\' . ImportedOption::class;
+		$template = '\\' . NameScopeTemplate::class;
+		$expected = [
+			'siblings' => "list<$sibling>",
+			'imported' => "array<int, $imported>",
+			'nested' => "array<string, list<$imported>>",
+			'shape' => "array{first: $sibling, second?: $imported|null, $template::ModeA: int}",
+			'nullableUnion' => "$sibling|null",
+			'nullable' => "?$imported",
+			'mode' => "$template::Mode*",
+			'selfMode' => "$template::Mode*",
+			'partiallyQualified' => $imported,
+			'fullyQualified' => $sibling,
+			'range' => 'int<0, max>',
+			'keyword' => 'non-empty-string',
+			'templated' => 'list<mixed>',
+			'classString' => "class-string<$sibling>",
+			'described' => "array<int, $sibling>",
+			'native' => SiblingOption::class . '|null',
+			'fromTrait' => 'list<\\' . TraitOnly::class . '>',
+			'inherited' => "list<$imported>",
+			'inheritedSibling' => '\\' . BaseOnly::class . '|null',
+		];
+		$actual = PropertyTypeResolver::resolveAllPublic(NameScopeTemplate::class);
+		ksort($expected);
+		ksort($actual);
+
+		self::assertSame($expected, $actual);
 	}
 
 }

@@ -62,9 +62,9 @@ final class CommonClassAncestorTest extends BaseTestCase
 		);
 	}
 
-	// The raw @var strings PropertyTypeResolver hands back carry no leading backslash; both spellings
-	// must reach the same class, because one side of a merge is often a declaration and the other a
-	// refined FQCN.
+	// A native property type PropertyTypeResolver hands back carries no leading backslash; both
+	// spellings must reach the same class, because one side of a merge is often a declaration and the
+	// other a refined FQCN.
 	public function testLeadingBackslashIsNotSignificantOnInput(): void
 	{
 		self::assertSame(

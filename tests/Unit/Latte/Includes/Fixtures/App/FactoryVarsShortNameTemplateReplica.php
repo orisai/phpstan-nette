@@ -4,9 +4,7 @@ namespace Tests\OriPhpstan\Nette\Unit\Latte\Includes\Fixtures\App;
 
 use Nette\Bridges\ApplicationLatte\Template;
 
-// A single-property replica dedicated to the raw-@var-string limitation: whatever the docblock
-// spells is what the template scope sees, and an imported short name does not resolve back to its
-// FQCN on the way through.
+// A single-property replica whose docblock names its class by an unqualified short name.
 final class FactoryVarsShortNameTemplateReplica extends Template
 {
 
