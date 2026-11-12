@@ -1,10 +1,8 @@
 parameters:
 	customRulesetUsed: true
-	# Every spawn-based Latte integration test built its fixtures/assertions against narrowing
-	# being live - the opt-in flag's own library default is false, so this shared fixture opts back
-	# in to keep every test in this directory byte-for-byte unaffected. Flag-off behaviour has its
-	# own dedicated test/config (NarrowingFlagTest) that overrides
-	# orisai.nette.latte.narrowing.enabled explicitly instead of relying on this file.
+	# On for direct users of this file; LattePhpstanConfig turns it off for a spawn which names no
+	# narrowing store (see its create()), since a run creates and writes the store. Flag-off
+	# behaviour has its own dedicated test/config (NarrowingFlagTest).
 	orisai:
 		nette:
 			latte:

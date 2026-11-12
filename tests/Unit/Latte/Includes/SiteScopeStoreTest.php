@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use function getmypid;
+use function str_replace;
 use function sys_get_temp_dir;
 use function uniqid;
 
@@ -117,10 +118,10 @@ final class SiteScopeStoreTest extends BaseTestCase
 		}
 	}
 
-	// Pins EdgeFingerprint's bootstrap adjudication: `make
-	// phpstan-narrowing-init` creates an empty-but-present slice where none existed before - that
-	// transition must NOT change that includer's sliceHash(), or the one-time bootstrap would
-	// spuriously invalidate every .latte file's LATTE_EDGE_FINGERPRINT.
+	// Pins EdgeFingerprint's bootstrap adjudication: the first run over an absent store creates an
+	// empty-but-present slice where none existed before - that transition must NOT change that
+	// includer's sliceHash(), or creating the store would spuriously invalidate every .latte
+	// file's LATTE_EDGE_FINGERPRINT.
 	public function testExistingEmptySliceYieldsSameSliceHashAsMissingDirectory(): void
 	{
 		$dir = $this->scratchDir();
@@ -417,33 +418,167 @@ final class SiteScopeStoreTest extends BaseTestCase
 		}
 	}
 
-	public function testPruneExceptDeletesOnlySlicesOfIncludersOutsideTheGivenSet(): void
+	public function testASliceRecordsItsIncluderInTheHeader(): void
 	{
 		$dir = $this->scratchDir();
-		FileSystem::createDir($dir);
 
 		try {
-			$path = $dir . '/store';
-			SiteScopeStore::bootstrap($path, ['a.latte', 'gone.latte', 'also-gone.latte']);
-			FileSystem::write($path . '/README', 'kept');
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, ["app/it's\\odd.latte"]);
 
-			$store = new SiteScopeStore($path);
-			self::assertSame(
-				[
-					SliceClassName::forPath('also-gone.latte') . '.php',
-					SliceClassName::forPath('gone.latte') . '.php',
-				],
-				$store->pruneExcept(['a.latte', 'new.latte']),
+			self::assertStringContainsString(
+				"\t\tpublic const INCLUDER = 'app/it\\'s\\\\odd.latte';\n",
+				FileSystem::read($this->sliceFile($storeDir, "app/it's\\odd.latte")),
 			);
-
-			self::assertFileExists($this->sliceFile($path, 'a.latte'));
-			self::assertFileDoesNotExist($this->sliceFile($path, 'gone.latte'));
-			self::assertFileDoesNotExist($this->sliceFile($path, 'also-gone.latte'));
-			self::assertFileExists($path . '/README');
-			self::assertSame([], $store->pruneExcept(['a.latte']));
 		} finally {
 			FileSystem::delete($dir);
 		}
+	}
+
+	public function testPruneDeletesSlicesWhoseIncluderFileIsGone(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			$projectRoot = $dir . '/project';
+			FileSystem::write($projectRoot . '/app/a.latte', '');
+			FileSystem::write($projectRoot . "/app/it's\\odd.latte", '');
+			SiteScopeStore::bootstrap(
+				$storeDir,
+				['app/a.latte', "app/it's\\odd.latte", 'app/gone.latte', 'app/also-gone.latte'],
+			);
+			FileSystem::write($storeDir . '/README', 'kept');
+
+			$store = new SiteScopeStore($storeDir);
+			self::assertSame(
+				[
+					SliceClassName::forPath('app/also-gone.latte') . '.php',
+					SliceClassName::forPath('app/gone.latte') . '.php',
+				],
+				$store->pruneDeletedIncluders($projectRoot, [], false),
+				'existing templates keep their slices whether or not the run wrote them',
+			);
+
+			self::assertFileExists($this->sliceFile($storeDir, 'app/a.latte'));
+			self::assertFileExists($this->sliceFile($storeDir, "app/it's\\odd.latte"));
+			self::assertFileDoesNotExist($this->sliceFile($storeDir, 'app/gone.latte'));
+			self::assertFileExists($storeDir . '/README');
+			self::assertSame([], $store->pruneDeletedIncluders($projectRoot, [], true));
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testPruneNeverDeletesASliceWrittenByThisRun(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			SiteScopeStore::bootstrap($storeDir, ['app/a.latte']);
+
+			$store = new SiteScopeStore($storeDir);
+			self::assertSame([], $store->pruneDeletedIncluders($dir . '/project', ['app/a.latte'], true));
+			self::assertFileExists($this->sliceFile($storeDir, 'app/a.latte'));
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testAHeaderlessSliceIsAttributedToTheIncluderOfItsEntries(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			$projectRoot = $dir . '/project';
+			FileSystem::write($projectRoot . '/app/a.latte', '');
+			$this->writeHeaderlessSlice(
+				$storeDir,
+				'app/a.latte',
+				[SiteScopeStore::key('app/a.latte', 1, 'x.latte', 'ctx')],
+			);
+			$this->writeHeaderlessSlice(
+				$storeDir,
+				'app/gone.latte',
+				[SiteScopeStore::key('app/gone.latte', 1, 'x.latte', 'ctx')],
+			);
+
+			$store = new SiteScopeStore($storeDir);
+			self::assertEquals(
+				$this->entry('sha', ['x' => 'int'], []),
+				$store->get(SiteScopeStore::key('app/a.latte', 1, 'x.latte', 'ctx'), 'sha'),
+				'a slice without the header still reads',
+			);
+			self::assertSame(
+				[SliceClassName::forPath('app/gone.latte') . '.php'],
+				$store->pruneDeletedIncluders($projectRoot, [], false),
+			);
+			self::assertFileExists($this->sliceFile($storeDir, 'app/a.latte'));
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testAnUnattributedSliceIsPrunedOnlyWhenAsked(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			$projectRoot = $dir . '/project';
+			FileSystem::createDir($projectRoot);
+			$this->writeHeaderlessSlice($storeDir, 'app/empty.latte', []);
+			FileSystem::write(
+				$this->sliceFile($storeDir, 'app/copied.latte'),
+				str_replace(
+					"'app/source.latte'",
+					"'app/elsewhere.latte'",
+					$this->bootstrappedSlice($dir . '/other', 'app/source.latte'),
+				),
+			);
+
+			$store = new SiteScopeStore($storeDir);
+			self::assertSame([], $store->pruneDeletedIncluders($projectRoot, [], false));
+			self::assertSame(
+				[
+					SliceClassName::forPath('app/copied.latte') . '.php',
+					SliceClassName::forPath('app/empty.latte') . '.php',
+				],
+				$store->pruneDeletedIncluders($projectRoot, [], true),
+				'a header naming another template\'s slice does not attribute the file',
+			);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	/**
+	 * @param list<string> $keys
+	 */
+	private function writeHeaderlessSlice(string $storeDir, string $includerRel, array $keys): void
+	{
+		$entries = '';
+		foreach ($keys as $key) {
+			$entries .= "\t'" . $key . "' => [\n\t\t'args' => [],\n\t\t'sha' => 'sha',\n\t\t'vars' => [\n\t\t\t'x' => 'int',\n\t\t],\n\t],\n";
+		}
+
+		$className = SliceClassName::forPath($includerRel);
+		FileSystem::write(
+			$this->sliceFile($storeDir, $includerRel),
+			"<?php declare(strict_types = 1);\n\n"
+				. "if (!class_exists(\\{$className}::class, false)) {\n"
+				. "\tclass {$className}\n\t{\n\n\t\tpublic const CAPTURES_HASH = 'x';\n\n\t}\n}\n\n"
+				. 'return ' . ($entries === '' ? '[]' : "[\n" . $entries . ']') . ";\n",
+		);
+	}
+
+	private function bootstrappedSlice(string $storeDir, string $includerRel): string
+	{
+		SiteScopeStore::bootstrap($storeDir, [$includerRel]);
+
+		return FileSystem::read($this->sliceFile($storeDir, $includerRel));
 	}
 
 	/**

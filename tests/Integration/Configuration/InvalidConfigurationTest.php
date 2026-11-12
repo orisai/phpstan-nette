@@ -4,6 +4,7 @@ namespace Tests\OriPhpstan\Nette\Integration\Configuration;
 
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
+use function array_column;
 use function implode;
 use function sprintf;
 use function strpos;
@@ -38,7 +39,7 @@ final class InvalidConfigurationTest extends BaseTestCase
 	 */
 	public function testValidConfigurationIsAccepted(): void
 	{
-		$result = $this->project->analyse([
+		$configuration = [
 			'fileExtensions' => ['php', 'latte'],
 			'orisai' => ['nette' => [
 				'forms' => ['catalogs' => ['X']],
@@ -57,8 +58,17 @@ final class InvalidConfigurationTest extends BaseTestCase
 				],
 				'dic' => ['containerLoader' => $this->project->path('container-loader.php')],
 			]],
-		], ['src']);
+		];
 
+		$first = $this->project->analyse($configuration, ['src']);
+		self::assertSame([], $first['errors'], $first['stderr']);
+		self::assertSame(
+			['orisai.nette.latte.narrowingStoreChanged'],
+			array_column($first['messages'], 'identifier'),
+			'the first run creates the narrowing store',
+		);
+
+		$result = $this->project->analyse($configuration, ['src']);
 		self::assertSame([], $result['errors'], $result['stderr']);
 		self::assertSame([], $result['messages']);
 		self::assertSame(0, $result['exitCode'], $result['stderr']);

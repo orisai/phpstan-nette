@@ -207,7 +207,7 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 				"$relSrc/narrow-target.latte:1:Cannot call method getMessage() on Exception|null.\n"
 				. "$relSrc/sitescope/" . SliceClassName::forPath("$relSrc/narrow-includer.latte") . '.php:1:'
 				. "The Latte narrowing store changed for 1 including template: $relSrc/narrow-includer.latte. "
-				. "Run the analysis again until this error disappears, then commit the store.\n"
+				. "Run PHPStan again until this error is gone, then commit the regenerated store files.\n"
 				. "$relSrc/unrelated.latte:1:Undefined variable: \$undefinedVar\n",
 				$run1['output'],
 				'run 1 (empty slices, cold cache) must report the wide nullability error: ' . $run1['diagnostics'],

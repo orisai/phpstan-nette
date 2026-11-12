@@ -31,13 +31,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - shipmonk/dead-code-detector 1.x support for the DI container usage provider (`config/dic-dead-code.neon`), next
   to 0.15; the user guide documents what the provider marks as used and what it does not
 - Latte discovery follows `Presenter::switch()` (nette/application 3.2) as a view mutation
-- Latte: `vendor/bin/latte-converge` runs `phpstan analyse` again while the narrowing store changes; `--prune` removes
-  the store files of deleted templates
+- Latte: an ordinary run creates an absent narrowing store directory and removes the store files of deleted templates,
+  also when it analyses only part of the paths; each store file records its including template
 
 ### Changed
 
 - Latte: a run which rewrites the narrowing store reports the non-ignorable `orisai.nette.latte.narrowingStoreChanged`,
-  so CI fails on an outdated store without comparing the git state
+  which asks to run PHPStan again and commit the regenerated store files, so CI fails on an outdated store without
+  comparing the git state; with `reuseCollectedDataRuleErrors` a run which rewrote the store is never reused
 - Parameters are nested under `orisai: nette:` instead of `orisaiNette:`, and the services are named `orisai.nette.*`
 - Error identifiers start with `orisai.nette.` instead of `orisaiNette.`
 - `orisai.nette` is validated by the extension (nette/schema is required) rather than by PHPStan, so other orisai

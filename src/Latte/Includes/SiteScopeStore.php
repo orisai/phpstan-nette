@@ -3,8 +3,10 @@
 namespace OriPhpstan\Nette\Latte\Includes;
 
 use Nette\Utils\FileSystem;
+use Nette\Utils\Strings;
 use OriPhpstan\Nette\Latte\Compile\SliceClassName;
 use Throwable;
+use function array_key_first;
 use function array_values;
 use function basename;
 use function glob;
@@ -14,6 +16,7 @@ use function is_dir;
 use function is_file;
 use function is_string;
 use function ksort;
+use function preg_match;
 use function sha1;
 use function sort;
 use function str_repeat;
@@ -80,6 +83,11 @@ final class SiteScopeStore
 		return is_file(self::sliceFilePath($this->storeDirPath, $includerRel));
 	}
 
+	public function directory(): string
+	{
+		return $this->storeDirPath;
+	}
+
 	public function slicePath(string $includerRel): string
 	{
 		return self::sliceFilePath($this->storeDirPath, $includerRel);
@@ -135,22 +143,37 @@ final class SiteScopeStore
 		return array_values($changed);
 	}
 
+	// A slice goes when the includer it records is no longer a file under $projectRoot - a fact on
+	// disk, so a run over part of the paths or one served from the result cache never prunes the
+	// slice of a template it merely did not analyse. A slice which records no includer (written
+	// before the header existed, and empty) goes only when $pruneUnattributed: the run analysed
+	// every configured path and still did not write it.
+
 	/**
-	 * @param list<string> $includerRels
+	 * @param list<string> $writtenIncluderRels
 	 * @return list<string>
 	 */
-	public function pruneExcept(array $includerRels): array
+	public function pruneDeletedIncluders(
+		string $projectRoot,
+		array $writtenIncluderRels,
+		bool $pruneUnattributed
+	): array
 	{
-		$kept = [];
-		foreach ($includerRels as $rel) {
-			$kept[SliceClassName::forPath($rel) . '.php'] = true;
+		$written = [];
+		foreach ($writtenIncluderRels as $rel) {
+			$written[SliceClassName::forPath($rel) . '.php'] = true;
 		}
 
 		$pruned = [];
 		$files = glob($this->storeDirPath . '/LatteSlice_*.php');
 		foreach ($files === false ? [] : $files as $file) {
 			$name = basename($file);
-			if (isset($kept[$name])) {
+			if (isset($written[$name])) {
+				continue;
+			}
+
+			$includerRel = self::recordedIncluder($file);
+			if ($includerRel === null ? !$pruneUnattributed : is_file($projectRoot . '/' . $includerRel)) {
 				continue;
 			}
 
@@ -158,7 +181,10 @@ final class SiteScopeStore
 			$pruned[] = $name;
 		}
 
-		$this->loadedEntries = null;
+		if ($pruned !== []) {
+			$this->loadedEntries = null;
+		}
+
 		sort($pruned, SORT_STRING);
 
 		return $pruned;
@@ -258,6 +284,7 @@ final class SiteScopeStore
 			. "if (!class_exists(\\{$className}::class, false)) {\n"
 			. "\tclass {$className}\n"
 			. "\t{\n\n"
+			. "\t\tpublic const INCLUDER = " . self::exportString($includerRel) . ";\n\n"
 			. "\t\tpublic const CAPTURES_HASH = '{$hash}';\n\n"
 			. "\t}\n"
 			. "}\n\n"
@@ -267,6 +294,34 @@ final class SiteScopeStore
 	private static function sliceFilePath(string $storeDirPath, string $includerRel): string
 	{
 		return $storeDirPath . '/' . SliceClassName::forPath($includerRel) . '.php';
+	}
+
+	// The INCLUDER header, else the includer of the first entry key (slices written before the
+	// header); either one counts only when the file name is the one that includer's slice gets.
+	private static function recordedIncluder(string $file): ?string
+	{
+		if (preg_match(
+			"~^\\t\\tpublic const INCLUDER = '((?:[^'\\\\]|\\\\.)*)';$~m",
+			FileSystem::read($file),
+			$match,
+		) === 1) {
+			$includerRel = strtr($match[1], ['\\\\' => '\\', "\\'" => "'"]);
+		} else {
+			$firstKey = array_key_first(self::loadOne($file));
+			$includerRel = $firstKey !== null ? Strings::before($firstKey, '#') : null;
+		}
+
+		if (
+			$includerRel === null
+			|| $includerRel === ''
+			|| basename($file) !== SliceClassName::forPath(
+				$includerRel,
+			) . '.php'
+		) {
+			return null;
+		}
+
+		return $includerRel;
 	}
 
 	/**

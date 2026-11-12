@@ -23,7 +23,7 @@ use function uniqid;
 use const PHP_BINARY;
 use const SORT_STRING;
 
-// Convergence: plain repeated `make phpstan`
+// Convergence: plain repeated `phpstan analyse`
 // runs, warm result cache kept throughout (the whole point of the slice-file design - no
 // clearing), converge within depth+1 runs. This depth-3 chain (A -> B -> C, narrowing at each
 // hop: A's own {if $x !== null} guard narrows the edge it captures for B; B forwards $x on
@@ -55,9 +55,8 @@ final class NarrowingConvergenceTest extends BaseTestCase
 		try {
 			$this->writeChainFixture($srcDir);
 
-			// Slices seeded empty (mirrors
-			// `make phpstan-narrowing-init`): the target->slice dependency edge must exist BEFORE
-			// any capture can propagate through it.
+			// Slices seeded empty: the target->slice dependency edge must exist BEFORE any capture
+			// can propagate through it.
 			SiteScopeStore::bootstrap($storeDir, [
 				"$relSrc/A.latte",
 				"$relSrc/B.latte",

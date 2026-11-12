@@ -160,7 +160,7 @@ final class DeterminismTest extends BaseTestCase
 	// spawns of the SAME store agree) AND cold==warm (a cold spawn agrees with a warm repeat).
 
 	// Two SEPARATE store directories, both bootstrapped empty and never shared: the writer runs
-	// unconditionally whenever narrowing is enabled and the store directory exists (it is NOT
+	// unconditionally whenever narrowing is enabled, creating the store directory (it is NOT
 	// itself a stable fixpoint for this fixture - A's own {if $x !== null} guard is a genuine
 	// capturable anchor, so a single real analysis run already writes a non-empty entry). Sharing
 	// one store directory across both spawns would let the first spawn's own write contaminate

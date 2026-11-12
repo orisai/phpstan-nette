@@ -19,15 +19,10 @@ use const PATHINFO_FILENAME;
 use const PHP_BINARY;
 use const SORT_STRING;
 
-// Pins `make phpstan-narrowing-init`'s bootstrap mechanism (Makefile: mkdir the store directory,
-// then a completely ordinary `make phpstan` run) - proves it derives the .latte universe from the
-// SAME resolved %paths% source a real analysis run walks, never a hand-duplicated path list (the
-// project's own "no hardcoded config-derived lists" convention). No extra bootstrap-specific flag
-// exists for this: LatteSiteScopeWriterRule's pre-existing "materialize an empty slice for every
-// analyzed includer" behavior (SiteScopeStore::replaceForIncluders()), combined with
-// LatteAnalyzedFileMarkerCollector firing on every analyzed .latte file whenever
-// orisai.nette.latte.narrowing.enabled is on (true on this test's own config, same as the real gate), already
-// produces the full universe once the store directory exists before the run starts.
+// An absent store directory needs no init step: the first plain run creates it with one slice
+// per template of the universe LatteUniverse derives from the resolved %paths% - every analysed
+// includer gets a slice (SiteScopeStore::replaceForIncluders()), empty or not, because
+// LatteAnalyzedFileMarkerCollector marks each analysed .latte file.
 /**
  * @group latte2
  */
@@ -36,7 +31,7 @@ final class NarrowingInitTest extends BaseTestCase
 
 	private const REAL_CONFIG_PATH = __DIR__ . '/Fixtures/integration.neon';
 
-	public function testBootstrapMaterializesExactlyOneSlicePerLatteFileInTheResolvedUniverse(): void
+	public function testTheFirstRunCreatesExactlyOneSlicePerLatteFileInTheResolvedUniverse(): void
 	{
 		$projectRoot = dirname(__DIR__, 4);
 		$scratch = $this->createScratchDir($projectRoot);
@@ -48,9 +43,7 @@ final class NarrowingInitTest extends BaseTestCase
 			FileSystem::write($srcDir . '/nested/b.latte', "world\n");
 			FileSystem::write($srcDir . '/c.latte', "{include 'a.latte'}\n");
 
-			// Mirrors `make phpstan-narrowing-init` exactly: mkdir the (empty) store directory, then
-			// a plain analyse run - no bootstrap flag, no hand-duplicated path list.
-			FileSystem::createDir($storeDir);
+			self::assertDirectoryDoesNotExist($storeDir);
 
 			$isolated = LattePhpstanConfig::create(
 				self::REAL_CONFIG_PATH,
@@ -96,7 +89,7 @@ final class NarrowingInitTest extends BaseTestCase
 			self::assertSame(
 				$expectedClassNames,
 				$actualClassNames,
-				'the bootstrapped slice set must match the analysis-time universe exactly - neither '
+				'the created slice set must match the analysis-time universe exactly - neither '
 				. 'missing a real includer nor materializing a phantom one: ' . $process->getOutput()
 				. $process->getErrorOutput(),
 			);

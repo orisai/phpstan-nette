@@ -5,6 +5,7 @@ namespace Tests\OriPhpstan\Nette\Toolkit;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
 use Throwable;
+use function array_key_exists;
 use function array_merge;
 use function array_shift;
 use function explode;
@@ -42,7 +43,9 @@ final class LattePhpstanConfig
 	 * block (later entries win on key collision, matching NEON's own semantics) - so callers must not
 	 * repeat a base key here. Values are real PHP values, encoded by Neon::encode(): pass a bool for a
 	 * flag, not the string 'true'. orisai.nette.latte.narrowing.storePath always defaults to a scratch path under
-	 * $tmpDir; pass it explicitly here only to point a spawn at a real/shared store on purpose.
+	 * $tmpDir; pass it explicitly here only to point a spawn at a real/shared store on purpose. Narrowing is on
+	 * only for a spawn which passes a store path or the enabled flag: a run creates and writes the store, so a
+	 * spawn which never asked for one would report its creation.
 	 * @param list<string> $extraBootstrapFiles files appended to the included config's own
 	 * bootstrapFiles - a scratch corpus whose classes must be class_exists()-visible (Latte's
 	 * {templateType} resolution is a runtime autoload, not a ReflectionProvider read) has no other
@@ -72,6 +75,10 @@ final class LattePhpstanConfig
 		$mergedParameters = array_merge(
 			[
 				'orisai.nette.latte.enabled' => true,
+				'orisai.nette.latte.narrowing.enabled' => array_key_exists(
+					'orisai.nette.latte.narrowing.storePath',
+					$extraParameters,
+				),
 				'orisai.nette.latte.narrowing.storePath' => $tmpDir . '/sitescope-unused',
 				'orisai.nette.latte.discovery.storePath' => $tmpDir . '/discovery-unused',
 			],

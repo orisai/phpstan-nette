@@ -2,12 +2,11 @@
 
 namespace OriPhpstan\Nette\Latte\Rule;
 
-use Nette\Utils\FileSystem;
 use Nette\Utils\Strings;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
-use OriPhpstan\Nette\Latte\Converge\StoreChangeSignal;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use PhpParser\Node;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Rules\IdentifierRuleError;
@@ -18,9 +17,7 @@ use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
-use function getenv;
 use function implode;
-use function is_dir;
 use function realpath;
 use function rtrim;
 use function sort;
@@ -34,11 +31,13 @@ use const SORT_STRING;
 final class LatteSiteScopeWriterRule implements Rule
 {
 
+	public const IDENTIFIER = 'orisai.nette.latte.narrowingStoreChanged';
+
 	private const LISTED_MAX = 10;
 
-	private string $storeDirPath;
-
 	private SiteScopeStore $store;
+
+	private string $projectRoot;
 
 	private bool $enabled;
 
@@ -50,15 +49,15 @@ final class LatteSiteScopeWriterRule implements Rule
 	 */
 	public function __construct(
 		ConfigurationGuard $guard,
-		string $storeDirPath,
 		SiteScopeStore $store,
+		string $projectRoot,
 		array $analysedPaths,
 		array $analysedPathsFromConfig
 	)
 	{
 		$guard->validate();
-		$this->storeDirPath = $storeDirPath;
 		$this->store = $store;
+		$this->projectRoot = $projectRoot;
 		$this->enabled = $guard->isLatteNarrowingEnabled();
 		$this->analysesConfiguredPaths = self::normalisePaths($analysedPaths)
 			=== self::normalisePaths($analysedPathsFromConfig);
@@ -71,49 +70,40 @@ final class LatteSiteScopeWriterRule implements Rule
 
 	/**
 	 * @param CollectedDataNode $node
+	 * @param Scope&DependencyTracker $scope
 	 * @return list<IdentifierRuleError>
 	 */
 	public function processNode(Node $node, Scope $scope): array
 	{
-		// Opt-in gate: narrowing disabled means this rule never even stats the store directory,
-		// let alone writes to it - a downstream consumer with a stray store dir on disk must see
-		// zero filesystem interaction from this rule.
+		// Narrowing off: no filesystem interaction at all, even with a store directory on disk.
 		if (!$this->enabled) {
 			return [];
 		}
 
-		// This rule must stay inert on every gate run until the store directory exists, so it
-		// never writes into one that does not already exist: the consumer creates the directory at
-		// orisai.nette.latte.narrowing.storePath.
-		if (!is_dir($this->storeDirPath)) {
-			return [];
-		}
+		// With reuseCollectedDataRuleErrors the errors of an earlier run come back without this rule
+		// running, so its writes must not be skipped: the store is tracked as this run found it, and
+		// a run which wrote also tracks a written file as it left it - no store matches both, so
+		// only a run which wrote nothing is ever reused.
+		$scope->trackDirectoryDependency($this->store->directory(), 'LatteSlice_*.php');
 
 		// Deliberately uncaught: AnalyserResultFinalizer::finalize() already wraps every
 		// CollectedDataNode rule in try/catch (Throwable) - rethrowing under --debug, else
 		// recording an InternalError and continuing - so a write failure here is never fatal to
 		// the run but stays diagnosable, instead of vanishing into a silent catch.
-		[$analysed, $changed, $pruned, $pruneRefusal] = $this->write($node);
-		$this->report($changed, $pruned);
+		[$analysed, $changed, $pruned] = $this->write($node);
 		if ($changed === [] && $pruned === []) {
-			if ($pruneRefusal === null) {
-				return [];
-			}
-
-			$builder = RuleErrorBuilder::message(sprintf(
-				'The Latte narrowing store was not pruned: %s. Prune with the paths your configuration analyses.',
-				$pruneRefusal,
-			))
-				->identifier(StoreChangeSignal::PRUNE_REFUSED_IDENTIFIER)
-				->line(1)
-				->nonIgnorable();
-		} else {
-			// Non-ignorable: a baseline or ignoreErrors entry would hide a stale store from CI for good.
-			$builder = RuleErrorBuilder::message($this->changedMessage($changed, $pruned, $pruneRefusal))
-				->identifier(StoreChangeSignal::IDENTIFIER)
-				->line(1)
-				->nonIgnorable();
+			return [];
 		}
+
+		$scope->trackFileDependency(
+			$changed !== [] ? $this->store->slicePath($changed[0]) : $this->store->directory() . '/' . $pruned[0],
+		);
+
+		// Non-ignorable: a baseline or ignoreErrors entry would hide a stale store from CI for good.
+		$builder = RuleErrorBuilder::message($this->changedMessage($changed, $pruned))
+			->identifier(self::IDENTIFIER)
+			->line(1)
+			->nonIgnorable();
 
 		$anchor = $changed[0] ?? $analysed[0] ?? null;
 		$anchorFile = $anchor !== null ? $this->store->slicePath($anchor) : $this->store->firstSlicePath();
@@ -125,7 +115,7 @@ final class LatteSiteScopeWriterRule implements Rule
 	}
 
 	/**
-	 * @return array{list<string>, list<string>, list<string>, string|null}
+	 * @return array{list<string>, list<string>, list<string>}
 	 */
 	private function write(CollectedDataNode $node): array
 	{
@@ -166,52 +156,22 @@ final class LatteSiteScopeWriterRule implements Rule
 		// one AnalyserResult - so this write is never concurrent with another worker's write.
 		$includerRels = array_keys($includers);
 		$changed = $this->store->replaceForIncluders($includerRels, $entries);
-		$pruned = [];
-		$pruneRefusal = null;
-		if (getenv(StoreChangeSignal::PRUNE_ENVIRONMENT_VARIABLE) === '1') {
-			$this->touchReport(StoreChangeSignal::PRUNE_EVALUATED_SUFFIX, '');
-			if (!$this->analysesConfiguredPaths) {
-				$pruneRefusal = 'the run analysed other paths than the configured ones';
-			} elseif ($includerRels === []) {
-				$pruneRefusal = 'the run analysed no templates';
-			} else {
-				$pruned = $this->store->pruneExcept($includerRels);
-			}
-		}
+		$pruned = $this->store->pruneDeletedIncluders(
+			$this->projectRoot,
+			$includerRels,
+			$this->analysesConfiguredPaths && $includerRels !== [],
+		);
 
 		sort($includerRels, SORT_STRING);
 
-		return [$includerRels, $changed, $pruned, $pruneRefusal];
+		return [$includerRels, $changed, $pruned];
 	}
 
 	/**
 	 * @param list<string> $changed
 	 * @param list<string> $pruned
 	 */
-	private function report(array $changed, array $pruned): void
-	{
-		if ($changed === [] && $pruned === []) {
-			return;
-		}
-
-		$this->touchReport('', $this->changedMessage($changed, $pruned, null) . "\n");
-	}
-
-	private function touchReport(string $suffix, string $contents): void
-	{
-		$report = getenv(StoreChangeSignal::REPORT_ENVIRONMENT_VARIABLE);
-		if ($report === false || $report === '') {
-			return;
-		}
-
-		FileSystem::write($report . $suffix, $contents);
-	}
-
-	/**
-	 * @param list<string> $changed
-	 * @param list<string> $pruned
-	 */
-	private function changedMessage(array $changed, array $pruned, ?string $pruneRefusal): string
+	private function changedMessage(array $changed, array $pruned): string
 	{
 		$parts = [];
 		if ($changed !== []) {
@@ -225,18 +185,14 @@ final class LatteSiteScopeWriterRule implements Rule
 
 		if ($pruned !== []) {
 			$parts[] = sprintf(
-				'The Latte narrowing store pruned %d orphaned %s: %s.',
+				'The Latte narrowing store removed %d %s of deleted templates: %s.',
 				count($pruned),
 				count($pruned) === 1 ? 'slice' : 'slices',
 				$this->capped($pruned),
 			);
 		}
 
-		if ($pruneRefusal !== null) {
-			$parts[] = sprintf('Pruning was skipped: %s.', $pruneRefusal);
-		}
-
-		$parts[] = 'Run the analysis again until this error disappears, then commit the store.';
+		$parts[] = 'Run PHPStan again until this error is gone, then commit the regenerated store files.';
 
 		return implode(' ', $parts);
 	}

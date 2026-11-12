@@ -82,9 +82,6 @@
 			"phpstan/extension-installer": true
 		}
 	},
-	"bin": [
-		"bin/latte-converge"
-	],
 	"extra": {
 		"phpstan": {
 			"includes": [

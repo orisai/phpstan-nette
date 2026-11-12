@@ -233,8 +233,8 @@ parameters:
 					storePath: %currentWorkingDirectory%/tests/phpstan/latte-narrowing
 ```
 
-Create the directory, run the analysis with `vendor/bin/latte-converge` and commit the directory together with the
-files the analysis writes into it. See [narrowing store lifecycle](#narrowing-store-lifecycle).
+Run the analysis until it no longer reports `narrowingStoreChanged` and commit the directory it writes. See
+[narrowing store lifecycle](#narrowing-store-lifecycle).
 
 ### Set up Bridges
 
@@ -383,58 +383,27 @@ a baseline: written by ordinary runs, committed with the change that moved it, c
 
 A type proven during one run can only feed the next run's analysis, so a store which moves needs another run — an
 include chain of depth D settles within D + 1 runs. Every run which rewrites the store reports it as one error,
-`narrowingStoreChanged` (see [Latte features](#latte-features)), naming the including templates whose captures moved:
+`narrowingStoreChanged` (see [Latte features](#latte-features)), naming the including templates whose captures moved
+and the store files it removed:
 
 ```
-The Latte narrowing store changed for 2 including templates: app/a.latte, app/b.latte. Run the analysis again until
-this error disappears, then commit the store.
+The Latte narrowing store changed for 2 including templates: app/a.latte, app/b.latte. Run PHPStan again until this
+error is gone, then commit the regenerated store files.
 ```
 
 The error cannot be ignored or baselined: a hidden entry would let an outdated store pass forever. A missing or outdated
 entry otherwise falls back to the template's own declarations.
 
-- Create the directory at `orisai.nette.latte.narrowing.storePath`. The analysis never creates it — without it nothing
-  is written.
-- Run the analysis through `vendor/bin/latte-converge`, locally, and commit the directory with your change.
-- In CI, run plain `vendor/bin/phpstan analyse`. A store which does not match the code fails the run with the error
-  above — the check compares content, not the git state, so it holds whether or not the store is committed yet.
-
-#### Converge command
-
-`vendor/bin/latte-converge` runs `phpstan analyse` with the arguments you give it and runs it again while the store
-changes:
-
-```shell
-vendor/bin/latte-converge analyse -c phpstan.neon
-```
-
-Every run gets your arguments unchanged — error format, paths, `-b`, `--fix` — and its progress stays on the terminal.
-The analysis tells the command, through a temporary file, when it rewrote the store; the command then runs again and
-prints the changed templates on stderr. It prints the output of the first run which left the store as it was and exits
-with that run's code, so an unchanged store costs a single run. Findings of earlier runs are one run behind and are not
-printed; the settled run reports them. A crash, an internal error or an interrupt stops at once with PHPStan's own
-output and exit code. A store which still changes on run `--max-runs` (default 6) prints that run and fails. On a
-terminal, `--ansi` is added unless you passed `--ansi` or `--no-ansi`. Without narrowing, or without the store
-directory, the analysis runs once. Options go before `analyse`:
-
-- `--max-runs=<n>` – runs at most `n` analyses
-- `--phpstan=<path>` – the PHPStan executable; defaults to `phpstan` next to `latte-converge` in `vendor/bin`
-- `--prune` – see below
-
-#### Pruning deleted templates
-
-The file of a deleted including template is not removed by ordinary runs, because a run analysing only part of the
-project cannot tell a deleted template from one outside its paths. Remove such files occasionally:
-
-```shell
-vendor/bin/latte-converge --prune analyse -c phpstan.neon
-```
-
-It clears the result cache, analyses the whole project and removes every store file whose including template was not
-analysed; the removal is reported as a store change and the removed files are listed on stderr. A run given other paths
-than the configured ones, or one which analysed no template, removes nothing and ends with `narrowingPruneRefused`
-once the store has settled. Without narrowing or without the store directory, the command says that nothing was
-pruned.
+- Run plain `vendor/bin/phpstan analyse`, locally and in CI; there is no other command. When the error appears, run it
+  again until the error is gone, then commit the directory with your change.
+- The directory at `orisai.nette.latte.narrowing.storePath` is created by the first run. A store built from nothing
+  takes a few runs to settle.
+- In CI, a store which does not match the code fails the run with the error above — the check compares content, not
+  the git state, so it holds whether or not the store is committed yet.
+- The file of a deleted template is removed by the next run, also by a run over part of the paths or one served from
+  the result cache: each file records its template, and is removed once that template no longer exists. A file written
+  by an older version, without that record and without captures, is removed only by a run over the configured paths
+  which did not rewrite it. A template moved out of the analysed paths keeps its file until the template is deleted.
 
 ### Dead code detection
 
@@ -1102,7 +1071,6 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | `{control}`, `{link}`, `{snippet}`, … where no control renders the template | `orisai.nette.latte.providerUnavailable`       | needs discovery                                    |
 | Debugging function output                                                | `orisai.nette.latte.debugDump`                   | [debugging](#latte-debugging)                      |
 | Narrowing store rewritten by this run                                    | `orisai.nette.latte.narrowingStoreChanged`       | non-ignorable; [lifecycle](#narrowing-store-lifecycle) |
-| `latte-converge --prune` over a part of the configured paths             | `orisai.nette.latte.narrowingPruneRefused`       | non-ignorable; [pruning](#pruning-deleted-templates) |
 
 #### Latte limitations
 

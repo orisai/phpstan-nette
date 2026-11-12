@@ -37,19 +37,16 @@ final class LattePhpstanConfigTest extends BaseTestCase
 			FileSystem::write($srcDir . '/target.latte', "{\$x}\n");
 			FileSystem::write($srcDir . '/includer.latte', "{include 'target.latte', x: 1}\n");
 
-			// No orisai.nette.latte.narrowing.storePath entry at all - the call under test.
+			// No orisai.nette.latte.narrowing.storePath entry at all - the call under test. Narrowing is
+			// then off unless asked for, so it is asked for.
 			$isolated = LattePhpstanConfig::create(
 				self::REAL_CONFIG_PATH,
 				[$srcDir],
 				$scratch . '/pstmp',
+				['orisai.nette.latte.narrowing.enabled' => true],
 			);
 
 			$defaultStoreDir = $isolated->getTmpDir() . '/sitescope-unused';
-			// LatteSiteScopeWriterRule only ever writes into a store directory that already exists
-			// (same precondition NarrowingInitTest pins for an explicit store path) -
-			// mkdir it so this test can tell "isolated" from "the writer silently no-op'd because
-			// nothing existed to write into".
-			FileSystem::createDir($defaultStoreDir);
 
 			$process = new Process(
 				[

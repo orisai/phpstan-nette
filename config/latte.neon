@@ -46,12 +46,12 @@ parameters:
 			path: '*.latte'
 			reportUnmatched: false
 			# CAPTURES_HASH exists purely for PHPStan's own exported-node diffing of the slice file's
-			# real bytes - no generated or hand-written code ever reads it. Not
+			# real bytes, INCLUDER for the store's own pruning - no code ever reads either. Not
 			# path-scoped like the fingerprint entry above: a slice file's own path is a generated
 			# `.php` file, never `*.latte`.
 		-
 			identifier: shipmonk.deadConstant
-			message: '#^Unused LatteSlice_[a-zA-Z0-9_]+::CAPTURES_HASH$#'
+			message: '#^Unused LatteSlice_[a-zA-Z0-9_]+::(CAPTURES_HASH|INCLUDER)$#'
 			reportUnmatched: false
 			# RECORDS_HASH mirrors CAPTURES_HASH for the discovery store's per-template files -
 			# exported purely for PHPStan's own byte diffing, never read at runtime.
@@ -533,8 +533,8 @@ services:
 		class: OriPhpstan\Nette\Latte\Rule\LatteSiteScopeWriterRule
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			storeDirPath: @orisai.nette.configuration::get(latte.narrowing.storePath)
 			store: @latteSiteScopeStore
+			projectRoot: %currentWorkingDirectory%
 			analysedPaths: %analysedPaths%
 			analysedPathsFromConfig: %analysedPathsFromConfig%
 		tags: [phpstan.rules.rule]
