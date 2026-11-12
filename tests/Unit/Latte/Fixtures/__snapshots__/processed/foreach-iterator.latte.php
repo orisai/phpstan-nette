@@ -11,12 +11,10 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
     public function latteMain($items, $groups): array
     {
         echo "\n";
-        $iterations = 0;
         foreach ($items as $item) {
             echo '	';
             echo $item;
             echo "\n";
-            $iterations++;
         }
         echo "\n";
         $iterator = new \Latte\Runtime\CachingIterator($items);
@@ -32,7 +30,6 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
             echo "\n";
         }
         echo "\n";
-        $iterator = new \Latte\Runtime\CachingIterator($groups);
         foreach ($groups as $group) {
             $iterator = new \Latte\Runtime\CachingIterator($group);
             foreach ($group as $item) {

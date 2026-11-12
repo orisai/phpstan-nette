@@ -180,6 +180,26 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   as non-empty or list are dropped, because a slice can be empty and preserved keys need not be
   sequential); string in, string out) instead of the vendor's `array|string` (the widening is
   pinned by the `filter-slice` integration fixture).
+- **Unread implicit bindings** — `ImplicitBindingPruner` runs last, after the edge anchors, over every method and
+  closure body. It removes what Latte binds for the template's sake when nothing reads it, so PHPStan's unused-variable
+  rules (`assign.unusedFlow`, `postInc.unusedFlow`, `variable.unused`, `assign.overwritten`, … under bleedingEdge's
+  `featureToggles.unusedVariable`) report only what the template itself writes. The eliminators mark the bindings
+  with the `latte.implicitBinding` attribute: `IteratorEliminator` marks Latte 2's `$iterations = 0` before every
+  `{foreach}` and the `$iterations++` closing its body and its `{else}` branch (*counter*), and the hoisted
+  `$iterator = new CachingIterator(EXPR)` (*statement*); `FormsMacroEliminator` marks the `$form`/`$formContainer`
+  of `{form}`, `{formContainer}` and their dynamic spellings (*value*). Latte forbids `$ʟ_*` in templates on every
+  line, so a `$ʟ_*` assignment is a *value* binding by its name. A counter is dropped unless the function reads
+  `$iterations`; any other binding is dropped when no read is reachable from it — a backward liveness walk over the
+  statement containers that unions both branches of every condition, iterates loops to a fixpoint, sends `break` and
+  `continue` to their loop's exit and head, and keeps a `try` body's writes live for its `catch`/`finally`. A
+  *statement* binding goes with its statement; a *value* binding leaves its value in place (`Helpers::form('f');`,
+  `snippetId("item-{$id}")`), so the value is still analysed, and stays bound when the value would be left as a
+  statement which does nothing. An edge anchor's manifest counts as a read of every variable the included block
+  reads. `get_defined_vars()` does not: Latte passes it to the blocks, whose reads arrive as manifests. A function
+  calling `extract()`, `compact()`, `parse_str()`, `eval`/`include`, using `goto` or a variable variable is left
+  whole. Dropping the hoisted `$iterator` also stops its `EXPR` from being analysed twice per loop, so a finding in a
+  `{foreach}` expression is reported once. `ImplicitBindingPrunerTest` pins the shapes and
+  `GeneratedBindingUnusedSpawnTest` the findings of a real analysis.
 - **Diagnostics materialization** — recorded diagnostics (unknown macro, unresolved include, ...)
   become synthetic calls that a small rule (`LatteDiagnosticRule`) turns into ordinary
   identifier-tagged, ignorable/baselinable PHPStan errors.
@@ -2038,6 +2058,15 @@ so that a change to the walk that silently shrinks or grows it is noticed.
 
 ## Known limitations
 
+- **Latte 2's `$iterations` counters are kept function-wide.** A counter's increment reads the counter, so liveness
+  cannot tell a counter feeding only itself from one the template reads; `ImplicitBindingPruner` keeps every counter
+  of a method or closure which reads `$iterations` anywhere and drops them all otherwise. A template reading the
+  counter after one loop still gets the unused-value findings of the other loops' counters. Latte 2 deprecates
+  reading `$iterations`, so the kept case is rare.
+- **The hoisted `$iterator` is not restored after a nested loop.** Latte restores the outer loop's iterator after
+  `{/foreach}`; the analysis drops that restore, so a read of `$iterator` after an inner loop types as the inner
+  iterator — the same class — and the pruner, which follows the generated code, drops an outer `$iterator` that
+  only such reads use.
 - **A template property declared as a SUPERTYPE of the factory's configured class gets no factory
   variables.** The gate honours the declared type, but the factory instantiates its own configured
   class. A control declaring `/** @var Template */` — the base `Template`, which declares none of

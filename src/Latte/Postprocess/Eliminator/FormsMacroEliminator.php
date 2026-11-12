@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Postprocess\Eliminator;
 
 use OriPhpstan\Nette\Latte\Postprocess\GlobalPropertyFetchMatcher;
+use OriPhpstan\Nette\Latte\Postprocess\ImplicitBindingPruner;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -137,8 +138,12 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		if ($node instanceof Expression) {
 			$rebuilt = $this->rebuildFormOpen($node->expr) ?? $this->rebuildContainerPush($node->expr);
 			if ($rebuilt !== null) {
+				$rebuilt->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_VALUE);
+
 				return new Expression($rebuilt, $node->getAttributes());
 			}
+
+			$this->markDynamicContainerPush($node->expr);
 
 			return $this->isScopePlumbing($node->expr) ? NodeVisitor::REMOVE_NODE : null;
 		}
@@ -500,6 +505,19 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		$name = $this->matchHelperCall($inner->expr, 'formField');
 
 		return $name === null ? null : new Assign($inner->var, $this->helperCall('formContainer', $name, $inner->expr));
+	}
+
+	// {formContainer $var}: the is_object() ternary stays, its $formContainer binding is still the macro's own.
+	private function markDynamicContainerPush(Expr $expr): void
+	{
+		if (
+			$expr instanceof Assign
+			&& $this->isFormsStackPush($expr->var)
+			&& $expr->expr instanceof Assign
+			&& $this->isVariableNamed($expr->expr->var, self::CONTAINER_VAR)
+		) {
+			$expr->expr->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_VALUE);
+		}
 	}
 
 	private function isScopePlumbing(Expr $expr): bool

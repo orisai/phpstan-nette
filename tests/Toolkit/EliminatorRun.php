@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Toolkit;
 
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\EliminatorVisitor;
+use OriPhpstan\Nette\Latte\Postprocess\ImplicitBindingPruner;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
@@ -40,6 +41,22 @@ final class EliminatorRun
 
 	public static function apply(string $php, EliminatorVisitor ...$eliminators): string
 	{
+		return (new Standard())->prettyPrintFile(self::eliminate($php, ...$eliminators));
+	}
+
+	// The eliminators, then ImplicitBindingPruner, which AnalysisPipeline runs after every other pass.
+	public static function applyPruned(string $php, EliminatorVisitor ...$eliminators): string
+	{
+		return (new Standard())->prettyPrintFile(
+			(new ImplicitBindingPruner())->prune(self::eliminate($php, ...$eliminators)),
+		);
+	}
+
+	/**
+	 * @return array<Stmt>
+	 */
+	public static function eliminate(string $php, EliminatorVisitor ...$eliminators): array
+	{
 		$parser = PHPStanTestCase::getContainer()->getService('currentPhpVersionSimpleParser');
 		assert($parser instanceof Parser);
 
@@ -51,7 +68,7 @@ final class EliminatorRun
 		/** @var array<Stmt> $stmts */
 		$stmts = $traverser->traverse($parser->parseString($php));
 
-		return (new Standard())->prettyPrintFile($stmts);
+		return $stmts;
 	}
 
 }

@@ -46,23 +46,30 @@ final class StatementContainerTest extends BaseTestCase
 		Closure $eliminator,
 		string $latteLine,
 		string $shape,
-		string $reduced
+		string $reduced,
+		bool $pruned = false
 	): void
 	{
 		foreach (self::CONTAINERS as $container => $wrapper) {
-			self::assertSame(
-				EliminatorRun::apply(EliminatorRun::template(sprintf($wrapper, $reduced))),
-				EliminatorRun::apply(
+			$actual = $pruned
+				? EliminatorRun::applyPruned(
 					EliminatorRun::template(sprintf($wrapper, $shape)),
 					$eliminator(EliminatorRun::family($latteLine)),
-				),
+				)
+				: EliminatorRun::apply(
+					EliminatorRun::template(sprintf($wrapper, $shape)),
+					$eliminator(EliminatorRun::family($latteLine)),
+				);
+			self::assertSame(
+				EliminatorRun::apply(EliminatorRun::template(sprintf($wrapper, $reduced))),
+				$actual,
 				$container,
 			);
 		}
 	}
 
 	/**
-	 * @return iterable<string, array{Closure(ShapeFamily): EliminatorVisitor, string, string, string}>
+	 * @return iterable<string, array{0: Closure(ShapeFamily): EliminatorVisitor, 1: string, 2: string, 3: string, 4?: bool}>
 	 */
 	public function provideShapes(): iterable
 	{
@@ -232,13 +239,14 @@ PHP,
 			"echo 'snippet';",
 		];
 
+		// The counters are marked in every container; ImplicitBindingPruner drops them, the read $iterator stays.
 		yield '{foreach} $iterations reset, latte 2' => [
 			$iteratorEliminator,
 			ShapeFamily::LATTE_2,
 			<<<'PHP'
 $iterations = 0;
 foreach ($iterator = $ʟ_it = new LR\CachingIterator($items, $ʟ_it ?? null) as $item) {
-	echo $item;
+	echo $iterator->counter;
 	$iterations++;
 }
 $iterator = $ʟ_it = $ʟ_it->getParent();
@@ -246,9 +254,10 @@ PHP,
 			<<<'PHP'
 $iterator = new \Latte\Runtime\CachingIterator($items);
 foreach ($items as $item) {
-	echo $item;
+	echo $iterator->counter;
 }
 PHP,
+			true,
 		];
 	}
 

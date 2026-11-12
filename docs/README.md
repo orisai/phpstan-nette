@@ -1056,6 +1056,10 @@ template's lines. PHPStan's own rules (`variable.undefined`, `method.notFound`, 
   template
 
 - errors caused by generated code carry a tip naming the filter or macro which produced it
+- PHPStan's unused-variable rules (bleedingEdge) see only what the template writes: the variables Latte binds by itself —
+  `$iterator` and Latte 2's `$iterations` around `{foreach}`, `$form` of `{form}`, `$formContainer` of
+  `{formContainer}` and Latte's own `$ʟ_*` temporaries — are left out where nothing reads them, while a `{var}` or a
+  `{foreach}` key the template never reads is still reported
 
 The package replaces PHPStan's `defaultAnalysisParser` and `cacheStorage` services for every consumer, Latte on or
 off; both delegate to PHPStan's own services for everything but `.latte` files.
@@ -1122,6 +1126,8 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
     branches of a custom conditional registered without an engine loader; their conditions are not analysed either
 - An error thrown inside Latte or a Latte extension while compiling a template is reported as
   `orisai.nette.latte.parseError` (`Thrown exception '…'`).
+- Latte 2's `$iterations` counters stay in a template, block or closure which reads `$iterations` anywhere, so a loop
+  whose counter is not read there can still be reported as an unused value.
 
 ### Bridges features
 

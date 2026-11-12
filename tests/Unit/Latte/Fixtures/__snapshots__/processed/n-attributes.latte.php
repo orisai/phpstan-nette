@@ -20,21 +20,17 @@ final class LatteTpl_fixtures_n_attributes_latte_366f42ea extends \Latte\Runtime
         echo '
 <ul>
 ';
-        $iterations = 0;
         foreach ($items as $item) {
             echo '	<li>';
             echo $item;
             echo '</li>
 ';
-            $iterations++;
         }
         echo '</ul>
 
 <div>';
-        $iterations = 0;
         foreach ($items as $item) {
             echo $item;
-            $iterations++;
         }
         echo '</div>
 

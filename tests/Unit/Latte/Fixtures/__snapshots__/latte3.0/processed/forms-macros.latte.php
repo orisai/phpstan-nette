@@ -8,7 +8,7 @@ final class LatteTpl_fixtures_forms_macros_latte_257f81ab extends \Latte\Runtime
     public const Source = 'fixtures/forms-macros.latte';
     public function latteMain(): void
     {
-        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('f');
+        \OriPhpstan\Nette\Latte\Runtime\Helpers::form('f');
         echo '<form';
         echo '>
 	<input';
@@ -23,12 +23,12 @@ final class LatteTpl_fixtures_forms_macros_latte_257f81ab extends \Latte\Runtime
         echo '</form>
 ';
         echo "\n";
-        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('f2');
+        \OriPhpstan\Nette\Latte\Runtime\Helpers::form('f2');
         echo '
 	';
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getControl();
         echo "\n";
-        $formContainer = \OriPhpstan\Nette\Latte\Runtime\Helpers::formContainer('c');
+        \OriPhpstan\Nette\Latte\Runtime\Helpers::formContainer('c');
         echo '		';
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('z')->getControl();
         echo "\n";

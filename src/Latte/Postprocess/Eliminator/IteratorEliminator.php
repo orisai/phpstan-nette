@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess\Eliminator;
 
+use OriPhpstan\Nette\Latte\Postprocess\ImplicitBindingPruner;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
@@ -16,8 +17,8 @@ use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
+use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
-use function array_pop;
 use function count;
 
 final class IteratorEliminator extends EliminatorVisitor
@@ -40,8 +41,10 @@ final class IteratorEliminator extends EliminatorVisitor
 		return 'foreach ($iterator = $ʟ_it = new CachingIterator(EXPR, $ʟ_it ?? null) as ...) -> '
 			. '$iterator = new CachingIterator(EXPR); foreach (EXPR as ...); drop '
 			. '$iterator = $ʟ_it = $ʟ_it->getParent() restores'
-			. ($this->patterns()->has(self::ROLE_ITERATIONS_VAR) ? ' and adjacent $iterations counters' : '')
-			. ' (plain foreach untouched): ' . $this->patterns()->describe();
+			. ($this->patterns()->has(
+				self::ROLE_ITERATIONS_VAR,
+			) ? '; mark the $iterations counters around every foreach' : '')
+			. ': ' . $this->patterns()->describe();
 	}
 
 	/**
@@ -72,18 +75,18 @@ final class IteratorEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$iteratorAssign = new Expression(
-			new Assign(
-				new Variable(self::ITERATOR_VAR),
-				new New_(new FullyQualified($this->patterns()->name(self::ROLE_CACHING_ITERATOR)), [new Arg($expr)]),
-			),
+		$assign = new Assign(
+			new Variable(self::ITERATOR_VAR),
+			new New_(new FullyQualified($this->patterns()->name(self::ROLE_CACHING_ITERATOR)), [new Arg($expr)]),
 		);
+		$assign->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_STATEMENT);
+		$iteratorAssign = new Expression($assign);
 		$iteratorAssign->setAttribute(self::MARKER_ITERATOR_NEW, true);
 
 		$foreach = new Foreach_($expr, $node->valueVar, [
 			'keyVar' => $node->keyVar,
 			'byRef' => $node->byRef,
-			'stmts' => $this->stripTrailingIterationsIncrement($node->stmts),
+			'stmts' => $node->stmts,
 		]);
 
 		return [$iteratorAssign, $foreach];
@@ -148,28 +151,6 @@ final class IteratorEliminator extends EliminatorVisitor
 			&& count($inner->expr->args) === 0;
 	}
 
-	/**
-	 * @param array<Stmt> $stmts
-	 * @return array<Stmt>
-	 */
-	private function stripTrailingIterationsIncrement(array $stmts): array
-	{
-		$lastIndex = count($stmts) - 1;
-		if ($lastIndex < 0 || !$this->patterns()->has(self::ROLE_ITERATIONS_VAR)) {
-			return $stmts;
-		}
-
-		$last = $stmts[$lastIndex];
-		if (
-			$last instanceof Expression
-			&& $this->isPostIncVariable($last->expr, $this->patterns()->name(self::ROLE_ITERATIONS_VAR))
-		) {
-			array_pop($stmts);
-		}
-
-		return $stmts;
-	}
-
 	private function isPostIncVariable(Expr $expr, string $name): bool
 	{
 		return $expr instanceof PostInc && $this->isVariableNamed($expr->var, $name);
@@ -185,21 +166,52 @@ final class IteratorEliminator extends EliminatorVisitor
 			return $stmts;
 		}
 
-		$result = [];
 		$count = count($stmts);
-
 		for ($i = 0; $i < $count; $i++) {
-			$stmt = $stmts[$i];
-			$next = $stmts[$i + 1] ?? null;
-
-			if ($this->isIterationsReset($stmt) && $next !== null && $this->isMarkedIteratorNew($next)) {
+			if (!$stmts[$i] instanceof Expression || !$this->isIterationsReset($stmts[$i])) {
 				continue;
 			}
 
-			$result[] = $stmt;
+			$loopIndex = isset($stmts[$i + 1]) && $this->isMarkedIteratorNew($stmts[$i + 1]) ? $i + 2 : $i + 1;
+			$loop = $stmts[$loopIndex] ?? null;
+			if (!$loop instanceof Foreach_ || !$this->markTrailingIncrement($loop->stmts)) {
+				continue;
+			}
+
+			$stmts[$i]->expr->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_COUNTER);
+			$else = $stmts[$loopIndex + 1] ?? null;
+			if ($else instanceof If_ && $this->isIteratorEmptyCheck($else->cond)) {
+				$this->markTrailingIncrement($else->stmts);
+			}
 		}
 
-		return $result;
+		return $stmts;
+	}
+
+	/**
+	 * @param array<Stmt> $stmts
+	 */
+	private function markTrailingIncrement(array $stmts): bool
+	{
+		$last = $stmts[count($stmts) - 1] ?? null;
+		if (
+			!$last instanceof Expression
+			|| !$this->isPostIncVariable($last->expr, $this->patterns()->name(self::ROLE_ITERATIONS_VAR))
+		) {
+			return false;
+		}
+
+		$last->expr->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_COUNTER);
+
+		return true;
+	}
+
+	private function isIteratorEmptyCheck(Expr $expr): bool
+	{
+		return $expr instanceof MethodCall
+			&& $this->isVariableNamed($expr->var, self::ITERATOR_VAR)
+			&& $expr->name instanceof Node\Identifier
+			&& $expr->name->toString() === 'isEmpty';
 	}
 
 	private function isIterationsReset(Stmt $stmt): bool

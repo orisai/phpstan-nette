@@ -41,7 +41,6 @@ final class LatteTpl_fixtures_scoped_foreach_latte_8809dd88 extends \Latte\Runti
             echo '	empty
 ';
         }
-        $iterator = new \Latte\Essential\CachingIterator($pairs);
         foreach ($pairs as [$number, $label]) {
             echo '	';
             foreach ($items as $item) {

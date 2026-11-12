@@ -45,7 +45,8 @@ PHP);
 PHP), self::eliminate($latteLine, $php));
 	}
 
-	public function testLatte2RuntimeIteratorIsHoistedWithItsIterationsCounter(): void
+	// The $iterations counters stay for ImplicitBindingPruner, which drops them unless the function reads the counter.
+	public function testLatte2RuntimeIteratorIsHoistedNextToItsIterationsCounter(): void
 	{
 		$php = EliminatorRun::template(<<<'PHP'
 		$iterations = 0;
@@ -59,9 +60,11 @@ PHP), self::eliminate($latteLine, $php));
 PHP);
 
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        $iterations = 0;
         $iterator = new \Latte\Runtime\CachingIterator($items);
         foreach ($items as $item) {
             echo \Latte\Runtime\Filters::escapeHtmlText($item);
+            $iterations++;
         }
         foreach ($iterator = $ʟ_it = new \Latte\Essential\CachingIterator($items, $ʟ_it ?? \null) as $item) {
         }

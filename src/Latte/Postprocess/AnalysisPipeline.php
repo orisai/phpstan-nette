@@ -335,7 +335,8 @@ final class AnalysisPipeline
 			$this->edgeAnchorInjector->inject($processed, $relativePath, $contexts);
 		}
 
-		return $processed;
+		// After the anchors: an edge manifest names the variables an included target reads here.
+		return (new ImplicitBindingPruner())->prune($processed);
 	}
 
 }

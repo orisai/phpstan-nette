@@ -66,10 +66,8 @@ final class LatteTpl_fixtures_statement_containers_latte_bfe136fb extends \Latte
             $this->blockS1($cond, $level, $items, $x, $tagName);
             echo '</div>
 	';
-            $iterations = 0;
             foreach ($items as $item) {
                 echo $item;
-                $iterations++;
             }
             echo "\n";
         }
@@ -112,10 +110,8 @@ final class LatteTpl_fixtures_statement_containers_latte_bfe136fb extends \Latte
             }
             echo '
 	';
-            $iterations = 0;
             foreach ($items as $item) {
                 echo $item;
-                $iterations++;
             }
             echo "\n";
         }

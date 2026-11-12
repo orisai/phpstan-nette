@@ -232,8 +232,8 @@ final class EliminatorTest extends BaseTestCase
 		$php = $this->process(
 			"{varType array \$groups}\n"
 			. "{foreach \$groups as \$group}\n"
+			. "{\$iterator->isFirst()}\n"
 			. "{foreach \$group as \$item}{\$iterator->isFirst()}{\$item}{/foreach}\n"
-			. "{\$iterator->isLast()}\n"
 			. "{/foreach}\n",
 		);
 
@@ -399,7 +399,7 @@ final class EliminatorTest extends BaseTestCase
 
 	public function testFormMacroBindsTypedFormVariable(): void
 	{
-		$php = $this->process("{form login}{input user}{/form}\n");
+		$php = $this->process("{form login}{input user}{\$form->getName()}{/form}\n");
 
 		self::assertMatchesRegularExpression(
 			'~\$form = \\\\OriPhpstan\\\\Nette\\\\Latte\\\\Runtime\\\\Helpers::form\(([\'"])login\1\)~',
@@ -493,7 +493,8 @@ final class EliminatorTest extends BaseTestCase
 		$php = $this->process("{varType string \$name}\n{snippet \$name}<p>hi</p>{/snippet}\n");
 
 		self::assertStringNotContainsString('snippetDriver->getHtmlId', $php);
-		self::assertStringContainsString('Helpers::snippetId($ʟ_nm = $name)', $php);
+		self::assertStringContainsString('Helpers::snippetId($name)', $php);
+		self::assertStringNotContainsString('ʟ_nm', $php);
 	}
 
 	public function testObjectFormUsesFormObjectHelper(): void

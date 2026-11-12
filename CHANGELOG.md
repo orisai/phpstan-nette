@@ -80,6 +80,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Latte: the variables Latte binds by itself (`$iterator`, Latte 2's `$iterations`, `$form`, `$formContainer`,
+  `$ʟ_*` temporaries) are left out of the analysed code where nothing reads them, so PHPStan 2.3's unused-variable
+  rules (bleedingEdge) no longer report them; a `{foreach}` expression is analysed once instead of twice
+- Forms: `isset($container['x'])` no longer narrows the component to `IComponent` on PHPStan 2.3, which skips the
+  `offsetGet()` dynamic return type there
 - Forms: a narrowed `getControls()` (nette/forms 3.3) and `getComponents()` (nette/component-model 3.2) type as the
   `iterable` the methods declare instead of `Iterator`, so `->current()` on them is reported
 - PHP 7.4: no crash "Class 'ReflectionAttribute' not found" with PHPStan 2.2.10+, which runs result-cache meta
