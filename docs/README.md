@@ -899,7 +899,32 @@ only; `<declaring dir>` is the directory of the class declaring the override. A 
 `@@`, otherwise it is read as a service reference. `nameProperty` is read from the rendered class, so a subclass
 overriding the property's default gets its own template.
 
-An override without a formula is reported (`orisai.nette.latte.fileDiscoveryOpaque`) and never guessed.
+A control method whose whole body is `return <path>;` with a static path (string literals, `__DIR__`, concatenation)
+needs no formula — each class rendering through it is linked to the path its own implementation returns:
+
+```php
+abstract class BaseFormControl extends Control
+{
+	public function render(): void
+	{
+		$this->template->setFile($this->getFormTemplateFile());
+		$this->template->render();
+	}
+
+	abstract protected function getFormTemplateFile(): string;
+}
+
+final class AgreementFormControl extends BaseFormControl
+{
+	protected function getFormTemplateFile(): string
+	{
+		return __DIR__ . '/AgreementFormControl.latte';
+	}
+}
+```
+
+An override without a formula and without such a body is reported (`orisai.nette.latte.fileDiscoveryOpaque`) and never
+guessed. An abstract class whose method is abstract is not reported; its subclasses are.
 
 ### Bridges extension points
 
@@ -1015,7 +1040,9 @@ The shape of a form — its children, their classes and values — is inferred w
 Every `.latte` file is compiled with the real Latte compiler and analysed like a `.php` file, with errors on the
 template's lines. PHPStan's own rules (`variable.undefined`, `method.notFound`, `argument.type`, …) work in templates.
 
-- `{templateType}`, `{varType}`, `{parameters}` and typed `{define}` parameters type the template
+- `{templateType}`, `{varType}`, `{parameters}` and typed `{define}` parameters type the template; the `@var` types of
+  a `{templateType}` class's properties are read with the `use` statements of the file declaring each property (the
+  class, its parent or a trait), so imported and same-namespace class names work
 - `{include}`, `{extends}`, `{layout}`, `{import}` and `{embed}` pass types between templates, checked against what the
   target declares
 - filters and functions are checked against their real signatures, including your own
@@ -1079,6 +1106,8 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - `{default $x = …}` is analysed as `$x ??= …`; at runtime an existing `null` variable keeps `null`.
 - Filters added at render time (`$template->addFilter()`) are not seen — they are reported as unknown.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
+- In the `@var` of a `{templateType}` class's property, type aliases (`@phpstan-type`, `@phpstan-import-type`) are not
+  resolved and only the tag's first line is read; a `@template` parameter of the class is `mixed`.
 - `orisai.nette.latte.templateMissing` is not reported for a renderer which links no template at all.
 - The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
 - Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.

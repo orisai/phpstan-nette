@@ -110,7 +110,11 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   patterns (escaping wrappers except `escapeJs()`, which JSON-encodes any value and therefore
   stays, `$ʟ_*` temporaries, snippet try/finally shells, `CachingIterator` wrapping,
   block-dispatch plumbing, forms/UI runtime calls, …) reduces generated scaffolding to the plain
-  analysable expressions underneath it, so strict-rule noise doesn't leak through. The shapes an
+  analysable expressions underneath it, so strict-rule noise doesn't leak through. A shape spanning
+  several statements is matched in every statement list — a method, a closure, every `if`/`elseif`/
+  `else` branch, `switch` case, loop body and `try`/`catch`/`finally` block — through
+  `EliminatorVisitor::normalizeStatementList()`, the one place that lists the containers (the
+  `statement-containers.latte` snapshot fixture and `StatementContainerTest` pin it). The shapes an
   eliminator matches are a `PatternSet` per `ShapeFamily`, kept in one table
   (`Eliminator/FamilyPatterns`): Latte 2 and 3.0 escape through `Latte\Runtime\Filters`, 3.1
   through `HtmlHelpers`/`XmlHelpers`/`Helpers` and prints an attribute whole
@@ -193,8 +197,20 @@ undefined — that is the intended, fully-strict default, not a bug.
 - **`{templateType C}`** (head-only) — the declared parameter set becomes `C`'s public properties,
   inherited ones included. Unknown class → `orisai.nette.latte.unknownType`. A property's type comes from its
   native type hint or its own `@var` docblock, whichever it has
-  (`PropertyTypeResolver::resolve()`); a property typed as a bare `@template` parameter resolves to
-  `mixed` rather than to whatever an `@extends UITemplate<FooControl>` binds it to. The surface is
+  (`PropertyTypeResolver::resolve()`). The compiled template class lives in the global namespace,
+  so a `@var` type is qualified first (`PhpDocTypeQualifier`): phpdoc-parser parses it, and every
+  class name in it — generic arguments, shape values, `Foo::CONST_*` class parts, `self`/`static`/
+  `parent` — is resolved against the namespace and `use` statements of the file which declares the
+  property (`ClassNameScope`: the parent class's file for an inherited property, the trait's file for
+  a trait's). Only the class names are rewritten, the rest of the text is kept token by token;
+  keywords, shape keys and `int<min, max>` bounds stay as written. The name scope is read with
+  php-parser from the file native reflection names, never through PHPStan's `FileTypeMapper` or
+  reflection provider, because this runs at parse time (see *Bootstrap files and the parse-time
+  `{templateType}` lookup*); a text which phpdoc-parser cannot parse is passed through unchanged. A
+  bare `@template` parameter of the class, anywhere in the type, resolves to `mixed` rather than to
+  whatever an `@extends UITemplate<FooControl>` binds it to. Local and imported type aliases
+  (`@phpstan-type`, `@phpstan-import-type`) are not resolved: an alias name is qualified like a
+  class name, and only the first line of a `@var` is read. The surface is
   native reflection, so a purely virtual class-level `@property` tag with no backing property
   statement contributes **nothing** — see *Known limitations*.
 
@@ -1319,8 +1335,8 @@ A template path is a pure function of (class file, presenter/short class name or
 property default, view name) — the formula. Nette's own two are recognized without configuration;
 every *override* of
 `formatTemplateFiles()`/`formatLayoutTemplateFiles()` and every convention `setFile()` helper
-(`getTemplateFilePath()`-style) is app code this extension will not interpret, so it must be
-*assigned* a vocabulary name:
+(`getTemplateFilePath()`-style) is app code this extension will not interpret — beyond a body that
+is a single static `return` (below) — so it must be *assigned* a vocabulary name:
 
 | Formula | Derives |
 |---|---|
@@ -1362,6 +1378,18 @@ any other formula, naming an unknown formula, or applying a formula to the wrong
 formula on `formatTemplateFiles()`) is reported as an opaque entry rather than guessed. **An
 unassigned override is opaque, never guessed** — one config line is the whole fix, and the
 diagnostic names the declaring class to put in it.
+
+**A convention method needs no formula when its body is a single static `return <path>;`** — the
+same string-literal/`__DIR__`/concatenation evaluation a literal `setFile()` argument gets, with
+`__DIR__` taken from the implementing method's own file (`PhpRenderWalk::conventionReturnPath()`).
+It is resolved per entry class against the implementation that class actually has, so an abstract
+`getFormTemplateFile()` implemented by each subclass links every subclass to its own template. An
+assigned formula still wins, and any other body stays opaque. The implementing file joins the
+facts' read-set, because the record now depends on it even where it is a trait or an ancestor the
+walk does not iterate. On the abstract class itself the method is abstract: the resolver records
+`DiscoveryResolver::ABSTRACT_CONVENTION_REASON` and `LatteDiscoveryRule` does not report it — the
+class never runs, and each concrete subclass must implement the method and reports its own hole.
+That decision needs no knowledge of the subclasses, so it is safe for the result cache.
 
 `nameProperty` names a property, and the property's default is read off the **entry class, not the
 declaring class** — the class being discovered, not the one the assignment is keyed on. A subclass
@@ -2239,7 +2267,7 @@ And the implementation-ledgered additions:
   boundary that keeps test fixtures out; widening it means widening the first-party root, with
   everything else that follows from it.
 - **Two opaque channels remain by construction**: a `setFile()` argument that is not a static
-  literal or a recognized convention call, and a presenter class whose name does not reverse-map
+  literal or a recognized convention call (a formula, or a single static `return <path>;`), and a presenter class whose name does not reverse-map
   through the application mapping (the round-trip guard refuses a lossy inverse rather than invent
   a name). Both are reported (`orisai.nette.latte.fileDiscoveryOpaque`), never guessed, and both close the
   per-view checks for their class rather than answering from an incomplete candidate set.
