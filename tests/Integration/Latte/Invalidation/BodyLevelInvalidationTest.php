@@ -2,6 +2,8 @@
 
 namespace Tests\OriPhpstan\Nette\Integration\Latte\Invalidation;
 
+use OriPhpstan\Nette\Latte\Includes\TemplateTypeChecker;
+use OriPhpstan\Nette\Latte\Rule\LatteDiscoveryRule;
 use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 
 // Matrix group C - BODY-ONLY edits: every signature in the corpus stays byte-identical, so
@@ -211,6 +213,79 @@ final class BodyLevelInvalidationTest extends LatteInvalidationMatrixCase
 		);
 	}
 
+	// Scenario 19 - the setFile argument is a convention method whose static `return <path>;` lives
+	// in a TRAIT, which the walk never iterates. The trait's file is an input of the renderer's
+	// facts: retargeting the return re-links the renderer, reverting it unlinks it again, and a
+	// dynamic body turns the renderer's own cached discovery opaque.
+	public function testStaticConventionReturnEditedInATrait(): void
+	{
+		$secondMismatch = $this->mismatchError(
+			self::BASE_TEMPLATE,
+			'second.latte',
+			self::CONTROL,
+			self::OTHER_TEMPLATE,
+		);
+		$sharedOrphan = 'shared.latte:1 :: ' . TemplateTypeChecker::ORPHAN_IDENTIFIER
+			. ' :: No analysable render, include or layout path reaches this template file.';
+
+		$this->assertScenario(
+			'body-convention-return',
+			[
+				[
+					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
+						'ScratchTemplateFileTrait.php',
+						$this->templateFileTraitSource('second.latte'),
+					),
+					'expect' => [$secondMismatch, $sharedOrphan],
+				],
+				[
+					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
+						'ScratchTemplateFileTrait.php',
+						$this->templateFileTraitSource('shared.latte'),
+					),
+					'expect' => [],
+				],
+				[
+					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
+						'ScratchTemplateFileTrait.php',
+						$this->templateFileTraitSource("' . \$this->getName() . '.latte"),
+					),
+					'expect' => [
+						'ScratchControl.php:15 :: ' . LatteDiscoveryRule::OPAQUE_IDENTIFIER
+						. ' :: Template file discovery is opaque: convention method templateFile declared by '
+						. 'ScratchTemplateFileTrait has no assigned discovery formula.',
+						$sharedOrphan,
+					],
+				],
+			],
+			function (InvalidationScenario $scenario): void {
+				$this->seedSecondTemplate($scenario);
+				$scenario->write('ScratchTemplateFileTrait.php', $this->templateFileTraitSource('shared.latte'));
+				$scenario->write(self::CONTROL . '.php', <<<'PHP'
+<?php declare(strict_types = 1);
+
+class ScratchControl extends \Nette\Application\UI\Control
+{
+
+	use ScratchTemplateFileTrait;
+
+	public function formatTemplateClass(): ?string
+	{
+		return ScratchBaseTemplate::class;
+	}
+
+	public function render(): void
+	{
+		$this->getTemplate()->setFile($this->templateFile());
+	}
+
+}
+
+PHP);
+			},
+		);
+	}
+
 	private function seedSecondTemplate(InvalidationScenario $scenario): void
 	{
 		$scenario->write('second.latte', $this->templateFileSource(self::OTHER_TEMPLATE, "<p>second</p>\n"));
@@ -218,6 +293,24 @@ final class BodyLevelInvalidationTest extends LatteInvalidationMatrixCase
 			self::SECOND_CONTROL . '.php',
 			$this->controlSource(self::SECOND_CONTROL, self::OTHER_TEMPLATE, 'second.latte'),
 		);
+	}
+
+	private function templateFileTraitSource(string $templateRelPath): string
+	{
+		return <<<PHP
+<?php declare(strict_types = 1);
+
+trait ScratchTemplateFileTrait
+{
+
+	protected function templateFile(): string
+	{
+		return __DIR__ . '/$templateRelPath';
+	}
+
+}
+
+PHP;
 	}
 
 	private function twoTemplateControlSource(string $pairedTemplate): string

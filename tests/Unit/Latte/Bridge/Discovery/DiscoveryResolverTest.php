@@ -13,7 +13,9 @@ use OriPhpstan\Nette\Latte\Bridge\SetFileFact;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use PHPStan\Parser\Parser;
 use PHPStan\Testing\PHPStanTestCase;
+use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryDynamicReturnControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackDerivedControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackMissingControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryFallbackSharedControl;
@@ -31,6 +33,9 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileAction
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileBeforeRenderPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileConditionalPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileOpaquePresenter;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStaticReturnBase;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStaticReturnControl;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryStaticReturnTraitControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryTemplatesPathControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryTwoTemplateControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnassignedPresenter;
@@ -42,6 +47,7 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\FixturePresenterTempla
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\FixturePropertyNameControlBase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\FixtureTemplatesPathControlBase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\HeirModule\DiscoveryInheritedHeirPresenter;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\StaticReturn\StaticReturnTemplateFile;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\SubModule\DiscoveryDeepPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\UnrelatedServiceFixture;
 use function array_keys;
@@ -442,6 +448,71 @@ final class DiscoveryResolverTest extends PHPStanTestCase
 		self::assertStringContainsString('invalid discovery formula assignment', $discovery->getOpaques()[0]['reason']);
 	}
 
+	// A convention method whose implementation is a single static `return <path>;` names the template
+	// per concrete class, with no formula: __DIR__ is the implementing method's own directory.
+	public function testStaticReturnOfTheConventionMethodResolvesPerConcreteClass(): void
+	{
+		$discovery = $this->discoveryFor(DiscoveryStaticReturnControl::class);
+
+		self::assertSame(
+			[['App/discoveryStaticReturn.latte', true, true, CandidatePath::KIND_CONVENTION]],
+			self::tuples($discovery->getViewCandidates()['']),
+		);
+		self::assertSame([], $discovery->getOpaques());
+	}
+
+	public function testStaticReturnImplementedByATraitResolvesAgainstTheTraitsDirectory(): void
+	{
+		$facts = $this->walk(self::MappingLoaderFile, self::AssignedFormulas)
+			->factsFor(DiscoveryStaticReturnTraitControl::class);
+		$discovery = $facts->getDiscovery();
+		self::assertNotNull($discovery);
+
+		self::assertSame(
+			[['App/StaticReturn/staticReturnTrait.latte', true, true, CandidatePath::KIND_CONVENTION]],
+			self::tuples($discovery->getViewCandidates()['']),
+		);
+		self::assertSame([], $discovery->getOpaques());
+		self::assertContains(
+			(new ReflectionClass(StaticReturnTemplateFile::class))->getFileName(),
+			$facts->getReadSet(),
+		);
+	}
+
+	public function testDynamicReturnOfTheConventionMethodStaysOpaque(): void
+	{
+		$discovery = $this->discoveryFor(DiscoveryDynamicReturnControl::class);
+
+		self::assertSame(['' => []], $discovery->getViewCandidates());
+		self::assertSame(
+			[
+				[
+					'reason' => 'convention method getFormTemplateFile declared by '
+						. DiscoveryDynamicReturnControl::class . ' has no assigned discovery formula',
+					'line' => 12,
+				],
+			],
+			$discovery->getOpaques(),
+		);
+	}
+
+	// The abstract base never runs: each concrete subclass resolves its own implementation.
+	public function testAbstractConventionMethodOfAnAbstractClassIsAnAbstractHole(): void
+	{
+		$discovery = $this->discoveryFor(DiscoveryStaticReturnBase::class);
+
+		self::assertSame(
+			[
+				[
+					'reason' => DiscoveryResolver::ABSTRACT_CONVENTION_REASON . 'getFormTemplateFile on '
+						. DiscoveryStaticReturnBase::class,
+					'line' => 12,
+				],
+			],
+			$discovery->getOpaques(),
+		);
+	}
+
 	public function testUnassignedOverrideYieldsOpaqueWithoutFormulaCandidates(): void
 	{
 		$discovery = $this->discoveryFor(DiscoveryUnassignedPresenter::class);
@@ -799,6 +870,7 @@ final class DiscoveryResolverTest extends PHPStanTestCase
 			'scope' => 'open',
 			'scopeView' => null,
 			'conventionMethod' => null,
+			'conventionPath' => null,
 			'method' => $method,
 		];
 	}

@@ -109,6 +109,12 @@ final class LatteDiscoveryRule implements Rule
 					continue;
 				}
 
+				// Only an abstract class has an abstract convention method, and it never runs: every
+				// concrete descendant implements the method and reports its own hole.
+				if (strpos($opaque['reason'], DiscoveryResolver::ABSTRACT_CONVENTION_REASON) === 0) {
+					continue;
+				}
+
 				$line = $opaque['line'];
 				$errors[] = RuleErrorBuilder::message(
 					sprintf('Template file discovery is opaque: %s.', $opaque['reason']),

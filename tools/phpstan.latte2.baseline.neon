@@ -148,7 +148,7 @@ parameters:
 			path: ../tests/Unit/Latte/Bridge/PhpFactsCacheTest.php
 
 		-
-			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with array{convention: 10, formula: 20, setFile: 5} and array{formula?: int<1, max>, layout?: int<1, max>, setFile?: int<1, max>, convention?: int<1, max>} will always evaluate to false.'
+			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with array{convention: 15, formula: 20, setFile: 5} and array{formula?: int<1, max>, layout?: int<1, max>, setFile?: int<1, max>, convention?: int<1, max>} will always evaluate to false.'
 			identifier: staticMethod.impossibleType
 			count: 1
 			path: ../tests/Unit/Latte/Bridge/PhpRenderWalkScaleTest.php

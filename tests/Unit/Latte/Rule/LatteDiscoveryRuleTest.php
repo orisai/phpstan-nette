@@ -14,6 +14,7 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryDynamicReturnControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnassignedPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnmappedAbstractRenderer;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryUnmappedEndpoint;
@@ -132,6 +133,32 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 			[
 				[
 					'Template file discovery is opaque: setFile argument is not statically resolvable.',
+					5,
+				],
+			],
+		);
+	}
+
+	// The abstract base never runs, and every concrete subclass must implement the abstract
+	// convention method: the hole is each subclass's to report.
+	public function testAbstractConventionMethodOfAnAbstractBaseIsNotReported(): void
+	{
+		$this->analyse([self::FixtureDir . '/DiscoveryStaticReturnBase.php'], []);
+	}
+
+	public function testStaticReturnConventionMethodIsNotReported(): void
+	{
+		$this->analyse([self::FixtureDir . '/DiscoveryStaticReturnControl.php'], []);
+	}
+
+	public function testDynamicReturnConventionMethodIsReportedAtTheClassDeclaration(): void
+	{
+		$this->analyse(
+			[self::FixtureDir . '/DiscoveryDynamicReturnControl.php'],
+			[
+				[
+					'Template file discovery is opaque: convention method getFormTemplateFile declared by '
+					. DiscoveryDynamicReturnControl::class . ' has no assigned discovery formula.',
 					5,
 				],
 			],

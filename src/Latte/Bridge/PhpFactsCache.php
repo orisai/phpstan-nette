@@ -43,8 +43,10 @@ final class PhpFactsCache
 	// gained createTemplate()'s resolved control argument - a version-9 envelope lacks the key
 	// fromArray() now requires. Version 11: the envelope gained the normalised first-party paths the
 	// walk's app-root gate reads - a version-10 envelope would keep serving facts computed under a
-	// superseded orisai.nette.latte.firstPartyPaths value.
-	public const FORMAT_VERSION = 11;
+	// superseded orisai.nette.latte.firstPartyPaths value. Version 12: a convention method whose body is a
+	// static `return <path>;` resolves without a formula - a version-11 envelope over unchanged files
+	// would keep serving the opaque hole.
+	public const FORMAT_VERSION = 12;
 
 	private const NAMESPACE_PREFIX = 'phpfacts|';
 

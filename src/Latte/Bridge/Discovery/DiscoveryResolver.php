@@ -35,7 +35,7 @@ use function substr;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * @phpstan-type SetFileEntry array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, line: int, phase: MutationFact::PHASE_*, effectiveness: MutationFact::EFFECTIVE_*, scope: 'view'|'class'|'open', scopeView: string|null, conventionMethod: string|null, method: string|null}
+ * @phpstan-type SetFileEntry array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, line: int, phase: MutationFact::PHASE_*, effectiveness: MutationFact::EFFECTIVE_*, scope: 'view'|'class'|'open', scopeView: string|null, conventionMethod: string|null, conventionPath: string|null, method: string|null}
  * @phpstan-type MappingValue array<string, array{string, string, string}>
  * @phpstan-type EntryCandidate array{scopeView: string|null, path: string|null, fallbackPath: string|null, kind: CandidatePath::KIND_SET_FILE|CandidatePath::KIND_CONVENTION, suppressing: bool, phase: MutationFact::PHASE_*, line: int, method: string|null}
  */
@@ -44,6 +44,9 @@ final class DiscoveryResolver
 
 	// The opaque reason prefix for a presenter no configured mapping reverse-maps; the class name follows.
 	public const UNRESOLVED_PRESENTER_REASON = 'presenter name unresolved: no mapping reverse-maps class ';
+
+	// The opaque reason prefix for an abstract class whose convention method is abstract; "<method> on <class>" follows.
+	public const ABSTRACT_CONVENTION_REASON = 'abstract convention method ';
 
 	private const FORMAT_TEMPLATE_FILES_METHOD = 'formatTemplateFiles';
 
@@ -326,6 +329,7 @@ final class DiscoveryResolver
 				$conventionPaths = $this->conventionPathsFor(
 					$entryClass,
 					$entry['conventionMethod'],
+					$entry['conventionPath'],
 					$entry['line'],
 					$opaques,
 				);
@@ -599,6 +603,7 @@ final class DiscoveryResolver
 	private function conventionPathsFor(
 		ClassReflection $entryClass,
 		?string $conventionMethod,
+		?string $conventionPath,
 		int $line,
 		array &$opaques
 	): array
@@ -626,6 +631,19 @@ final class DiscoveryResolver
 
 		$identity = $resolved['identity'];
 		$entry = $this->formulas[$identity] ?? null;
+		if ($entry === null && $conventionPath !== null) {
+			return ['path' => $conventionPath, 'fallbackPath' => null];
+		}
+
+		if ($entry === null && $resolved['abstract']) {
+			$opaques[] = [
+				'reason' => self::ABSTRACT_CONVENTION_REASON . "$conventionMethod on " . $entryClass->getName(),
+				'line' => $line,
+			];
+
+			return $none;
+		}
+
 		if ($entry === null) {
 			$opaques[] = [
 				'reason' => "convention method $conventionMethod declared by $identity has no assigned discovery formula",
@@ -800,7 +818,7 @@ final class DiscoveryResolver
 	}
 
 	/**
-	 * @return array{identity: string, file: string|null}|null
+	 * @return array{identity: string, file: string|null, abstract: bool}|null
 	 */
 	private static function declaringIdentity(ClassReflection $entryClass, string $methodName): ?array
 	{
@@ -817,11 +835,15 @@ final class DiscoveryResolver
 		if ($methodFile !== false && $declaringFile !== false && $methodFile !== $declaringFile) {
 			$trait = self::declaringTrait($declaring, $methodName, $methodFile);
 			if ($trait !== null) {
-				return ['identity' => $trait, 'file' => $methodFile];
+				return ['identity' => $trait, 'file' => $methodFile, 'abstract' => $method->isAbstract()];
 			}
 		}
 
-		return ['identity' => $declaring->getName(), 'file' => $methodFile === false ? null : $methodFile];
+		return [
+			'identity' => $declaring->getName(),
+			'file' => $methodFile === false ? null : $methodFile,
+			'abstract' => $method->isAbstract(),
+		];
 	}
 
 	/**

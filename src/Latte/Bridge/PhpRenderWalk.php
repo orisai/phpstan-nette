@@ -349,6 +349,9 @@ final class PhpRenderWalk
 			);
 
 			$scope = self::setFileDiscoveryScope($lifecycle, $found['methodId']);
+			$conventionPath = $found['kind'] === SetFileFact::KIND_CONVENTION && $found['conventionMethod'] !== null
+				? $this->conventionReturnPath($classReflection, $found['conventionMethod'], $readSet)
+				: null;
 			$discoveryEntries[] = [
 				'kind' => $found['kind'],
 				'path' => $found['path'],
@@ -359,6 +362,7 @@ final class PhpRenderWalk
 				'scope' => $scope['scope'],
 				'scopeView' => $scope['scopeView'],
 				'conventionMethod' => $found['conventionMethod'],
+				'conventionPath' => $conventionPath,
 				'method' => $lifecycle['methods'][$found['methodId']]['name'] ?? null,
 			];
 		}
@@ -2720,6 +2724,36 @@ final class PhpRenderWalk
 		return $this->reflectionProvider->hasClass($classNames[0])
 			? $this->reflectionProvider->getClass($classNames[0])
 			: null;
+	}
+
+	/**
+	 * @param list<string> $readSet
+	 */
+	private function conventionReturnPath(ClassReflection $entryClass, string $methodName, array &$readSet): ?string
+	{
+		$native = $entryClass->getNativeReflection();
+		if (!$native->hasMethod($methodName)) {
+			return null;
+		}
+
+		$method = $native->getMethod($methodName);
+		$file = $method->getFileName();
+		$line = $method->getStartLine();
+		if ($method->isAbstract() || $file === false || $line === false) {
+			return null;
+		}
+
+		if (!in_array($file, $readSet, true)) {
+			$readSet[] = $file;
+		}
+
+		$node = $this->methodNodesByLine($file)[$line] ?? null;
+		$return = $node !== null && $node->stmts !== null && count($node->stmts) === 1 ? $node->stmts[0] : null;
+		if (!$return instanceof Return_ || $return->expr === null) {
+			return null;
+		}
+
+		return $this->resolveLiteralPath($return->expr, $file);
 	}
 
 	// __DIR__ resolves lexically to the file the code is textually written in, which is $file
