@@ -97,6 +97,19 @@ final class LocalVariableClassTracker
 			: $this->receiverClass($expr, $fn, $ownerFqcn, []);
 	}
 
+	// A fluent `static` return is the receiver, not the object the method created.
+	public function newObjectReturnClass(string $classFqcn, string $method): ?string
+	{
+		$class = $this->classReflection($classFqcn);
+		if ($class === null || !$class->hasNativeMethod($method)) {
+			return null;
+		}
+
+		$returnType = $class->getNativeMethod($method)->getVariants()[0]->getReturnType();
+
+		return $returnType instanceof StaticType ? null : $this->singleObjectClass($returnType);
+	}
+
 	/**
 	 * @param array<string, true> $visiting
 	 */

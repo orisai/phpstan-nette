@@ -85,7 +85,19 @@ final class SummaryFactoryTest extends TypeInferenceTestCase
 				}
 
 				$meta = $tagged->getAttribute(TaggedNode::ATTRIBUTE);
-				$summary = $factory->fromTaggedNode($node, $tagged, $meta, $scope);
+				$summary = $factory->fromTaggedNode(
+					$node,
+					$tagged,
+					$meta,
+					$scope,
+					null,
+					null,
+					[],
+					[],
+					false,
+					[],
+					$scope->isInClass() ? $scope->getClassReflection()->getName() : null,
+				);
 
 				$key = $meta->getOperationKind();
 				if ($key === '$offsetSet') {

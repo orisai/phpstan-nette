@@ -10,7 +10,10 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\CallLike;
+use PhpParser\Node\Expr\Cast;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
@@ -22,6 +25,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
+use PhpParser\Node\Scalar;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Foreach_;
@@ -288,7 +292,7 @@ final class RegistrationRecognizer
 		foreach ($finder->findInstanceOf($stmts, Assign::class) as $assign) {
 			// `$this['a']['b']['x'] = $control` is an offsetSet on the component the last-but-one
 			// offset names, so the mutated component is the assignment target's own receiver.
-			if (!$assign->var instanceof ArrayDimFetch) {
+			if (!$assign->var instanceof ArrayDimFetch || self::isNeverComponent($assign->expr)) {
 				continue;
 			}
 
@@ -432,7 +436,7 @@ final class RegistrationRecognizer
 
 		$sites = [];
 		foreach ($finder->findInstanceOf($stmts, Assign::class) as $assign) {
-			if (!$assign->var instanceof ArrayDimFetch) {
+			if (!$assign->var instanceof ArrayDimFetch || self::isNeverComponent($assign->expr)) {
 				continue;
 			}
 
@@ -882,6 +886,22 @@ final class RegistrationRecognizer
 		}
 
 		return ['scope' => RegistrationFact::OWNER_UNKNOWN, 'owner' => '', 'name' => $access['name']];
+	}
+
+	// Container::offsetSet() hands its value to addComponent(IComponent), so an offset write of a value
+	// that is never an object is an array write (DefaultFormRenderer::$wrappers['form'][…]), not a
+	// component registration.
+	private static function isNeverComponent(Expr $value): bool
+	{
+		if ($value instanceof Scalar || $value instanceof Array_ || $value instanceof Concat) {
+			return true;
+		}
+
+		if ($value instanceof ConstFetch) {
+			return in_array($value->name->toLowerString(), ['null', 'true', 'false'], true);
+		}
+
+		return $value instanceof Cast && !$value instanceof Cast\Object_;
 	}
 
 	private function isThis(Expr $expr): bool

@@ -111,6 +111,15 @@ final class Helpers
 
 	/**
 	 * @param string|int|object $name
+	 * @return BaseControl&PartAddressableControl
+	 */
+	public static function formFieldPart($name): BaseControl
+	{
+		throw new LogicException('never executed');
+	}
+
+	/**
+	 * @param string|int|object $name
 	 */
 	public static function formLabel($name): NetteHtml
 	{

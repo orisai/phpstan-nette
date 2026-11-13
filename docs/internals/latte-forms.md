@@ -320,6 +320,15 @@ An access the recording layer sees is what makes a shape **open**: `{input nope}
 "unresolved" rather than "does not exist". Everything below reads as *non-mutating*, which means a
 name the builder does not list is reported **absent**.
 
+**An offset write of a value that can never be a component is not a mutation.** `Container::offsetSet()`
+hands its value to `addComponent(IComponent …)`, so `$renderer->wrappers['form']['container'] = null`
+— a scalar, `null`/`true`/`false`, an array literal, a concatenation or a non-object cast — is an array
+write whatever the receiver is. The recognizer is receiver-blind, and before this rule a renderer's
+`$wrappers` configuration recorded an owner-less mutation of the components `form`, `label`, `control`,
+`pair`, … — one such line opened every form named `form` in a project. A value that *may* be an object
+(a variable, a call) still counts, so `$renderer->wrappers['form']['container'] = $tag` remains an
+owner-less mutation (R3 below).
+
 ### The residuals
 
 All reachable, none theoretical. Each is a way to make a component's interior change without the
@@ -438,6 +447,13 @@ that answer types the compiled template:
 - `{input x}`, `{label x}`, `{inputError x}`, `<el n:name="x">` and `<el n:name="x:part">` type the
   control as the class the builder attached (`CheckboxList`, `TextInput`, …) instead of the generic
   `BaseControl`, so `getControlPart($key)` on a checkbox list stops being "invoked with 1 parameter".
+- A part reference (`{input x:$key}`, `{label x:$key /}`, `n:name="x:$key"`) calls the part getter
+  with the key, and the eliminator writes its control read as `Helpers::formFieldPart(X)` instead of
+  `formField(X)`. It narrows exactly like `formField()`; unresolved it is
+  `BaseControl&PartAddressableControl`, whose getters take the key, because the reference states
+  that the author expects a choice control and the analysis has no class to contradict it. A
+  RESOLVED class still answers for itself: a text input addressed by part keeps its "invoked with 1
+  parameter".
 - `{formContainer c}` types the container the same way.
 
 Every rule is one-sided, like the diagnostics: a renderer the pairing cannot resolve, a template with

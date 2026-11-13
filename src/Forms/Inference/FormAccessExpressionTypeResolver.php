@@ -25,9 +25,12 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
+use PHPStan\Type\ErrorType;
 use PHPStan\Type\ExpressionTypeResolverExtension;
+use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
+use PHPStan\Type\TypeCombinator;
 use function count;
 use function in_array;
 use function is_string;
@@ -210,7 +213,7 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 			}
 
 			$strings = $scope->getType($expr->dim)->getConstantStrings();
-			if (count($strings) !== 1) {
+			if ($strings === []) {
 				return null;
 			}
 
@@ -219,10 +222,27 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 			// $form['filter']['rep-addNode'] is the SAME lookup as $form['filter']['rep']['addNode'] at
 			// runtime. Both spellings go through the shared ComponentPath walk here; a name with no
 			// separator is a one-segment path, which the projector resolves with plain offset().
-			return FormShapeProjector::offsetPath(
-				$baseType->getFormShape(),
-				ComponentPath::split($strings[0]->getValue()),
-			);
+			if (count($strings) === 1) {
+				return FormShapeProjector::offsetPath(
+					$baseType->getFormShape(),
+					ComponentPath::split($strings[0]->getValue()),
+				);
+			}
+
+			$types = [];
+			foreach ($strings as $string) {
+				$type = FormShapeProjector::offsetPath(
+					$baseType->getFormShape(),
+					ComponentPath::split($string->getValue()),
+				);
+				if ($type === null || $type instanceof ErrorType || $type instanceof MixedType) {
+					return null;
+				}
+
+				$types[] = $type;
+			}
+
+			return TypeCombinator::union(...$types);
 		} finally {
 			unset($this->resolving[$guardKey]);
 		}

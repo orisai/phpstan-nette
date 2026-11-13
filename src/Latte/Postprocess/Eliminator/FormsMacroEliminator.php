@@ -29,6 +29,7 @@ use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
 use function array_map;
 use function array_reverse;
+use function assert;
 use function count;
 use function in_array;
 use function is_array;
@@ -96,6 +97,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	private const LABEL_GETTERS = ['getLabel', 'getLabelPart'];
 
 	private const CONTROL_GETTERS = ['getControl', 'getControlPart'];
+
+	private const PART_GETTERS = ['getControlPart', 'getLabelPart'];
 
 	private const LABEL_START = 'startTag';
 
@@ -174,7 +177,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$input = $this->rebuildAttributedInput($node);
+		$input = $this->rebuildAttributedInput($node) ?? $this->rebuildPartGetter($node);
 		if ($input !== null) {
 			return $input;
 		}
@@ -474,7 +477,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		return $this->matchHelperCall($getter->var, 'formField');
+		return $this->matchFieldCall($getter->var);
 	}
 
 	private function labelAssign(Expr $name, Node $replaced, Stmt $stmt): Expression
@@ -705,6 +708,40 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			&& $expr->var->name === 'this';
 	}
 
+	// {input x:$key} and {label x:$key /} call the part getter with the key, which only a choice control
+	// declares. Helpers::formFieldPart() resolves exactly like formField() and keeps the key acceptable
+	// when the control stays unresolved.
+	private function rebuildPartGetter(Expr $expr): ?MethodCall
+	{
+		if (
+			!$expr instanceof MethodCall
+			|| !$expr->name instanceof Identifier
+			|| !in_array($expr->name->toString(), self::PART_GETTERS, true)
+			|| $expr->args === []
+		) {
+			return null;
+		}
+
+		$name = $this->matchHelperCall($expr->var, 'formField');
+		if ($name === null) {
+			return null;
+		}
+
+		assert($expr->var instanceof StaticCall);
+
+		return new MethodCall(
+			$this->helperCall('formFieldPart', $name, $expr->var),
+			$expr->name,
+			$expr->args,
+			$expr->getAttributes(),
+		);
+	}
+
+	private function matchFieldCall(Expr $expr): ?Expr
+	{
+		return $this->matchHelperCall($expr, 'formField') ?? $this->matchHelperCall($expr, 'formFieldPart');
+	}
+
 	private function matchHelperCall(Expr $expr, string $method): ?Expr
 	{
 		if (
@@ -746,7 +783,7 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$name = $this->matchHelperCall($control->var, 'formField');
+		$name = $this->matchFieldCall($control->var);
 		if ($name === null) {
 			return null;
 		}

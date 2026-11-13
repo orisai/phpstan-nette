@@ -307,6 +307,18 @@ $form[$name];         // => Nette\Forms\Controls\Checkbox|Nette\Forms\Controls\T
 A shape with no known children has nothing to union, so the offset degrades to whatever the receiver class's own
 `ArrayAccess` answers (`IComponent`).
 
+A key that is one of several **literal** names — a `foreach` over a literal array, a ternary of two
+names — is one of exactly those children, so the offset is the union of what each of them resolves to,
+on every channel (the builder's own variable, `$this['form'][$n]`, a bound `$form[$n]`):
+
+```php
+foreach (['first', 'second'] as $name) {
+    $form[$name]; // => Nette\Forms\Controls\Checkbox   (not the union of every child)
+}
+```
+
+When one of the names resolves to nothing, the offset falls back to the union of every child.
+
 ## Iterating children
 
 `getComponents()` (no arguments) types as a collection of the **immediate** children — a union of their types — so a
@@ -563,6 +575,11 @@ deliberately conservative because a wrongly-closed shape is what turns into a fa
   one would keep claiming a control that is gone by render time;
 * a callee that is itself incomplete — its own unknown reasons come across to the caller;
 * recursion — a helper reached while already being followed.
+
+A followed helper's own `return` — `if (!$flag) { return; }` — is an exit with the form as it stands
+there: the parameter outlives the call, so every return point of the helper joins, not only its
+fall-through end. What the helper adds after such a return is MAYBE in the caller's form, exactly as
+if the caller had written the `if` itself.
 
 A build method called **on** the tracked form (`$form->buildEverything();`, declared on the form and registering into
 its own `$this`) is followed by the same machinery, under one extra gate: the callee's OWN BODY has to register on
@@ -2058,6 +2075,36 @@ extension to read a new shape-affecting construct, teach `FormFactSalt` about it
 `FormFactSaltTest` drift-checks its vocabulary against the method names the extension spells and will fail if you
 forget.
 
+## A shape does not depend on who asks
+
+A shape is computed once and persisted under the building function's own key (file hash plus
+function-like), and served to every consumer — the builder's own file, a presenter two directories
+away, a compiled template. Whoever asks first computes it, and the PHPStan scope the walk is handed is
+that consumer's. So the walk may only ask that scope about expressions that mean the same in every
+scope; anything else makes the shape — and every finding read off it — a function of which file
+happened to be analysed first in which worker, i.e. of the file count and the parallel job split, and
+of the subset a warm run re-analyses.
+
+What the walk reads off the building code itself instead:
+
+- **Component names.** A name written with a variable is the single literal the building function
+  assigns to it (`$name = 'x';`) or nothing — never the asking scope's `$name`, which belongs to some
+  other function. `self::X`, `static::X` and `parent::X` resolve against the class lexically enclosing
+  the walked function, not the asking scope's class. A name with neither (a literal, `Foo::X`, a
+  concatenation of those) is asked of the scope, which answers it the same everywhere.
+- **A nested container's class.** `$form->addContainer('box')` takes the declared return of
+  `addContainer()` on the class the walk resolved for `$form` (a fluent `static` return excluded)
+  before it asks the scope, which in a consumer's file types `$form` as whatever that consumer bound
+  to the same name — typically the builder's declared `Nette\Forms\Form`, whose `addContainer()`
+  returns a plain `Nette\Forms\Container`.
+
+Both were observed on a real project: a builder's `self::LANG_CONTAINER` container went missing when
+a template asked first (the template class has no such constant), so a handler's `$form['lang']` was
+`IComponent` in some job splits and a container in others; and a `foreach (… as $key => …)` container
+name was an unrelated method's `'user'` instead of dynamic, closing a shape that is open.
+
+What still reads the asking scope is listed under [Known limitations](#known-limitations).
+
 # What's checked
 
 Beyond inference, a few rules flag misuse:
@@ -2152,6 +2199,8 @@ wizards; DTO mapping; forms held in an object property (`$this->form`); generic 
 | Magic `add*` methods via `extensionMethod()`              | Runtime `__call` registrations aren't real methods, so PHPStan can't see them and no shape is inferred.                                                                                                                                          | [Add a real component](#magic-add-methods-are-not-supported) — offset assignment or extend + shared trait. |
 | Dynamic / non-constant component names                    | `addContainer($name)` / `addComponent(new Foo(), $bar)` with a non-literal name can't be keyed; the child resolves to `unknown`. A removal by non-literal name opens the shape.                                                                 | Use a constant string name.                                               |
 | `setMappedType()` with a non-literal or conditional class | Only a direct `setMappedType(Dto::class)` statement with a class-constant literal is captured; otherwise the container falls back to the crate/array shape.                                                                                     | Call it unconditionally with a `Dto::class` argument.                     |
+| An **abstract hook** a base-class builder calls           | `createComponentForm()` in an abstract base calling `$this->buildTypeFields($form)`, implemented by each subclass, is walked once per declaring file and resolves `$this->` against the class lexically enclosing the builder, where the hook is abstract and has no body. The call is unfollowed and the shape opens (`unfollowed_call`), so on a subclass the controls the override adds read as *may not exist* rather than as their classes. Following the override would need the walk keyed by the asking subclass as well, since the same builder then has one shape per subclass. | Call the hook with the form from the subclass's own `createComponentForm()`, or accept the open shape. |
+| Value-side inputs still read the **asking scope**          | Names and nested container classes are scope-free (see [A shape does not depend on who asks](#a-shape-does-not-depend-on-who-asks)), but other walk inputs are still typed through the consumer's scope: a control assigned as `$form['x'] = $control` or `addComponent($control, 'x')`, modifier arguments (`setRequired($flag)`, `setItems($items)`, `setNullable($n)`), a choice control's item keys from a variable, a replicator's own class (`$rep = $form->addDynamic(…)`). Where a consumer's scope binds the same variable name these can differ by who asked first. | Pass literals to modifiers in builders read from other files. |
 | `eval()` / `extract()` in a form-building method          | The body can't be analysed and the shape opens.                                                                                                                                                                                                 | Don't use them in a builder.                                              |
 | Reading a divergent field inside a shared helper                | A helper typed `function(Form $f)` is analysed once: the shapes from its call sites are merged into their **union**, so a field present at any site counts as present. This only matters when the helper **reads** a field whose *presence* differs between sites — that read isn't flagged as possibly-absent. Passing a form/container around otherwise (logging it, adding the same container to several forms, bulk-setting inputs nullable) is unaffected, since those don't depend on a per-site-divergent field. | Split the helper along the divergence, or guard the read with `isset()`. |
 | `$c['x'] ?? …` on PHPStan 2.3 types its left side as `IComponent` | PHPStan 2.3 prices the `??` from `Type::getOffsetValueType()` too, which never asks the `offsetGet()` dynamic return type extensions, and the value an assignment stores from the coalesce does not go through an expression type resolver answering the offset. `isset()` is restored (see [Existence checks](#existence-checks-whose-answer-is-already-known)); `??` is not. | Read the offset under an `isset()` guard instead of `??`. |

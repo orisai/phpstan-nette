@@ -48,6 +48,7 @@ use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\TypedNoFormRenderer
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\TypedOtherRenderer;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\TypedRenderer;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\TypeMutatedRenderer;
+use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\WrapperConfiguredRenderer;
 use function array_keys;
 use function assert;
 use function getcwd;
@@ -77,6 +78,8 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 	private const LOST = 'typing-lost.latte';
 
 	private const PROTECTED = 'typing-protected.latte';
+
+	private const WRAPPERS = 'typing-wrappers.latte';
 
 	private const NESTED_MUTATED = 'typing-nested-mutated.latte';
 
@@ -173,6 +176,15 @@ final class FormMacroTypeResolverTest extends FormShapeTestCase
 		self::assertNotInstanceOf(FormShapeType::class, $type);
 		self::assertSame(PairingForm::class, $type->getClassName());
 		self::assertNull($resolver->controlClassAt(self::MUTATED, 1, 'email', $this->scope()));
+	}
+
+	public function testNonComponentValueWrittenUnderAComponentNameIsNoMutation(): void
+	{
+		$type = $this->resolver([self::WRAPPERS => [WrapperConfiguredRenderer::class]])
+			->formShapeFor(self::WRAPPERS, 'wrappedForm', $this->scope());
+
+		self::assertInstanceOf(FormShapeType::class, $type);
+		self::assertArrayHasKey('email', $type->getFormShape()->getSlots());
 	}
 
 	public function testIncompleteFormIsHandedOutOpen(): void

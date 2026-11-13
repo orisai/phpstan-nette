@@ -79,7 +79,7 @@ PHP);
         $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
         echo $latteLabel->startTag();
         echo $latteLabel->endTag();
-        echo $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getLabelPart('part');
+        echo $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formFieldPart('x')->getLabelPart('part');
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getError();
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField($dyn)->getControl();
         echo ($latteElem = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('sel')->getControlPart())->attributes();
@@ -172,7 +172,7 @@ PHP);
         $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
         echo $latteLabel->startTag();
         echo $latteLabel->endTag();
-        echo $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getLabelPart('part');
+        echo $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formFieldPart('x')->getLabelPart('part');
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getError();
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField($dyn)->getControl();
         echo ($latteElem = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('sel')->getControlPart())->attributes();
@@ -272,6 +272,8 @@ PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), 
 		$ʟ_input = $_input = end($this->global->formsStack)["sel"];
 		echo $ʟ_input->getControlPart()->attributes() /* line 7 */;
 		echo $ʟ_input->getControl()->getHtml() /* line 7 */;
+		echo end($this->global->formsStack)["k"]->getControlPart($key) /* line 8 */;
+		echo end($this->global->formsStack)["k"]->getControlPart($key)->addAttributes(['class' => "c"]) /* line 8 */;
 		echo Nette\Bridges\FormsLatte\Runtime::renderFormEnd(array_pop($this->global->formsStack), false) /* line 1 */;
 		echo '</form>';
 		$form = $this->global->formsStack[] = is_object($ʟ_tmp = $obj) ? $ʟ_tmp : $this->global->uiControl[$ʟ_tmp];
@@ -307,7 +309,7 @@ PHP);
         $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
         echo $latteLabel->startTag();
         echo $latteLabel->endTag();
-        if ($latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getLabelPart("part")) {
+        if ($latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formFieldPart('x')->getLabelPart("part")) {
             echo $latteLabel;
         }
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getError();
@@ -316,6 +318,8 @@ PHP);
         $latteInput = $_input = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('sel');
         echo $latteInput->getControlPart()->attributes();
         echo $latteInput->getControl()->getHtml();
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formFieldPart('k')->getControlPart($key);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('k', $key)->addAttributes(['class' => "c"]);
         echo '</form>';
         $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::formObject($obj);
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('y')->getControl();

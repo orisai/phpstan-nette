@@ -1003,6 +1003,10 @@ The shape of a form — its children, their classes and values — is inferred w
   as present in it.
 - A container pulled into a variable and passed around (`$section = $form['section']`) opens the whole form's shape.
 - `@form-adds` is checked against the method's signature, not its body — a wrong tag gives a wrong shape.
+- An abstract method a base class's builder calls (`$this->buildFields($form)`) is not followed into the subclass's
+  implementation; the shape opens, and controls the implementation adds read as *may not exist*.
+- A form read in another file uses the builder's own names and container classes, but a modifier argument held in a
+  variable (`setRequired($flag)`, `setItems($items)`) is typed in the reading file's scope.
 
 ### Latte features
 

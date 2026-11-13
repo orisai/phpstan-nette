@@ -98,12 +98,12 @@ final class FormsShapeFamilyTest extends BaseTestCase
 			[
 				[1, "form('myForm')"],
 				[2, "formField('name')"],
-				[3, "formField('name')"],
+				[3, "formFieldPart('name')"],
 				[4, "formInput('name')"],
 				[5, "formInput('name', 'part')"],
 				[self::labelLine(6, 10), "formLabel('name')"],
 				[self::labelLine(7, 10), "formField('name')"],
-				[self::labelLine(8, 10), "formField('name')"],
+				[self::labelLine(8, 10), "formFieldPart('name')"],
 				[self::labelLine(9, 10), "formLabel('name')"],
 				[10, "formField('name')"],
 				[11, "formField('name')"],
@@ -168,7 +168,7 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				|| !$call->name instanceof Node\Identifier
 				|| !in_array(
 					$call->name->toString(),
-					['form', 'formObject', 'formContainer', 'formField', 'formLabel', 'formInput'],
+					['form', 'formObject', 'formContainer', 'formField', 'formFieldPart', 'formLabel', 'formInput'],
 					true,
 				)
 			) {

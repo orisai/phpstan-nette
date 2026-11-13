@@ -134,8 +134,6 @@ final class FormShapeAnalyzer
 	/** @var array<int, true> */
 	private array $eventStoredCallbackIds = [];
 
-	private bool $inAbsorbedClosureBody = false;
-
 	/** @var array<string, true> */
 	private array $absorbedBodyBoundNames = [];
 
@@ -388,7 +386,7 @@ final class FormShapeAnalyzer
 					$paramName,
 					$recordsByNode,
 				);
-				$returns = new ReturnPointCollector();
+				$returns = new ReturnPointCollector(true);
 				$this->activeWalkNames[$paramName] = ($this->activeWalkNames[$paramName] ?? 0) + 1;
 				try {
 					$result = $this->walkStmts(
@@ -650,10 +648,8 @@ final class FormShapeAnalyzer
 		// record scope may resolve variable names inside it; only the body's own
 		// single-assignment literals (plus sound arrow-fn by-value carry-ins) apply.
 		$outerEnv = $this->literalNameEnv;
-		$outerMask = $this->inAbsorbedClosureBody;
 		$outerBound = $this->absorbedBodyBoundNames;
 		$this->literalNameEnv = $this->closureBodyLiteralNameEnv($closure, $bodyStmts, $outerEnv);
-		$this->inAbsorbedClosureBody = true;
 
 		$bound = [];
 		foreach (array_keys($this->countVariableBindings($bodyStmts)) as $boundName) {
@@ -680,7 +676,6 @@ final class FormShapeAnalyzer
 		} finally {
 			$this->activeWalkNames[$trackedName]--;
 			$this->literalNameEnv = $outerEnv;
-			$this->inAbsorbedClosureBody = $outerMask;
 			$this->absorbedBodyBoundNames = $outerBound;
 		}
 	}
@@ -1040,7 +1035,13 @@ final class FormShapeAnalyzer
 				|| $stmt instanceof Break_
 				|| $stmt instanceof Continue_
 			) {
-				if ($returns !== null && $this->returnsTrackedVariable($stmt, $trackedName)) {
+				if (
+					$returns !== null
+					&& (
+						$this->returnsTrackedVariable($stmt, $trackedName)
+						|| ($stmt instanceof Return_ && $returns->isEveryReturnAnExit())
+					)
+				) {
 					$returns->record($state);
 				}
 
@@ -1169,7 +1170,7 @@ final class FormShapeAnalyzer
 		}
 
 		$childClassName = $this->nestedContainerClass(
-			$this->classNameOfType($scope->getType($taggedNode)),
+			$this->trackedAddReturnClass($taggedNode, $ctx) ?? $this->classNameOfType($scope->getType($taggedNode)),
 			$trackedClass,
 		);
 
@@ -1242,6 +1243,30 @@ final class FormShapeAnalyzer
 	{
 		return $expr->expr !== $taggedNode
 			&& $expr->expr->getAttribute(TaggedNode::ATTRIBUTE) instanceof TaggedNode;
+	}
+
+	// Read off the class the walk resolved, not the scope: the walk runs in whichever consumer's scope
+	// asked first, where the same variable name may hold anything, and is cached for every consumer.
+	private function trackedAddReturnClass(Expr $taggedNode, WalkContext $ctx): ?string
+	{
+		$trackedClass = $ctx->getTrackedClass();
+		if (
+			!$taggedNode instanceof MethodCall
+			|| !$taggedNode->name instanceof Identifier
+			|| !$taggedNode->var instanceof Variable
+			|| $taggedNode->var->name !== $ctx->getTrackedName()
+			|| $trackedClass === ''
+			|| strpos($trackedClass, '|') !== false
+		) {
+			return null;
+		}
+
+		$class = $this->classTracker()->newObjectReturnClass($trackedClass, $taggedNode->name->toString());
+		if ($class === null || !$this->factory->getReflectionProvider()->hasClass($class)) {
+			return null;
+		}
+
+		return (new ObjectType(NetteContainer::class))->isSuperTypeOf(new ObjectType($class))->yes() ? $class : null;
 	}
 
 	private function nestedContainerClass(string $scopeResolved, string $trackedClass): string
@@ -1586,8 +1611,8 @@ final class FormShapeAnalyzer
 			$this->literalNameEnv,
 			$extraChains,
 			$controlEscaped,
-			$this->inAbsorbedClosureBody,
 			$this->absorbedBodyBoundNames,
+			$this->walkOwnerClass,
 		);
 	}
 

@@ -54,6 +54,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\Constant\ConstantArrayTypeBuilder;
 use PHPStan\Type\Constant\ConstantIntegerType;
+use PHPStan\Type\Constant\ConstantStringType;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
@@ -210,6 +211,13 @@ final class ContainerModel
 			return $type ?? $this->provenAbsent($formShape, $segments);
 		}
 
+		if ($consts !== []) {
+			$named = $this->unionOfNamedChildren($formShape, $consts, $scope);
+			if ($named !== null) {
+				return $named;
+			}
+		}
+
 		// A NON-CONSTANT offset names one of the receiver's CHILDREN, never the receiver: `$form[$name]`
 		// is whichever component `$name` happens to be, so the union of what the shape holds is the
 		// answer and the receiver's own shape is a confidently-wrong one. Handing back the receiver made
@@ -254,6 +262,24 @@ final class ContainerModel
 		$projected = FormShapeProjector::offsetPath($formShape, $segments);
 
 		return $projected instanceof ErrorType ? $projected : null;
+	}
+
+	/**
+	 * @param non-empty-list<ConstantStringType> $names
+	 */
+	private function unionOfNamedChildren(FormShape $formShape, array $names, Scope $scope): ?Type
+	{
+		$types = [];
+		foreach ($names as $name) {
+			$type = $this->walk($formShape, array_merge([''], ComponentPath::split($name->getValue())), $scope);
+			if ($type === null) {
+				return null;
+			}
+
+			$types[] = $type;
+		}
+
+		return TypeCombinator::union(...$types);
 	}
 
 	private function unionOfShapeChildren(FormShape $shape): ?Type
@@ -473,12 +499,40 @@ final class ContainerModel
 	{
 		$this->evictOnFileChange($scope->getFile());
 
+		$args = $methodCall->getArgs();
+		$names = $args === [] ? [] : $scope->getType($args[0]->value)->getConstantStrings();
+		if (count($names) > 1) {
+			$named = [];
+			foreach ($names as $name) {
+				$type = $this->resolveStoreChain($methodCall->var, ComponentPath::split($name->getValue()), $scope);
+				if ($type === null) {
+					$named = null;
+
+					break;
+				}
+
+				$named[] = $type;
+			}
+
+			if ($named !== null) {
+				return TypeCombinator::union(...$named);
+			}
+		}
+
 		$chain = [];
 		if (!$this->componentAccessKey($methodCall, $scope, $chain)) {
 			return null;
 		}
 
-		$root = $this->peel($methodCall->var, $scope, $chain);
+		return $this->resolveStoreChain($methodCall->var, $chain, $scope);
+	}
+
+	/**
+	 * @param list<string> $chain
+	 */
+	private function resolveStoreChain(Expr $var, array $chain, Scope $scope): ?Type
+	{
+		$root = $this->peel($var, $scope, $chain);
 		if ($root === null || $chain === []) {
 			return null;
 		}

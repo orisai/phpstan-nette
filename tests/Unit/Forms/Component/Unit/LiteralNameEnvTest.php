@@ -206,14 +206,11 @@ final class LiteralNameEnvTest extends FormShapeTestCase
 		);
 	}
 
-	public function testEnvAndMaskRestoredAfterAbsorbedClosureBodyWalk(): void
+	public function testEnvRestoredAfterAbsorbedClosureBodyWalk(): void
 	{
 		$envProperty = new ReflectionProperty(FormShapeAnalyzer::class, 'literalNameEnv');
 		$envProperty->setAccessible(true);
 		$envProperty->setValue($this->analyzer, ['name' => 'outer']);
-		$maskProperty = new ReflectionProperty(FormShapeAnalyzer::class, 'inAbsorbedClosureBody');
-		$maskProperty->setAccessible(true);
-		$maskProperty->setValue($this->analyzer, false);
 
 		$closure = $this->firstClosure('$cb = function () use (&$form) { $name = \'inner\'; };');
 		assert($closure instanceof Closure);
@@ -229,7 +226,6 @@ final class LiteralNameEnvTest extends FormShapeTestCase
 		);
 
 		self::assertSame(['name' => 'outer'], $envProperty->getValue($this->analyzer));
-		self::assertFalse($maskProperty->getValue($this->analyzer));
 	}
 
 	// Any real Scope: WalkContext carries one only to hand on to a followed callee's walk, and this
@@ -248,7 +244,7 @@ final class LiteralNameEnvTest extends FormShapeTestCase
 		return $captured;
 	}
 
-	public function testMaskedVariableNameResolvesFromEnvOnly(): void
+	public function testVariableNameResolvesFromEnvOnly(): void
 	{
 		$factory = new NodeContributionSummaryFactory($this->createCatalog(new FormShapeCache($this->cacheDir)));
 		$checked = false;
@@ -271,10 +267,7 @@ final class LiteralNameEnvTest extends FormShapeTestCase
 				$meta = $tagged->getAttribute(TaggedNode::ATTRIBUTE);
 				assert($meta instanceof TaggedNode);
 
-				$unmasked = $factory->fromTaggedNode($node, $tagged, $meta, $scope);
-				self::assertSame('kv', $unmasked->getName());
-
-				$masked = $factory->fromTaggedNode($node, $tagged, $meta, $scope, null, null, [], [], false, true);
+				$masked = $factory->fromTaggedNode($node, $tagged, $meta, $scope);
 				self::assertNull($masked->getName());
 				self::assertTrue($masked->hasDynamicName());
 
@@ -286,9 +279,6 @@ final class LiteralNameEnvTest extends FormShapeTestCase
 					null,
 					null,
 					['known' => 'kv'],
-					[],
-					false,
-					true,
 				);
 				self::assertSame('kv', $maskedWithEnv->getName());
 

@@ -44,6 +44,8 @@ final class FormMacroTypeResolver implements ExpressionTypeResolverExtension
 
 	private const METHOD_FIELD = 'formField';
 
+	private const METHOD_FIELD_PART = 'formFieldPart';
+
 	private const METHOD_CONTAINER = 'formContainer';
 
 	private FormMacroCollector $collector;
@@ -186,7 +188,11 @@ final class FormMacroTypeResolver implements ExpressionTypeResolverExtension
 		}
 
 		$method = $call->name->toString();
-		if (!in_array($method, [self::METHOD_FORM, self::METHOD_FIELD, self::METHOD_CONTAINER], true)) {
+		if (!in_array(
+			$method,
+			[self::METHOD_FORM, self::METHOD_FIELD, self::METHOD_FIELD_PART, self::METHOD_CONTAINER],
+			true,
+		)) {
 			return null;
 		}
 

@@ -96,7 +96,8 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 
 	// The shared template is rendered by two controls whose `typingForm` builders disagree on
 	// `years` (checkbox list vs text input). The bridge must keep the eliminator's wide types there:
-	// the macro stays BaseControl (no getControlPart($key)), the offset stays IComponent.
+	// the part macro stays the unresolved part stand-in, which takes the key, the offset stays
+	// IComponent.
 	public function testSharedTemplateWithDisagreeingRenderersKeepsTheWideTypes(): void
 	{
 		$projectRoot = dirname(__DIR__, 3);
@@ -115,10 +116,6 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 
 			self::assertSame(
 				[
-					[
-						'line' => 2,
-						'message' => 'Method Nette\Forms\Controls\BaseControl::getControlPart() invoked with 1 parameter, 0 required.',
-					],
 					[
 						'line' => 3,
 						'message' => 'Call to an undefined method Nette\ComponentModel\IComponent::getItems().',

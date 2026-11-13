@@ -11,6 +11,7 @@ use OriPhpstan\Nette\Forms\Catalog\ControlValueTypeResolver;
 use OriPhpstan\Nette\Forms\Catalog\FormAddsSpec;
 use OriPhpstan\Nette\Forms\Catalog\RuleCastType;
 use OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader;
+use OriPhpstan\Nette\Forms\Component\LiteralNameResolver;
 use OriPhpstan\Nette\Forms\Shape\Certainty;
 use OriPhpstan\Nette\Forms\Shape\UnknownReason;
 use PhpParser\Node;
@@ -56,9 +57,14 @@ final class NodeContributionSummaryFactory
 
 	private ChoiceItemKeyResolver $choiceItemKeyResolver;
 
+	private ?DependencyRecorder $recorder;
+
+	private ?string $nameOwnerClass = null;
+
 	public function __construct(ControlValueTypeResolver $catalog, ?DependencyRecorder $recorder = null)
 	{
 		$this->catalog = $catalog;
+		$this->recorder = $recorder;
 		$this->choiceItemKeyResolver = new ChoiceItemKeyResolver($catalog->getReflectionProvider(), $recorder);
 	}
 
@@ -97,8 +103,46 @@ final class NodeContributionSummaryFactory
 		array $literalNameEnv = [],
 		array $extraChains = [],
 		bool $controlEscaped = false,
-		bool $maskVariableNames = false,
-		array $bodyBoundNames = []
+		array $bodyBoundNames = [],
+		?string $ownerClass = null
+	): NodeContributionSummary
+	{
+		$previousOwner = $this->nameOwnerClass;
+		$this->nameOwnerClass = $ownerClass;
+		try {
+			return $this->summarize(
+				$statement,
+				$node,
+				$tagged,
+				$scope,
+				$trackedName,
+				$trackedClass,
+				$literalNameEnv,
+				$extraChains,
+				$controlEscaped,
+				$bodyBoundNames,
+			);
+		} finally {
+			$this->nameOwnerClass = $previousOwner;
+		}
+	}
+
+	/**
+	 * @param array<string, string> $literalNameEnv
+	 * @param list<array{tip: Expr, startDepth: int, certainty: Certainty::*}> $extraChains
+	 * @param array<string, true> $bodyBoundNames
+	 */
+	private function summarize(
+		Node $statement,
+		Node $node,
+		TaggedNode $tagged,
+		Scope $scope,
+		?string $trackedName,
+		?string $trackedClass,
+		array $literalNameEnv,
+		array $extraChains,
+		bool $controlEscaped,
+		array $bodyBoundNames
 	): NodeContributionSummary
 	{
 		$opKind = $tagged->getOperationKind();
@@ -118,7 +162,7 @@ final class NodeContributionSummaryFactory
 		if ($opKind === 'removeComponent' && ($node instanceof MethodCall || $node instanceof NullsafeMethodCall)) {
 			$arg0 = $node->getArgs()[0]->value ?? null;
 			$name = $arg0 !== null
-				? $this->removedComponentName($scope, $arg0, $literalNameEnv, $maskVariableNames)
+				? $this->removedComponentName($scope, $arg0, $literalNameEnv)
 				: null;
 
 			return new NodeContributionSummary(
@@ -135,7 +179,7 @@ final class NodeContributionSummaryFactory
 			$name = null;
 			foreach ($node->vars as $var) {
 				if ($var instanceof ArrayDimFetch && $var->var instanceof Node\Expr\Variable && $var->dim !== null) {
-					$name = $this->constantName($scope, $var->dim, $literalNameEnv, $maskVariableNames);
+					$name = $this->constantName($scope, $var->dim, $literalNameEnv);
 
 					break;
 				}
@@ -153,7 +197,7 @@ final class NodeContributionSummaryFactory
 
 		if ($opKind === '$offsetSet' && $node instanceof Assign && $node->var instanceof ArrayDimFetch) {
 			$dim = $node->var->dim;
-			$name = $dim !== null ? $this->constantName($scope, $dim, $literalNameEnv, $maskVariableNames) : null;
+			$name = $dim !== null ? $this->constantName($scope, $dim, $literalNameEnv) : null;
 			$dynamicName = $name === null;
 			$resolution = $this->applyWrappers(
 				$statement,
@@ -180,7 +224,7 @@ final class NodeContributionSummaryFactory
 		if ($opKind === 'addComponent' && ($node instanceof MethodCall || $node instanceof NullsafeMethodCall)) {
 			$args = $node->getArgs();
 			$name = isset($args[1])
-				? $this->constantName($scope, $args[1]->value, $literalNameEnv, $maskVariableNames)
+				? $this->constantName($scope, $args[1]->value, $literalNameEnv)
 				: null;
 			$dynamicName = $name === null;
 			$resolution = isset($args[0]) && !$this->isBodyBoundVariable($args[0]->value, $bodyBoundNames)
@@ -227,7 +271,7 @@ final class NodeContributionSummaryFactory
 
 		$nameArg = $specs !== [] ? $this->specArg($args, $specs[0]) : ($args[0] ?? null);
 		$name = $fixedName ?? (!$conventionRefuted && $nameArg !== null
-			? $this->constantName($scope, $nameArg->value, $literalNameEnv, $maskVariableNames)
+			? $this->constantName($scope, $nameArg->value, $literalNameEnv)
 			: null);
 		$dynamicName = $fixedName === null && $name === null;
 		$resolution = $this->catalog->resolve(
@@ -245,7 +289,6 @@ final class NodeContributionSummaryFactory
 			$scope,
 			$resolution,
 			$literalNameEnv,
-			$maskVariableNames,
 		);
 
 		$resolution = $this->applyWrappers(
@@ -294,8 +337,7 @@ final class NodeContributionSummaryFactory
 		array $args,
 		Scope $scope,
 		?ControlValueResolution $primaryResolution,
-		array $literalNameEnv,
-		bool $maskVariableNames
+		array $literalNameEnv
 	): array
 	{
 		$additional = [];
@@ -307,7 +349,7 @@ final class NodeContributionSummaryFactory
 			$controlClass = $spec->getControlClass();
 			$arg = $this->specArg($args, $spec);
 			$name = $arg !== null
-				? $this->constantName($scope, $arg->value, $literalNameEnv, $maskVariableNames)
+				? $this->constantName($scope, $arg->value, $literalNameEnv)
 				: null;
 
 			$additional[] = new NodeContributionSummary(
@@ -391,12 +433,11 @@ final class NodeContributionSummaryFactory
 	private function removedComponentName(
 		Scope $scope,
 		Expr $arg,
-		array $literalNameEnv,
-		bool $maskVariableNames = false
+		array $literalNameEnv
 	): ?string
 	{
 		if ($arg instanceof ArrayDimFetch && $arg->dim !== null) {
-			return $this->constantName($scope, $arg->dim, $literalNameEnv, $maskVariableNames);
+			return $this->constantName($scope, $arg->dim, $literalNameEnv);
 		}
 
 		if (
@@ -406,7 +447,7 @@ final class NodeContributionSummaryFactory
 		) {
 			$accessArg = $arg->getArgs()[0]->value ?? null;
 			if ($accessArg !== null) {
-				return $this->constantName($scope, $accessArg, $literalNameEnv, $maskVariableNames);
+				return $this->constantName($scope, $accessArg, $literalNameEnv);
 			}
 		}
 
@@ -419,29 +460,42 @@ final class NodeContributionSummaryFactory
 	private function constantName(
 		Scope $scope,
 		Expr $expr,
-		array $literalNameEnv = [],
-		bool $maskVariableNames = false
+		array $literalNameEnv = []
 	): ?string
 	{
-		// With $maskVariableNames the scope belongs to the enclosing function, not the
-		// closure body being walked, so it must not type any variable-dependent name.
-		if (!$maskVariableNames || !$this->containsVariable($expr)) {
-			$strings = $scope->getType($expr)->getConstantStrings();
-			if (count($strings) === 1) {
-				return $strings[0]->getValue();
-			}
+		// The scope is the CONSUMER's - often another function, class or file - while the shape is
+		// cached for every consumer alike, so it may only type a name that means the same in any
+		// scope. A variable, `$this` or `self::`/`static::`/`parent::` is read off the walked
+		// function's own code instead.
+		if ($this->isContextDependent($expr)) {
+			$owner = $this->nameOwnerClass;
+			$reflectionProvider = $this->catalog->getReflectionProvider();
+
+			return LiteralNameResolver::resolve(
+				$expr,
+				$literalNameEnv,
+				$owner !== null && $reflectionProvider->hasClass($owner) ? $reflectionProvider->getClass($owner) : null,
+				$reflectionProvider,
+				$this->recorder,
+			);
 		}
 
-		if ($expr instanceof Variable && is_string($expr->name) && isset($literalNameEnv[$expr->name])) {
-			return $literalNameEnv[$expr->name];
-		}
+		$strings = $scope->getType($expr)->getConstantStrings();
 
-		return null;
+		return count($strings) === 1 ? $strings[0]->getValue() : null;
 	}
 
-	private function containsVariable(Expr $expr): bool
+	private function isContextDependent(Expr $expr): bool
 	{
-		return (new NodeFinder())->findFirstInstanceOf($expr, Variable::class) !== null;
+		return (new NodeFinder())->findFirst(
+			$expr,
+			static fn (Node $node): bool => $node instanceof Variable
+				|| (
+					$node instanceof ClassConstFetch
+					&& $node->class instanceof Name
+					&& in_array($node->class->toLowerString(), ['self', 'static', 'parent'], true)
+				),
+		) !== null;
 	}
 
 	/**

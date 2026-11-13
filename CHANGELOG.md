@@ -81,6 +81,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Forms: an offset write of a value no `Container::offsetSet()` accepts (`$renderer->wrappers['form']['container'] =
+  null`) is no longer a mutation of a component of that name, which made every `form` component of a project
+  "mutated externally" and its templates' `$form['x']` an `IComponent`
+- Forms: a component shape no longer depends on which file first asked for it: names written with a variable, `self::`,
+  `static::` or `parent::` are read off the building function's own code instead of the asking scope, and a nested
+  container's class off the builder's own receiver; a different file count or parallel job split no longer changes
+  findings
+- Forms: a followed helper's early `return;` makes what it adds afterwards maybe-present instead of present
+- Forms: an offset keyed by one of several literal names (`foreach (['a', 'b'] as $n) $form[$n]`) resolves to those
+  children only, instead of to every child of the form
+- Latte: `{input x:$key}` and `{label x:$key /}` on a control the analysis cannot resolve no longer report
+  `BaseControl::getControlPart()`/`getLabelPart()` invoked with 1 parameter
+
 - Latte: the variables Latte binds by itself (`$iterator`, Latte 2's `$iterations`, `$form`, `$formContainer`,
   `$ʟ_*` temporaries) are left out of the analysed code where nothing reads them, so PHPStan 2.3's unused-variable
   rules (bleedingEdge) no longer report them; a `{foreach}` expression is analysed once instead of twice
