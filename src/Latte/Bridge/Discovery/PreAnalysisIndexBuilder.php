@@ -6,7 +6,7 @@ use Nette\Utils\Finder;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use PHPStan\File\FileExcluder;
 use PHPStan\Reflection\ReflectionProvider;
-use function array_keys;
+use function array_key_exists;
 use function is_dir;
 use function is_file;
 use function ksort;
@@ -72,11 +72,11 @@ final class PreAnalysisIndexBuilder
 		$recordsByTemplate = [];
 		$linkedClasses = [];
 
-		foreach ($this->universe() as $className) {
+		foreach ($this->universe() as $className => $declaredAsClass) {
 			// Discovery describes render-side CLASSES, and a trait's or an interface's body only ever
 			// runs as part of the class using it. A universe admitting them would index names no
 			// analysis of this configuration can attribute a render to.
-			if (!$this->isRenderSideClass($className)) {
+			if (!$this->isRenderSideClass($className, $declaredAsClass)) {
 				continue;
 			}
 
@@ -128,7 +128,7 @@ final class PreAnalysisIndexBuilder
 	}
 
 	/**
-	 * @return list<string>
+	 * @return array<string, bool|null>
 	 */
 	private function universe(): array
 	{
@@ -138,14 +138,15 @@ final class PreAnalysisIndexBuilder
 			// declares one is a class this configuration analyses like any other, and a first-only
 			// universe would drop its records the moment the move happened. An unreadable or
 			// untokenizable file names none and contributes nothing.
-			foreach ($this->scanner->allClassLikesIn($file) as $className) {
-				$classNames[$className] = true;
+			foreach ($this->scanner->declarationsIn($file) as [$className, $declaredAsClass]) {
+				// A name declared twice is left to reflection, which picks the declaration analysis sees.
+				$classNames[$className] = array_key_exists($className, $classNames) ? null : $declaredAsClass;
 			}
 		}
 
 		ksort($classNames, SORT_STRING);
 
-		return array_keys($classNames);
+		return $classNames;
 	}
 
 	/**
@@ -180,8 +181,15 @@ final class PreAnalysisIndexBuilder
 		return $files;
 	}
 
-	private function isRenderSideClass(string $className): bool
+	private function isRenderSideClass(string $className, ?bool $declaredAsClass): bool
 	{
+		// The single declaration's kind answers without reflection, which would parse every file in
+		// the coordinator on every run. A class reflection cannot resolve still gets no discovery
+		// from the walk.
+		if ($declaredAsClass !== null) {
+			return $declaredAsClass;
+		}
+
 		// A file naming something reflection cannot resolve at all - the walk's own tolerance, and
 		// the reason an unloadable fixture beside a real renderer is skipped rather than fatal.
 		if (!$this->reflectionProvider->hasClass($className)) {

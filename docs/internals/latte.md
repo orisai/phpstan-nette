@@ -1532,6 +1532,11 @@ artifact a previous run left behind. Deleting the directory costs nothing but th
   is what makes a path-narrowing spawn derive the same index a full run does. An excluded template
   gains no store file even when an analysed template includes it; a template whose findings are all
   silenced by `ignoreErrors` is analysed normally and still gets one.
+- **Classes are told from interfaces and traits by their declaration** (`FileClassScanner`), not by
+  reflection: the build runs in the coordinator on every run, where reflecting each class parses
+  every analysed file (seconds on an application). A name declared more than once is left to
+  reflection, and a class reflection cannot find still gets no discovery from the walk. On a warm run
+  the facts come from the `PhpFactsCache` envelopes, so the build reflects only what changed.
 - What a template reads from the store is tracked per template: its `neighbourhood` value (below)
   folds the records, discovery edges and auto-layout ancestors of every template it is connected to,
   so a record change re-analyses exactly those templates on the same run, wherever the store lives.
@@ -2439,3 +2444,17 @@ the forked workers again, which is what PHPStan's deferral was avoiding. Without
 publishing hook the loader does nothing and leaves the files to PHPStan. Long-term direction:
 resolve `{templateType}` class existence at analysis time (through the reflection provider) rather
 than at parse time, which makes the early load unnecessary.
+
+The readers of the container loaders run the same loader before their first `require` of a loader
+file: `TemplateFactoryDefaultResolver` (the factory default and wiring), `DiscoveryResolver` (the
+presenter mapping) and `EngineSource` (the harvested engine). Each creates a service, whose
+dependencies are often application classes only a bootstrap autoloader loads — an application's
+container loader commonly withdraws the autoloaders it registered while compiling. All three are first
+asked in the coordinator, by the pre-analysis discovery build and by the value extensions
+`restore()` consults, so without the early load the coordinator read "no factory" while a spawned
+worker read the real one: the `templateFactory` value and the render facts of every renderer
+differed on every run, every warm run re-analysed every template and renderer, and the `PhpFactsCache`
+envelopes, which store the factory default, were rewritten by each side in turn, so the
+coordinator re-walked every renderer. A forked worker inherits the coordinator's memoised "no factory"
+and analyses the whole run with it. Every warm run with Latte on therefore runs the bootstrap files in
+the main process before the fork when a loader is configured.

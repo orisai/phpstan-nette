@@ -377,6 +377,9 @@ A Latte loader (`engineLoader`, `templateFactoryContainerLoader`) that throws st
 readable — and yields no engine, mapping or factory default; nothing is reported, by design. Run the file with `php`
 when a Latte feature stays silent. A throwing `dic.containerLoader` fails the analysis.
 
+Your `bootstrapFiles` run before a Latte loader is read, also in PHPStan's main process before the result cache is
+restored, so the services a loader creates may need classes only an autoloader registered there loads.
+
 ### Narrowing store lifecycle
 
 The narrowing store holds the types proven at each `{include}`, one file per including template. It is versioned like

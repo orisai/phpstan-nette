@@ -83,9 +83,13 @@ store. Each tracks `RerunValueExtension` (a value no two runs share), so `reuseC
 their errors or skips the writer.
 
 Value extensions are asked for their values in the coordinator before bootstrap files run and in the workers while a
-file is analysed; both must answer alike, or the file is analysed on every run. Spawn tests record which files a warm
-run analysed (`AnalysedFileLog`, `AnalysisRun::getAnalysedFiles()`, the `reanalysed` step key of the invalidation
-matrices).
+file is analysed; both must answer alike, or the file is analysed on every run. A value read off a service a container
+loader creates is the trap: its classes may be loadable only through a bootstrap-registered autoloader, so the Latte
+readers of the loaders (`TemplateFactoryDefaultResolver`, `DiscoveryResolver`, `EngineSource`) run `%bootstrapFiles%`
+first (`BootstrapFilesLoader`). Forked workers inherit what the coordinator memoised and hide such a disagreement —
+they then analyse with the coordinator's answer instead — so the spawn test of it (`BootstrapDependentWarmRunTest`)
+spawns its workers (`InvalidationScenario::spawnWorkers()`). Spawn tests record which files a warm run analysed
+(`AnalysedFileLog`, `AnalysisRun::getAnalysedFiles()`, the `reanalysed` step key of the invalidation matrices).
 
 ### Test layout
 

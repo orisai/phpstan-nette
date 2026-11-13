@@ -23,23 +23,24 @@ use const T_WHITESPACE;
 // Two questions off one scan. A read-set file is one class-like per file (the walk collects them
 // from reflection getFileName()), so the FIRST declaration is taken as that file's identity; the
 // pre-analysis universe instead needs EVERY declaration, because a class moved into a file that
-// already declares one is still a class this configuration analyses. Token-based, never a regex
+// already declares one is still a class this configuration analyses. Each declaration carries
+// whether it is a class (T_CLASS) rather than an interface or a trait. Token-based, never a regex
 // over raw text, so comments and string literals cannot produce a false name.
 final class FileClassScanner
 {
 
-	/** @var array<string, list<string>> */
+	/** @var array<string, list<array{string, bool}>> */
 	private array $memo = [];
 
 	public function firstClassLikeIn(string $file): ?string
 	{
-		return $this->allClassLikesIn($file)[0] ?? null;
+		return $this->declarationsIn($file)[0][0] ?? null;
 	}
 
 	/**
-	 * @return list<string>
+	 * @return list<array{string, bool}>
 	 */
-	public function allClassLikesIn(string $file): array
+	public function declarationsIn(string $file): array
 	{
 		if (array_key_exists($file, $this->memo)) {
 			return $this->memo[$file];
@@ -49,7 +50,7 @@ final class FileClassScanner
 	}
 
 	/**
-	 * @return list<string>
+	 * @return list<array{string, bool}>
 	 */
 	private static function scan(string $file): array
 	{
@@ -103,7 +104,7 @@ final class FileClassScanner
 				continue;
 			}
 
-			$names[] = $namespace === '' ? $name : $namespace . '\\' . $name;
+			$names[] = [$namespace === '' ? $name : $namespace . '\\' . $name, $token[0] === T_CLASS];
 		}
 
 		return $names;

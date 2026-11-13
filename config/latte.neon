@@ -133,6 +133,7 @@ services:
 		arguments:
 			containerLoader: @orisai.nette.configuration::get(dic.containerLoader)
 			latteEngineLoaderFile: @orisai.nette.configuration::get(latte.engineLoader)
+			bootstrapFilesLoader: @latteBootstrapFilesLoader
 		autowired: false
 
 	# The engine reader is version-selected inside harvest() (first use, outside the containment
@@ -363,6 +364,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver
 		arguments:
 			containerLoaderFile: @orisai.nette.configuration::get(latte.templateFactoryContainerLoader)
+			bootstrapFilesLoader: @latteBootstrapFilesLoader
 		autowired: false
 
 	# Template-file discovery (SP3): presenter-name inverse over the compiled container's
@@ -376,6 +378,7 @@ services:
 			containerLoaderFile: @orisai.nette.configuration::get(latte.templateFactoryContainerLoader)
 			formulas: @orisai.nette.configuration::get(latte.discovery.formulas)
 			projectRootPath: %currentWorkingDirectory%
+			bootstrapFilesLoader: @latteBootstrapFilesLoader
 		autowired: false
 
 	# Scope-free per-class render-fact extraction (SP1). reflectionProvider is left to autowiring;

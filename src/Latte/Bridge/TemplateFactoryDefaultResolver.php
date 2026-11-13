@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Bridge;
 use Nette\Application\UI\TemplateFactory;
 use Nette\Bridges\ApplicationLatte\TemplateFactory as BridgeTemplateFactory;
 use Nette\DI\Container;
+use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
 use ReflectionProperty;
 use Throwable;
 use function get_class;
@@ -37,6 +38,8 @@ final class TemplateFactoryDefaultResolver
 
 	private ?string $containerLoaderFile;
 
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
 	private bool $resolved = false;
 
 	private ?string $templateClass = null;
@@ -44,9 +47,10 @@ final class TemplateFactoryDefaultResolver
 	/** @var array<string, class-string>|null */
 	private ?array $wiring = null;
 
-	public function __construct(?string $containerLoaderFile)
+	public function __construct(?string $containerLoaderFile, ?BootstrapFilesLoader $bootstrapFilesLoader = null)
 	{
 		$this->containerLoaderFile = $containerLoaderFile;
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 	}
 
 	public function resolve(): ?string
@@ -99,6 +103,13 @@ final class TemplateFactoryDefaultResolver
 	{
 		if ($this->containerLoaderFile === null || !is_file($this->containerLoaderFile)) {
 			return [];
+		}
+
+		// The factory is created on first ask, and its dependencies may be loadable only through an
+		// autoloader a bootstrap file registers: without it the coordinator's restore() would answer
+		// differently from the workers.
+		if ($this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
 		}
 
 		try {

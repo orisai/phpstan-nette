@@ -42,6 +42,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   included, re-analyses nothing), Forms files by the files their form shapes were read from (comments and formatting
   ignored) and by the registration sets they depend on, templates by their include component, discovery records,
   harvest and template factory wiring, render-side classes by their render facts
+- Latte: `bootstrapFiles` run before the template factory, the presenter mapping and the engine are read from the
+  loaders, so a service needing a class only a bootstrap autoloader loads is read alike in PHPStan's main process and
+  in its workers: a warm run no longer re-analyses every template and renderer when workers are spawned, and a run
+  whose workers are forked no longer loses the template factory's default class and wiring
+- Latte: the discovery build before each run tells classes from interfaces and traits by their declarations instead of
+  reflecting every analysed class in the main process
 - Latte: the discovery store no longer has to sit inside `paths` for record changes to stay granular, and narrowing
   slices outside `paths` are tracked too; `orisai.nette.latte.discovery.coarseInvalidationAccepted` has no effect
 - With PHPStan's `reuseCollectedDataRuleErrors` toggle, the whole-project Latte and bridge rules and the narrowing

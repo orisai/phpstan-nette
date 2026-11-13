@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Customs;
 use Latte\Engine;
 use Nette\Bridges\ApplicationLatte\ILatteFactory;
 use Nette\DI\Container;
+use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
 use Throwable;
 use function is_array;
 use function is_file;
@@ -16,10 +17,17 @@ final class EngineSource
 
 	private ?string $latteEngineLoaderFile;
 
-	public function __construct(?string $containerLoader, ?string $latteEngineLoaderFile)
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
+	public function __construct(
+		?string $containerLoader,
+		?string $latteEngineLoaderFile,
+		?BootstrapFilesLoader $bootstrapFilesLoader = null
+	)
 	{
 		$this->containerLoaderFile = $containerLoader;
 		$this->latteEngineLoaderFile = $latteEngineLoaderFile;
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 	}
 
 	public function resolve(): ?Engine
@@ -49,6 +57,8 @@ final class EngineSource
 		if ($containerLoaderFile === null || !is_file($containerLoaderFile)) {
 			return null;
 		}
+
+		$this->loadBootstrapFiles();
 
 		try {
 			$containers = require $containerLoaderFile;
@@ -104,6 +114,8 @@ final class EngineSource
 			return null;
 		}
 
+		$this->loadBootstrapFiles();
+
 		try {
 			$engine = require $this->latteEngineLoaderFile;
 		} catch (Throwable $e) {
@@ -111,6 +123,13 @@ final class EngineSource
 		}
 
 		return $engine instanceof Engine ? $engine : null;
+	}
+
+	private function loadBootstrapFiles(): void
+	{
+		if ($this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
+		}
 	}
 
 }

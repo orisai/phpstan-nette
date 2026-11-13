@@ -60,6 +60,9 @@ final class InvalidationScenario
 
 	private string $tmpDir;
 
+	/** @var list<string> */
+	private array $phpArguments = [];
+
 	/**
 	 * @param callable(list<string>, string): string $configFactory receives the analysed paths and
 	 * the PHPStan tmpDir, returns the path of a ready-to-use isolated config file
@@ -86,6 +89,16 @@ final class InvalidationScenario
 			$projectRoot,
 			$projectRoot . '/var/tmp/' . $name . '-' . getmypid() . '-' . uniqid('', true),
 		);
+	}
+
+	// A forked worker inherits what the coordinator memoised before the fork, so a value restore()
+	// computes there cannot differ from the workers' own. A spawned worker - PHPStan's only kind
+	// without pcntl, e.g. in many Docker images - computes everything afresh.
+	public function spawnWorkers(): self
+	{
+		$this->phpArguments = ['-d', 'disable_functions=pcntl_fork'];
+
+		return $this;
 	}
 
 	public function getScratchDir(): string
@@ -177,6 +190,7 @@ final class InvalidationScenario
 		$process = new Process(
 			[
 				PHP_BINARY,
+				...$this->phpArguments,
 				$this->projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 				'analyse',
 				'--no-progress',

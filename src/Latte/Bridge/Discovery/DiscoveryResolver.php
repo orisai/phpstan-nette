@@ -10,6 +10,7 @@ use Nette\DI\Container;
 use OriPhpstan\Nette\Forms\Shape\Certainty;
 use OriPhpstan\Nette\Latte\Bridge\MutationFact;
 use OriPhpstan\Nette\Latte\Bridge\SetFileFact;
+use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
 use PHPStan\Reflection\ClassReflection;
 use ReflectionClass;
 use ReflectionProperty;
@@ -54,6 +55,8 @@ final class DiscoveryResolver
 
 	private ?string $containerLoaderFile;
 
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
 	/** @var array<string, string|array<string, string>> */
 	private array $formulas;
 
@@ -67,10 +70,16 @@ final class DiscoveryResolver
 	/**
 	 * @param array<string, string|array<string, string>> $formulas
 	 */
-	public function __construct(?string $containerLoaderFile, array $formulas, string $projectRootPath)
+	public function __construct(
+		?string $containerLoaderFile,
+		array $formulas,
+		string $projectRootPath,
+		?BootstrapFilesLoader $bootstrapFilesLoader = null
+	)
 	{
 		$this->containerLoaderFile = $containerLoaderFile;
 		$this->formulas = $formulas;
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 
 		$real = realpath($projectRootPath);
 		$this->projectRootPath = $real === false ? $projectRootPath : $real;
@@ -944,6 +953,10 @@ final class DiscoveryResolver
 	{
 		if ($this->containerLoaderFile === null || !is_file($this->containerLoaderFile)) {
 			return null;
+		}
+
+		if ($this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
 		}
 
 		try {
