@@ -1123,7 +1123,8 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
   resolved and only the tag's first line is read; a `@template` parameter of the class is what the template class's
   `@extends` chain binds it to, else its class bound, else `mixed`.
 - `orisai.nette.latte.templateMissing` is not reported for a renderer which links no template at all.
-- The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
+- The Latte shapes are verified on latte/latte 2.11.7, 3.0.26, 3.0.27, 3.1.6 and 3.1.7; other patch releases are not
+  tested.
 - Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.
 - A presenter's `#[TemplateVariable]` property counts as present even when it is never initialized; at runtime such a
   variable is missing.

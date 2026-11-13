@@ -101,6 +101,12 @@ public function main(array $ʟ_args): void
 	$this->global->forms->end();
 ```
 
+nette/forms 3.3.1 closes a `{form}` with `$form = $this->global->forms->end() ?? $form;`, which restores `$form` to the
+nearest enclosing form scope, and opens a `{formContainer}` with `begin(..., bindsForm: false)`. The eliminator keeps a
+stack of the scopes `begin()` opens in the method: the restore becomes `$form = <the enclosing {form}'s helper call>`, or
+is dropped when no recognised `{form}` of the same method encloses it (a block rendered inside a form, or an
+unrecognised source), which leaves `$form` at the closed form as on nette/forms 3.3.0.
+
 All four reduce to the same analysed statements, `$form = Helpers::form('f')` and
 `echo Helpers::formField('x')->getControl()` (the committed `processed/` snapshots). The per-family raw and processed
 snapshots live in `tests/Unit/Latte/Fixtures/__snapshots__/` (`raw`/`processed` for Latte 2, `latte3.0/` and
@@ -320,4 +326,5 @@ When a new Latte line (e.g. 3.2) or forms bridge shape appears:
   `parseError` "Thrown exception '…'", not as an internal error.
 - Sandbox policies are not modelled; the corpus's sandbox templates are `analysed` where upstream asserts a
   violation.
-- The raw snapshots, the corpus manifests and the parity probes were produced on latte 2.11.7, 3.0.26 and 3.1.6.
+- The raw snapshots, the corpus manifests and the parity probes were produced on latte 2.11.7, 3.0.27 and 3.1.7
+  (nette/forms 3.3.1); the 3.0.26 and 3.1.6 (nette/forms 3.3.0) shapes stay covered by the eliminator unit tests.

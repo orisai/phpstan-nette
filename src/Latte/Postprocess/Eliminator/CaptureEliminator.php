@@ -53,7 +53,8 @@ final class CaptureEliminator extends EliminatorVisitor
 	public const ROLE_SPACELESS_END = 'spacelessEnd';
 
 	// The `if ($ʟ_fi->contentType === 'html' && $v !== '') $v = new Html($v);` guard Latte 3.1 appends
-	// to a filtered {capture}: the compared FilterInfo property.
+	// to a filtered {capture}, or from 3.1.7 the `$v = ($ʟ_tmp = <filtered>) !== '' && $ʟ_fi->contentType
+	// === 'html' ? new Html($ʟ_tmp) : $ʟ_tmp;` it assigns: the compared FilterInfo property.
 	public const ROLE_FILTERED_CAPTURE_HTML_GUARD = 'filteredCaptureHtmlGuard';
 
 	public function describePattern(): string
@@ -71,12 +72,12 @@ final class CaptureEliminator extends EliminatorVisitor
 			. ' shell -> body statements only'
 			. ($patterns->has(
 				self::ROLE_FILTERED_CAPTURE_HTML_GUARD,
-			) ? '; filtered-capture Html re-wrap guard dropped' : '')
+			) ? '; filtered-capture Html re-wrap guard / re-wrap ternary dropped' : '')
 			. ': ' . $patterns->describe();
 	}
 
 	/**
-	 * @return int|null
+	 * @return Expr|int|null
 	 */
 	public function leaveNode(Node $node)
 	{
@@ -84,15 +85,72 @@ final class CaptureEliminator extends EliminatorVisitor
 			return NodeVisitor::REMOVE_NODE;
 		}
 
+		if ($node instanceof Ternary) {
+			return $this->matchFilteredCaptureHtmlRewrap($node);
+		}
+
 		self::normalizeStatementList($node, fn (array $stmts): array => $this->normalizeStmts($stmts));
 
 		return null;
 	}
 
+	private function matchFilteredCaptureHtmlRewrap(Ternary $node): ?Expr
+	{
+		$cond = $node->cond;
+		if (
+			!$this->patterns()->has(self::ROLE_FILTERED_CAPTURE_HTML_GUARD)
+			|| !$cond instanceof BooleanAnd
+			|| !$cond->left instanceof NotIdentical
+			|| !$cond->right instanceof Identical
+			|| !$this->isHtmlContentTypeCheck($cond->right)
+		) {
+			return null;
+		}
+
+		$filtered = $cond->left->left;
+		if (
+			!$filtered instanceof Assign
+			|| !$this->isVariableNamed($filtered->var, self::TMP_TEMP)
+			|| !$cond->left->right instanceof String_
+			|| $cond->left->right->value !== ''
+			|| $node->if === null
+			|| !$this->isHtmlWrapOf($node->if, self::TMP_TEMP)
+			|| !$this->isVariableNamed($node->else, self::TMP_TEMP)
+		) {
+			return null;
+		}
+
+		return $filtered->expr;
+	}
+
+	private function isHtmlContentTypeCheck(Identical $check): bool
+	{
+		$contentType = $check->left;
+
+		return $contentType instanceof PropertyFetch
+			&& $this->isVariableNamed($contentType->var, self::FILTER_INFO_TEMP)
+			&& $contentType->name instanceof Identifier
+			&& $contentType->name->toString() === $this->patterns()->name(self::ROLE_FILTERED_CAPTURE_HTML_GUARD)
+			&& $check->right instanceof String_;
+	}
+
+	private function isHtmlWrapOf(Expr $expr, string $variable): bool
+	{
+		return $expr instanceof New_
+			&& $expr->class instanceof Name
+			&& in_array($expr->class->toString(), self::HTML_CLASS_NAMES, true)
+			&& count($expr->args) === 1
+			&& $expr->args[0] instanceof Arg
+			&& $this->isVariableNamed($expr->args[0]->value, $variable);
+	}
+
 	private function isFilteredCaptureHtmlGuard(If_ $node): bool
 	{
-		$patterns = $this->patterns();
-		if (!$patterns->has(self::ROLE_FILTERED_CAPTURE_HTML_GUARD) || $node->elseifs !== [] || $node->else !== null) {
+		if (
+			!$this->patterns()->has(self::ROLE_FILTERED_CAPTURE_HTML_GUARD)
+			|| $node->elseifs !== []
+			|| $node->else !== null
+		) {
 			return false;
 		}
 
@@ -101,17 +159,7 @@ final class CaptureEliminator extends EliminatorVisitor
 			!$cond instanceof BooleanAnd
 			|| !$cond->left instanceof Identical
 			|| !$cond->right instanceof NotIdentical
-		) {
-			return false;
-		}
-
-		$contentType = $cond->left->left;
-		if (
-			!$contentType instanceof PropertyFetch
-			|| !$this->isVariableNamed($contentType->var, self::FILTER_INFO_TEMP)
-			|| !$contentType->name instanceof Identifier
-			|| $contentType->name->toString() !== $patterns->name(self::ROLE_FILTERED_CAPTURE_HTML_GUARD)
-			|| !$cond->left->right instanceof String_
+			|| !$this->isHtmlContentTypeCheck($cond->left)
 		) {
 			return false;
 		}
@@ -132,16 +180,9 @@ final class CaptureEliminator extends EliminatorVisitor
 			return false;
 		}
 
-		$rewrap = $stmt->expr->expr;
-
 		return $stmt->expr->var instanceof Variable
 			&& $stmt->expr->var->name === $captured->name
-			&& $rewrap instanceof New_
-			&& $rewrap->class instanceof Name
-			&& in_array($rewrap->class->toString(), self::HTML_CLASS_NAMES, true)
-			&& count($rewrap->args) === 1
-			&& $rewrap->args[0] instanceof Arg
-			&& $this->isVariableNamed($rewrap->args[0]->value, $captured->name);
+			&& $this->isHtmlWrapOf($stmt->expr->expr, $captured->name);
 	}
 
 	/**

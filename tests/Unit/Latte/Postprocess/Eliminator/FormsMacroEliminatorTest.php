@@ -198,6 +198,48 @@ PHP);
 PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), $php));
 	}
 
+	/**
+	 * @dataProvider provideLatte3Lines
+	 */
+	public function testProviderShapeRestoresTheEnclosingForm(string $latteLine): void
+	{
+		// nette/forms 3.3.1: {formContainer} opens its scope with `bindsForm: false` and {/form} restores $form to
+		// the nearest enclosing form scope, which is the enclosing {form} of the same method or nothing.
+		$php = EliminatorRun::template(<<<'PHP'
+		$this->global->forms->begin($form = $this->global->uiControl['outer'], global: $this->global) /* pos 1:1 */;
+		echo $this->global->forms->get('a')->getControl() /* pos 2:2 */;
+		$this->global->forms->begin($formContainer = $this->global->forms->get('c', Nette\Forms\Container::class), bindsForm: false) /* pos 3:2 */;
+		$this->global->forms->begin($form = $this->global->uiControl['inner'], global: $this->global) /* pos 4:3 */;
+		echo $this->global->forms->get('b')->getControl() /* pos 5:4 */;
+		$form = $this->global->forms->end() ?? $form;
+		echo $form['a']->getControl() /* pos 7:3 */;
+		$this->global->forms->end();
+		$formContainer = $this->global->forms->getScope();
+		$form = $this->global->forms->end() ?? $form;
+		$this->global->forms->begin($form = (is_object($ʟ_tmp = $obj) ? $ʟ_tmp : $this->global->uiControl[$ʟ_tmp]), global: $this->global) /* pos 11:1 */;
+		echo $this->global->forms->get('d')->getControl() /* pos 12:2 */;
+		$form = $this->global->forms->end() ?? $form;
+		$this->global->forms->begin($form = $unknown, global: $this->global) /* pos 14:1 */;
+		$this->global->forms->begin($form = $this->global->uiControl['f'], global: $this->global) /* pos 15:2 */;
+		$form = $this->global->forms->end() ?? $form;
+		$form = $this->global->forms->end() ?? $form;
+PHP);
+
+		self::assertSame(EliminatorRun::printed(<<<'PHP'
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('outer');
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('a')->getControl();
+        $formContainer = \OriPhpstan\Nette\Latte\Runtime\Helpers::formContainer('c');
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('inner');
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('b')->getControl();
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('outer');
+        echo $form['a']->getControl();
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::formObject($obj);
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('d')->getControl();
+        $this->global->forms->begin($form = $unknown, global: $this->global);
+        $form = \OriPhpstan\Nette\Latte\Runtime\Helpers::form('f');
+PHP), self::eliminate(new ShapeFamily($latteLine, ShapeFamily::FORMS_PROVIDER), $php));
+	}
+
 	// Review focus: an {embed} block layer renders its form in a block method, where the provider
 	// shape must reduce to the very Helpers::form('x') the resolver types $form['x'] from.
 	public function testProviderShapeInsideEmbedLayer(): void

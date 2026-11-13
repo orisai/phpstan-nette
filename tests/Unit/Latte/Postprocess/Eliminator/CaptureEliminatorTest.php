@@ -41,6 +41,14 @@ final class CaptureEliminatorTest extends BaseTestCase
 		$ʟ_fi = new LR\FilterInfo('html');
 		$trimmed = $this->filters->filterContent('trim', $ʟ_fi, $ʟ_tmp);
 		if ($ʟ_fi->contentType === 'html' && $trimmed !== '') $trimmed = new LR\Html($trimmed);
+		ob_start(fn() => '') /* pos 15:1 */;
+		try {
+			echo 'latte 3.1.7 shape';
+		} finally {
+			$ʟ_tmp = ob_get_length() ? new LR\Html(ob_get_clean()) : ob_get_clean();
+		}
+		$ʟ_fi = new LR\FilterInfo('html');
+		$upper = ($ʟ_tmp = $this->filters->filterContent('upper', $ʟ_fi, $ʟ_tmp)) !== '' && $ʟ_fi->contentType === 'html' ? new LR\Html($ʟ_tmp) : $ʟ_tmp;
 		ob_start(fn() => '');
 		try {
 			echo 'Hello ';
@@ -69,6 +77,10 @@ PHP);
         $ʟ_tmp = \OriPhpstan\Nette\Latte\Runtime\Helpers::capturedString();
         $ʟ_fi = new \Latte\Runtime\FilterInfo('html');
         $trimmed = $this->filters->filterContent('trim', $ʟ_fi, $ʟ_tmp);
+        echo 'latte 3.1.7 shape';
+        $ʟ_tmp = \OriPhpstan\Nette\Latte\Runtime\Helpers::capturedString();
+        $ʟ_fi = new \Latte\Runtime\FilterInfo('html');
+        $upper = $this->filters->filterContent('upper', $ʟ_fi, $ʟ_tmp);
         echo 'Hello ';
         $ʟ_tmp = \OriPhpstan\Nette\Latte\Runtime\Helpers::capturedString();
         $ʟ_fi = new \Latte\Runtime\FilterInfo('html');
@@ -113,6 +125,7 @@ PHP), self::eliminate(ShapeFamily::LATTE_31, $php));
 		$ʟ_fi = new LR\FilterInfo('html');
 		$v = $ʟ_tmp;
 		if ($ʟ_fi->contentType === 'html' && $v !== '') $v = new LR\Html($v);
+		$w = ($ʟ_tmp = $this->filters->filterContent('upper', $ʟ_fi, $ʟ_tmp)) !== '' && $ʟ_fi->contentType === 'html' ? new LR\Html($ʟ_tmp) : $ʟ_tmp;
 PHP);
 
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
@@ -142,6 +155,7 @@ PHP);
         if ($ʟ_fi->contentType === 'html' && $v !== '') {
             $v = new \Latte\Runtime\Html($v);
         }
+        $w = ($ʟ_tmp = $this->filters->filterContent('upper', $ʟ_fi, $ʟ_tmp)) !== '' && $ʟ_fi->contentType === 'html' ? new \Latte\Runtime\Html($ʟ_tmp) : $ʟ_tmp;
 PHP), self::eliminate(ShapeFamily::LATTE_30, $php));
 	}
 

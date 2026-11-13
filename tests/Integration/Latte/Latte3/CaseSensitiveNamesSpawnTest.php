@@ -8,6 +8,7 @@ use Tests\OriPhpstan\Nette\Integration\Configuration\ConfigurationCorpus;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
+use function preg_quote;
 use function realpath;
 use const PHP_VERSION_ID;
 
@@ -67,18 +68,29 @@ final class CaseSensitiveNamesSpawnTest extends BaseTestCase
 		$latteDir = InstalledVersions::getInstallPath('latte/latte');
 		self::assertNotNull($latteDir);
 
-		self::assertSame(
-			InstalledVersionsGuard::latteLine() === '3.0'
-				? [
+		$errors = $this->analyse();
+		if (InstalledVersionsGuard::latteLine() === '3.0') {
+			// The vendor line moves between patch releases.
+			self::assertCount(1, $errors);
+			self::assertMatchesRegularExpression(
+				'~^' . preg_quote(
 					"1 orisai.nette.latte.parseError Thrown exception 'Latte\\Compiler\\Nodes\\Php\\Expression\\AuxiliaryNode::__construct(): "
 					. 'Argument #2 ($nodes) must be of type array, null given, called in '
-					. realpath($latteDir) . "/src/Latte/Essential/Passes.php on line 55'",
-				]
-				: [
-					"1 orisai.nette.latte.functionCaseMismatch Latte function 'LengthOf' differs in case from the registered "
-					. "'lengthOf' - Latte 3 resolves function names case-sensitively.",
-				],
-			$this->analyse(),
+					. realpath($latteDir) . '/src/Latte/Essential/Passes.php on line ',
+					'~',
+				) . "\\d+'$~",
+				$errors[0],
+			);
+
+			return;
+		}
+
+		self::assertSame(
+			[
+				"1 orisai.nette.latte.functionCaseMismatch Latte function 'LengthOf' differs in case from the registered "
+				. "'lengthOf' - Latte 3 resolves function names case-sensitively.",
+			],
+			$errors,
 		);
 	}
 

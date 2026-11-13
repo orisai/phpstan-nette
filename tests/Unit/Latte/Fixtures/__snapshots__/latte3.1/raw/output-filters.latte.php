@@ -42,8 +42,7 @@ final class LatteTpl_fixtures_output_filters_latte_903857f4 extends Latte\Runtim
 			$ʟ_tmp = ob_get_length() ? new LR\Html(ob_get_clean()) : ob_get_clean();
 		}
 		$ʟ_fi = new LR\FilterInfo('html');
-		$trimmed = $this->filters->filterContent('trim', $ʟ_fi, $ʟ_tmp);
-		if ($ʟ_fi->contentType === 'html' && $trimmed !== '') $trimmed = new LR\Html($trimmed);
+		$trimmed = ($ʟ_tmp = $this->filters->filterContent('trim', $ʟ_fi, $ʟ_tmp)) !== '' && $ʟ_fi->contentType === 'html' ? new LR\Html($ʟ_tmp) : $ʟ_tmp;
 
 		echo LR\HtmlHelpers::escapeText(($this->filters->translate)('text')) /* pos 15:1 */;
 		echo "\n";

@@ -124,7 +124,7 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   `Latte\Essential\CachingIterator`, opens capturing shells with `ob_start(fn() => '')`, drops
   `{templatePrint}`'s `printClass(...); exit;`, and 3.1 minifies `{spaceless}` through
   `WhitespaceMinifier::start()/end()` and re-wraps a filtered `{capture}` in `Html` behind a
-  `$ʟ_fi->contentType` guard that goes with the shell. The n:attribute, UI and block shells
+  `$ʟ_fi->contentType` guard (3.1.7: a ternary around the filtered value) that goes with the shell. The n:attribute, UI and block shells
   differ per line too: `n:attr` prints through `NAttrNode::attrs($ʟ_tmp, false)` (Latte 2
   `Filters::htmlAttributes(...)`) and the temp array is inlined into that call; `n:tag`'s
   closing-tag temps become `$latteTagN` (Latte 2 and 3.0 index `$ʟ_tag[N]`, 3.1 snapshots a scalar

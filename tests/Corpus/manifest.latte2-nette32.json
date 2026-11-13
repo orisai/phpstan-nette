@@ -1,7 +1,7 @@
 {
     "latte/latte": "v2.11.7",
-    "nette/application": "v3.2.12",
-    "nette/forms": "v3.2.9",
+    "nette/application": "v3.2.13",
+    "nette/forms": "v3.2.10",
     "templates": {
         "application/tests/Bridges.Latte2/Template.getParentName().phpt#1.latte": "analysed",
         "application/tests/Bridges.Latte2/Template.getParentName().phpt#2.latte": "analysed",

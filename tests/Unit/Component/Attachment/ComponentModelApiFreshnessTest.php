@@ -24,6 +24,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use function array_merge;
 use function array_slice;
 use function count;
@@ -349,7 +350,6 @@ final class ComponentModelApiFreshnessTest extends BaseTestCase
 	{
 		$notAlwaysThrowing = [
 			// hands lookup() a hardcoded false
-			Component::class . '::monitor',
 			UiComponent::class . '::getPresenterIfExists',
 			UiComponent::class . '::hasPresenter',
 			UiForm::class . '::getPresenterIfExists',
@@ -361,6 +361,10 @@ final class ComponentModelApiFreshnessTest extends BaseTestCase
 			BaseControl::class . '::getHtmlName',
 			BaseControl::class . '::getHtmlId',
 		];
+		if (!InstalledVersionsGuard::satisfies('nette/component-model', '>=4.0.2')) {
+			// hands lookup() a hardcoded false; from 4.0.2 it walks the ancestors itself and never throws
+			$notAlwaysThrowing[] = Component::class . '::monitor';
+		}
 
 		$tabled = [];
 		foreach (ParentAccessors::all() as $entry) {

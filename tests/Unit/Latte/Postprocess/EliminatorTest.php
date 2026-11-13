@@ -406,6 +406,21 @@ final class EliminatorTest extends BaseTestCase
 		self::assertNoFormsBridgeResidue($php);
 	}
 
+	public function testClosingANestedFormRestoresTheEnclosingFormFromNetteForms331(): void
+	{
+		$php = $this->process("{form outer}{form inner}{input x}{/form}{\$form->getName()}{/form}\n");
+
+		$restore = '~\$form = \\\\OriPhpstan\\\\Nette\\\\Latte\\\\Runtime\\\\Helpers::form\(([\'"])outer\1\);'
+			. '\s*echo \$form->getName\(\)~';
+		if (InstalledVersionsGuard::satisfies('nette/forms', '>=3.3.1')) {
+			self::assertMatchesRegularExpression($restore, $php);
+		} else {
+			self::assertDoesNotMatchRegularExpression($restore, $php);
+		}
+
+		self::assertNoFormsBridgeResidue($php);
+	}
+
 	public function testControlShellReducedButArgsAnalyzed(): void
 	{
 		$php = $this->process("{varType int \$id}\n{control card \$id, mode => 'x'}\n");

@@ -1,7 +1,7 @@
 {
-    "latte/latte": "v3.0.26",
-    "nette/application": "v3.2.12",
-    "nette/forms": "v3.2.9",
+    "latte/latte": "v3.0.27",
+    "nette/application": "v3.2.13",
+    "nette/forms": "v3.2.10",
     "templates": {
         "application/tests/Bridges.Latte3/Template.getParentName().phpt#1.latte": "analysed",
         "application/tests/Bridges.Latte3/Template.getParentName().phpt#10.latte": "analysed",
@@ -298,6 +298,9 @@
         "latte/tests/common/Template.getParentName().phpt#7.latte": "analysed",
         "latte/tests/common/Template.getParentName().phpt#8.latte": "analysed",
         "latte/tests/common/Template.getParentName().phpt#9.latte": "analysed",
+        "latte/tests/common/TemplateGenerator.source.phpt#1.latte": "analysed",
+        "latte/tests/common/TemplateGenerator.source.phpt#2.latte": "analysed",
+        "latte/tests/common/TemplateGenerator.source.phpt#3.latte": "analysed",
         "latte/tests/common/contentType.compatibility.phpt#1.latte": "analysed",
         "latte/tests/common/contentType.compatibility.phpt#10.latte": "analysed",
         "latte/tests/common/contentType.compatibility.phpt#11.latte": "analysed",

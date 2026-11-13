@@ -101,6 +101,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Latte 3.1.7 and nette/forms 3.3.1 generated code is reduced like the earlier releases': a filtered `{capture}`'s
+  `Html` re-wrap ternary, `{formContainer}`'s `bindsForm: false` and `{/form}`'s `$form = forms->end() ?? $form`, which
+  now types `$form` after a nested `{/form}` as the enclosing form of the same template method
 - Result cache: warm runs no longer keep results a cold run would not report
   - Forms: a shape reading a component name, a flag or a control class the scope types (`Names::FIELD`,
     `Names::name()`, `->setNullable(Flags::NULLABLE)`) depends on the files declaring them, constant initialisers

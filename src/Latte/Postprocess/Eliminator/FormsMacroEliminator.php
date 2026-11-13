@@ -10,7 +10,9 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
@@ -23,12 +25,17 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Echo_;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\If_;
+use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor;
+use PhpParser\NodeVisitor\CloningVisitor;
 use function array_map;
+use function array_pop;
 use function array_reverse;
+use function assert;
 use function count;
 use function in_array;
 use function is_array;
@@ -94,6 +101,10 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 	private const PROVIDER_NESTED = 'isNested';
 
+	private const PROVIDER_BINDS_FORM = 'bindsForm';
+
+	private const FORM_VAR = 'form';
+
 	private const LABEL_GETTERS = ['getLabel', 'getLabelPart'];
 
 	private const CONTROL_GETTERS = ['getControl', 'getControlPart'];
@@ -124,6 +135,9 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 	private ?Expr $inputBinding = null;
 
+	/** @var list<array{bool, Expr|null}> */
+	private array $providerScopes = [];
+
 	public function describePattern(): string
 	{
 		return '{form x}/{form $var}/{formContext x}/<form n:name> $form = formsStack[] = uiControl["x"] '
@@ -131,13 +145,37 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			. 'global: ...) -> $form = Helpers::form(\'x\') / Helpers::formObject($var); initializeForm($form), '
 			. 'echo renderFormBegin(...)/renderFormEnd(...), array_pop(formsStack), $this->global->forms->end() and the '
 			. '{/formContainer} re-derive ($formContainer = end(formsStack) | forms->getScope()) dropped (unprovable '
-			. 'parent restore); {formContainer c} formsStack[] = $formContainer = <lookup> | forms->begin($formContainer '
+			. 'parent restore); {/form} $form = forms->end() ?? $form -> $form = <the enclosing {form} of the method> '
+			. 'or dropped; {formContainer c} formsStack[] = $formContainer = <lookup> | forms->begin($formContainer '
 			. '= forms->get(\'c\', Container::class)) -> $formContainer = Helpers::formContainer(\'c\'); '
 			. '{input}/{label}/{inputError}/n:name end(formsStack)["x"] | Runtime::item(\'x\', $this->global) | '
 			. 'forms->get(\'x\') | is_object($ʟ_tmp = $x) ? $ʟ_tmp : end(formsStack)[$ʟ_tmp] -> Helpers::formField(\'x\') '
 			. '/ Helpers::formField($x) with the trailing ->getControl()/->getLabel()/->getError()/'
 			. '->getControlPart()->attributes() chain kept; $ʟ_input/$ʟ_label/$ʟ_elem temps renamed to '
 			. '$latteInput/$latteLabel/$latteElem: ' . $this->patterns()->describe();
+	}
+
+	/**
+	 * @param array<Node> $nodes
+	 * @return null
+	 */
+	public function beforeTraverse(array $nodes)
+	{
+		$this->providerScopes = [];
+
+		return null;
+	}
+
+	/**
+	 * @return null
+	 */
+	public function enterNode(Node $node)
+	{
+		if ($node instanceof ClassMethod) {
+			$this->providerScopes = [];
+		}
+
+		return null;
 	}
 
 	/**
@@ -148,10 +186,21 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		if ($node instanceof Expression) {
 			$this->noteInputBinding($node->expr);
 			$rebuilt = $this->rebuildFormOpen($node->expr) ?? $this->rebuildContainerPush($node->expr);
+			$this->noteProviderScopeOpen($node->expr, $rebuilt);
 			if ($rebuilt !== null) {
 				$rebuilt->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_VALUE);
 
 				return new Expression($rebuilt, $node->getAttributes());
+			}
+
+			if ($this->isFormRestore($node->expr)) {
+				array_pop($this->providerScopes);
+
+				return $this->restoreEnclosingForm($node);
+			}
+
+			if ($node->expr instanceof MethodCall && $this->isProviderCall($node->expr, self::PROVIDER_END)) {
+				array_pop($this->providerScopes);
 			}
 
 			return $this->isScopePlumbing($node->expr) ? NodeVisitor::REMOVE_NODE : null;
@@ -211,6 +260,75 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		}
 
 		return $this->helperCall('formContainer', $container, $node);
+	}
+
+	// nette/forms 3.3.1 keeps the scopes opened by begin() on a stack; {formContainer} passes
+	// `bindsForm: false`, every form open binds $form, which {/form} restores to the nearest enclosing
+	// binding scope.
+	private function noteProviderScopeOpen(Expr $expr, ?Assign $rebuilt): void
+	{
+		if (
+			!$this->patterns()->hasName(self::ROLE_FORM_OPEN, self::SHAPE_PROVIDER_BEGIN)
+			|| !$expr instanceof MethodCall
+			|| !$this->isProviderCall($expr, self::PROVIDER_BEGIN)
+		) {
+			return;
+		}
+
+		$bindsForm = true;
+		foreach ($expr->args as $arg) {
+			if (
+				$arg instanceof Arg
+				&& $arg->name !== null
+				&& $arg->name->toString() === self::PROVIDER_BINDS_FORM
+			) {
+				$bindsForm = !($arg->value instanceof ConstFetch && $arg->value->name->toLowerString() === 'false');
+			}
+		}
+
+		$this->providerScopes[] = [$bindsForm, $bindsForm && $rebuilt !== null ? $rebuilt->expr : null];
+	}
+
+	// `$form = $this->global->forms->end() ?? $form;`
+	private function isFormRestore(Expr $expr): bool
+	{
+		return $expr instanceof Assign
+			&& $this->isVariableNamed($expr->var, self::FORM_VAR)
+			&& $expr->expr instanceof Coalesce
+			&& $expr->expr->left instanceof MethodCall
+			&& $this->isProviderCall($expr->expr->left, self::PROVIDER_END)
+			&& $expr->expr->left->args === []
+			&& $this->isVariableNamed($expr->expr->right, self::FORM_VAR);
+	}
+
+	/**
+	 * @return Expression|int
+	 */
+	private function restoreEnclosingForm(Expression $node)
+	{
+		foreach (array_reverse($this->providerScopes) as [$bindsForm, $source]) {
+			if (!$bindsForm) {
+				continue;
+			}
+
+			if ($source === null) {
+				break;
+			}
+
+			$copy = (new NodeTraverser(new CloningVisitor()))->traverse([$source])[0];
+			assert($copy instanceof Expr);
+			if ($node->hasAttribute('startLine')) {
+				$copy->setAttribute('startLine', $node->getStartLine());
+				$copy->setAttribute('endLine', $node->getEndLine());
+			}
+
+			$restore = new Assign(new Variable(self::FORM_VAR), $copy);
+			$restore->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_STATEMENT);
+
+			return new Expression($restore, $node->getAttributes());
+		}
+
+		return NodeVisitor::REMOVE_NODE;
 	}
 
 	private function rebuildFormOpen(Expr $expr): ?Assign

@@ -33,7 +33,7 @@ final class LatteTpl_fixtures_forms_macros_latte_257f81ab extends Latte\Runtime\
 		echo $this->global->forms->renderFormEnd(false) /* pos 1:7 */;
 		echo '</form>
 ';
-		$this->global->forms->end();
+		$form = $this->global->forms->end() ?? $form;
 		echo "\n";
 		$this->global->forms->begin($form = $this->global->uiControl['f2'], global: $this->global) /* pos 7:1 */;
 		echo $this->global->forms->renderFormBegin([]) /* pos 7:1 */;
@@ -41,7 +41,7 @@ final class LatteTpl_fixtures_forms_macros_latte_257f81ab extends Latte\Runtime\
 	';
 		echo $this->global->forms->get('y')->getControl() /* pos 8:2 */;
 		echo "\n";
-		$this->global->forms->begin($formContainer = $this->global->forms->get('c', Nette\Forms\Container::class)) /* pos 9:2 */;
+		$this->global->forms->begin($formContainer = $this->global->forms->get('c', Nette\Forms\Container::class), bindsForm: false) /* pos 9:2 */;
 		echo '		';
 		echo $this->global->forms->get('z')->getControl() /* pos 10:3 */;
 		echo "\n";
@@ -49,7 +49,7 @@ final class LatteTpl_fixtures_forms_macros_latte_257f81ab extends Latte\Runtime\
 		$this->global->forms->end();
 		$formContainer = $this->global->forms->getScope();
 		echo $this->global->forms->renderFormEnd() /* pos 12:1 */;
-		$this->global->forms->end();
+		$form = $this->global->forms->end() ?? $form;
 
 		echo "\n";
 	}

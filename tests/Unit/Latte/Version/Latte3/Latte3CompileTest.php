@@ -303,9 +303,14 @@ final class Latte3CompileTest extends BaseTestCase
 
 		$result = $this->compile("\n{form f class => 'ajax'}{input x}{/form}\n");
 
+		// nette/forms 3.3.1 words it through Latte's TagParser::consumeCommaBeforeArguments().
+		$message = InstalledVersionsGuard::satisfies('nette/forms', '>=3.3.1')
+			? 'Missing comma before tag arguments on line 2 at column 9.'
+			: 'Missing comma before arguments in {form} tag on line 2 at column 9.';
+
 		self::assertNotNull($result->getPhpSource());
 		self::assertSame(
-			[['orisai.nette.latte.deprecated', 'Missing comma before arguments in {form} tag on line 2 at column 9.', 2]],
+			[['orisai.nette.latte.deprecated', $message, 2]],
 			self::describe($result->getDiagnostics()),
 		);
 	}
