@@ -24,8 +24,8 @@ use function property_exists;
 // nette/http integration are optional, so whether an application wires them is not readable from
 // the constructor signature at all - only from the container it compiled. Both are live-container
 // reads no analysed file reflects, so both belong to a cache envelope rather than a file hash (see
-// PhpFactsCache::isFresh() for the facts half and LatteResultCacheMeta for the template-scope
-// half).
+// PhpFactsCache::isFresh() for the facts half and LatteTemplateValueExtension for the
+// template-scope half).
 final class TemplateFactoryDefaultResolver
 {
 

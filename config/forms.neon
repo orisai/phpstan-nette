@@ -57,33 +57,20 @@ services:
 			# project code, so they are part of the store's identity (see FormsCodeVersion::pathsDigest).
 			analysedPaths: %paths%
 
-	formFactSalt:
-		class: OriPhpstan\Nette\Forms\Cache\FormFactSalt
+	-
+		class: OriPhpstan\Nette\Forms\Cache\FormsValueExtension
 		arguments:
-			# The config's declared paths, not the CLI-narrowed analysedPaths (same reasoning as
-			# registrationIndex below): the salt must be a property of the project, so a single-file
-			# or IDE run cannot flip it and discard the whole result cache.
-			analysedPaths: %paths%
-			fileFinder: @fileFinderAnalyse
-			# Persists the whole-universe token scan content-addressed by the universe manifest, so a
-			# run in which nothing changed pays only the sha1_file sweep.
-			cache: @formShapeCache
-
-	# internal: used by the invalidation fixture to disable the catalog salt
-	formsResultCacheMeta:
-		class: OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta
-		arguments:
-			enabled: @orisai.nette.configuration::get(forms.enabled)
-			salt: @formFactSalt
-			catalogIdentity: @formCatalogIdentity
+			registrationIndex: @registrationIndex
+			projectRoot: %currentWorkingDirectory%
 		tags:
-			- phpstan.resultCacheMetaExtension
+			- phpstan.resultCacheValueExtension
 
 	formControlValueTypeReader:
 		class: OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader
 		arguments:
 			reflectionProvider: @reflectionProvider
 			catalogs: @orisai.nette.configuration::get(forms.catalogs)
+			recorder: @formShapeDependencyRecorder
 
 	-
 		class: OriPhpstan\Nette\Forms\Graph\ComponentAffectingNodeVisitor

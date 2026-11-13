@@ -6,6 +6,7 @@ use Nette\DI\Container;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry;
 use PhpParser\Node\Expr\MethodCall;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Type\Accessory\AccessoryArrayListType;
@@ -54,7 +55,7 @@ final class FindByTypeReturnTypeExtension implements DynamicMethodReturnTypeExte
 			return null;
 		}
 
-		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var));
+		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var), $scope);
 		if ($resolution === null) {
 			return null;
 		}
@@ -73,7 +74,7 @@ final class FindByTypeReturnTypeExtension implements DynamicMethodReturnTypeExte
 
 		$types = [];
 		foreach ($constantStrings as $constantString) {
-			$types[] = $this->buildForClassName($constantString->getValue(), $profiles);
+			$types[] = $this->buildForClassName($constantString->getValue(), $profiles, $scope);
 		}
 
 		return TypeCombinator::union(...$types);
@@ -82,11 +83,11 @@ final class FindByTypeReturnTypeExtension implements DynamicMethodReturnTypeExte
 	/**
 	 * @param list<string> $profiles
 	 */
-	private function buildForClassName(string $className, array $profiles): Type
+	private function buildForClassName(string $className, array $profiles, DependencyTracker $scope): Type
 	{
 		$namesPerProfile = [];
 
-		foreach ($this->registry->getTypeLookup($className, $profiles) as $result) {
+		foreach ($this->registry->getTypeLookup($className, $profiles, $scope) as $result) {
 			$namesPerProfile[] = $result->getAllNames();
 		}
 

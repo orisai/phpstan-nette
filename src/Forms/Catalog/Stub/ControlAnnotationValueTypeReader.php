@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Forms\Catalog\Stub;
 
 use Nette\ComponentModel\IComponent;
+use OriPhpstan\Nette\Forms\Cache\DependencyRecorder;
 use OriPhpstan\Nette\Forms\Catalog\ChoiceModel;
 use OriPhpstan\Nette\Forms\Catalog\ComponentClassName;
 use OriPhpstan\Nette\Forms\Catalog\FormAddsSpec;
@@ -10,14 +11,17 @@ use OriPhpstan\Nette\Forms\Catalog\FormAddsViolation;
 use OriPhpstan\Nette\Forms\Catalog\ReplicatorMeta;
 use OriPhpstan\Nette\Forms\Catalog\RuleCastType;
 use OriPhpstan\Nette\Forms\Catalog\WizardMeta;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\ExtendedMethodReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StaticType;
 use PHPStan\Type\Type;
+use function array_values;
 use function count;
 use function explode;
 use function in_array;
@@ -86,6 +90,8 @@ final class ControlAnnotationValueTypeReader
 
 	private ReflectionProvider $reflectionProvider;
 
+	private ?DependencyRecorder $recorder;
+
 	private TypeStringResolver $typeStringResolver;
 
 	/** @var list<string> */
@@ -97,12 +103,51 @@ final class ControlAnnotationValueTypeReader
 	public function __construct(
 		ReflectionProvider $reflectionProvider,
 		TypeStringResolver $typeStringResolver,
-		array $catalogs = []
+		array $catalogs = [],
+		?DependencyRecorder $recorder = null
 	)
 	{
 		$this->reflectionProvider = $reflectionProvider;
 		$this->typeStringResolver = $typeStringResolver;
 		$this->catalogs = $catalogs;
+		$this->recorder = $recorder;
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return T
+	 */
+	public function trackDependencies(DependencyTracker $tracker, callable $compute)
+	{
+		return $this->recorder === null ? $compute() : $this->recorder->track($tracker, $compute);
+	}
+
+	// Every tag read here is a cross-file shape input: the declaring file joins the active frames.
+	private function recordClass(ClassReflection $class): void
+	{
+		if ($this->recorder === null) {
+			return;
+		}
+
+		foreach ([$class, ...array_values($class->getTraits(true))] as $declaring) {
+			$file = $declaring->getFileName();
+			if ($file !== null) {
+				$this->recorder->record($file);
+			}
+		}
+	}
+
+	private function recordHierarchy(ClassReflection $class): void
+	{
+		foreach ([$class, ...$class->getParents(), ...array_values($class->getInterfaces())] as $member) {
+			$this->recordClass($member);
+		}
+	}
+
+	private function recordMethod(ExtendedMethodReflection $method): void
+	{
+		$this->recordClass($method->getDeclaringClass());
 	}
 
 	/**
@@ -114,7 +159,9 @@ final class ControlAnnotationValueTypeReader
 		$catalogs = [];
 		foreach ([$builtIn, ...$this->catalogs] as $catalogName) {
 			if ($this->reflectionProvider->hasClass($catalogName)) {
-				$catalogs[] = $this->reflectionProvider->getClass($catalogName);
+				$catalog = $this->reflectionProvider->getClass($catalogName);
+				$this->recordClass($catalog);
+				$catalogs[] = $catalog;
 			}
 		}
 
@@ -289,6 +336,7 @@ final class ControlAnnotationValueTypeReader
 
 		$class = $this->reflectionProvider->getClass($className);
 		foreach ([$class, ...$class->getParents()] as $r) {
+			$this->recordClass($r);
 			$doc = $r->getResolvedPhpDoc();
 			$meta = $doc === null ? null : $this->replicatorMetaFromDoc($doc->getPhpDocString(), $r->getName());
 			if ($meta !== null) {
@@ -346,6 +394,7 @@ final class ControlAnnotationValueTypeReader
 
 		$class = $this->reflectionProvider->getClass($className);
 		foreach ([$class, ...$class->getParents()] as $r) {
+			$this->recordClass($r);
 			$doc = $r->getResolvedPhpDoc();
 			$meta = $doc === null ? null : $this->wizardMetaFromDoc($doc->getPhpDocString());
 			if ($meta !== null) {
@@ -376,7 +425,9 @@ final class ControlAnnotationValueTypeReader
 			return null;
 		}
 
-		$effect = $this->matchTagBy($class->getNativeMethod($methodName)->getDocComment(), self::MODIFIER_TAG);
+		$method = $class->getNativeMethod($methodName);
+		$this->recordMethod($method);
+		$effect = $this->matchTagBy($method->getDocComment(), self::MODIFIER_TAG);
 
 		return in_array($effect, [self::MODIFIER_NULLABLE, self::MODIFIER_REQUIRED], true) ? $effect : null;
 	}
@@ -396,7 +447,9 @@ final class ControlAnnotationValueTypeReader
 			return false;
 		}
 
-		$doc = $class->getNativeMethod($methodName)->getDocComment();
+		$method = $class->getNativeMethod($methodName);
+		$this->recordMethod($method);
+		$doc = $method->getDocComment();
 
 		return $doc !== null && preg_match(self::DISABLER_TAG, $doc) === 1;
 	}
@@ -461,7 +514,10 @@ final class ControlAnnotationValueTypeReader
 			return null;
 		}
 
-		return $this->matchTagBy($class->getNativeMethod($methodName)->getDocComment(), self::READ_BY_ARG_TAG);
+		$method = $class->getNativeMethod($methodName);
+		$this->recordMethod($method);
+
+		return $this->matchTagBy($method->getDocComment(), self::READ_BY_ARG_TAG);
 	}
 
 	private function matchKeyLiteral(string $key): ?string
@@ -561,6 +617,8 @@ final class ControlAnnotationValueTypeReader
 		bool $enforceContainerScope
 	): array
 	{
+		$this->recordClass($method->getDeclaringClass());
+
 		if ($docComment === null || strpos($docComment, self::ADDS_TAG_NAME) === false) {
 			return ['specs' => [], 'violations' => []];
 		}
@@ -689,6 +747,8 @@ final class ControlAnnotationValueTypeReader
 			];
 		}
 
+		$this->recordHierarchy($this->reflectionProvider->getClass($controlClass));
+
 		if (!ComponentClassName::isComponent($controlClass)) {
 			return [
 				new FormAddsViolation(
@@ -750,6 +810,7 @@ final class ControlAnnotationValueTypeReader
 	private function classTagBy(ClassReflection $reflection, string $pattern, int $group = 1): ?string
 	{
 		foreach ([$reflection, ...$reflection->getParents()] as $r) {
+			$this->recordClass($r);
 			$doc = $r->getResolvedPhpDoc();
 			if ($doc === null) {
 				continue;

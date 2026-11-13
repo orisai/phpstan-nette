@@ -47,12 +47,12 @@ final class GetParametersReturnTypeExtension implements DynamicMethodReturnTypeE
 			return null;
 		}
 
-		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var));
+		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var), $scope);
 		if ($resolution === null) {
 			return null;
 		}
 
-		return $this->registry->getMergedParametersType($resolution->getProfiles());
+		return $this->registry->getMergedParametersType($resolution->getProfiles(), $scope);
 	}
 
 }

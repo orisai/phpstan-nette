@@ -76,6 +76,18 @@ final class ComponentModelAccessDynamicReturnTypeExtension implements DynamicMet
 		Scope $scope
 	): ?Type
 	{
+		return $this->model->trackDependencies(
+			$scope,
+			fn (): ?Type => $this->getTypeFromMethodCallUntracked($methodReflection, $methodCall, $scope),
+		);
+	}
+
+	private function getTypeFromMethodCallUntracked(
+		MethodReflection $methodReflection,
+		MethodCall $methodCall,
+		Scope $scope
+	): ?Type
+	{
 		$name = $methodReflection->getName();
 		if ($name === 'getControls') {
 			$controls = $this->enabled ? $this->model->resolveLeafControls($methodCall->var, $scope) : null;

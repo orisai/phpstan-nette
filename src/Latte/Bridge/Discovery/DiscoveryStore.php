@@ -142,30 +142,6 @@ final class DiscoveryStore
 		return $this->loadedRecordSalts[$templateClassName] ?? self::NO_RECORDS_SALT;
 	}
 
-	// Template-file-SET identity: the LatteResultCacheMeta salt. A template whose cached parse
-	// predates its store file never baked in the self-ref, so only the SET changing needs the
-	// whole-cache invalidation; record content stays out - record changes propagate granularly
-	// through each store file's own bytes (RECORDS_HASH).
-	public function templateSetHash(): string
-	{
-		$relPaths = array_keys($this->entries());
-		sort($relPaths, SORT_STRING);
-
-		return sha1(implode("\n", $relPaths));
-	}
-
-	// Whole-store identity, keys AND records: the fallback salt LatteResultCacheMeta falls back to
-	// when the store directory is not itself analysed, where no per-template propagation channel
-	// exists at all (see that class's regime note). Never the salt of choice - it moves on every
-	// record change.
-	public function templateContentHash(): string
-	{
-		$entries = $this->entries();
-		ksort($entries, SORT_STRING);
-
-		return sha1(serialize($entries));
-	}
-
 	/**
 	 * @param array<string, list<DiscoveryRecord>> $recordsByTemplate
 	 * @param list<string> $linkedClasses

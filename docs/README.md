@@ -20,6 +20,7 @@ PHPStan understands Nette DI containers, Nette Forms, Latte templates and how th
 	- [Narrowing store lifecycle](#narrowing-store-lifecycle)
 	- [Dead code detection](#dead-code-detection)
 	- [Validation](#validation)
+	- [Result cache](#result-cache)
 - [Debugging functions](#debugging-functions)
 	- [Forms debugging](#forms-debugging)
 	- [Latte debugging](#latte-debugging)
@@ -334,8 +335,8 @@ parameters:
 - `discovery.enabled` – links templates to the presenters and controls rendering them; it does nothing while Latte is
   off
 - `discovery.storePath` – derived store of those links; it is rebuilt before every run and never committed
-- `discovery.coarseInvalidationAccepted` – silences the note printed when no `paths` are declared in the config; without
-  declared paths any change of the store discards the whole result cache
+- `discovery.coarseInvalidationAccepted` – no longer has any effect and is kept so existing configs stay valid; the
+  store is tracked per template wherever it lives (see [result cache](#result-cache))
 - `discovery.formulas` – assigns a formula to your own template locators (see
   [Latte discovery formulas](#latte-discovery-formulas))
 - `engineLoader` – PHP file returning a `Latte\Engine` with your filters, functions and macros (see
@@ -449,8 +450,8 @@ It does not mark:
   ordinary usages; turn Latte analysis off and the detector reports such methods as dead
 
 The analysis sees the containers your loader builds on the current machine, so a service registered only in a local
-config file counts as used only where that file exists. A change of a compiled container invalidates PHPStan's result
-cache, so the next run evaluates the usages again.
+config file counts as used only where that file exists. A class is analysed again when the methods the compiled
+containers call on it change, so the next run evaluates its usages again.
 
 ### Validation
 
@@ -489,6 +490,32 @@ Internal error: orisai.nette.latte.enabled requires "latte" in fileExtensions. w
 
 Fix the configuration; the suggestion to report the internal error to PHPStan does not apply. The checks do not run
 again on a run which is fully answered from the result cache.
+
+### Result cache
+
+The extension never discards PHPStan's whole result cache. Each analysed file records what it read besides its own
+code, and the next run analyses it again only when that changed:
+
+- **DI** – every question a file asks the containers (whether a service exists, its type, a `getByType()` lookup, a
+  tag, the parameters, the profiles a receiver resolves to) is recorded with its answer. A rebuilt container, a NEON
+  edit or a new random class suffix on nette/di 3.2 re-analyses only the files whose answer moved. A class the
+  containers construct is analysed again when the methods they call on it change (dead code detection).
+- **Forms** – a file reading a form shape depends on every file the shape was read from: the builder, the form class,
+  the factory, a shared `add*()` helper, a class constant used as a name or as items, a catalog. Comments, whitespace
+  and the layout of doc comments in those files do not count. A file whose shape depends on where a handler or a
+  pass-through is registered depends on that registration set across the whole analysed universe.
+- **Latte** – a template depends on the include topology of the templates it is connected to, its and their
+  discovery records, the harvested filters, functions and macros, and the template factory wiring; with narrowing on
+  also on the store files of every template including it. A new `{include}` of an unedited template re-analyses the
+  templates connected to it, never the rest. A presenter or control depends on its render facts, so a body edit of an
+  ancestor or a template file appearing at a probed path re-analyses it.
+
+Config parameters (`orisai.nette.*`) are part of PHPStan's own result-cache metadata: changing one discards the whole
+cache. The discovery store is still rebuilt before every run.
+
+With PHPStan's `reuseCollectedDataRuleErrors` feature toggle (part of bleeding edge), the extension's whole-project
+rules - template reachability, `{templateType}` checks, the form-macro checks and the narrowing store writer - always
+run, because they read the stores and files on disk besides the collected data.
 
 ## Debugging functions
 
@@ -602,7 +629,8 @@ return [
 ];
 ```
 
-The result cache depends on the compiled container files, so a change of the DI config invalidates it.
+A change of the DI config re-analyses only the files whose question to the container gets a different answer (see
+[result cache](#result-cache)).
 
 The same file may serve `orisai.nette.latte.templateFactoryContainerLoader`. Latte also reads your filters, functions
 and macros from the first container with a `Nette\Bridges\ApplicationLatte\ILatteFactory` service.
@@ -745,7 +773,7 @@ The interface is never implemented — only its methods and their tags are read.
 - `@form-read-type` and `@form-write-spec` entries only take effect for methods `Nette\Forms\Container` itself
   declares. Use catalogs for `@form-rule-cast`, `@form-read-by-arg` and `@form-replicator` entries; describe a control's
   value with `@form-read-type` on the control class (or its stub).
-- Changing a catalog invalidates the analysis caches.
+- Changing a catalog re-analyses the files whose form shapes read it.
 
 ### Latte engine loader
 

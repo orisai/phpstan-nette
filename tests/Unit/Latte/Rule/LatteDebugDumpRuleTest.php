@@ -45,6 +45,7 @@ use ReflectionClass;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\TrackingScope;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\ConditionalCertaintyPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryMethodlessPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileActionPresenter;
@@ -2054,8 +2055,8 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	 */
 	private function scopeForFile(string $file): Scope
 	{
-		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker&Stub $scope */
-		$scope = $this->createStub(Scope::class);
+		/** @var TrackingScope&Stub $scope */
+		$scope = $this->createStub(TrackingScope::class);
 		$scope->method('getFile')->willReturn($file);
 
 		return $scope;
@@ -2066,8 +2067,8 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 	 */
 	private function scopeForVarOrigin(string $file, string $functionName, string $typeDescription): Scope
 	{
-		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker&Stub $scope */
-		$scope = $this->createStub(Scope::class);
+		/** @var TrackingScope&Stub $scope */
+		$scope = $this->createStub(TrackingScope::class);
 		$scope->method('getFile')->willReturn($file);
 		$scope->method('getFunctionName')->willReturn($functionName);
 		$scope->method('getType')->willReturn($this->describedType($typeDescription));

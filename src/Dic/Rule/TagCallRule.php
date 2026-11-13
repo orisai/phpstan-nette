@@ -67,7 +67,7 @@ final class TagCallRule implements Rule
 			return [];
 		}
 
-		$resolution = $this->registry->resolveProfiles($receiverType);
+		$resolution = $this->registry->resolveProfiles($receiverType, $scope);
 
 		if ($resolution === null) {
 			return [];
@@ -97,7 +97,7 @@ final class TagCallRule implements Rule
 
 		foreach ($constantStrings as $constantString) {
 			$tag = $constantString->getValue();
-			$existence = $this->registry->getTagExistence($tag, $receiverProfiles);
+			$existence = $this->registry->getTagExistence($tag, $receiverProfiles, $scope);
 			$missing = array_keys(array_filter($existence, static fn (bool $exists): bool => !$exists));
 
 			if ($missing === []) {

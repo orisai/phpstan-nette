@@ -133,22 +133,6 @@ final class TemplateEdgeIndexTest extends BaseTestCase
 		self::assertFalse($index->targetExists($sites[0]));
 	}
 
-	public function testEdgeTopologyListsIncluderTargetPairsAcrossTheUniverse(): void
-	{
-		$index = $this->indexForTree();
-		$edges = $index->edgeTopology();
-
-		$pairs = [];
-		foreach ($edges as $edge) {
-			$pairs[] = $edge['includer'] . '->' . $edge['target'];
-		}
-
-		self::assertContains($this->rel('root.latte') . '->' . $this->rel('partial.latte'), $pairs);
-		// Dynamic/unresolvable sites never became an incomingEdges() entry (see fold()), so they
-		// must not appear in the topology either.
-		self::assertNotContains($this->rel('dynamic.latte') . '->' . $this->rel('dynamic.latte'), $pairs);
-	}
-
 	public function testFactsForMissingFileDegradesToEmptyFacts(): void
 	{
 		$index = $this->indexForTree();
@@ -160,7 +144,7 @@ final class TemplateEdgeIndexTest extends BaseTestCase
 	}
 
 	// Isolated temp corpus (not the shared tree) so this doesn't ripple into other tests'
-	// tree-wide assertions (edgeTopology(), incomingEdges() counts, etc.).
+	// tree-wide assertions (incomingEdges() counts, etc.).
 	public function testIncludeBlockJoinsLayoutChainForReachableBlocks(): void
 	{
 		$tempDir = sys_get_temp_dir() . '/latte-includeblock-test-' . getmypid() . '-' . uniqid('', true);

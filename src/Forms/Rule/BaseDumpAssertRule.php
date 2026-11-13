@@ -7,6 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
@@ -66,6 +67,7 @@ abstract class BaseDumpAssertRule implements Rule
 
 	/**
 	 * @param array<Arg> $args
+	 * @param Scope&DependencyTracker $scope
 	 * @return list<IdentifierRuleError>
 	 */
 	abstract protected function buildErrors(array $args, FuncCall $node, Scope $scope): array;

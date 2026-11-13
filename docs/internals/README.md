@@ -6,7 +6,7 @@ Maintainer documentation; the user-facing guide is ../README.md.
 
 Architecture, invariants, cache design, test layout and known limitations, for someone changing the code.
 
-- [forms.md](forms.md) – form and component shape inference, the shape store and result-cache salt
+- [forms.md](forms.md) – form and component shape inference, the shape store and result-cache dependencies
 - [component.md](component.md) – component attachment and the `orisai.nette.component.*` rules
 - [dic.md](dic.md) – DI container analysis: registry, receiver classes, rules, type inference, dead-code usage
 - [latte.md](latte.md) – Latte template analysis: compile pipeline, cross-file model, narrowing, customs, discovery
@@ -14,8 +14,8 @@ Architecture, invariants, cache design, test layout and known limitations, for s
   template corpus
 - [latte-forms.md](latte-forms.md) – the bridge checking form control names in templates
 
-The [library-wide notes](#library-wide-notes) below cover the configuration guard, result-cache meta services, test
-layout, dependency profiles, static analysis and running the gates.
+The [library-wide notes](#library-wide-notes) below cover the configuration guard, result-cache dependency tracking,
+test layout, dependency profiles, static analysis and running the gates.
 
 ## Library-wide notes
 
@@ -52,14 +52,40 @@ belongs there rather than in a service argument.
 - The routing parser and the template source locator take plain `orisai.nette.latte.*` options instead of the guard.
   Injecting the guard there created a DI cycle through the reflection provider.
 
-### Result-cache meta services
+### Result-cache dependency tracking
 
-Each area folds its cache identity into PHPStan's result-cache meta through its own `ResultCacheMetaExtension`:
-`FormsResultCacheMeta` (service `formsResultCacheMeta`: `FormFactSalt` plus `CatalogIdentity`),
-`LatteResultCacheMeta` (edge topology, harvest salt, discovery store) and `ContainerResultCacheMetaExtension`
-(compiled container files). The `formsResultCacheMeta` service name is internal: one invalidation fixture overrides its
-`enabled` argument to switch the salt off (see [latte-forms.md](latte-forms.md#invalidation)). Renaming the service
-breaks that fixture, not users.
+No area discards PHPStan's whole result cache. Each consumer declares what the analysed file read besides its own code
+through PHPStan 2.3's `DependencyTracker` (the scope rules, collectors and type extensions receive), and a
+`ResultCacheValueExtension` (tag `phpstan.resultCacheValueExtension`) values each key so that only the files whose
+recorded value moved are analysed again:
+
+| Former whole-cache input | Now | Value extension / key |
+|---|---|---|
+| DI: compiled container files by profile (`ContainerResultCacheMetaExtension`) | per question | `ContainerValueExtension`, one key per registry query and its arguments, valued by the answer |
+| DI dead code: the classes the containers construct | per class | `DicUsageValueExtension`, the called method names |
+| Forms: `FormFactSalt` over the form-fact-bearing subset | per shape source | `FormsValueExtension` `source`: the normalised token digest of every file a shape read (`DependencyRecorder::track()`) |
+| Forms: contributor sets of interprocedural keys (handler, pass-through, external component mutation) | per key | `FormsValueExtension` `contributors`: `RegistrationIndex::fingerprint()` |
+| Forms: `CatalogIdentity` | per shape source | the catalog class files, recorded by `ControlAnnotationValueTypeReader` |
+| Latte: edge topology | per connected component | `LatteTemplateValueExtension` `neighbourhood`: `TemplateNeighbourhood::digest()` |
+| Latte: discovery store template set / content | per connected component | the same digest folds every member's records, discovery edges and auto-layout ancestors |
+| Latte: harvest salt | every template | `LatteTemplateValueExtension` `harvest` |
+| Latte: template factory default and wiring | every template | `LatteTemplateValueExtension` `templateFactory` |
+| (none: PHP-side render facts were never tracked) | per class | `LatteRenderFactsValueExtension`, `PhpRenderFacts::getCanonicalHash()` |
+| (none: narrowing slices outside `%paths%` were never tracked) | per template | file dependencies on the slices of every transitive includer (`LatteDependencyRule`) |
+
+`LatteResultCacheMeta` is still a `ResultCacheMetaExtension`, deprecated: `ResultCacheManager::restore()` calls it in the
+coordinator before any file is parsed, the one moment the discovery store can be built (`PreAnalysisIndexBuilder`), and
+PHPStan 2.3 has no other pre-analysis hook. Its hash is a constant, so it never discards the cache.
+
+Every `Rule<CollectedDataNode>` of the library (`LatteTemplateGraphRule`, `LatteFormsRule`, `LatteSiteScopeWriterRule`,
+`ShadowDivergenceRule`) reads stores, indexes or files besides its collected data, and the writer writes the narrowing
+store. Each tracks `RerunValueExtension` (a value no two runs share), so `reuseCollectedDataRuleErrors` never replays
+their errors or skips the writer.
+
+Value extensions are asked for their values in the coordinator before bootstrap files run and in the workers while a
+file is analysed; both must answer alike, or the file is analysed on every run. Spawn tests record which files a warm
+run analysed (`AnalysedFileLog`, `AnalysisRun::getAnalysedFiles()`, the `reanalysed` step key of the invalidation
+matrices).
 
 ### Test layout
 

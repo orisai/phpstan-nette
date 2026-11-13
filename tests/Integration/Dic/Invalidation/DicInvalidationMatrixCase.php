@@ -21,9 +21,9 @@ use function touch;
  * COLD one taken at the byte-identical tree - over the same corpus, so the only variable is the EDIT.
  *
  * The DIC extension's cross-file state is not a body-level fact the way Forms' and Latte's are: every
- * answer comes from the COMPILED Nette DI container reached through %dic.containerLoader%, and the
- * whole result cache is salted on it by ContainerResultCacheMetaExtension. So the corpus is built
- * around the salt's INPUTS rather than around file hops: a scenario-owned loader, one neon config per
+ * answer comes from the COMPILED Nette DI container reached through %dic.containerLoader%, and each
+ * file depends on the answers it asked for (ContainerValueExtension). So the corpus is built around
+ * the container's INPUTS rather than around file hops: a scenario-owned loader, one neon config per
  * profile, and a consumer whose every probe states the whole answer -
  *
  *  - getService('foo')->gone()  : the RESOLVED SERVICE CLASS (ServiceReturnTypeExtension)
@@ -41,11 +41,12 @@ abstract class DicInvalidationMatrixCase extends BaseTestCase
 	private const REAL_CONFIG_PATH = __DIR__ . '/../Fixtures/invalidation.neon';
 
 	/**
-	 * @param list<array{mutate: callable(InvalidationScenario): mixed, expect: list<string>, maxReanalysed?: int}> $steps
+	 * @param list<array{mutate: callable(InvalidationScenario): mixed, expect: list<string>, maxReanalysed?: int, reanalysed?: list<string>}> $steps
 	 * each step's `expect` is the FULL error set the analysis must settle on after its mutation;
 	 * `maxReanalysed` bounds the FIRST post-mutation warm run's reanalysed-file count - the inverse
 	 * controls' half of the matrix, because a fix that bought cold == warm by invalidating coarsely
-	 * blows that bound (or discards the cache outright) while every error-set assertion still passes
+	 * blows that bound (or discards the cache outright) while every error-set assertion still passes;
+	 * `reanalysed` names the exact, sorted set of files that first warm run must analyse
 	 */
 	protected function assertScenario(string $name, array $steps): void
 	{
@@ -75,7 +76,20 @@ abstract class DicInvalidationMatrixCase extends BaseTestCase
 						$step['maxReanalysed'],
 						$firstWarm->getReanalysedFiles(),
 						"step $index: this edit must stay granular - reanalysing more than "
-						. $step['maxReanalysed'] . ' files means agreement was bought by invalidating coarsely',
+						. $step['maxReanalysed'] . ' files means agreement was bought by invalidating coarsely: '
+						. implode(', ', $firstWarm->getAnalysedFiles()),
+					);
+				}
+
+				if (array_key_exists('reanalysed', $step)) {
+					self::assertTrue(
+						$firstWarm->isCacheRestored(),
+						"step $index: the result cache must still be RESTORED after this edit: " . $firstWarm->getDiagnostics(),
+					);
+					self::assertSame(
+						$step['reanalysed'],
+						$firstWarm->getAnalysedFiles(),
+						"step $index: exactly the files depending on the edit must be re-analysed",
 					);
 				}
 

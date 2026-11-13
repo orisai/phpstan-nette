@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Rule;
 use Nette\Utils\Strings;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
+use OriPhpstan\Nette\Support\RerunValueExtension;
 use PhpParser\Node;
 use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
@@ -79,6 +80,8 @@ final class LatteSiteScopeWriterRule implements Rule
 		if (!$this->enabled) {
 			return [];
 		}
+
+		$scope->trackValueDependency(RerunValueExtension::class, self::class);
 
 		// With reuseCollectedDataRuleErrors the errors of an earlier run come back without this rule
 		// running, so its writes must not be skipped: the store is tracked as this run found it, and

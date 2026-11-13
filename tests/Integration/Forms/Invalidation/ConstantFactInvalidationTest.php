@@ -45,6 +45,12 @@ final class ConstantFactInvalidationTest extends FormsInvalidationMatrixCase
 							$this->constSetRequired(),
 						],
 					),
+					'reanalysed' => [
+						'ScratchConstControl.php',
+						'ScratchConstForm.php',
+						'ScratchConstParentControl.php',
+						'ScratchFieldNames.php',
+					],
 				],
 			],
 			fn (InvalidationScenario $scenario) => $this->seedConstantCorpus($scenario),
@@ -149,7 +155,7 @@ PHP;
 	/**
 	 * The ITEMS hop, in an inherited factory rather than the consumer's own: a factory declared in
 	 * the file that reads the shape would be re-queued by PHPStan's own dependency edge on the
-	 * constant, and the row would pass without the salt.
+	 * constant, and the row would pass without the consumer's own dependency on the constant's file.
 	 */
 	private function constParentControlSource(): string
 	{

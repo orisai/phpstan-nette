@@ -6,10 +6,14 @@ use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\Latte\Compile\DiscoveryClassName;
 use Symfony\Component\Process\Process;
+use Tests\OriPhpstan\Nette\Toolkit\AnalysedFileLog;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
+use function array_diff;
+use function array_filter;
+use function array_values;
 use function dirname;
 use function explode;
 use function implode;
@@ -23,12 +27,10 @@ use const PHP_BINARY;
 
 // The discovery cascade: a body-only edit to a PHP file in a renderer's read set changes no
 // exported node PHPStan itself can see, so no native dependency edge ever reanalyzes the linked
-// template. The writer closes the first hop - every indexed class is re-derived through the facts
-// envelope each run, and the stale read-set hash forces a walk recompute whose changed records
-// rewrite the per-template store FILE's own bytes. The store file's exported RECORDS_HASH then
-// closes the second hop on the next plain warm run, reanalyzing exactly the templates that
-// self-reference their store class - granular by construction, never a whole-cache invalidation
-// (the meta salt tracks only the template-file SET, pinned in LatteResultCacheMetaTest).
+// template. The pre-analysis build re-derives every indexed class through the facts envelope, and
+// the moved records reach exactly the templates owning them on the SAME warm run through their
+// tracked neighbourhood value, and the renderer through its tracked render facts - granular by
+// construction, never a whole-cache invalidation and never a template the edit does not reach.
 /**
  * @group latte2
  */
@@ -156,14 +158,16 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 				. "}\n",
 			);
 
-			// Run 4: only the edited helper file reanalyzes; the writer re-derives the indexed
-			// renderer through its now-stale envelope and moves the record tpl-a -> tpl-b.
+			// Run 4: the edited helper, the renderer whose render facts it moved and the two templates
+			// whose records moved - never the unrelated template. The store files the build rewrote sit
+			// inside the analysed paths here, and PHPStan re-analyses them on this run or the next one
+			// depending on whether the rewrite landed in the second it hashed them; they are left out.
 			$run4 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);
 			self::assertSame($run1['output'], $run4['output']);
-			self::assertStringContainsString(
-				'1 file will be reanalysed',
-				$run4['diagnostics'],
-				'run 4 must reanalyse only the edited helper file: ' . $run4['diagnostics'],
+			self::assertSame(
+				['ScratchRenderer.php', 'ScratchTemplateBase.php', 'tpl-a.latte', 'tpl-b.latte'],
+				self::withoutStoreFiles($run4['analysed']),
+				'run 4 must reanalyse exactly what the edit reaches: ' . $run4['diagnostics'],
 			);
 			$storeB = new DiscoveryStore($storeDir);
 			self::assertSame([], $storeB->recordsForTemplate("$relSrc/tpl-a.latte"));
@@ -173,14 +177,14 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 				'the helper body edit must move the records to tpl-b through the envelope-driven writer',
 			);
 
-			// Run 5: both rewritten store files propagate to exactly their own templates.
+			// Run 5: at most PHPStan's own pass over the rewritten store files and their native
+			// dependents, the templates referencing them; nothing else.
 			$run5 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);
 			self::assertSame($run1['output'], $run5['output']);
-			self::assertStringContainsString(
-				'4 files will be reanalysed',
+			self::assertSame(
+				[],
+				array_values(array_diff(self::withoutStoreFiles($run5['analysed']), ['tpl-a.latte', 'tpl-b.latte'])),
 				$run5['diagnostics'],
-				'run 5 must reanalyse exactly the two changed store files and their two linked '
-				. 'templates - never the unrelated template: ' . $run5['diagnostics'],
 			);
 
 			$run6 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir);
@@ -199,6 +203,17 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 		}
 	}
 
+	/**
+	 * @param list<string> $analysed
+	 * @return list<string>
+	 */
+	private static function withoutStoreFiles(array $analysed): array
+	{
+		return array_values(
+			array_filter($analysed, static fn (string $file): bool => strpos($file, 'discovery/') !== 0),
+		);
+	}
+
 	private function createScratchDir(string $projectRoot): string
 	{
 		// var/tmp/, never the system temp dir: ProjectRelativePath::relativize is a bare
@@ -211,7 +226,7 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 	}
 
 	/**
-	 * @return array{output: string, diagnostics: string}
+	 * @return array{output: string, diagnostics: string, analysed: list<string>}
 	 */
 	private function spawn(string $projectRoot, string $srcDir, string $tmpDir, string $storeDir): array
 	{
@@ -226,6 +241,7 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 			],
 		);
 
+		$log = new AnalysedFileLog($isolated->getConfigPath(), $tmpDir);
 		$process = new Process(
 			[
 				PHP_BINARY,
@@ -236,9 +252,10 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 				'--error-format=raw',
 				'-vv',
 				'-c',
-				$isolated->getConfigPath(),
+				$log->getConfigPath(),
 			],
 			$projectRoot,
+			$log->env(),
 		);
 		$process->run();
 
@@ -247,6 +264,7 @@ final class DiscoveryStoreInvalidationTest extends BaseTestCase
 		return [
 			'output' => $this->normalize($rawOutput ?? $process->getOutput(), $projectRoot),
 			'diagnostics' => $process->getErrorOutput(),
+			'analysed' => $log->read($srcDir),
 		];
 	}
 

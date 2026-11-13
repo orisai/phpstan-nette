@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\MethodCall;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
@@ -99,19 +100,22 @@ final class TypeLookupReturnTypeExtension implements DynamicMethodReturnTypeExte
 		return $type;
 	}
 
+	/**
+	 * @param Scope&DependencyTracker $scope
+	 */
 	private function isUniquelyAutowiredEverywhere(string $className, MethodCall $methodCall, Scope $scope): bool
 	{
 		if (!$this->registry->isActive()) {
 			return false;
 		}
 
-		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var));
+		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var), $scope);
 
 		if ($resolution === null || $resolution->getProfiles() === []) {
 			return false;
 		}
 
-		foreach ($this->registry->getTypeLookup($className, $resolution->getProfiles()) as $result) {
+		foreach ($this->registry->getTypeLookup($className, $resolution->getProfiles(), $scope) as $result) {
 			if (!$result->isKnown() || count($result->getAutowiredNames()) !== 1) {
 				return false;
 			}

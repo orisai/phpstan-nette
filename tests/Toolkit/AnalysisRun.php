@@ -19,13 +19,29 @@ final class AnalysisRun
 
 	private string $diagnostics;
 
+	/** @var list<string> */
+	private array $analysedFiles;
+
 	/**
 	 * @param list<string> $errors
+	 * @param list<string> $analysedFiles
 	 */
-	public function __construct(array $errors, string $diagnostics)
+	public function __construct(array $errors, string $diagnostics, array $analysedFiles = [])
 	{
 		$this->errors = $errors;
 		$this->diagnostics = $diagnostics;
+		$this->analysedFiles = $analysedFiles;
+	}
+
+	// The files this run analysed, relative to the scenario's source directory, sorted: on a warm run
+	// exactly the ones the result cache re-queued.
+
+	/**
+	 * @return list<string>
+	 */
+	public function getAnalysedFiles(): array
+	{
+		return $this->analysedFiles;
 	}
 
 	public function getErrorText(): string

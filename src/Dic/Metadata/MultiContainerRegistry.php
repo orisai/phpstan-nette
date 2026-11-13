@@ -4,6 +4,8 @@ namespace OriPhpstan\Nette\Dic\Metadata;
 
 use LogicException;
 use Nette\DI\Container;
+use OriPhpstan\Nette\Dic\Cache\ContainerValueExtension;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayTypeBuilder;
 use PHPStan\Type\Constant\ConstantIntegerType;
@@ -20,6 +22,7 @@ use function array_unique;
 use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_file;
 use function is_int;
@@ -68,11 +71,6 @@ final class MultiContainerRegistry
 	}
 
 	/**
-	 * The result cache's salt input: the profile NAME is part of the analysed state (every rule
-	 * message prints it and it selects the subset every type extension resolves against), while two
-	 * profiles may share one container file, so a digest over unique file paths alone cannot see a
-	 * profile being renamed, added onto an existing file or reordered.
-	 *
 	 * @return array<string, string>
 	 */
 	public function getContainerFilesByProfile(): array
@@ -86,7 +84,7 @@ final class MultiContainerRegistry
 		return $paths;
 	}
 
-	public function resolveProfiles(Type $receiverType): ?ReceiverResolution
+	public function resolveProfiles(Type $receiverType, ?DependencyTracker $tracker = null): ?ReceiverResolution
 	{
 		$classNames = $receiverType->getObjectClassNames();
 
@@ -94,6 +92,21 @@ final class MultiContainerRegistry
 			return null;
 		}
 
+		// Known + base mix: a union member widens to all profiles, a base-classed accessory (marker)
+		// intersected with a known class does not.
+		$coversBase = in_array(Container::class, $classNames, true)
+			&& $receiverType->isSuperTypeOf(new ObjectType(Container::class))->yes();
+
+		$this->track($tracker, 'resolveProfilesFor', [$classNames, $coversBase]);
+
+		return $this->resolveProfilesFor($classNames, $coversBase);
+	}
+
+	/**
+	 * @param list<string> $classNames
+	 */
+	public function resolveProfilesFor(array $classNames, bool $coversBase): ?ReceiverResolution
+	{
 		$profilesByClassName = [];
 
 		foreach ($this->load() as $profile => $metadata) {
@@ -115,12 +128,8 @@ final class MultiContainerRegistry
 			}
 		}
 
-		if ($hasBase) {
-			// Known + base mix: a union member widens to all profiles, a base-classed
-			// accessory (marker) intersected with a known class does not.
-			if ($known === [] || $receiverType->isSuperTypeOf(new ObjectType(Container::class))->yes()) {
-				return new ReceiverResolution(true, $this->getProfiles());
-			}
+		if ($hasBase && ($known === [] || $coversBase)) {
+			return new ReceiverResolution(true, $this->getProfiles());
 		}
 
 		return new ReceiverResolution(false, array_keys($known));
@@ -130,8 +139,14 @@ final class MultiContainerRegistry
 	 * @param list<string> $profiles
 	 * @return array<string, bool>
 	 */
-	public function getServiceExistence(string $name, bool $recursiveAliases, array $profiles): array
+	public function getServiceExistence(
+		string $name,
+		bool $recursiveAliases,
+		array $profiles,
+		?DependencyTracker $tracker = null
+	): array
 	{
+		$this->track($tracker, __FUNCTION__, [$name, $recursiveAliases, $profiles]);
 		$existence = [];
 
 		foreach ($this->loadSubset($profiles) as $profile => $metadata) {
@@ -146,8 +161,14 @@ final class MultiContainerRegistry
 	/**
 	 * @param list<string> $profiles
 	 */
-	public function getResolvedServiceMethodName(string $name, bool $recursiveAliases, array $profiles): ?string
+	public function getResolvedServiceMethodName(
+		string $name,
+		bool $recursiveAliases,
+		array $profiles,
+		?DependencyTracker $tracker = null
+	): ?string
 	{
+		$this->track($tracker, __FUNCTION__, [$name, $recursiveAliases, $profiles]);
 		$methodNames = [];
 
 		foreach ($this->loadSubset($profiles) as $metadata) {
@@ -172,8 +193,14 @@ final class MultiContainerRegistry
 	/**
 	 * @param list<string> $profiles
 	 */
-	public function getServiceType(string $name, bool $recursiveAliases, array $profiles): ?Type
+	public function getServiceType(
+		string $name,
+		bool $recursiveAliases,
+		array $profiles,
+		?DependencyTracker $tracker = null
+	): ?Type
 	{
+		$this->track($tracker, __FUNCTION__, [$name, $recursiveAliases, $profiles]);
 		$types = [];
 
 		foreach ($this->loadSubset($profiles) as $metadata) {
@@ -199,8 +226,14 @@ final class MultiContainerRegistry
 	 * @param list<string> $profiles
 	 * @return array<string, string>|null
 	 */
-	public function getServiceTypeNames(string $name, bool $recursiveAliases, array $profiles): ?array
+	public function getServiceTypeNames(
+		string $name,
+		bool $recursiveAliases,
+		array $profiles,
+		?DependencyTracker $tracker = null
+	): ?array
 	{
+		$this->track($tracker, __FUNCTION__, [$name, $recursiveAliases, $profiles]);
 		$names = [];
 
 		foreach ($this->loadSubset($profiles) as $profile => $metadata) {
@@ -222,8 +255,9 @@ final class MultiContainerRegistry
 	 * @param list<string> $profiles
 	 * @return array<string, TypeLookupResult>
 	 */
-	public function getTypeLookup(string $className, array $profiles): array
+	public function getTypeLookup(string $className, array $profiles, ?DependencyTracker $tracker = null): array
 	{
+		$this->track($tracker, __FUNCTION__, [$className, $profiles]);
 		$results = [];
 
 		foreach ($this->loadSubset($profiles) as $profile => $metadata) {
@@ -255,8 +289,9 @@ final class MultiContainerRegistry
 	 * @param list<string> $profiles
 	 * @return array<string, bool>
 	 */
-	public function getTagExistence(string $tag, array $profiles): array
+	public function getTagExistence(string $tag, array $profiles, ?DependencyTracker $tracker = null): array
 	{
+		$this->track($tracker, __FUNCTION__, [$tag, $profiles]);
 		$existence = [];
 
 		foreach ($this->loadSubset($profiles) as $profile => $metadata) {
@@ -269,8 +304,9 @@ final class MultiContainerRegistry
 	/**
 	 * @param list<string> $profiles
 	 */
-	public function getTagValueType(string $tag, array $profiles): ?Type
+	public function getTagValueType(string $tag, array $profiles, ?DependencyTracker $tracker = null): ?Type
 	{
+		$this->track($tracker, __FUNCTION__, [$tag, $profiles]);
 		$widened = [];
 
 		foreach ($this->loadSubset($profiles) as $metadata) {
@@ -295,8 +331,9 @@ final class MultiContainerRegistry
 	/**
 	 * @param list<string> $profiles
 	 */
-	public function getMergedParametersType(array $profiles): Type
+	public function getMergedParametersType(array $profiles, ?DependencyTracker $tracker = null): Type
 	{
+		$this->track($tracker, __FUNCTION__, [$profiles]);
 		$subsetKey = implode("\x00", $profiles);
 
 		if (isset($this->parametersTypeBySubset[$subsetKey])) {
@@ -330,6 +367,19 @@ final class MultiContainerRegistry
 		}
 
 		return $subset;
+	}
+
+	/**
+	 * @param list<mixed> $arguments
+	 */
+	private function track(?DependencyTracker $tracker, string $query, array $arguments): void
+	{
+		if ($tracker !== null) {
+			$tracker->trackValueDependency(
+				ContainerValueExtension::class,
+				ContainerValueExtension::key($query, $arguments),
+			);
+		}
 	}
 
 	/**

@@ -57,11 +57,12 @@ abstract class FormsInvalidationMatrixCase extends BaseTestCase
 	private array $extraParameters = [];
 
 	/**
-	 * @param list<array{mutate: callable(InvalidationScenario): mixed, expect: list<string>, maxReanalysed?: int}> $steps
+	 * @param list<array{mutate: callable(InvalidationScenario): mixed, expect: list<string>, maxReanalysed?: int, reanalysed?: list<string>}> $steps
 	 * each step's `expect` is the FULL error set the analysis must settle on after its mutation;
 	 * `maxReanalysed` bounds the FIRST post-mutation warm run's reanalysed-file count - the inverse
 	 * controls' half of the matrix, because a fix that bought cold == warm by invalidating coarsely
-	 * blows that bound (or discards the cache outright) while every error-set assertion still passes
+	 * blows that bound (or discards the cache outright) while every error-set assertion still passes;
+	 * `reanalysed` names the exact, sorted set of files that first warm run must analyse
 	 * @param (callable(InvalidationScenario): mixed)|null $extraSeed applied after the standard corpus
 	 * @param list<string> $expectedSeedErrors the seeded corpus's own settled error set
 	 */
@@ -102,7 +103,20 @@ abstract class FormsInvalidationMatrixCase extends BaseTestCase
 						$step['maxReanalysed'],
 						$firstWarm->getReanalysedFiles(),
 						"step $index: this edit must stay granular - reanalysing more than "
-						. $step['maxReanalysed'] . ' files means agreement was bought by invalidating coarsely',
+						. $step['maxReanalysed'] . ' files means agreement was bought by invalidating coarsely: '
+						. implode(', ', $firstWarm->getAnalysedFiles()),
+					);
+				}
+
+				if (array_key_exists('reanalysed', $step)) {
+					self::assertTrue(
+						$firstWarm->isCacheRestored(),
+						"step $index: the result cache must still be RESTORED after this edit: " . $firstWarm->getDiagnostics(),
+					);
+					self::assertSame(
+						$step['reanalysed'],
+						$firstWarm->getAnalysedFiles(),
+						"step $index: exactly the files depending on the edit must be re-analysed",
 					);
 				}
 
@@ -475,9 +489,8 @@ final class ScratchChildControl extends ScratchParentControl
 PHP;
 	}
 
-	// Deliberately free of every construct FormFactSalt treats as shape-affecting, so it is OUTSIDE
-	// the salted subset - which is what makes "a body edit here must not discard the cache" a real
-	// control rather than a restatement of the fix.
+	// Deliberately free of every form construct, so no shape is read from it - which is what makes "a
+	// body edit here must re-analyse nothing else" a real control rather than a restatement of the fix.
 	protected function unrelatedSource(string $returned, string $comment = ''): string
 	{
 		return <<<PHP

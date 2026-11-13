@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Forms\Catalog\ControlAcceptedTypeResolver;
 use OriPhpstan\Nette\Forms\Component\InterproceduralShapeKey;
 use OriPhpstan\Nette\Forms\Shape\ComponentShapeRenderer;
+use OriPhpstan\Nette\Support\RerunValueExtension;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -64,6 +65,8 @@ final class ShadowDivergenceRule implements Rule
 		if (!$this->enabled) {
 			return [];
 		}
+
+		$scope->trackValueDependency(RerunValueExtension::class, self::class);
 
 		$this->resolver->bindScope($scope);
 

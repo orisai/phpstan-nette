@@ -49,19 +49,23 @@ stale-cache incident (a freshly registered service reported as `orisai.nette.dic
   wants debug mode off (no debug-only services, a stable container cache key) has to force
   `autoRebuild: true` itself, e.g. by overriding `Configurator::loadContainer()`. Cost: one recompile
   per profile on the first run after a config/DI-relevant class change.
-- **PHPStan's result cache keys on compiled container content.**
-  `Cache/ContainerResultCacheMetaExtension` (tag `phpstan.resultCacheMetaExtension`) hashes the
-  files from `MultiContainerRegistry::getContainerFilePaths()` into the result-cache meta, so a
-  container content change invalidates the whole result cache — including files PHPStan would
-  otherwise replay from cache (e.g. a service *removed* from NEON without touching any analysed
-  PHP now re-flags its call sites). A NEON edit that recompiles to identical container code (e.g.
-  comment-only on nette/di 3.1) produces the same hash and keeps the cache valid. On nette/di 3.2,
-  `ContainerLoader` suffixes every rebuilt class with `bin2hex(random_bytes(4))`
-  (`Container_3c4ef1ebb9_80c80a31`), so any rebuild — a comment-only edit included, even one with identical config —
-  gives a new class name and invalidates the cache. The registry loads containers
-  lazily at meta-computation time — after the loader has rebuilt them — so the hash always
-  reflects current config. With no loader configured (`orisai.nette.dic.containerLoader: null`) the hash is the
-  constant `inactive`.
+- **Each file depends on the answers it got.** Every `MultiContainerRegistry` query takes the
+  caller's `DependencyTracker` (the scope) and declares `ContainerValueExtension::key($query, $arguments)`;
+  the extension (tag `phpstan.resultCacheValueExtension`) values a key by the answer the current containers
+  give - a type by its precise description, an existence map, a lookup's autowired and all names, a
+  receiver's resolved profile list. `resolveProfiles()` is keyed by the receiver's class names and whether
+  it covers the base `Container`, the only parts of the receiver type the answer depends on. A service
+  *removed* from NEON re-flags exactly its call sites; a rebuild that answers every recorded question
+  alike - a comment-only edit, nette/di 3.2's random class suffix (`Container_3c4ef1ebb9_80c80a31`) -
+  re-analyses nothing. `DicUsageProvider` declares `DicUsageValueExtension` per analysed class, valued by
+  the method names the compiled containers call on it. With no loader configured
+  (`orisai.nette.dic.containerLoader: null`) no question is asked and nothing is recorded; a value the
+  registry cannot answer any more (a loader that throws, a profile that is gone) is `unavailable:<class>`,
+  which differs from every answer.
+- **Where the containers are loaded.** The meta extension used to load them in the coordinator on every
+  run, before any worker started. The registry still loads lazily: in the coordinator when a cached value
+  is checked on restore, otherwise in each worker on first use. A loader whose rebuild races itself across
+  processes must lock (Nette's `ContainerLoader` does).
 
 ## Components
 
@@ -81,9 +85,9 @@ stale-cache incident (a freshly registered service reported as `orisai.nette.dic
   profile-subset queries: service/type/tag existence per profile, merged service/tag/parameter
   types.
 - `Metadata/ParameterTypeWidener` — widens a runtime parameter value to a PHPStan `Type`.
-- `Cache/ContainerResultCacheMetaExtension` — `phpstan.resultCacheMetaExtension` implementation
-  feeding the compiled containers' content hash into PHPStan's result-cache meta (see *Cache
-  freshness*).
+- `Cache/ContainerValueExtension` — `phpstan.resultCacheValueExtension` valuing every registry
+  question a file asked by its current answer (see *Cache freshness*); `DeadCode/DicUsageValueExtension`
+  does the same for the dead-code provider's per-class answer.
 - `Metadata/TypeLookupResult` — per-profile result of a wiring lookup: whether the type is known,
   the bucket-0 (autowired) candidate names, and all candidate names across buckets.
 - `Type/*ReturnTypeExtension` (7 classes) — `phpstan.broker.dynamicMethodReturnTypeExtension` /
@@ -339,10 +343,9 @@ prior scope, on leaving the node.
 
 ## Known limitations
 
-- **Container-derived state outside the compiled container files is invisible to the result
-  cache.** `ContainerResultCacheMetaExtension` hashes the compiled container `.php` files only
-  (see *Cache freshness*); anything else derived from the containers (e.g. a Symfony console
-  application loader) keeps its own invalidation caveats.
+- **Container-derived state outside the registry is invisible to the result cache.** Only the
+  registry's queries are tracked (see *Cache freshness*); anything else derived from the containers
+  (e.g. a Symfony console application loader) keeps its own invalidation caveats.
 - **Runtime `addService()`/`removeService()` calls are not tracked.** The registry is a static
   snapshot of what the compiled containers declare; services added or removed dynamically at
   runtime aren't reflected.

@@ -179,9 +179,6 @@ parameters:
 		-
 			identifier: phpstanApi.method
 			path: ../src/Forms/Index/RegistrationIndex.php
-		-
-			identifier: phpstanApi.method
-			path: ../src/Forms/Cache/FormFactSalt.php
 
 		# Catalogs are read by reflection only, never called.
 		-
@@ -290,6 +287,13 @@ parameters:
 		-
 			identifier: phpstanApi.constructor
 			path: ../tests/Unit/Latte/Rule/LatteTemplateTypeDeclarationCollectorTest.php
+		-
+			identifier: phpstanApi.constructor
+			path: ../tests/Unit/Latte/Rule/LatteDependencyRuleTest.php
+		# The scope PHPStan hands rules and extensions, as one interface a test double is built from.
+		-
+			identifier: phpstanApi.interface
+			path: ../tests/Toolkit/TrackingScope.php
 		-
 			identifiers: [phpstanApi.constructor, phpstanApi.classConstant]
 			path: ../tests/Unit/Latte/Rule/LatteTemplateGraphRuleTest.php

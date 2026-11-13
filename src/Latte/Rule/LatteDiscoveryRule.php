@@ -9,6 +9,7 @@ use OriPhpstan\Nette\Latte\Bridge\PhpFactsCache;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderFacts;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\Qualification;
+use OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
@@ -80,6 +81,7 @@ final class LatteDiscoveryRule implements Rule
 
 		$walk = $this->renderWalk;
 		$className = $classReflection->getName();
+		$scope->trackValueDependency(LatteRenderFactsValueExtension::class, $className);
 		$facts = $this->renderFactsCache->remember(
 			$className,
 			static fn (): PhpRenderFacts => $walk->factsFor($className),

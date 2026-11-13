@@ -7,6 +7,7 @@ use Nette\Forms\Controls\SubmitButton;
 use Nette\Forms\Controls\TextInput;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
+use OriPhpstan\Nette\Forms\Cache\RecordingParser;
 use OriPhpstan\Nette\Forms\Catalog\Stub\ControlAnnotationValueTypeReader;
 use OriPhpstan\Nette\Forms\Index\FileFactIndex;
 use OriPhpstan\Nette\Forms\Index\IndexShapeResolver;
@@ -29,6 +30,7 @@ use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Type\StringType;
 use Tests\OriPhpstan\Nette\Toolkit\FormShapeTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\RecordingDependencyTracker;
 use Tests\OriPhpstan\Nette\Toolkit\TestFileFinder;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\AliasReachedRenderer;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\ArrayReachedRenderer;
@@ -150,6 +152,24 @@ final class FormPairingTest extends FormShapeTestCase
 		]);
 
 		self::assertCount(1, (new FormPairing($store, $this->makeResolver()))->formsFor(self::TEMPLATE, 'simpleForm'));
+	}
+
+	// A second template reading the same pairing is answered from the memo, and still has to depend
+	// on every file the first answer was read from.
+	public function testAMemoisedPairingReplaysWhatItsFirstAnswerRead(): void
+	{
+		$pairing = new FormPairing(
+			$this->storeWith([self::TEMPLATE => [self::record(ClosedRenderer::class, null)]]),
+			$this->makeResolver(true),
+		);
+		$first = new RecordingDependencyTracker();
+		$second = new RecordingDependencyTracker();
+
+		$pairing->trackDependencies($first, static fn (): array => $pairing->formsFor(self::TEMPLATE, 'simpleForm'));
+		$pairing->trackDependencies($second, static fn (): array => $pairing->formsFor(self::TEMPLATE, 'simpleForm'));
+
+		self::assertNotSame([], $first->values);
+		self::assertSame($first->values, $second->values);
 	}
 
 	public function testShapeCarryingAnUnknownIsResolvedButNotClosed(): void
@@ -1000,7 +1020,7 @@ final class FormPairingTest extends FormShapeTestCase
 		return $store;
 	}
 
-	private function makeResolver(): IndexShapeResolver
+	private function makeResolver(bool $recording = false): IndexShapeResolver
 	{
 		$cache = new FormShapeCache($this->makeDir());
 		$index = new RegistrationIndex(
@@ -1012,7 +1032,7 @@ final class FormPairingTest extends FormShapeTestCase
 		$resolver = new IndexShapeResolver(
 			$index,
 			$cache,
-			$this->parser(),
+			$recording ? new RecordingParser($this->parser(), $cache->recorder()) : $this->parser(),
 			self::createReflectionProvider(),
 			new ControlAnnotationValueTypeReader(
 				self::createReflectionProvider(),

@@ -364,38 +364,22 @@ template file whose own bytes never moved. That is the cross-extension body-leve
 silently stale in all three extensions, and it is pinned rather than assumed
 (`tests/Integration/LatteForms/LatteFormsBridgeInvalidationTest.php`).
 
-**What delivers it is the Forms extension's whole-cache salt, not this placement.** A builder-body
-edit moves `FormFactSalt`'s digest, so the first run after it throws the whole result cache away
-(`Result cache not used because the metadata do not match: metaExtensions`) and every file is
-recomputed — confirmed by the control: with `FormsResultCacheMeta` switched off, so that it hashes a
-constant instead, the identical edit restores the cache. The test fixture
-`tests/Integration/LatteForms/Fixtures/invalidation-forms-salt-off.neon` does that by overriding
-the `formsResultCacheMeta` service's `enabled` argument — the service name is internal, used only by
-that fixture, and may change. Read the CI-time consequence from
-[forms.md](forms.md#phpstans-result-cache), not from this page: an edit inside the
-form-fact-bearing subset costs a full re-analysis.
+**Two channels deliver it.** The template's form-macro typing (`FormMacroTypeResolver`) runs inside
+`FormPairing::trackDependencies()`, so the template depends on every file the paired shape was read
+from; the builder edit re-analyses exactly the builder and that template (scenario 31 pins the set). And
+the rule itself re-runs at the aggregate stage over cached-plus-fresh collected data on every analysis,
+also under `reuseCollectedDataRuleErrors` (it tracks `RerunValueExtension`). `FormPairing` memoises a
+(template, form) answer per process and replays what the first answer read on every later hit, so a
+second template answered from the memo depends on the same files.
 
-**What the aggregate placement buys is the guarantee surviving without that salt.** Two cases, both
-pinned:
+A **discovery-link change** — a `setFile()`/formula edit that re-points a renderer — moves the records
+of both templates, so both are re-analysed on the same warm run through their tracked neighbourhood
+value (scenario 30); the cache stays restored.
 
-- a **discovery-link change** — a `setFile()`/formula edit that re-points a renderer, leaving the
-  Forms subset untouched. The Latte result-cache meta deliberately excludes per-template records, so
-  the cache is restored and only the edited file re-analysed; the finding still follows the changed
-  link on the warm run. (The store record's own exported constant carries that one too: the compiled
-  template fetches it, and PHPStan re-queues a fetcher when a constant's value moves.)
-- a **form-fact edit under a narrower salt.** `FormFactSalt` covers only the form-fact-bearing subset
-  and only for as long as the Forms consumers are wired; a perf optimisation that narrows it would
-  remove the whole-cache discard silently. The suite runs that configuration on purpose — the salt
-  switched off, the bridge untouched — and asserts the body-level finding still appears warm with the
-  cache RESTORED and exactly one file (the edited builder) re-analysed. That row is the one thing in
-  the suite that fails if this rule ever leaves the aggregate stage; every other row passes from a
-  per-file placement, because their edits either trip the Forms salt, move the template's own bytes,
-  or move a store record.
-
-The bridge adds **no** whole-cache salt and **no** new dependency edge of its own: a comment-only
-edit to a form file re-analyses that file and nothing else. Both halves are asserted in the same
-suite — the freshness rows and an inverse control that bounds the reanalysed-file count — because a
-fix that bought freshness by invalidating coarsely would pass the first half alone.
+The bridge adds **no** whole-cache salt: a comment-only edit to a form file re-analyses that file and
+nothing else. Both halves are asserted in the same suite — the freshness rows and an inverse control
+that bounds the reanalysed-file count — because a fix that bought freshness by invalidating coarsely
+would pass the first half alone.
 
 ## Error surface
 

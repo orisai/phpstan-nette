@@ -80,6 +80,14 @@ final class FormValuesMappedTypeRule implements Rule
 	 */
 	public function processNode(Node $node, Scope $scope): array
 	{
+		return $this->model->trackDependencies($scope, fn (): array => $this->processNodeUntracked($node, $scope));
+	}
+
+	/**
+	 * @return list<IdentifierRuleError>
+	 */
+	private function processNodeUntracked(MethodCall $node, Scope $scope): array
+	{
 		if (!$this->enabled || !$node->name instanceof Identifier) {
 			return [];
 		}

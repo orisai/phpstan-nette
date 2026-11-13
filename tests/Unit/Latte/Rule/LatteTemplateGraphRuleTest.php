@@ -33,6 +33,7 @@ use PHPStan\Testing\PHPStanTestCase;
 use PHPUnit\Framework\MockObject\Stub;
 use Tests\OriPhpstan\Nette\Toolkit\TestAdapter;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\TrackingScope;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryVendorPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Pairing\Fixtures\App\PairingAgreeExactPresenter;
@@ -413,8 +414,8 @@ final class LatteTemplateGraphRuleTest extends PHPStanTestCase
 	 */
 	private function scope(): Scope
 	{
-		/** @var Scope&CollectedDataEmitter&NodeCallbackInvoker&DependencyTracker&Stub $scope */
-		$scope = $this->createStub(Scope::class);
+		/** @var TrackingScope&Stub $scope */
+		$scope = $this->createStub(TrackingScope::class);
 
 		return $scope;
 	}

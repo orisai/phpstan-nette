@@ -78,6 +78,14 @@ final class UnannotatedRegistrarRule implements Rule
 	 */
 	public function processNode(Node $node, Scope $scope): array
 	{
+		return $this->reader->trackDependencies($scope, fn (): array => $this->processNodeUntracked($node, $scope));
+	}
+
+	/**
+	 * @return list<IdentifierRuleError>
+	 */
+	private function processNodeUntracked(ClassMethod $node, Scope $scope): array
+	{
 		if (!$this->enabled || !$this->analysedPaths->isAnalysed($scope->getFile())) {
 			return [];
 		}

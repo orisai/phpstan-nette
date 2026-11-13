@@ -1,0 +1,6 @@
+# Test-only: every worker appends each file it analyses to the file named by
+# ORISAI_NETTE_TEST_ANALYSED_FILE_LOG, so a scenario can assert WHICH files a warm run re-analysed.
+services:
+	-
+		class: Tests\OriPhpstan\Nette\Toolkit\AnalysedFileLogRule
+		tags: [phpstan.rules.rule]

@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Forms\Shape\ComponentPath;
 use OriPhpstan\Nette\Latte\Forms\ControlReference;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
+use OriPhpstan\Nette\Support\RerunValueExtension;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -106,6 +107,8 @@ final class LatteFormsRule implements Rule
 		if (!$this->enabled) {
 			return [];
 		}
+
+		$scope->trackValueDependency(RerunValueExtension::class, self::class);
 
 		$this->pairing->bindScope($scope);
 

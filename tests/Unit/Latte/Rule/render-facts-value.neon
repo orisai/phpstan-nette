@@ -1,0 +1,31 @@
+# The rules under test are built by hand, outside latte.neon; the value they declare as a dependency
+# still has to be registered, or PHPStan refuses the declaration.
+services:
+	testRenderFactsResolver:
+		class: OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver
+		arguments: [null]
+		autowired: false
+
+	testRenderFactsDiscoveryResolver:
+		class: OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryResolver
+		arguments: [null, [], %currentWorkingDirectory%]
+		autowired: false
+
+	-
+		class: OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension
+		arguments:
+			renderWalk: OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk(
+				@reflectionProvider,
+				@currentPhpVersionRichParser,
+				[],
+				@testRenderFactsResolver,
+				@testRenderFactsDiscoveryResolver
+			)
+			renderFactsCache: OriPhpstan\Nette\Latte\Bridge\PhpFactsCache(
+				OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache(%tmpDir%/test-render-facts),
+				@testRenderFactsResolver,
+				@testRenderFactsDiscoveryResolver,
+				[]
+			)
+		tags:
+			- phpstan.resultCacheValueExtension

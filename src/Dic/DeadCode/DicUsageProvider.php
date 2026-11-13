@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Dic\DeadCode;
 
 use OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry;
 use PhpParser\Node;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
 use ShipMonk\PHPStan\DeadCode\Graph\ClassMethodRef;
@@ -11,6 +12,7 @@ use ShipMonk\PHPStan\DeadCode\Graph\ClassMethodUsage;
 use ShipMonk\PHPStan\DeadCode\Graph\UsageOrigin;
 use ShipMonk\PHPStan\DeadCode\Provider\MemberUsageProvider;
 use ShipMonk\PHPStan\DeadCode\Provider\VirtualUsageData;
+use function assert;
 use function strtolower;
 
 final class DicUsageProvider implements MemberUsageProvider
@@ -56,7 +58,10 @@ final class DicUsageProvider implements MemberUsageProvider
 
 		$classReflection = $node->getClassReflection();
 		$className = $classReflection->getName();
-		$calledMethodNames = $this->resolveUsages()[$className] ?? [];
+		// shipmonk's collector passes its own analysis scope through under the plain Scope type.
+		assert($scope instanceof DependencyTracker);
+		$scope->trackValueDependency(DicUsageValueExtension::class, $className);
+		$calledMethodNames = $this->calledMethodNames($className);
 
 		if ($calledMethodNames === []) {
 			return [];
@@ -76,6 +81,14 @@ final class DicUsageProvider implements MemberUsageProvider
 		}
 
 		return $usages;
+	}
+
+	/**
+	 * @return array<string, true>
+	 */
+	public function calledMethodNames(string $className): array
+	{
+		return $this->resolveUsages()[$className] ?? [];
 	}
 
 	/**

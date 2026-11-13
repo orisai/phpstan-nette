@@ -41,6 +41,15 @@ final class FormValuesParamTypeResolver implements ExpressionTypeResolverExtensi
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
+		if (!$this->enabled || !$expr instanceof Variable) {
+			return null;
+		}
+
+		return $this->model->trackDependencies($scope, fn (): ?Type => $this->getTypeUntracked($expr, $scope));
+	}
+
+	private function getTypeUntracked(Expr $expr, Scope $scope): ?Type
+	{
 		if (!$this->enabled) {
 			return null;
 		}

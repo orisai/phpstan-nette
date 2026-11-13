@@ -2,10 +2,6 @@
 
 namespace Tests\OriPhpstan\Nette\Integration\LatteForms;
 
-use Nette\Neon\Entity;
-use Nette\Neon\Neon;
-use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Forms\Cache\FormsResultCacheMeta;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use OriPhpstan\Nette\LatteForms\LatteFormsRule;
 use Tests\OriPhpstan\Nette\Integration\Latte\Invalidation\LatteInvalidationMatrixCase;
@@ -39,30 +35,15 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 
 	private const BRIDGE_CONFIG_PATH = __DIR__ . '/Fixtures/integration.neon';
 
-	private const SALT_OFF_CONFIG_PATH = __DIR__ . '/Fixtures/invalidation-forms-salt-off.neon';
-
-	private const FORMS_WIRING_PATH = __DIR__ . '/../../../config/forms.neon';
-
-	// The service and argument the salt-off fixture switches off, by the names a NEON file can reach
-	// them by. Scenario 31 says something about the bridge's PLACEMENT only while this really is what
-	// FormsResultCacheMeta's enabled flag is built from; rename or rewire it and the fixture would go
-	// on parsing, the salt would stay live, and the row would quietly become scenario 25 again.
-	private const SALT_SERVICE = 'formsResultCacheMeta';
-
-	private const SALT_ARGUMENT = 'enabled';
-
 	private const BOTH_FIELDS = "\t\t\$form->addText('name');\n\t\t\$form->addText('email');\n";
 
 	private const NAME_FIELD_ONLY = "\t\t\$form->addText('name');\n";
 
-	private string $configPath = self::BRIDGE_CONFIG_PATH;
-
 	// Scenario 25 - THE ROW. A control is removed from a form builder's METHOD BODY: the signature
 	// line, the return type and every exported node of ScratchBridgeControl stay byte-identical, so
-	// PHPStan's own result cache propagates nothing to dependents (ResultCacheManager needs
-	// exportedNodesChanged() !== null), and the template has no dependency edge on the builder at all.
-	// The finding still has to appear on a WARM run, on a file whose own bytes never moved - and then
-	// disappear again when the control comes back.
+	// PHPStan's own exported-node propagation reaches no dependent. The finding still has to appear on
+	// a WARM run, on a file whose own bytes never moved - and then disappear again when the control
+	// comes back.
 	public function testControlRemovedFromAFormBuilderBodyReachesTheTemplateWarm(): void
 	{
 		$this->assertScenario(
@@ -191,16 +172,12 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 		);
 	}
 
-	// Scenario 30 - the DISCOVERY-LINK row. Rows 25-27 reach their settled state through a FULL
-	// recompute: their edits move a form fact, so the Forms extension's FormFactSalt discards the
-	// whole result cache before the join is asked anything. This edit re-points a renderer's
-	// setFile() in a class carrying no add*(), no createComponent* and no @form doc tag - outside
-	// that salt's fact-bearing subset by construction - so the cache stays RESTORED and only the
-	// edited file is reanalysed, while the template's own bytes never move and its finding still has
-	// to follow the changed template->renderer link. What carries it is the store record's own
-	// exported constant (measured: a per-file placement passes this row too, because the compiled
-	// template FETCHES that constant and PHPStan re-queues a fetcher when the value moves); the row
-	// pins that edge and the join's freshness over it, and scenario 31 pins the placement.
+	// Scenario 30 - the DISCOVERY-LINK row. This edit re-points a renderer's setFile() in a class
+	// carrying no form at all, while the template's own bytes never move and its finding still has to
+	// follow the changed template->renderer link. The records of both templates move, so both are
+	// re-analysed on the same warm run through their tracked neighbourhood value; the cache stays
+	// RESTORED and nothing else is re-analysed but the edited class and the store files the build
+	// rewrote (the store sits inside the analysed paths here).
 	public function testRepointingARendererLinkReachesTheTemplateWarmWithTheCacheRestored(): void
 	{
 		$this->assertScenario(
@@ -212,7 +189,7 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 						$this->plainRendererSource(self::LINK_CLASS, self::SECOND_TEMPLATE),
 					),
 					'expect' => [$this->unknownControl(3, 'email')],
-					'maxReanalysed' => 1,
+					'maxReanalysed' => 4,
 				],
 				[
 					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
@@ -243,21 +220,14 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 		);
 	}
 
-	// Scenario 31 - THE PLACEMENT ROW: scenario 25's edit with the OTHER extension's whole-cache salt
-	// switched off. That is the one configuration in which a form-body edit says anything about where
-	// this rule runs - with the salt live the cache is discarded wholesale and every row would pass
-	// from a per-file placement just as well (measured). Here the cache is restored, exactly one file
-	// (the edited builder) is reanalysed, the template is not, and the finding still appears warm:
-	// the only thing that can produce it is the join re-running at the aggregate stage over
-	// cached-plus-fresh collected data. This is also the row that survives a future narrowing of
-	// FormFactSalt, which would otherwise take the guarantee away silently.
-	public function testControlRemovedFromABuilderBodyReachesTheTemplateWithNoFormsWholeCacheSalt(): void
+	// Scenario 31 - THE GRANULARITY ROW of scenario 25's edit. The template reads the builder's shape
+	// through the bridge's typing, which tracks the builder's file, so exactly the edited builder and
+	// the one template reading its form are re-analysed on the first warm run - nothing is discarded
+	// wholesale and no unrelated file is touched.
+	public function testControlRemovedFromABuilderBodyReanalysesOnlyTheBuilderAndItsTemplate(): void
 	{
-		$this->assertSaltOffFixtureStillReachesTheSalt();
-		$this->configPath = self::SALT_OFF_CONFIG_PATH;
-
 		$this->assertScenario(
-			'lf-body-nosalt',
+			'lf-body-granular',
 			[
 				[
 					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
@@ -265,7 +235,7 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 						$this->rendererSource(self::NAME_FIELD_ONLY),
 					),
 					'expect' => [$this->unknownControl(3, 'email')],
-					'maxReanalysed' => 1,
+					'reanalysed' => [self::CONTROL_CLASS . '.php', self::TEMPLATE],
 				],
 				[
 					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
@@ -273,52 +243,9 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 						$this->rendererSource(self::BOTH_FIELDS),
 					),
 					'expect' => [],
+					'reanalysed' => [self::CONTROL_CLASS . '.php', self::TEMPLATE],
 				],
 			],
-		);
-	}
-
-	/**
-	 * Scenario 31's premise, asserted instead of assumed: the fixture switches the salt off BY NAME,
-	 * and nothing else in the repo would notice if the Forms extension renamed the service or built
-	 * FormsResultCacheMeta's enabled flag from something else. The row would still pass - as a second
-	 * copy of scenario 25, with the whole-cache salt live - and the only test in the repo that fails
-	 * if the bridge's rule leaves the aggregate stage would be pinning nothing.
-	 */
-	private function assertSaltOffFixtureStillReachesTheSalt(): void
-	{
-		$consequence = ' - scenario 31 would keep passing as a duplicate of scenario 25, with the Forms '
-			. 'whole-cache salt still live, and would stop pinning the bridge rule\'s aggregate-stage placement.';
-
-		$wiring = Neon::decode(FileSystem::read(self::FORMS_WIRING_PATH));
-		self::assertIsArray($wiring);
-		self::assertIsArray($wiring['services']);
-		$service = $wiring['services'][self::SALT_SERVICE] ?? null;
-		self::assertIsArray($service, self::SALT_SERVICE . ' is no longer a named service' . $consequence);
-		self::assertSame(
-			FormsResultCacheMeta::class,
-			$service['class'] ?? null,
-			self::SALT_SERVICE . ' no longer builds ' . FormsResultCacheMeta::class . $consequence,
-		);
-		self::assertIsArray($service['arguments'] ?? null);
-		self::assertEquals(
-			new Entity('@orisai.nette.configuration::get', ['forms.enabled']),
-			$service['arguments'][self::SALT_ARGUMENT] ?? null,
-			'the ' . self::SALT_ARGUMENT . ' argument of ' . FormsResultCacheMeta::class . ' is no longer '
-				. 'the Forms switch' . $consequence,
-		);
-
-		$fixture = Neon::decode(FileSystem::read(self::SALT_OFF_CONFIG_PATH));
-		self::assertIsArray($fixture);
-		self::assertArrayNotHasKey(
-			'parameters',
-			$fixture,
-			'the salt-off fixture must leave every parameter alone: switching Forms off switches the bridge off too',
-		);
-		self::assertSame(
-			[self::SALT_SERVICE => ['arguments' => [self::SALT_ARGUMENT => false]]],
-			$fixture['services'] ?? null,
-			'the salt-off fixture no longer switches exactly the salt off' . $consequence,
 		);
 	}
 
@@ -329,8 +256,8 @@ final class LatteFormsBridgeInvalidationTest extends LatteInvalidationMatrixCase
 		return InvalidationScenario::create(
 			$projectRoot,
 			'latte-forms-inval-' . $name,
-			fn (array $paths, string $tmpDir): string => LattePhpstanConfig::create(
-				$this->configPath,
+			static fn (array $paths, string $tmpDir): string => LattePhpstanConfig::create(
+				self::BRIDGE_CONFIG_PATH,
 				$paths,
 				$tmpDir,
 				[
@@ -447,9 +374,8 @@ $formFields
 PHP;
 	}
 
-	// A renderer that carries a template link and nothing else: no add* call, no createComponent*
-	// prefix and no @form doc tag, which is what keeps it out of FormFactSalt's fact-bearing subset
-	// and makes scenario 30's edit one the Forms extension's whole-cache salt cannot cover.
+	// A renderer that carries a template link and nothing else: no form the Forms extension could
+	// track, so scenario 30's edit reaches the template through the discovery records alone.
 	private function plainRendererSource(string $className, string $template): string
 	{
 		return <<<PHP

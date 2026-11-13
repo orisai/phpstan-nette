@@ -144,6 +144,13 @@ class RegistrationIndex implements FingerprintValidator
 		$this->build();
 
 		$ids = [];
+		$mutatedName = InterproceduralShapeKey::componentMutationName($ipKey);
+		if ($mutatedName !== null) {
+			foreach ($this->componentMutationSites($mutatedName) as $entry) {
+				$ids[$this->contributorId($entry)] = true;
+			}
+		}
+
 		foreach ($this->handlerContrib[$ipKey] ?? [] as $entry) {
 			$ids[$this->contributorId($entry)] = true;
 		}

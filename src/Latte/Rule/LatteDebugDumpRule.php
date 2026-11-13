@@ -11,6 +11,7 @@ use OriPhpstan\Nette\Latte\Bridge\PhpFactsCache;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderFacts;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\Qualification;
+use OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
@@ -24,6 +25,7 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
@@ -148,17 +150,17 @@ final class LatteDebugDumpRule implements Rule
 		// template-centric dumps below this one fires from any analyzed context - matched before
 		// the .latte scope gate.
 		if ($funcName === self::FN_RENDER_FACTS_FQN || $funcName === self::FN_RENDER_FACTS_SHORT) {
-			return [$this->dumpRenderFacts($node)];
+			return [$this->dumpRenderFacts($node, $scope)];
 		}
 
 		// The pairing verdict describes a PHP class too - same any-context firing as render facts.
 		if ($funcName === self::FN_PAIRING_FQN || $funcName === self::FN_PAIRING_SHORT) {
-			return [$this->dumpPairing($node)];
+			return [$this->dumpPairing($node, $scope)];
 		}
 
 		// Discovery describes a PHP class as well - same any-context firing.
 		if ($funcName === self::FN_DISCOVERY_FQN || $funcName === self::FN_DISCOVERY_SHORT) {
-			return [$this->dumpDiscovery($node)];
+			return [$this->dumpDiscovery($node, $scope)];
 		}
 
 		if (substr_compare($scope->getFile(), '.latte', -6) !== 0) {
@@ -288,7 +290,7 @@ final class LatteDebugDumpRule implements Rule
 		return $this->error(implode("\n", $lines), $node);
 	}
 
-	private function dumpRenderFacts(FuncCall $node): IdentifierRuleError
+	private function dumpRenderFacts(FuncCall $node, DependencyTracker $scope): IdentifierRuleError
 	{
 		$className = $this->classConstantArgument($node);
 		if ($className === null) {
@@ -300,6 +302,7 @@ final class LatteDebugDumpRule implements Rule
 			return $this->error("class: {$className}\nno render facts: PhpRenderWalk not wired", $node);
 		}
 
+		$scope->trackValueDependency(LatteRenderFactsValueExtension::class, $className);
 		$facts = $this->renderFactsCache !== null
 			? $this->renderFactsCache->remember(
 				$className,
@@ -390,7 +393,7 @@ final class LatteDebugDumpRule implements Rule
 		return $this->error(implode("\n", $lines), $node);
 	}
 
-	private function dumpPairing(FuncCall $node): IdentifierRuleError
+	private function dumpPairing(FuncCall $node, DependencyTracker $scope): IdentifierRuleError
 	{
 		$className = $this->classConstantArgument($node);
 		if ($className === null) {
@@ -406,6 +409,7 @@ final class LatteDebugDumpRule implements Rule
 			return $this->error("class: {$className}\nno pairing: PairingJudge not wired", $node);
 		}
 
+		$scope->trackValueDependency(LatteRenderFactsValueExtension::class, $className);
 		$facts = $this->renderFactsCache !== null
 			? $this->renderFactsCache->remember(
 				$className,
@@ -493,7 +497,7 @@ final class LatteDebugDumpRule implements Rule
 		return $this->error(implode("\n", $lines), $node);
 	}
 
-	private function dumpDiscovery(FuncCall $node): IdentifierRuleError
+	private function dumpDiscovery(FuncCall $node, DependencyTracker $scope): IdentifierRuleError
 	{
 		$className = $this->classConstantArgument($node);
 		if ($className === null) {
@@ -505,6 +509,7 @@ final class LatteDebugDumpRule implements Rule
 			return $this->error("class: {$className}\nno discovery: PhpRenderWalk not wired", $node);
 		}
 
+		$scope->trackValueDependency(LatteRenderFactsValueExtension::class, $className);
 		$facts = $this->renderFactsCache !== null
 			? $this->renderFactsCache->remember(
 				$className,

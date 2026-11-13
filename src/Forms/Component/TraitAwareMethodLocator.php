@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Component;
 
+use OriPhpstan\Nette\Forms\Cache\DependencyRecorder;
 use OriPhpstan\Nette\Forms\Support\BoundedMap;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -19,11 +20,14 @@ final class TraitAwareMethodLocator
 
 	private Parser $parser;
 
+	private ?DependencyRecorder $recorder;
+
 	private BoundedMap $methodsByLineCache;
 
-	public function __construct(Parser $parser)
+	public function __construct(Parser $parser, ?DependencyRecorder $recorder = null)
 	{
 		$this->parser = $parser;
+		$this->recorder = $recorder;
 		$this->methodsByLineCache = new BoundedMap(self::METHODS_BY_LINE_CACHE_LIMIT);
 	}
 
@@ -57,6 +61,10 @@ final class TraitAwareMethodLocator
 	 */
 	private function methodsByLine(string $file): array
 	{
+		if ($this->recorder !== null) {
+			$this->recorder->record($file);
+		}
+
 		if ($this->methodsByLineCache->has($file)) {
 			/** @var array<int, ClassMethod> $cached */
 			$cached = $this->methodsByLineCache->get($file);

@@ -10,8 +10,8 @@ use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 // the whole result cache invalidate on any edit would turn every other scenario green while
 // destroying the warm-cache granularity this project spent its budget on.
 //
-// The lever is `maxReanalysed` - the FIRST post-edit warm run's own "N files will be reanalysed"
-// count, read off PHPStan's verbosity output. A coarse fix shows up here two ways and only here: a
+// The levers are `maxReanalysed` - the FIRST post-edit warm run's own "N files will be reanalysed"
+// count, read off PHPStan's verbosity output - and `reanalysed`, the exact set that run analysed. A coarse fix shows up here two ways and only here: a
 // whole-cache salt makes the run report "Result cache not used because the metadata do not match"
 // (no count at all, caught by the isCacheRestored() assertion), and a coarse dependency edge makes
 // the count jump to the corpus size.
@@ -61,9 +61,9 @@ final class InvalidationControlsTest extends LatteInvalidationMatrixCase
 
 	// Scenario 21 - the sharpest control in the matrix. An UNRELATED renderer's body edit flips ITS
 	// OWN template's verdict, so the analysis must report a brand-new finding on unrelated.latte -
-	// while reanalysing ONE file and leaving shared.latte both unanalysed and silent. Granularity
-	// and cross-file correctness asserted in the same run: the aggregate stage is the only placement
-	// that can satisfy both at once.
+	// while leaving shared.latte both unanalysed and silent. The renderer's resolved template class
+	// moved, and unrelated.latte's factory-provided scope is read off it, so exactly the renderer and
+	// its own template are re-analysed. Granularity and cross-file correctness in the same run.
 	public function testUnrelatedRendererBodyEditReachesOnlyItsOwnTemplate(): void
 	{
 		$this->assertScenario(
@@ -82,7 +82,7 @@ final class InvalidationControlsTest extends LatteInvalidationMatrixCase
 							self::OTHER_TEMPLATE,
 						),
 					],
-					'maxReanalysed' => 1,
+					'reanalysed' => ['ScratchUnrelatedControl.php', 'unrelated.latte'],
 				],
 			],
 			function (InvalidationScenario $scenario): void {

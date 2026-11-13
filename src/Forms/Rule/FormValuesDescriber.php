@@ -8,6 +8,7 @@ use OriPhpstan\Nette\Forms\Component\ValidatedContext;
 use OriPhpstan\Nette\Forms\Type\FormShapeType;
 use OriPhpstan\Nette\Forms\Type\FormValuesProjector;
 use PhpParser\Node;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\VerbosityLevel;
 use function ltrim;
@@ -31,7 +32,15 @@ final class FormValuesDescriber
 		$this->validatedContext = new ValidatedContext($model);
 	}
 
+	/**
+	 * @param Scope&DependencyTracker $scope
+	 */
 	public function describe(Node\Expr $expr, Node\Expr $call, Scope $scope): string
+	{
+		return $this->model->trackDependencies($scope, fn (): string => $this->describeUntracked($expr, $call, $scope));
+	}
+
+	private function describeUntracked(Node\Expr $expr, Node\Expr $call, Scope $scope): string
 	{
 		$shape = $this->model->resolveFormShapeFromExpression($expr, $scope);
 		if ($shape === null) {

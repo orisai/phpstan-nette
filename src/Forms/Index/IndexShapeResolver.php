@@ -36,6 +36,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeFinder;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Reflection\ReflectionProvider;
@@ -109,22 +110,22 @@ final class IndexShapeResolver
 
 	private ?Scope $scope = null;
 
-	/** @var array<string, FormShape|null> */
+	/** @var array<string, array{FormShape|null, array<string, string>}> */
 	private array $memo = [];
 
 	/** @var array<string, true> */
 	private array $resolving = [];
 
-	/** @var array<string, string|null> */
+	/** @var array<string, array{string|null, array<string, string>}> */
 	private array $classMemo = [];
 
-	/** @var array<string, bool> */
+	/** @var array<string, array{bool, array<string, string>}> */
 	private array $mutationMemo = [];
 
 	/** @var array<string, true> */
 	private array $resolvingClass = [];
 
-	/** @var array<string, FormShape|null> */
+	/** @var array<string, array{FormShape|null, array<string, string>}> */
 	private array $propertyMemo = [];
 
 	/** @var array<string, true> */
@@ -147,7 +148,7 @@ final class IndexShapeResolver
 		$this->reflectionProvider = $reflectionProvider;
 		$this->analyzer = AnalyzerStackFactory::build($catalogReader, $cache, $parser, $analysedPaths);
 		$this->records = new EnclosingFunctionLikeLocator();
-		$this->methodLocator = new TraitAwareMethodLocator($parser);
+		$this->methodLocator = new TraitAwareMethodLocator($parser, $cache->recorder());
 		$constructorResolver = new ConstructorFormShapeResolver(
 			$reflectionProvider,
 			new NetteEffectiveControlValueTypeResolver(
@@ -167,6 +168,34 @@ final class IndexShapeResolver
 	public function bindScope(Scope $scope): void
 	{
 		$this->scope = $scope;
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return T
+	 */
+	public function trackDependencies(DependencyTracker $tracker, callable $compute)
+	{
+		return $this->cache->trackDependencies($tracker, $compute);
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return array{0: T, 1: array<string, string>}
+	 */
+	public function captureDependencies(callable $compute): array
+	{
+		return $this->cache->recorder()->capture($compute);
+	}
+
+	/**
+	 * @param array<string, string> $dependencies
+	 */
+	public function replayDependencies(array $dependencies): void
+	{
+		$this->cache->recorder()->replay($dependencies);
 	}
 
 	public function resolveMethodParam(string $class, string $method, int $paramIdx): ?FormShape
@@ -189,7 +218,9 @@ final class IndexShapeResolver
 		}
 
 		if (array_key_exists($key, $this->memo)) {
-			return $this->memo[$key];
+			$this->cache->recorder()->replay($this->memo[$key][1]);
+
+			return $this->memo[$key][0];
 		}
 
 		// A pass-through cycle re-entering its own key breaks without memoising the partial null.
@@ -199,14 +230,14 @@ final class IndexShapeResolver
 
 		$this->resolving[$key] = true;
 		try {
-			$shape = $this->compute($class, $method, $paramIdx);
+			$this->memo[$key] = $this->cache->recorder()->capture(
+				fn (): ?FormShape => $this->compute($class, $method, $paramIdx),
+			);
 		} finally {
 			unset($this->resolving[$key]);
 		}
 
-		$this->memo[$key] = $shape;
-
-		return $shape;
+		return $this->memo[$key][0];
 	}
 
 	/**
@@ -231,7 +262,9 @@ final class IndexShapeResolver
 		}
 
 		if (array_key_exists($key, $this->classMemo)) {
-			return $this->classMemo[$key];
+			$this->cache->recorder()->replay($this->classMemo[$key][1]);
+
+			return $this->classMemo[$key][0];
 		}
 
 		if (isset($this->resolvingClass[$key])) {
@@ -239,6 +272,7 @@ final class IndexShapeResolver
 		}
 
 		$this->resolvingClass[$key] = true;
+		$this->cache->recorder()->beginFrame();
 		try {
 			$resolved = null;
 			foreach ($this->index->handlerSites($class, $method, $paramIdx) as $site) {
@@ -260,9 +294,10 @@ final class IndexShapeResolver
 			}
 		} finally {
 			unset($this->resolvingClass[$key]);
+			$dependencies = $this->cache->recorder()->endFrame();
 		}
 
-		$this->classMemo[$key] = $resolved;
+		$this->classMemo[$key] = [$resolved, $dependencies];
 
 		return $resolved;
 	}
@@ -620,7 +655,9 @@ final class IndexShapeResolver
 	{
 		$key = ltrim($ownerFqcn, '\\') . "\0" . $propertyName;
 		if (array_key_exists($key, $this->propertyMemo)) {
-			return $this->propertyMemo[$key];
+			$this->cache->recorder()->replay($this->propertyMemo[$key][1]);
+
+			return $this->propertyMemo[$key][0];
 		}
 
 		// A consumer resolving a property shape from inside the walk of a body that reads the same
@@ -631,12 +668,14 @@ final class IndexShapeResolver
 
 		$this->resolvingProperty[$key] = true;
 		try {
-			$shape = $this->computePropertyShape($ownerFqcn, $propertyName);
+			$this->propertyMemo[$key] = $this->cache->recorder()->capture(
+				fn (): ?FormShape => $this->computePropertyShape($ownerFqcn, $propertyName),
+			);
 		} finally {
 			unset($this->resolvingProperty[$key]);
 		}
 
-		return $this->propertyMemo[$key] = $shape;
+		return $this->propertyMemo[$key][0];
 	}
 
 	private function computePropertyShape(string $ownerFqcn, string $propertyName): ?FormShape
@@ -833,22 +872,31 @@ final class IndexShapeResolver
 	 */
 	public function componentMayBeMutatedExternally(?string $ownerFqcn, string $componentName): bool
 	{
+		$recorder = $this->cache->recorder();
+		if ($recorder->hasActiveFrame()) {
+			$fingerprintKey = InterproceduralShapeKey::forComponentMutation($componentName);
+			$recorder->recordFingerprint($fingerprintKey, $this->index->fingerprint($fingerprintKey));
+		}
+
 		$key = ($ownerFqcn ?? '') . "\0" . $componentName;
 		if (array_key_exists($key, $this->mutationMemo)) {
-			return $this->mutationMemo[$key];
+			$recorder->replay($this->mutationMemo[$key][1]);
+
+			return $this->mutationMemo[$key][0];
 		}
 
-		$answer = false;
-		foreach ($this->index->componentMutationSites($componentName) as $entry) {
-			$owner = $this->mutationOwnerClass($entry['fact']);
-			if ($owner === null || $ownerFqcn === null || self::ownerMatches($owner, $ownerFqcn)) {
-				$answer = true;
-
-				break;
+		$this->mutationMemo[$key] = $recorder->capture(function () use ($ownerFqcn, $componentName): bool {
+			foreach ($this->index->componentMutationSites($componentName) as $entry) {
+				$owner = $this->mutationOwnerClass($entry['fact']);
+				if ($owner === null || $ownerFqcn === null || self::ownerMatches($owner, $ownerFqcn)) {
+					return true;
+				}
 			}
-		}
 
-		return $this->mutationMemo[$key] = $answer;
+			return false;
+		});
+
+		return $this->mutationMemo[$key][0];
 	}
 
 	/**

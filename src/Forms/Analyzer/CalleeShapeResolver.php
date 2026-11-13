@@ -470,14 +470,14 @@ final class CalleeShapeResolver
 	 */
 	private function fileClasses(string $file): array
 	{
+		$this->cache->recorder()->record($file);
+
 		if ($this->classesByFile->has($file)) {
 			/** @var list<ClassLike> $cached */
 			$cached = $this->classesByFile->get($file);
 
 			return $cached;
 		}
-
-		$this->cache->recorder()->record($file);
 
 		/** @var list<ClassLike> $classes */
 		$classes = (new NodeFinder())->find(

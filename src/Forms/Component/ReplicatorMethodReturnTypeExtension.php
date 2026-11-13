@@ -57,6 +57,18 @@ final class ReplicatorMethodReturnTypeExtension implements DynamicMethodReturnTy
 		Scope $scope
 	): ?Type
 	{
+		return $this->model->trackDependencies(
+			$scope,
+			fn (): ?Type => $this->getTypeFromMethodCallUntracked($methodReflection, $methodCall, $scope),
+		);
+	}
+
+	private function getTypeFromMethodCallUntracked(
+		MethodReflection $methodReflection,
+		MethodCall $methodCall,
+		Scope $scope
+	): ?Type
+	{
 		if (!$this->enabled) {
 			return null;
 		}

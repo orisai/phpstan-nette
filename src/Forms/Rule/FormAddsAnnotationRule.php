@@ -51,6 +51,14 @@ final class FormAddsAnnotationRule implements Rule
 	 */
 	public function processNode(Node $node, Scope $scope): array
 	{
+		return $this->reader->trackDependencies($scope, fn (): array => $this->processNodeUntracked($node, $scope));
+	}
+
+	/**
+	 * @return list<IdentifierRuleError>
+	 */
+	private function processNodeUntracked(FunctionLike $node, Scope $scope): array
+	{
 		if (!$this->enabled) {
 			return [];
 		}

@@ -54,7 +54,7 @@ final class ServiceReturnTypeExtension implements DynamicMethodReturnTypeExtensi
 			return null;
 		}
 
-		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var));
+		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var), $scope);
 		if ($resolution === null) {
 			return null;
 		}
@@ -75,7 +75,12 @@ final class ServiceReturnTypeExtension implements DynamicMethodReturnTypeExtensi
 
 		$types = [];
 		foreach ($constantStrings as $constantString) {
-			$serviceType = $this->registry->getServiceType($constantString->getValue(), $recursiveAliases, $profiles);
+			$serviceType = $this->registry->getServiceType(
+				$constantString->getValue(),
+				$recursiveAliases,
+				$profiles,
+				$scope,
+			);
 			if ($serviceType === null) {
 				return null;
 			}

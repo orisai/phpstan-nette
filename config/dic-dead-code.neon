@@ -8,3 +8,8 @@ services:
 		class: OriPhpstan\Nette\Dic\DeadCode\DicUsageProvider
 		tags:
 			- shipmonk.deadCode.memberUsageProvider
+
+	-
+		class: OriPhpstan\Nette\Dic\DeadCode\DicUsageValueExtension
+		tags:
+			- phpstan.resultCacheValueExtension

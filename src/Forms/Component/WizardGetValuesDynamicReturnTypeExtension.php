@@ -52,6 +52,17 @@ final class WizardGetValuesDynamicReturnTypeExtension implements DynamicMethodRe
 		Scope $scope
 	): ?Type
 	{
+		return $this->model->trackDependencies(
+			$scope,
+			fn (): ?Type => $this->getTypeFromMethodCallUntracked($methodCall, $scope),
+		);
+	}
+
+	private function getTypeFromMethodCallUntracked(
+		MethodCall $methodCall,
+		Scope $scope
+	): ?Type
+	{
 		if (!$this->enabled) {
 			return null;
 		}

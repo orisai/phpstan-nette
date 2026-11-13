@@ -120,8 +120,8 @@ final class PropertyFormInvalidationTest extends FormsInvalidationMatrixCase
 	 * above and fails here — it discards the cache wholesale (isCacheRestored) or reanalyses the
 	 * corpus (the bound).
 	 *
-	 * The held form's file is where this discriminates hardest: it carries an `addText` so it is in
-	 * the salt's subset, and step 1 of the builder-body row proves an edit to it really does move the
+	 * The held form's file is where this discriminates hardest: it carries an `addText` the consumer's
+	 * shape is read from, and step 1 of the builder-body row proves an edit to it really does move the
 	 * consumer's shape, yet a COMMENT there must reach nobody. The bound is 1 — itself and nothing
 	 * else.
 	 */
@@ -148,7 +148,7 @@ final class PropertyFormInvalidationTest extends FormsInvalidationMatrixCase
 	 * and ResultCacheManager::restore() queues a changed file's dependents whenever one is present —
 	 * unconditionally, since a trait body has no exported representation to compare. So the holder
 	 * comes along however inert the edit was. What is still asserted here is everything this channel
-	 * owns: the cache is RESTORED (a raw-content salt would have thrown it away) and the third file
+	 * owns: the cache is RESTORED (a raw-content dependency would have re-queued the consumer) and the third file
 	 * of the corpus is not touched.
 	 */
 	public function testCommentOnlyEditInTheBuilderFileStaysGranular(): void

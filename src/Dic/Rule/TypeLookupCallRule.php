@@ -70,7 +70,7 @@ final class TypeLookupCallRule implements Rule
 			return [];
 		}
 
-		$resolution = $this->registry->resolveProfiles($receiverType);
+		$resolution = $this->registry->resolveProfiles($receiverType, $scope);
 
 		if ($resolution === null) {
 			return [];
@@ -108,7 +108,7 @@ final class TypeLookupCallRule implements Rule
 
 		foreach ($constantStrings as $constantString) {
 			$className = $constantString->getValue();
-			$lookup = $this->registry->getTypeLookup($className, $receiverProfiles);
+			$lookup = $this->registry->getTypeLookup($className, $receiverProfiles, $scope);
 			$profiles = array_keys($lookup);
 
 			$unknown = [];

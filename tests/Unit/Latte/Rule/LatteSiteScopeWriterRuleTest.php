@@ -9,6 +9,7 @@ use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
 use OriPhpstan\Nette\Latte\Rule\LatteAnalyzedFileMarkerCollector;
 use OriPhpstan\Nette\Latte\Rule\LatteEdgeScopeCollector;
 use OriPhpstan\Nette\Latte\Rule\LatteSiteScopeWriterRule;
+use OriPhpstan\Nette\Support\RerunValueExtension;
 use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -18,6 +19,7 @@ use PHPStan\Rules\LineRuleError;
 use PHPStan\Rules\NonIgnorableRuleError;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\TestGuard;
+use Tests\OriPhpstan\Nette\Toolkit\TrackingScope;
 use function chmod;
 use function getmypid;
 use function sys_get_temp_dir;
@@ -82,6 +84,32 @@ final class LatteSiteScopeWriterRuleTest extends BaseTestCase
 				['sha' => 'sha-a', 'vars' => ['x' => 'string'], 'args' => []],
 				(new SiteScopeStore($storeDir))->get('a.latte#1#b.latte#ctx', 'sha-a'),
 			);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	// The writer's errors and its writes depend on the store on disk, never on the collected data
+	// alone, so reuseCollectedDataRuleErrors must never skip it: it declares a value no two runs share.
+	public function testTheWriterIsNeverReplayedFromAPreviousRun(): void
+	{
+		$dir = $this->scratchDir();
+
+		try {
+			$storeDir = $dir . '/store';
+			$rule = new LatteSiteScopeWriterRule(
+				TestGuard::latte(true, true),
+				new SiteScopeStore($storeDir),
+				$dir,
+				[],
+				[],
+			);
+			$scope = $this->createMock(TrackingScope::class);
+			$scope->expects(self::once())
+				->method('trackValueDependency')
+				->with(RerunValueExtension::class, LatteSiteScopeWriterRule::class);
+
+			$rule->processNode($this->collectedDataNode([]), $scope);
 		} finally {
 			FileSystem::delete($dir);
 		}

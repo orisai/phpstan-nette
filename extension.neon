@@ -32,3 +32,8 @@ services:
 		arguments:
 			guard: @orisai.nette.configurationGuard
 		tags: [phpstan.rules.rule]
+
+	-
+		class: OriPhpstan\Nette\Support\RerunValueExtension
+		tags:
+			- phpstan.resultCacheValueExtension

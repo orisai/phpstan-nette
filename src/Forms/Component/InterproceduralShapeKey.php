@@ -3,6 +3,8 @@
 namespace OriPhpstan\Nette\Forms\Component;
 
 use function ltrim;
+use function strncmp;
+use function substr;
 
 final class InterproceduralShapeKey
 {
@@ -35,6 +37,16 @@ final class InterproceduralShapeKey
 	public static function forMethodParam(string $declaringFqcn, string $methodName, int $paramIndex): string
 	{
 		return 'mp:' . ltrim($declaringFqcn, '\\') . '::' . $methodName . '#' . $paramIndex;
+	}
+
+	public static function forComponentMutation(string $componentName): string
+	{
+		return 'mut:' . $componentName;
+	}
+
+	public static function componentMutationName(string $key): ?string
+	{
+		return strncmp($key, 'mut:', 4) === 0 ? substr($key, 4) : null;
 	}
 
 	public static function forConstructor(string $fqcn): string

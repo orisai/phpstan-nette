@@ -8,7 +8,7 @@ use function array_merge;
 /**
  * Groups D and E - the half of the matrix that stops the fix from being bought with a blanket
  * invalidation. Every row here asserts, BEFORE any error-set comparison, that the result cache was
- * genuinely RESTORED and that the edit stayed granular; a salt over raw file content, or over the
+ * genuinely RESTORED and that the edit stayed granular; a dependency on raw file content, or on the
  * whole analysed tree, satisfies every cold == warm assertion in the other three classes and fails
  * here. Without this class the matrix would accept the forbidden fix.
  *
@@ -56,9 +56,9 @@ final class InvalidationControlsTest extends FormsInvalidationMatrixCase
 	}
 
 	/**
-	 * Doc comments are IN the salt - `@form-*` annotations and PHPDoc types are shape inputs - so
-	 * this row pins the one normalisation that keeps them affordable: their internal whitespace is
-	 * collapsed before hashing. The bound is 2 rather than 1 because a changed PHPDoc IS an exported
+	 * Doc comments are IN a shape source's digest - `@form-*` annotations and PHPDoc types are shape
+	 * inputs - so this row pins the one normalisation that keeps them affordable: their internal
+	 * whitespace is collapsed before hashing. The bound is 2 rather than 1 because a changed PHPDoc IS an exported
 	 * node change, so PHPStan itself queues the one file that depends on this one.
 	 */
 	public function testDocCommentReindentInAFormBearingFile(): void

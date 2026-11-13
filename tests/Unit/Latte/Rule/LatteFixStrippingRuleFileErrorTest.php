@@ -10,6 +10,7 @@ use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\RuleErrorBuilder;
 use ReflectionMethod;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\RecordingDependencyTracker;
 
 final class LatteFixStrippingRuleFileErrorTest extends BaseTestCase
 {

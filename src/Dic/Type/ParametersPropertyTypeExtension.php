@@ -47,12 +47,12 @@ final class ParametersPropertyTypeExtension implements ExpressionTypeResolverExt
 			return null;
 		}
 
-		$resolution = $this->registry->resolveProfiles($varType);
+		$resolution = $this->registry->resolveProfiles($varType, $scope);
 		if ($resolution === null) {
 			return null;
 		}
 
-		return $this->registry->getMergedParametersType($resolution->getProfiles());
+		return $this->registry->getMergedParametersType($resolution->getProfiles(), $scope);
 	}
 
 }

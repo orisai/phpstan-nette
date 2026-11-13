@@ -64,12 +64,6 @@ parameters:
 			path: ../src/Latte/Bridge/PhpRenderWalk.php
 
 		-
-			rawMessage: 'Strict comparison using === between OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver and null will always evaluate to false.'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: ../src/Latte/Cache/LatteResultCacheMeta.php
-
-		-
 			rawMessage: 'Method OriPhpstan\Nette\Latte\Includes\FactoryProvidedVars::intersect() should return array<string, array{certainty: ''happens''|''maybe''|''never''|''unknown'', type: string, class: string}> but returns array<string, array{certainty: string, type: string, class: non-falsy-string}>.'
 			identifier: return.type
 			count: 1
@@ -137,12 +131,6 @@ parameters:
 			identifier: staticMethod.alreadyNarrowedType
 			count: 1
 			path: ../tests/Unit/Component/Attachment/ComponentModelApiFreshnessTest.php
-
-		-
-			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertInstanceOf() with ''PHPStan\\Analyser\\ResultCache\\ResultCacheMetaExtension'' and OriPhpstan\Nette\Dic\Cache\ContainerResultCacheMetaExtension will always evaluate to true.'
-			identifier: staticMethod.alreadyNarrowedType
-			count: 1
-			path: ../tests/Unit/Dic/Cache/ContainerResultCacheMetaExtensionTest.php
 
 		-
 			rawMessage: 'Call to static method PHPUnit\Framework\Assert::assertSame() with 2 and 1 will always evaluate to false.'

@@ -2,7 +2,10 @@
 
 namespace OriPhpstan\Nette\Forms\Cache;
 
+use PHPStan\Analyser\DependencyTracker;
+use Throwable;
 use function array_key_exists;
+use function array_keys;
 use function array_pop;
 use function is_file;
 use function sha1_file;
@@ -34,6 +37,38 @@ final class DependencyRecorder
 	public static function fingerprintDependencyKey(string $ipKey): string
 	{
 		return self::FINGERPRINT_PREFIX . $ipKey;
+	}
+
+	public static function fingerprintIpKey(string $dependencyKey): ?string
+	{
+		if (strncmp($dependencyKey, self::FINGERPRINT_PREFIX, strlen(self::FINGERPRINT_PREFIX)) !== 0) {
+			return null;
+		}
+
+		return (string) substr($dependencyKey, strlen(self::FINGERPRINT_PREFIX));
+	}
+
+	// A memo serving the value must replay these on every later read: a reader in another file depends
+	// on what the first computation read.
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return array{0: T, 1: array<string, string>}
+	 */
+	public function capture(callable $compute): array
+	{
+		$this->beginFrame();
+
+		try {
+			$value = $compute();
+		} catch (Throwable $e) {
+			$this->endFrame();
+
+			throw $e;
+		}
+
+		return [$value, $this->endFrame()];
 	}
 
 	public function beginFrame(): void
@@ -105,6 +140,29 @@ final class DependencyRecorder
 		}
 	}
 
+	// The bridge between the store's records and PHPStan's result cache: whatever the computation
+	// read becomes a dependency of the analysed file.
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return T
+	 */
+	public function track(DependencyTracker $tracker, callable $compute)
+	{
+		[$value, $dependencies] = $this->capture($compute);
+
+		foreach (array_keys($dependencies) as $key) {
+			$ipKey = self::fingerprintIpKey($key);
+			$tracker->trackValueDependency(
+				FormsValueExtension::class,
+				$ipKey === null ? FormsValueExtension::sourceKey($key) : FormsValueExtension::contributorsKey($ipKey),
+			);
+		}
+
+		return $value;
+	}
+
 	/**
 	 * @return array<string, string>
 	 */
@@ -141,7 +199,7 @@ final class DependencyRecorder
 				// A contributor fingerprint: refold the universe and compare. A null current
 				// fingerprint (universe unenumerable) or a missing validator leaves the set
 				// unverifiable, so the embedding entry is treated as invalid (recompute) — sound.
-				$ipKey = (string) substr($file, strlen(self::FINGERPRINT_PREFIX));
+				$ipKey = (string) self::fingerprintIpKey($file);
 				if (
 					$this->fingerprintValidator === null
 					|| $this->fingerprintValidator->currentFingerprint($ipKey) !== $hash

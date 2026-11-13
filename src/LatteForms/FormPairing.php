@@ -6,6 +6,7 @@ use Nette\Forms\Form as NetteForm;
 use OriPhpstan\Nette\Forms\Index\IndexShapeResolver;
 use OriPhpstan\Nette\Forms\Shape\FormShape;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ObjectType;
 use function array_keys;
@@ -34,7 +35,7 @@ final class FormPairing
 
 	private IndexShapeResolver $resolver;
 
-	/** @var array<string, array{forms: list<ResolvedForm>, notForm: list<string>, unresolved: bool}> */
+	/** @var array<string, array{array{forms: list<ResolvedForm>, notForm: list<string>, unresolved: bool}, array<string, string>}> */
 	private array $memo = [];
 
 	public function __construct(DiscoveryStore $store, IndexShapeResolver $resolver)
@@ -49,6 +50,16 @@ final class FormPairing
 	public function bindScope(Scope $scope): void
 	{
 		$this->resolver->bindScope($scope);
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return T
+	 */
+	public function trackDependencies(DependencyTracker $tracker, callable $compute)
+	{
+		return $this->resolver->trackDependencies($tracker, $compute);
 	}
 
 	/**
@@ -97,9 +108,23 @@ final class FormPairing
 		// keeps a classComponentShape memo of its own.
 		$key = $templateRelPath . "\0" . $formName;
 		if (isset($this->memo[$key])) {
-			return $this->memo[$key];
+			$this->resolver->replayDependencies($this->memo[$key][1]);
+
+			return $this->memo[$key][0];
 		}
 
+		$this->memo[$key] = $this->resolver->captureDependencies(
+			fn (): array => $this->compute($templateRelPath, $formName),
+		);
+
+		return $this->memo[$key][0];
+	}
+
+	/**
+	 * @return array{forms: list<ResolvedForm>, notForm: list<string>, unresolved: bool}
+	 */
+	private function compute(string $templateRelPath, string $formName): array
+	{
 		$classes = [];
 		foreach ($this->store->recordsForTemplate($templateRelPath) as $record) {
 			$classes[$record['class']] = true;
@@ -138,10 +163,7 @@ final class FormPairing
 			);
 		}
 
-		$resolved = ['forms' => $forms, 'notForm' => $notForm, 'unresolved' => $unresolved];
-		$this->memo[$key] = $resolved;
-
-		return $resolved;
+		return ['forms' => $forms, 'notForm' => $notForm, 'unresolved' => $unresolved];
 	}
 
 	// {form X} and {formContext X} both hand the component to vendor's renderFormBegin(Form $form),

@@ -52,7 +52,7 @@ final class FindByTagReturnTypeExtension implements DynamicMethodReturnTypeExten
 			return null;
 		}
 
-		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var));
+		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var), $scope);
 		if ($resolution === null) {
 			return null;
 		}
@@ -72,7 +72,7 @@ final class FindByTagReturnTypeExtension implements DynamicMethodReturnTypeExten
 		$types = [];
 
 		foreach ($constantStrings as $constantString) {
-			$tagValueType = $this->registry->getTagValueType($constantString->getValue(), $profiles);
+			$tagValueType = $this->registry->getTagValueType($constantString->getValue(), $profiles, $scope);
 			$types[] = $tagValueType === null
 				? ConstantArrayTypeBuilder::createEmpty()->getArray()
 				: new ArrayType(new StringType(), $tagValueType);

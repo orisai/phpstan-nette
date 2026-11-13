@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Includes\TemplateTypeChecker;
+use OriPhpstan\Nette\Support\RerunValueExtension;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
@@ -61,6 +62,8 @@ final class LatteTemplateGraphRule implements Rule
 		if (!$this->enabled || !$this->discoveryStoreEnabled) {
 			return [];
 		}
+
+		$scope->trackValueDependency(RerunValueExtension::class, self::class);
 
 		$errors = [];
 		foreach ($this->checker->checkAggregate(

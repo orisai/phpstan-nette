@@ -36,6 +36,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Result cache: no change discards PHPStan's whole result cache any more. Each analysed file declares what it read
+  through PHPStan 2.3's dependency tracking, so only the files depending on a change are analysed again: DI files by
+  the answers they got from the compiled containers (a rebuild answering alike, nette/di 3.2's random class suffix
+  included, re-analyses nothing), Forms files by the files their form shapes were read from (comments and formatting
+  ignored) and by the registration sets they depend on, templates by their include component, discovery records,
+  harvest and template factory wiring, render-side classes by their render facts
+- Latte: the discovery store no longer has to sit inside `paths` for record changes to stay granular, and narrowing
+  slices outside `paths` are tracked too; `orisai.nette.latte.discovery.coarseInvalidationAccepted` has no effect
+- With PHPStan's `reuseCollectedDataRuleErrors` toggle, the whole-project Latte and bridge rules and the narrowing
+  store writer always run
+
 - Latte: a run which rewrites the narrowing store reports the non-ignorable `orisai.nette.latte.narrowingStoreChanged`,
   which asks to run PHPStan again and commit the regenerated store files, so CI fails on an outdated store without
   comparing the git state; with `reuseCollectedDataRuleErrors` a run which rewrote the store is never reused

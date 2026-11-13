@@ -480,7 +480,7 @@ services:
 		autowired: false
 
 	# The configured paths, never the CLI-narrowed %analysedPaths% - the same choice
-	# orisai.nette.latte.firstPartyPaths and latteResultCacheMeta's analysedPaths already make. A path-narrowing
+	# orisai.nette.latte.firstPartyPaths already makes. A path-narrowing
 	# spawn must derive the SAME index a full run does, or it empties records it has no authority
 	# over; keying the universe to the declared paths is what makes that true by construction.
 	latteDiscoveryPreAnalysisIndexBuilder:
@@ -595,24 +595,46 @@ services:
 		class: OriPhpstan\Nette\Latte\Cache\LatteResultCacheMeta
 		arguments:
 			guard: @orisai.nette.configurationGuard
-			edgeIndex: @latteTemplateEdgeIndex
-			# The config's declared paths, not the CLI-narrowed %analysedPaths% - see the class's
-			# own note on why the store-directory regime must not depend on how phpstan was invoked.
-			analysedPaths: %paths%
-			discoveryStoreDirPath: @orisai.nette.configuration::get(latte.discovery.storePath)
-			harvester: @latteCustomsHarvester
-			discoveryStore: @latteDiscoveryStore
-			coarseInvalidationAccepted: @orisai.nette.configuration::get(latte.discovery.coarseInvalidationAccepted)
-			# The live-container inputs FactoryProvidedVars reads: no analysed file's hash and no
-			# discovery record reflects them, so this coarse salt is their only channel.
-			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
-			# Not an input to the hash - the pre-analysis build is a side effect of the one phase that
-			# runs before the first parse. See the class's own note on why it must stay out of the
-			# returned value.
 			indexBuilder: @latteDiscoveryPreAnalysisIndexBuilder
 		autowired: false
 		tags:
 			- phpstan.resultCacheMetaExtension
+
+	latteTemplateNeighbourhood:
+		class: OriPhpstan\Nette\Latte\Cache\TemplateNeighbourhood
+		arguments:
+			edgeIndex: @latteTemplateEdgeIndex
+			universe: @latteUniverse
+			discoveryStore: @latteDiscoveryStore
+			discoveryStoreEnabled: @orisai.nette.configuration::get(latte.discovery.enabled)
+		autowired: false
+
+	-
+		class: OriPhpstan\Nette\Latte\Cache\LatteTemplateValueExtension
+		arguments:
+			guard: @orisai.nette.configurationGuard
+			neighbourhood: @latteTemplateNeighbourhood
+			harvester: @latteCustomsHarvester
+			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
+		tags:
+			- phpstan.resultCacheValueExtension
+
+	-
+		class: OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension
+		arguments:
+			renderWalk: @lattePhpRenderWalk
+			renderFactsCache: @lattePhpFactsCache
+		tags:
+			- phpstan.resultCacheValueExtension
+
+	-
+		class: OriPhpstan\Nette\Latte\Rule\LatteDependencyRule
+		arguments:
+			guard: @orisai.nette.configurationGuard
+			universe: @latteUniverse
+			neighbourhood: @latteTemplateNeighbourhood
+			siteScopeStore: @latteSiteScopeStore
+		tags: [phpstan.rules.rule]
 
 	# TemplateFactory's own injected template variables, resolved per template from the discovery
 	# store's class->file links and the SP1/SP2 template-class ladder. container is autowired by type

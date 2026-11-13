@@ -171,7 +171,8 @@ final class InvalidationScenario
 	private function spawn(): AnalysisRun
 	{
 		$configFactory = $this->configFactory;
-		$configPath = $configFactory([$this->sourceDir], $this->tmpDir);
+		$log = new AnalysedFileLog($configFactory([$this->sourceDir], $this->tmpDir), $this->tmpDir);
+		$configPath = $log->getConfigPath();
 
 		$process = new Process(
 			[
@@ -186,13 +187,13 @@ final class InvalidationScenario
 				$configPath,
 			],
 			$this->projectRoot,
-			null,
+			$log->env(),
 			null,
 			self::SPAWN_TIMEOUT_SECONDS,
 		);
 		$process->run();
 
-		return new AnalysisRun($this->decodeErrors($process), $process->getErrorOutput());
+		return new AnalysisRun($this->decodeErrors($process), $process->getErrorOutput(), $log->read($this->sourceDir));
 	}
 
 	/**

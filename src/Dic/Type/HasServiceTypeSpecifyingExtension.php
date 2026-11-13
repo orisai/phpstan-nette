@@ -69,7 +69,7 @@ final class HasServiceTypeSpecifyingExtension implements MethodTypeSpecifyingExt
 
 		// Narrowing is only meaningful for base-class receivers; a known-class receiver
 		// answers existence exactly and an unknown container has an unknown service universe.
-		$resolution = $this->registry->resolveProfiles($receiverType);
+		$resolution = $this->registry->resolveProfiles($receiverType, $scope);
 
 		if ($resolution === null || !$resolution->isBase()) {
 			return new SpecifiedTypes([], []);
@@ -86,7 +86,12 @@ final class HasServiceTypeSpecifyingExtension implements MethodTypeSpecifyingExt
 		$methodName = null;
 
 		foreach ($constantStrings as $constantString) {
-			$resolved = $this->registry->getResolvedServiceMethodName($constantString->getValue(), false, $profiles);
+			$resolved = $this->registry->getResolvedServiceMethodName(
+				$constantString->getValue(),
+				false,
+				$profiles,
+				$scope,
+			);
 
 			if ($resolved === null) {
 				return new SpecifiedTypes([], []);

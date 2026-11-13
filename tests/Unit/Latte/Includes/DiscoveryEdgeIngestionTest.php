@@ -299,23 +299,6 @@ final class DiscoveryEdgeIngestionTest extends PHPStanTestCase
 		}
 	}
 
-	// LatteResultCacheMeta's whole-cache salt is built off edgeTopology(); discovery edges are a pure
-	// function of store record CONTENT, which that salt deliberately excludes (record changes
-	// propagate granularly through each store file's own bytes instead).
-	public function testEdgeTopologyExcludesDiscoveryEdges(): void
-	{
-		$dir = $this->layoutCorpus("{block content}x{/block}\n");
-
-		try {
-			self::assertSame(
-				$this->index($dir, [])->edgeTopology(),
-				$this->index($dir, $this->layoutRecords())->edgeTopology(),
-			);
-		} finally {
-			FileSystem::delete($dir);
-		}
-	}
-
 	// The store canonicalizes records on write AND on read, so a permuted input reaches
 	// ingestDiscovery() already ordered - which is why the emitted edge list is asserted to be
 	// totally ordered too: that is the half canonicalDiscoveryEdges() owns, and without it the

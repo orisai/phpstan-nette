@@ -9,6 +9,7 @@ use OriPhpstan\Nette\Forms\Shape\ComponentShapeRenderer;
 use OriPhpstan\Nette\Forms\Type\FormShapeType;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Type\Constant\ConstantIntegerType;
@@ -38,7 +39,24 @@ final class ComponentShapeDescriber
 		$this->validatedContext = new ValidatedContext($model);
 	}
 
+	/**
+	 * @param Scope&DependencyTracker $scope
+	 */
 	public function describe(Node\Expr $expr, Node\Expr $call, Scope $scope, ?int $maxDepth, bool $formValues): string
+	{
+		return $this->model->trackDependencies(
+			$scope,
+			fn (): string => $this->describeUntracked($expr, $call, $scope, $maxDepth, $formValues),
+		);
+	}
+
+	private function describeUntracked(
+		Node\Expr $expr,
+		Node\Expr $call,
+		Scope $scope,
+		?int $maxDepth,
+		bool $formValues
+	): string
 	{
 		$type = $scope->getType($expr);
 		$filled = $this->validatedContext->isFilledGetValues(

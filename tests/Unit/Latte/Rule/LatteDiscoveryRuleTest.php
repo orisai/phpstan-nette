@@ -92,7 +92,7 @@ final class LatteDiscoveryRuleTest extends RuleTestCase
 	 */
 	public static function getAdditionalConfigFiles(): array
 	{
-		return [__DIR__ . '/phpstan-test.neon'];
+		return [__DIR__ . '/phpstan-test.neon', __DIR__ . '/render-facts-value.neon'];
 	}
 
 	public function testDynamicSetFileArgumentIsReportedAtTheCallSite(): void

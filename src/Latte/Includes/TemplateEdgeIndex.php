@@ -159,31 +159,6 @@ final class TemplateEdgeIndex
 		return $this->outgoing[$projectRelativePath] ?? [];
 	}
 
-	// Rel-path-only includer->target pairs across the whole universe - no args/content - for
-	// LatteResultCacheMeta's topology salt: only existing (resolved + targetExists) edges, same as
-	// incomingEdges()'s own population rule in fold(). Discovery-derived edges are deliberately
-	// absent: they are a pure function of store RECORD CONTENT, which LatteResultCacheMeta keeps out
-	// of its whole-cache salt on purpose (record changes propagate granularly through each store
-	// file's own bytes - and both ends of an auto-layout edge are re-derived from the same renderer
-	// class, so a record change rewrites both store files and reanalyzes both templates).
-
-	/**
-	 * @return list<array{includer: string, target: string}>
-	 */
-	public function edgeTopology(): array
-	{
-		$this->build();
-
-		$edges = [];
-		foreach ($this->incoming as $target => $list) {
-			foreach ($list as $edge) {
-				$edges[] = ['includer' => $edge['includer'], 'target' => $target];
-			}
-		}
-
-		return $edges;
-	}
-
 	/**
 	 * @return list<string>
 	 */

@@ -44,6 +44,8 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 	private bool $enabled;
 
+	private FormShapeCache $cache;
+
 	private Parser $parser;
 
 	private EnclosingFunctionLikeLocator $locator;
@@ -72,6 +74,7 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 		// analysed paths (and in the stub validator's container too), so validate on first use.
 		$this->guard = $guard;
 		$this->enabled = $enabled;
+		$this->cache = $cache;
 		$this->parser = $parser;
 		$this->locator = new EnclosingFunctionLikeLocator();
 		$this->analyzer = AnalyzerStackFactory::build($catalogReader, $cache, $richParser, $analysedPaths);
@@ -91,6 +94,16 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 	}
 
 	public function getType(Expr $expr, Scope $scope): ?Type
+	{
+		// Own-file gates only, ahead of the frame every other expression of the project would open.
+		if (!$this->enabled || !$this->index->hasAnyTrackedForm($scope->getFile())) {
+			return null;
+		}
+
+		return $this->cache->trackDependencies($scope, fn (): ?Type => $this->getTypeUntracked($expr, $scope));
+	}
+
+	private function getTypeUntracked(Expr $expr, Scope $scope): ?Type
 	{
 		if (!$this->enabled) {
 			return null;

@@ -70,6 +70,18 @@ final class FormValidatedTypeSpecifyingExtension implements MethodTypeSpecifying
 		TypeSpecifierContext $context
 	): SpecifiedTypes
 	{
+		return $this->model->trackDependencies(
+			$scope,
+			fn (): SpecifiedTypes => $this->specifyTypesUntracked($node, $scope, $context),
+		);
+	}
+
+	private function specifyTypesUntracked(
+		MethodCall $node,
+		Scope $scope,
+		TypeSpecifierContext $context
+	): SpecifiedTypes
+	{
 		$shape = $this->model->resolveFormShapeFromExpression($node->var, $scope);
 		if ($shape === null) {
 			return new SpecifiedTypes();

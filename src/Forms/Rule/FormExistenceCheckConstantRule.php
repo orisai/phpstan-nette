@@ -15,6 +15,7 @@ use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
@@ -123,6 +124,7 @@ final class FormExistenceCheckConstantRule implements Rule
 	 *   actually contains (`isset($form['group_action']['submit'])`), so it is the shape that decides
 	 *   the design.
 	 *
+	 * @param Scope&DependencyTracker $scope
 	 * @return list<IdentifierRuleError>
 	 */
 	private function classifyChain(
@@ -199,6 +201,7 @@ final class FormExistenceCheckConstantRule implements Rule
 	 * One hop: the name it looks for and the Certainty that the receiver holds it once the check has
 	 * run. Null where the hop cannot be judged at all.
 	 *
+	 * @param Scope&DependencyTracker $scope
 	 * @return array{string, string}|null
 	 */
 	private function classify(Expr $receiver, Expr $offset, Scope $scope): ?array
@@ -222,7 +225,7 @@ final class FormExistenceCheckConstantRule implements Rule
 			return null;
 		}
 
-		$declaresFactory = $this->declaresComponentFactory($receiverType, $name);
+		$declaresFactory = $this->declaresComponentFactory($receiverType, $name, $scope);
 		if ($declaresFactory === null) {
 			return null;
 		}
@@ -257,7 +260,7 @@ final class FormExistenceCheckConstantRule implements Rule
 	 * same reason: whichever answer degrades is the safe one, and which that is depends on what the
 	 * consumer does with it.
 	 */
-	private function declaresComponentFactory(Type $receiverType, string $childName): ?bool
+	private function declaresComponentFactory(Type $receiverType, string $childName, DependencyTracker $scope): ?bool
 	{
 		$factory = ContainerLazyRead::factoryMethodFor($childName);
 		if ($factory === null) {
@@ -266,7 +269,12 @@ final class FormExistenceCheckConstantRule implements Rule
 		}
 
 		$classNames = $receiverType->getObjectClassNames();
-		if (count($classNames) !== 1 || !$this->reflectionProvider->hasClass($classNames[0])) {
+		if (count($classNames) !== 1) {
+			return null;
+		}
+
+		$scope->trackClassDependency($classNames[0]);
+		if (!$this->reflectionProvider->hasClass($classNames[0])) {
 			return null;
 		}
 

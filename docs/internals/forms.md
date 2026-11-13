@@ -1992,8 +1992,8 @@ required `addText()` reads `string` normally but `non-empty-string` there.
 # Cache invalidation
 
 Two caches sit under this analysis and they answer different questions: the **shape store**, which remembers what a
-form resolved to, and PHPStan's own **result cache**, which decides whether a file is re-analysed at all. Both are
-described below, because the second one has a cost you will feel.
+form resolved to, and PHPStan's own **result cache**, which decides whether a file is re-analysed at all. The second
+one is fed by the first: the files the store records for a shape are the files its readers depend on.
 
 ## The shape store
 
@@ -2017,9 +2017,10 @@ following changes (`FormsCodeVersion`):
 The `-<catalogs>` suffix is `CatalogIdentity`: a sha1 over the sorted `orisai.nette.forms.catalogs` class names, each
 with `sha1_file()` of its declaring file. It is empty without user catalogs. It is resolved on first use, not at
 container build, because the reflection provider knows analysed classes only once analysis runs. The same identity is
-folded into `FormsResultCacheMeta`, so editing a catalog also discards PHPStan's result cache.
+recorded by the catalog reader as a file every shape it fed read, so editing a catalog re-analyses the readers.
 
-Only the main process prunes directories of other versions, once per run; parallel workers share the run's directory.
+Every process prunes directories of other versions once; the processes of one run share its directory. The main process
+may never open the store in a run answered from the result cache, so pruning cannot be left to it alone.
 
 Within a version directory, each entry additionally records every file it read while computing the shape, and is
 recomputed the moment any of them changes — not just the analysed file itself. This includes:
@@ -2044,36 +2045,47 @@ re-analysed — that is the result cache's job, and it tracks a different thing.
 PHPStan re-queues a changed file's dependents only when that file's *exported nodes* — its declarations — change.
 Nearly every cross-file fact this extension derives is a method **body** fact instead: `$form->addText('id')` inside a
 `createComponentX()` or a form subclass's constructor. Adding, removing or retyping a field there leaves every exported
-node byte-identical, so a file elsewhere that reads the resulting shape is never re-analysed. It keeps a shape whose
-input is gone, and with it swallows real errors — typically
-`Call to an undefined method Nette\ComponentModel\IComponent::setRequired()` on a field that no longer exists.
+node byte-identical, so a file elsewhere that reads the resulting shape would never be re-analysed, keep a shape whose
+input is gone and swallow real errors — typically `Call to an undefined method
+Nette\ComponentModel\IComponent::setRequired()` on a field that no longer exists.
 
-To close that, the extension registers a `ResultCacheMetaExtension` (`FormFactSalt`) over the **shape-affecting
-subset** of the analysed files. Change any file in that subset and the whole result cache is discarded and the project
-re-analysed from scratch. There is no finer granularity to be had — a `ResultCacheMetaExtension` is a whole-cache
-mechanism by construction — so this is a real trade, not a free correctness win.
+Every consumer that reads a shape therefore runs inside `DependencyRecorder::track()` (through
+`FormShapeCache::trackDependencies()`, `ContainerModel::trackDependencies()`, `IndexShapeResolver::trackDependencies()`
+or `ControlAnnotationValueTypeReader::trackDependencies()`): the type extensions, the dump/assert describers, the
+mapped-type, `@form-adds` and registrar rules, and the bridge's form-macro typing. `track()` opens a recorder frame,
+and every file recorded into it becomes a value dependency of the analysed file:
 
-**What is in the subset.** A file whose source carries a construct that can move a shape: an `->add*()`/`::add*()`
-call, a `createComponentX()` or `createStepN()` name, `$form['x'] = …`, `unset()`, one of the component and value
-mutators (`setRequired()`, `setNullable()`, `setOmitted()`, `setDisabled()`, `setMappedType()`, `setItems()`,
-`setParent()`, `removeComponent()`, `offsetSet()`, `offsetUnset()`, `monitor()`, `createOne()`), or a `@form-*`
-annotation — plus any file declaring a class constant one of those reads, since
-`$form->addText(FieldNames::ID)` makes that constant's literal a shape input. On a real application that is roughly a
-quarter of the analysed files, and far more where form work actually happens — so an edit inside a form-heavy
-directory often turns the next warm run into a cold one. That is the price of a warm run reporting exactly what a cold
-one does, and it is worth knowing before you wonder why the run got slow.
+- a **file** the computation parsed or reflected (`RecordingParser`, `ShapeDependencyCollector`, `LiteralNameResolver`,
+  `ChoiceItemKeyResolver`, the catalog reader, the class trackers) is keyed `FormsValueExtension::sourceKey()` and
+  valued by a digest of its token stream with whitespace and `//`/`#`/`/* */` comments dropped and doc-comment
+  whitespace collapsed (a PHP 8 attribute PHP 7.4 lexes as a `#` comment stays in), so a reformat or a comment in a
+  builder re-analyses nobody but the builder;
+- a **contributor fingerprint** (a handler, pass-through or external-component-mutation key the registration index
+  answered) is keyed `FormsValueExtension::contributorsKey()` and valued by `RegistrationIndex::fingerprint()`, so a
+  registration appearing in or leaving any file of the universe re-analyses the readers of that key.
 
-**What stays cheap.** The digest is taken over a normalised token stream, so a comment-only edit, a reformat or a
-docblock reindent inside a form-bearing file keeps the whole cache (a `@form-*` annotation is real content and does
-not). Editing any file outside the subset keeps it too, and a run in which nothing changed pays only a `sha1_file`
-sweep of the universe — about 50 ms.
+The records are the same ones the shape store validates its entries by, so a reader depends on exactly what the store
+would recompute a shape for. Two conditions keep that complete across files. First, every in-process memo serving a
+shape to more than one file replays what its first computation read: the store entries always did, and the
+`IndexShapeResolver` and `FormPairing` memos capture their computation with `DependencyRecorder::capture()` and replay it
+on every hit. Memos keyed by the analysed file (`ContainerModel`'s per-file caches, `FormFileIndex`,
+`ComponentClassResolver`) need not, since a later hit is the same file. Second, a cached class or AST lookup records its
+file on every read, not only on a miss (`CalleeShapeResolver::fileClasses()`, `ContainerModel::richFileClasses()`,
+`TraitAwareMethodLocator`).
 
-**Known limitation.** The subset is recognised from the token stream, so a shape input that is neither one of the
-constructs above, nor an exported node, nor a class constant reached through them is invisible to it — a PHP 8
-attribute, for instance, which the PHP 7.4 tokeniser running the analysis lexes as a comment. If you teach the
-extension to read a new shape-affecting construct, teach `FormFactSalt` about it in the same commit;
-`FormFactSaltTest` drift-checks its vocabulary against the method names the extension spells and will fail if you
-forget.
+A shape PHPStan itself infers outside the analysed file's walk — a private untyped property's type taken from a
+constructor in another file — is declared through the scope without a node callback, which PHPStan records against the
+declaring file and propagates to its dependents (`ValueDependencyCollector`'s `declarations` dependents).
+
+**What stays cheap.** A comment, a reformat or a docblock reindent in a form-bearing file re-analyses only that file
+(PHPStan's own content hash), and editing a file no shape read re-analyses only itself. The price is paid on restore:
+the coordinator re-digests every recorded shape source each run (one read and one tokenisation per distinct file,
+memoised by content hash within the process).
+
+**Known limitations.** A shape input reached neither through a recorded file nor through the registration index is
+invisible — the same boundary the shape store has, since both read the same records. A file whose PHP 8 attribute is a
+shape input and whose analysis runs on PHP 7.4 keeps the attribute in the digest (as a comment token), but nothing in
+this extension reads attributes as form facts today.
 
 ## A shape does not depend on who asks
 

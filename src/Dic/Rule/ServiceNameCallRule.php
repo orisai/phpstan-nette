@@ -75,7 +75,7 @@ final class ServiceNameCallRule implements Rule
 			return [];
 		}
 
-		$resolution = $this->registry->resolveProfiles($receiverType);
+		$resolution = $this->registry->resolveProfiles($receiverType, $scope);
 
 		if ($resolution === null) {
 			return [];
@@ -111,6 +111,7 @@ final class ServiceNameCallRule implements Rule
 				$name,
 				$recursiveAliases,
 				$receiverProfiles,
+				$scope,
 			);
 
 			// Suppression before the marker probe: a contradictory scope carrying both stays silent.
@@ -137,7 +138,7 @@ final class ServiceNameCallRule implements Rule
 				continue;
 			}
 
-			$existence = $this->registry->getServiceExistence($name, $recursiveAliases, $receiverProfiles);
+			$existence = $this->registry->getServiceExistence($name, $recursiveAliases, $receiverProfiles, $scope);
 			$profiles = implode(', ', array_keys($existence));
 			$missing = array_keys(array_filter($existence, static fn (bool $exists): bool => !$exists));
 

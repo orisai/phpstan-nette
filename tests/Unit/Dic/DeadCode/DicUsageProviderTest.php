@@ -4,11 +4,12 @@ namespace Tests\OriPhpstan\Nette\Unit\Dic\DeadCode;
 
 use OriPhpstan\Nette\Dic\DeadCode\ContainerUsageExtractor;
 use OriPhpstan\Nette\Dic\DeadCode\DicUsageProvider;
+use OriPhpstan\Nette\Dic\DeadCode\DicUsageValueExtension;
 use OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry;
 use PhpParser\Node\Stmt\Class_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
 use PHPStan\Testing\PHPStanTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\TrackingScope;
 use Tests\OriPhpstan\Nette\Toolkit\VersionGroupGate;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\ChildService;
 use Tests\OriPhpstan\Nette\Unit\Dic\Fixtures\App\FooService;
@@ -48,6 +49,33 @@ final class DicUsageProviderTest extends PHPStanTestCase
 		self::assertSame([], $this->usagesFor(FooService::class));
 	}
 
+	// The answer is the container's alone, so the class's file depends on it as a value: a rebuild that
+	// leaves the called methods as they were re-analyses nothing.
+	public function testTheAnswerIsTrackedPerClassAndValuedByTheCalledMethods(): void
+	{
+		$provider = new DicUsageProvider(
+			new MultiContainerRegistry(__DIR__ . '/../Fixtures/fixture-container-loader.php'),
+			new ContainerUsageExtractor(),
+		);
+		$scope = $this->createMock(TrackingScope::class);
+		$scope->expects(self::once())->method('trackValueDependency')->with(
+			DicUsageValueExtension::class,
+			ChildService::class,
+		);
+
+		$provider->getUsages(
+			new InClassNode( // @phpstan-ignore phpstanApi.constructor
+				new Class_(ChildService::class),
+				self::createReflectionProvider()->getClass(ChildService::class),
+			),
+			$scope,
+		);
+
+		$extension = new DicUsageValueExtension($provider);
+		self::assertSame('__construct,configureparent', $extension->getValue(ChildService::class));
+		self::assertSame('', $extension->getValue(ParentService::class));
+	}
+
 	public function testInactiveRegistryEmitsNothing(): void
 	{
 		self::assertSame([], $this->usagesFor(ChildService::class, null));
@@ -74,7 +102,7 @@ final class DicUsageProviderTest extends PHPStanTestCase
 
 		$described = [];
 
-		foreach ($provider->getUsages($node, $this->createMock(Scope::class)) as $usage) {
+		foreach ($provider->getUsages($node, $this->createMock(TrackingScope::class)) as $usage) {
 			$described[] = $usage->getMemberRef()->toHumanString();
 		}
 

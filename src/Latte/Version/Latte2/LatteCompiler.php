@@ -102,7 +102,7 @@ final class LatteCompiler
 
 		// Folds the harvest salt in: a cached CompileResult bakes in harvest-dependent shapes (native
 		// macros vs passthrough, unknownMacro, caseMismatch), so a harvest change must miss here the
-		// same way it already invalidates PHPStan's own result cache (LatteResultCacheMeta).
+		// same way it re-analyses every template through PHPStan's result cache (LatteTemplateValueExtension).
 		$harvestSalt = ($this->harvester !== null ? $this->harvester->harvest() : HarvestedCustoms::empty())
 			->getSaltHash();
 		// The discovery-store record salt follows the same two-cache discipline: store consumers bake

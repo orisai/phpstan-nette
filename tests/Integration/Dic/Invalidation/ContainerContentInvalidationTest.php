@@ -6,14 +6,10 @@ use Tests\OriPhpstan\Nette\Toolkit\InvalidationScenario;
 use function array_merge;
 
 /**
- * The rows that pin the salt's CONTENT sensitivity. Every other committed row moves the container FILE
- * SET or the loader's profile keys, so a digest reduced to `profile:path` - one that never hashes a
- * byte of container - passes all of them. These two change what a container SAYS while leaving its
- * path, its class name and the file set exactly as they were, which is the only shape that can tell a
- * content hash from a path list.
- *
- * They are also the two ends of the consumer range: a parameter retype states its answer through the
- * type extensions, a removed setup call through the dead-code channel alone.
+ * The rows that pin CONTENT sensitivity: each changes what a container SAYS while leaving its path and
+ * the file set as they were. They are also the two ends of the consumer range - a parameter retype
+ * states its answer through the type extensions, a removed setup call through the dead-code channel
+ * alone - and each re-analyses exactly the files whose tracked question got a different answer.
  */
 final class ContainerContentInvalidationTest extends DicInvalidationMatrixCase
 {
@@ -32,6 +28,7 @@ final class ContainerContentInvalidationTest extends DicInvalidationMatrixCase
 					'alpha, beta',
 					'array{sharedParam: int, profileParam: string}',
 				),
+				'reanalysed' => ['Consumer.php'],
 			],
 		]);
 	}
@@ -45,6 +42,23 @@ final class ContainerContentInvalidationTest extends DicInvalidationMatrixCase
 					$this->writeConfig($scenario, 'beta', $this->profileConfig('beta', null, false));
 				},
 				'expect' => array_merge($this->seedErrors(), [self::SetupProbeDead]),
+				'reanalysed' => ['SetupService.php'],
+			],
+		]);
+	}
+
+	// A service nothing in the corpus asks about: the container really is rebuilt with other bytes,
+	// and only the class it now constructs - whose dead-code answer moved - is re-analysed.
+	public function testServiceAddedToEveryContainer(): void
+	{
+		$this->assertScenario('content-service-added', [
+			[
+				'mutate' => function (InvalidationScenario $scenario): void {
+					$this->writeConfig($scenario, 'alpha', $this->profileConfig('alpha') . "\textra: Unrelated\n");
+					$this->writeConfig($scenario, 'beta', $this->profileConfig('beta') . "\textra: Unrelated\n");
+				},
+				'expect' => $this->seedErrors(),
+				'maxReanalysed' => 1,
 			],
 		]);
 	}

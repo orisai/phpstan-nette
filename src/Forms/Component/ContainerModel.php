@@ -49,6 +49,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeFinder;
+use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
 use PHPStan\Parser\Parser;
 use PHPStan\Reflection\ClassReflection;
@@ -164,7 +165,7 @@ final class ContainerModel
 		$this->cache = $cache;
 		$this->indexShapeResolver = $indexShapeResolver;
 		$this->tracer = new FormOriginTracer();
-		$this->methodLocator = new TraitAwareMethodLocator($richParser);
+		$this->methodLocator = new TraitAwareMethodLocator($richParser, $cache->recorder());
 		$this->catalogReader = $catalogReader;
 		$this->richFileClassesCache = new BoundedMap(self::RICH_FILE_CLASSES_CACHE_LIMIT);
 	}
@@ -185,6 +186,16 @@ final class ContainerModel
 		$this->classComponentShapeMemo = [];
 		$this->classPropertyShapeMemo = [];
 		$this->plainFileShapeMemo = [];
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return T
+	 */
+	public function trackDependencies(DependencyTracker $tracker, callable $compute)
+	{
+		return $this->cache->trackDependencies($tracker, $compute);
 	}
 
 	public function resolveFromFormShapeReceiver(

@@ -307,39 +307,6 @@ final class DiscoveryStoreTest extends BaseTestCase
 		}
 	}
 
-	public function testTemplateSetHashTracksTheFileSetButNotRecordContent(): void
-	{
-		$dir = $this->scratchDir();
-
-		try {
-			$storeDir = $dir . '/store';
-			DiscoveryStore::bootstrap($storeDir, ['app/a.latte']);
-
-			$initial = (new DiscoveryStore($storeDir))->templateSetHash();
-
-			(new DiscoveryStore($storeDir))->replaceWith(
-				['app/a.latte' => [self::record('App\\Foo', null, 'setFile', 'unknown')]],
-				['App\\Foo'],
-				[],
-			);
-			self::assertSame(
-				$initial,
-				(new DiscoveryStore($storeDir))->templateSetHash(),
-				'record content must never enter the template-set hash - record changes propagate through '
-				. 'per-template file refs, never a whole-cache invalidation',
-			);
-
-			(new DiscoveryStore($storeDir))->replaceWith([], [], ['app/b.latte']);
-			self::assertNotSame(
-				$initial,
-				(new DiscoveryStore($storeDir))->templateSetHash(),
-				'a template file appearing must change the template-set hash - its cached parse predates the self-ref',
-			);
-		} finally {
-			FileSystem::delete($dir);
-		}
-	}
-
 	public function testTemplateFileShapeIsPinnedByteForByte(): void
 	{
 		$dir = $this->scratchDir();

@@ -5,9 +5,13 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte\Integration;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryStore;
 use Symfony\Component\Process\Process;
+use Tests\OriPhpstan\Nette\Toolkit\AnalysedFileLog;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
 use Tests\OriPhpstan\Nette\Toolkit\LattePhpstanConfig;
 use Tests\OriPhpstan\Nette\Toolkit\VendorDirectory;
+use function array_diff;
+use function array_filter;
+use function array_values;
 use function dirname;
 use function explode;
 use function implode;
@@ -20,9 +24,9 @@ use function uniqid;
 use const PHP_BINARY;
 
 // Task 1 (DiscoveryRecords::mayReachALayout()) stops emitting a layout record for a class that
-// provably renders no view. That gate only matters if the store's own granular invalidation
-// channel then carries the dropped record to the previously-linked layout template on a WARM run -
-// otherwise the layout keeps analysing under a stale link forever. This mirrors
+// provably renders no view. That gate only matters if the dropped record then reaches the
+// previously-linked layout template on a WARM run - otherwise the layout keeps analysing under a
+// stale link forever. This mirrors
 // DiscoveryStoreInvalidationTest's spawn/store harness (its own header comment explains the two-hop
 // mechanism in full) with LatteDiscoveryDiagnosticsIntegrationTest's mapping-loader trick standing in
 // for the missing container, which is what makes formatLayoutTemplateFiles() produce a layout
@@ -142,18 +146,18 @@ PHP);
 			// mayReachALayout() gate must therefore stop appending the layout record.
 			FileSystem::delete($srcDir . '/templates/SpawnLayout/default.latte');
 
-			// Run 4: the pre-analysis build re-derives the presenter's facts ahead of this run's
-			// own parse and rewrites both template store files to empty content, but (mirroring
-			// DiscoveryStoreInvalidationTest's own generational lag) ResultCacheManager hashed this
-			// run's files BEFORE that rewrite, so the byte change is invisible to THIS run's restore
-			// and only the store's on-disk state - not the reanalysis count - moves here.
+			// Run 4: the pre-analysis build re-derives the presenter's facts ahead of this run's own
+			// parse and rewrites both template store files to empty content. The layout template's
+			// tracked neighbourhood value moves with its record and the presenter's tracked render facts
+			// with its vanished view, so both are re-analysed on this very run. The rewritten store files
+			// sit inside the analysed paths here, and PHPStan re-analyses them on this run or the next
+			// one depending on whether the rewrite landed in the second it hashed them; they are left out.
 			$run4 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, $mappingLoader);
 			self::assertSame($run1['output'], $run4['output']);
-			self::assertStringContainsString(
-				'Result cache restored. 0 files will be reanalysed.',
-				$run4['diagnostics'],
-				'run 4 pays for the rewrite only in store bytes, not yet in reanalysis: '
-				. $run4['diagnostics'],
+			self::assertSame(
+				['SpawnLayoutPresenter.php', 'templates/@layout.latte'],
+				self::withoutStoreFiles($run4['analysed']),
+				'run 4 must reanalyse the previously linked layout: ' . $run4['diagnostics'],
 			);
 			$store4 = new DiscoveryStore($storeDir);
 			self::assertSame(
@@ -162,28 +166,31 @@ PHP);
 				'the dropped view must empty the layout link through the gated writer',
 			);
 
-			// Run 5: the store files rewritten during run 4 now read as changed against run 4's own
-			// saved meta. The layout template's store file is one of them, and the layout template
-			// is its self-referencing dependent (DiscoveryStore's own template->store-class edge -
-			// same channel DiscoveryStoreInvalidationTest's run 5 exercises); the (now nonexistent)
-			// view template's store file is the other changed file, with no dependent left to
-			// propagate to. The class index is untouched - the presenter still has a discovery, just
-			// with zero records - so the account is exactly 3, and templates/@layout.latte is
-			// necessarily among them: this is the store's changed RECORDS_HASH reaching its linked
-			// template, the whole mechanism this test exists to pin.
+			// Run 5: at most PHPStan's own pass over the rewritten store files and their native
+			// dependents, the templates referencing them; nothing else.
 			$run5 = $this->spawn($projectRoot, $srcDir, $tmpDir, $storeDir, $mappingLoader);
 			self::assertSame($run1['output'], $run5['output']);
-			self::assertStringContainsString(
-				'Result cache restored. 3 files will be reanalysed.',
+			self::assertSame(
+				[],
+				array_values(array_diff(self::withoutStoreFiles($run5['analysed']), ['templates/@layout.latte'])),
 				$run5['diagnostics'],
-				'run 5 must reanalyse exactly the two now-empty store files and the layout template '
-				. 'that self-references one of them: ' . $run5['diagnostics'],
 			);
 			$store5 = new DiscoveryStore($storeDir);
 			self::assertSame([], $store5->recordsForTemplate($layoutRel));
 		} finally {
 			FileSystem::delete($scratch);
 		}
+	}
+
+	/**
+	 * @param list<string> $analysed
+	 * @return list<string>
+	 */
+	private static function withoutStoreFiles(array $analysed): array
+	{
+		return array_values(
+			array_filter($analysed, static fn (string $file): bool => strpos($file, 'discovery/') !== 0),
+		);
 	}
 
 	private function createScratchDir(string $projectRoot): string
@@ -198,7 +205,7 @@ PHP);
 	}
 
 	/**
-	 * @return array{output: string, diagnostics: string}
+	 * @return array{output: string, diagnostics: string, analysed: list<string>}
 	 */
 	private function spawn(
 		string $projectRoot,
@@ -220,6 +227,7 @@ PHP);
 			],
 		);
 
+		$log = new AnalysedFileLog($isolated->getConfigPath(), $tmpDir);
 		$process = new Process(
 			[
 				PHP_BINARY,
@@ -230,9 +238,10 @@ PHP);
 				'--error-format=raw',
 				'-vv',
 				'-c',
-				$isolated->getConfigPath(),
+				$log->getConfigPath(),
 			],
 			$projectRoot,
+			$log->env(),
 		);
 		$process->run();
 
@@ -241,6 +250,7 @@ PHP);
 		return [
 			'output' => $this->normalize($rawOutput ?? $process->getOutput(), $projectRoot),
 			'diagnostics' => $process->getErrorOutput(),
+			'analysed' => $log->read($srcDir),
 		];
 	}
 

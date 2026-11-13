@@ -98,7 +98,7 @@ final class ConstructorFormShapeResolver
 		$this->reflectionProvider = $reflectionProvider;
 		$this->catalog = $catalog;
 		$this->cache = $cache;
-		$this->methodLocator = new TraitAwareMethodLocator($parser);
+		$this->methodLocator = new TraitAwareMethodLocator($parser, $cache->recorder());
 	}
 
 	public function resolve(string $fqcn): ?FormShape

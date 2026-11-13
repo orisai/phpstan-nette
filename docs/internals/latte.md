@@ -747,8 +747,9 @@ depth D, propagation is bounded by D+1 runs — an upper bound, and in practice 
 context resolution re-walks the whole include graph fresh each run, so narrowing that doesn't
 depend on a previous hop's *captures* (only on its declarations) can travel several hops at
 once; `NarrowingConvergenceTest` pins the bound on the fixture corpus. Runs stay
-incremental throughout: a changed slice file's content hash is what triggers PHPStan's own
-restore-gate to re-parse exactly its dependents, never a wholesale cache clear.
+incremental throughout: every template depends on the slice files of its transitive includers as
+plain file dependencies, so a changed slice re-analyses exactly its readers, never a wholesale cache
+clear, wherever the store lives.
 
 ### Degradation direction
 
@@ -1149,10 +1150,10 @@ macros into one hash:
 
 Two independent caches consume this salt:
 
-- **PHPStan's own result cache** — `LatteResultCacheMeta` folds `sha1(canonical HarvestedCustoms)`
-  into the existing edge-topology hash — any harvest change (a config edit, a factory change, a
-  `latte/latte`/`nette/application` update that changes what gets enumerated) invalidates the whole
-  `.latte` surface at once, the same coarse trade the topology salt already makes.
+- **PHPStan's own result cache** — every analysed template tracks the `harvest` value of
+  `LatteTemplateValueExtension` (declared by `LatteDependencyRule`), valued by this salt: any harvest
+  change (a config edit, a factory change, a `latte/latte`/`nette/application` update that changes what
+  gets enumerated) re-analyses every `.latte` file and no PHP file.
 - **`LatteCompiler`'s own compile cache** (`LatteAnalysisCache`, keyed under `LatteCodeVersion`) —
   the cached `CompileResult` bakes in harvest-dependent shapes (native macros vs. passthrough,
   `orisai.nette.latte.unknownMacro`, case-mismatch diagnostics), so `compile()`'s content-addressed key is
@@ -1520,8 +1521,9 @@ artifact a previous run left behind. Deleting the directory costs nothing but th
 - **Setup**: none. There is no `*-init` target and no freshness gate, because there is nothing to
   drift from.
 - **Who writes it**: `PreAnalysisIndexBuilder`, once, coordinator-side, triggered as a side effect of
-  `LatteResultCacheMeta`'s pre-analysis phase — the one seam that runs before any file is handed to
-  the analyser. It needs only a `ReflectionProvider` and its own parser: the scope-free
+  `LatteResultCacheMeta::getHash()` — the one seam that runs before any file is handed to the analyser
+  (a deprecated `ResultCacheMetaExtension` whose hash is a constant; PHPStan 2.3 has no other
+  pre-analysis hook). It needs only a `ReflectionProvider` and its own parser: the scope-free
   `PhpRenderWalk` consumes no analysis results, which is what makes the placement possible. The
   build contributes **no term** to the meta hash, because a meta hash that moved would wipe the whole
   result cache.
@@ -1530,9 +1532,10 @@ artifact a previous run left behind. Deleting the directory costs nothing but th
   is what makes a path-narrowing spawn derive the same index a full run does. An excluded template
   gains no store file even when an analysed template includes it; a template whose findings are all
   silenced by `ignoreErrors` is analysed normally and still gets one.
-- Each store file exports a `RECORDS_HASH` constant whose *value* is what PHPStan's own exported-node
-  diffing watches, so a record change re-analyses exactly the templates that reference it — in the
-  layout where the store sits inside `%paths%` (see *Store-path precondition* below). Every template
+- What a template reads from the store is tracked per template: its `neighbourhood` value (below)
+  folds the records, discovery edges and auto-layout ancestors of every template it is connected to,
+  so a record change re-analyses exactly those templates on the same run, wherever the store lives.
+  Each store file still exports a `RECORDS_HASH` constant, which the compiled template fetches. Every template
   in the universe gets a file, linked or not — an empty one is the recorded fact that nothing links
   that template, not a gap.
 - The whole feature is gated by `orisai.nette.latte.discovery.enabled` (library default **on**) and is
@@ -1630,49 +1633,18 @@ also moves that folded type — and a wrongly-narrowed type invents findings rat
 one. Layout reachability's correctness is therefore now a false-positive-safety property for the
 merge, not only a detection-completeness property for `orisai.nette.latte.orphanTemplate`/`orisai.nette.latte.unknownBlock`.
 
-### Store-path precondition (granular vs. coarse invalidation)
+### Store location
 
-**The default `orisai.nette.latte.discovery.storePath` (`%tmpDir%/orisai-nette/latte-discovery`) sits OUTSIDE the analysed
-`%paths%`, and that is a deliberate trade.** A store file's changed `RECORDS_HASH` reaches its linked
-template through PHPStan's own dependency machinery, and that machinery tracks nothing outside the
-analysed set. Outside `%paths%` the analysis stays *correct* — `LatteResultCacheMeta` falls back to a
-whole-store **content** salt — but the regime degrades: a change to any record then discards the
-entire result cache instead of re-analysing just the templates that reference it. This is not
-hypothetical; it was proven by constructing a second-renderer mismatch that never surfaced on any
-number of warm runs while a cold run reported it.
+The default `orisai.nette.latte.discovery.storePath` (`%tmpDir%/orisai-nette/latte-discovery`) sits outside the
+analysed `%paths%`, and that costs nothing: a template's dependency on the store is a value
+(`LatteTemplateValueExtension`'s `neighbourhood`), which PHPStan compares wherever the store lives, not an exported
+node of an analysed file. A store placed inside `%paths%` additionally sweeps its generated files into the analysed set,
+where PHPStan re-analyses each rewritten one ("changed during the analysis") on the following run; they contribute no
+finding of their own (apart from dead-constant reports a dead-code detector may raise on their `RECORDS_HASH` constants).
+`orisai.nette.latte.discovery.coarseInvalidationAccepted` no longer has any effect.
 
-Class resolution is *not* part of the trade. `LatteTemplateSourceLocator` reflects the store's
-generated classes straight out of the store directory, so a compiled template's self-reference
-resolves identically in either layout; only result-cache granularity moves.
-
-The cost is bounded to *record* changes — a renderer's template surface moving — and a template-SET
-change already discarded the whole cache in either regime. What buys it is that the store is one
-directory in one cache location, purged with `%tmpDir%`, ignored by git, cs and lint by virtue of
-living there, and kept out of the analysed set.
-
-The granular channel is narrower than it reads. Placing the store under `%paths%` sweeps its
-generated files into the analysed set, and they contribute no finding of their own (apart from
-dead-constant reports a dead-code detector may raise on their `RECORDS_HASH` constants). And
-retargeting one renderer to another existing template — the canonical record change — also moves a
-discovery *marker*, so it moves this extension's own edge-topology salt through
-`TemplateEdgeIndex::ingestDiscovery()` and wipes the whole cache in *either* layout. Only a
-`certainty`-only record move — the one record field deliberately kept out of the marker — is left
-for the granular channel to narrow.
-
-A consumer who would rather pay a full run only on a set change can still point
-`orisai.nette.latte.discovery.storePath` at a directory inside one of its `%paths%`; nothing else in the extension
-changes. Budget for the rest of it: the directory then has to be gitignored and excluded from
-whatever coding-standard and lint sweeps cover that path, and its files join the analysed count.
-Measure before buying it — the win only appears for record changes that leave every marker
-(`class`, `kind`, `view`) alone.
-
-With an **empty `%paths%`** — PHPStan's own default, where the analysed set arrives on the command
-line — the store can never be inside the analysed set, so the coarse regime is *permanent* and the
-"keep it inside `%paths%`" advice is unfollowable. That one case says so out loud: a once-per-process
-note on STDERR (machine-readable stdout and the `[OK]` verdict untouched), silenced by
-`orisai.nette.latte.discovery.coarseInvalidationAccepted: true` for a CLI-driven workflow that means it.
-Every other coarse layout is fixable by moving the store and stays silent — a project which declares
-`%paths%` never prints the note and never needs the flag.
+Class resolution does not depend on the location either: `LatteTemplateSourceLocator` reflects the store's generated
+classes straight out of the store directory.
 
 ### Discovery diagnostics
 
@@ -2383,26 +2355,30 @@ And the implementation-ledgered additions:
   own hierarchy. A body-only edit leaves every signature byte-identical, so
   `ResultCacheManager::exportedNodesChanged()` returns null and the dependent-files loop is never
   reached; the paired class is not a dependency of the template at all; and neither fact moves a
-  discovery record, so the store file's `RECORDS_HASH` stays identical and the one-run-later
-  recovery below never fires. Answered per-file (as `templateTypeMismatch`/`templateTypeRequired`
+  discovery record, so no tracked neighbourhood value moves either. Answered per-file (as `templateTypeMismatch`/`templateTypeRequired`
   were until this was fixed), the finding went permanently stale in **both** directions — a missing
   mismatch after the edit, a phantom one naming a class the renderer no longer pairs after the
   revert, both surviving repeated warm runs at *0 files will be reanalysed*. The aggregate placement
   needs no cache salt and no invalidation edge, so it costs the store's propagation granularity
-  nothing. Pinned by a 24-scenario cold-vs-warm matrix
+  nothing. It must also never be replayed from a previous run: under `reuseCollectedDataRuleErrors`
+  the rule tracks `RerunValueExtension`, a value no two runs share. Pinned by a cold-vs-warm matrix
   (`tests/Integration/Latte/Invalidation/`) covering file-level events, signature-level
   edits, body-only edits at every hop distance, and inverse controls that fail if invalidation is
   ever made coarse to buy the agreement.
 - **Result-cache invalidation across include edges** uses three complementary mechanisms: PHPStan's
   own per-file content hash (an edited `.latte` always re-analyzes itself); an exported edge
   fingerprint constant on each compiled class, so a change to a file's outgoing sites or
-  cross-file-consumed facts propagates to its dependents; and a topology-salted
-  `ResultCacheMetaExtension` that closes the one gap the other two miss — a *brand-new* include of
-  an otherwise-unchanged file. That same meta extension also carries the global harvest salt (see
-  *Custom filters, functions and macros* above) — both salts invalidate coarsely, the whole `.latte`
-  surface at once, on the same accepted-cost basis. Topology changes are rare enough that
-  invalidating the whole result cache on them is the accepted cost; content-only edits stay
-  fine-grained. PHPStan's own
+  cross-file-consumed facts propagates to its dependents; and the `neighbourhood` value every template
+  tracks (`TemplateNeighbourhood::digest()`): the edges of the template's connected component in the
+  template graph (explicit include/layout/import/embed edges, discovery-derived layout edges and their
+  ancestors) and every member's discovery records. A *brand-new* include of an otherwise-unchanged
+  file, a removed one, or a moved record re-analyses that component and nothing else
+  (`IncludeTopologyInvalidationTest`). The component is the smallest set no context, block table or
+  layout walk leaves, since a template is analysed per incoming context, transitively. The global
+  harvest salt and the template factory wiring are two more values every template tracks. With
+  narrowing on, a template also tracks the slice file of every transitive includer — the captures
+  `ContextResolver` overlays — as a plain file dependency, which holds wherever the store lives.
+  PHPStan's own
   propagation from a changed dependency to its dependents is **single-hop**: it fires only for files
   whose OWN content hash genuinely changed, not recursively for files that merely got swept along as
   a dependent-of-a-dependent. `{templateType C}` support therefore gives EVERY `.latte` file a direct
@@ -2417,6 +2393,11 @@ And the implementation-ledgered additions:
   `TemplateTypeCustomsTransitiveInvalidationTest` (A includes B, B declares `{templateType C}`, A
   never touches C's file directly — proven RED against the direct-edge-only fix, GREEN once the
   transitive walk was added).
+- **PHP-side render facts** are tracked per class: `LatteDiscoveryRule`, `LattePairingRule` and the
+  render-facts dumps declare `LatteRenderFactsValueExtension` for the class they describe, valued by
+  `PhpRenderFacts::getCanonicalHash()`. The facts are read off ancestors' method bodies, probed template
+  paths, listed directories and the live container, none of which the class's own file reflects, so a
+  body edit two classes up or a view template appearing re-analyses the class on the same run.
 
 ## Outlook
 

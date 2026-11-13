@@ -8,12 +8,8 @@ use function array_merge;
 /**
  * Group C - the edits that leave every exported node byte-identical. This is where the hole lived:
  * PHPStan's result cache re-queues a changed file's dependents only when its exported nodes move,
- * and every field a Forms consumer reads is added inside a method body.
- *
- * No scenario here carries a maxReanalysed bound. Closing this class of edit costs a whole-cache
- * invalidation by construction - a ResultCacheMetaExtension is the only in-contract channel and it
- * has no per-file granularity - so bounding the reanalysed count here would be asserting the fix
- * cannot exist. The bounds live on the inverse controls instead, which is where they discriminate.
+ * and every field a Forms consumer reads is added inside a method body. Each file that read a shape
+ * depends on the files the shape was read from, so the delegate row pins the exact set re-analysed.
  */
 final class BodyLevelInvalidationTest extends FormsInvalidationMatrixCase
 {
@@ -178,6 +174,7 @@ final class BodyLevelInvalidationTest extends FormsInvalidationMatrixCase
 					'ctorField: string, traitField: string',
 					'ctorField: string, factoryField: bool',
 				),
+				'reanalysed' => ['ScratchChildControl.php', 'ScratchFormFactory.php'],
 			],
 		]);
 	}

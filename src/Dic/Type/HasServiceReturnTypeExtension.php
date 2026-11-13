@@ -48,7 +48,7 @@ final class HasServiceReturnTypeExtension implements DynamicMethodReturnTypeExte
 			return null;
 		}
 
-		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var));
+		$resolution = $this->registry->resolveProfiles($scope->getType($methodCall->var), $scope);
 		if ($resolution === null || $resolution->getProfiles() === []) {
 			return null;
 		}
@@ -70,6 +70,7 @@ final class HasServiceReturnTypeExtension implements DynamicMethodReturnTypeExte
 				$constantString->getValue(),
 				false,
 				$resolution->getProfiles(),
+				$scope,
 			);
 
 			if (in_array(false, $existence, true)) {

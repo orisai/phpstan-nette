@@ -9,6 +9,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Rules\TipRuleError;
 use ReflectionMethod;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
+use Tests\OriPhpstan\Nette\Toolkit\RecordingDependencyTracker;
 
 // Mirrors LatteFixStrippingRuleFileErrorTest: appendTip() is a private static method taking
 // (IdentifierRuleError, string, DependencyTracker), so it is reflection-invokable directly, with no

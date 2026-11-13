@@ -11,11 +11,11 @@ services:
 			loaderFile: @orisai.nette.configuration::get(dic.containerLoader)
 
 	-
-		class: OriPhpstan\Nette\Dic\Cache\ContainerResultCacheMetaExtension
+		class: OriPhpstan\Nette\Dic\Cache\ContainerValueExtension
 		arguments:
 			guard: @orisai.nette.configurationGuard
 		tags:
-			- phpstan.resultCacheMetaExtension
+			- phpstan.resultCacheValueExtension
 
 	-
 		class: OriPhpstan\Nette\Dic\Rule\ServiceNameCallRule

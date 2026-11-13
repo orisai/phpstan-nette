@@ -6,6 +6,7 @@ use Nette\Forms\Container as NetteContainer;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Forms\Shape\FormShape;
 use OriPhpstan\Nette\Forms\Support\BoundedMap;
+use PHPStan\Analyser\DependencyTracker;
 use Throwable;
 use function array_key_exists;
 use function fclose;
@@ -15,7 +16,6 @@ use function glob;
 use function is_array;
 use function is_dir;
 use function is_file;
-use function is_string;
 use function serialize;
 use function sha1;
 use function uniqid;
@@ -102,10 +102,10 @@ final class FormShapeCache
 		$catalogs = $this->catalogIdentity !== null ? $this->catalogIdentity->get() : '';
 		$directory = $catalogs === '' ? $this->versionedDirectory : $this->versionedDirectory . '-' . $catalogs;
 
-		// Content-validated, so no clearing — only drop directories from older analyser
-		// versions, once, from the main process (workers share this run's directory).
-		$isWorker = ($_SERVER['argv'][1] ?? null) === 'worker';
-		if (!$isWorker && !isset(self::$prunedBaseDirectories[$this->baseDirectory])) {
+		// Content-validated, so no clearing — only drop directories of other analyser versions, once
+		// per process. Every process of a run shares this run's directory, and the main process may
+		// never open the store at all now that a run answered from the result cache needs no salt.
+		if (!isset(self::$prunedBaseDirectories[$this->baseDirectory])) {
 			self::$prunedBaseDirectories[$this->baseDirectory] = true;
 			self::pruneOtherVersions($this->baseDirectory, $directory);
 		}
@@ -126,6 +126,16 @@ final class FormShapeCache
 	public function codeVersion(): string
 	{
 		return $this->codeVersion;
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $compute
+	 * @return T
+	 */
+	public function trackDependencies(DependencyTracker $tracker, callable $compute)
+	{
+		return $this->recorder->track($tracker, $compute);
 	}
 
 	public function recordShapeDependencies(FormShape $shape): void
@@ -202,51 +212,6 @@ final class FormShapeCache
 		} finally {
 			$this->releaseLock($lock);
 		}
-	}
-
-	/**
-	 * FormFactSalt's whole-universe token scan, content-addressed by the same universe manifest —
-	 * see rememberRegistrationIndex above for why a hit needs no per-dependency validation. Kept
-	 * separate from that method rather than generalised: the two blobs have different value shapes
-	 * and the validation of a decoded blob is exactly what must not be shared blindly.
-	 *
-	 * @param callable(): string $compute
-	 */
-	public function rememberFormFactSalt(string $manifest, callable $compute): string
-	{
-		$key = sha1('factsalt|' . $manifest);
-
-		$loaded = $this->readFormFactSaltEntry($key);
-		if ($loaded !== null) {
-			return $loaded;
-		}
-
-		$lock = $this->acquireLock($key);
-		try {
-			$loaded = $this->readFormFactSaltEntry($key);
-			if ($loaded !== null) {
-				return $loaded;
-			}
-
-			$value = $compute();
-			$this->writeAtomic($key, serialize($value));
-
-			return $value;
-		} finally {
-			$this->releaseLock($lock);
-		}
-	}
-
-	private function readFormFactSaltEntry(string $key): ?string
-	{
-		$cached = self::readFile($this->directory() . '/' . $key . '.ser');
-		if ($cached === null) {
-			return null;
-		}
-
-		$entry = unserialize($cached);
-
-		return is_string($entry) ? $entry : null;
 	}
 
 	/**

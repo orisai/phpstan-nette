@@ -23,6 +23,14 @@ final class CatalogInvalidationTest extends FormsInvalidationMatrixCase
 						$this->catalogSource('float float'),
 					),
 					'expect' => array_merge($this->seedErrors(), [$this->catalogDump("''|float")]),
+					'reanalysed' => [
+						'ScratchCatalogControl.php',
+						'ScratchChildControl.php',
+						'ScratchFormFactory.php',
+						'ScratchGrandParentControl.php',
+						'ScratchParentControl.php',
+						'ScratchRuleCatalog.php',
+					],
 				],
 			],
 			function (InvalidationScenario $scenario): void {

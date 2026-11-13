@@ -29,6 +29,8 @@ final class ComponentAccessTypeResolver implements ExpressionTypeResolverExtensi
 
 	private bool $enabled;
 
+	private FormShapeCache $cache;
+
 	private Parser $parser;
 
 	private ComponentClassResolver $resolver;
@@ -58,11 +60,21 @@ final class ComponentAccessTypeResolver implements ExpressionTypeResolverExtensi
 		// analysed paths (and in the stub validator's container too), so validate on first use.
 		$this->guard = $guard;
 		$this->enabled = $enabled;
+		$this->cache = $cache;
 		$this->parser = $parser;
 		$this->resolver = new ComponentClassResolver($cache, $catalogReader, $richParser, $analysedPaths);
 	}
 
 	public function getType(Expr $expr, Scope $scope): ?Type
+	{
+		if (!$this->enabled || !$expr instanceof ArrayDimFetch || $expr->dim === null) {
+			return null;
+		}
+
+		return $this->cache->trackDependencies($scope, fn (): ?Type => $this->getTypeUntracked($expr, $scope));
+	}
+
+	private function getTypeUntracked(Expr $expr, Scope $scope): ?Type
 	{
 		if (!$this->enabled) {
 			return null;
