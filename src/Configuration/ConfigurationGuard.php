@@ -8,6 +8,7 @@ use OriPhpstan\Nette\Forms\Catalog\Stub\FormReplicatorCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormRuleTypeCatalog;
 use OriPhpstan\Nette\Forms\Catalog\Stub\FormValueTypeCatalog;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use OriPhpstan\Nette\Support\ProjectInstalledVersions;
 use PHPStan\Reflection\ReflectionProvider;
 use function array_keys;
@@ -59,6 +60,8 @@ final class ConfigurationGuard
 
 	private ProjectInstalledVersions $installedVersions;
 
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
 	private bool $validated = false;
 
 	/**
@@ -68,9 +71,11 @@ final class ConfigurationGuard
 		Configuration $configuration,
 		array $fileExtensions,
 		ReflectionProvider $reflectionProvider,
-		ProjectInstalledVersions $installedVersions
+		ProjectInstalledVersions $installedVersions,
+		?BootstrapFilesLoader $bootstrapFilesLoader = null
 	)
 	{
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 		$this->config = $configuration->toArray();
 		$this->fileExtensions = $fileExtensions;
 		$this->reflectionProvider = $reflectionProvider;
@@ -105,6 +110,12 @@ final class ConfigurationGuard
 			if ($path !== null && (!is_file($path) || !is_readable($path))) {
 				throw new InvalidConfiguration(sprintf('orisai.nette.%s "%s" is not a readable file.', $key, $path));
 			}
+		}
+
+		// The coordinator validates before PHPStan runs %bootstrapFiles%, and a catalog class may be
+		// loadable only through an autoloader they register.
+		if ($this->config['forms']['catalogs'] !== [] && $this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
 		}
 
 		foreach ($this->config['forms']['catalogs'] as $catalog) {

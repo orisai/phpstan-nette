@@ -168,7 +168,8 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 	// to exactly the target(s) that reference it, on a plain warm run, with zero cache clearing.
 	// Empirically verified with `vendor/bin/phpstan -vv` on this exact fixture: with every fixture
 	// includer's slice pre-seeded (so no BRAND NEW file appears between runs to confound the
-	// signal), run 2 reanalyses exactly 2 files (the changed slice + its one dependent target).
+	// signal), run 2 reanalyses exactly 3 files (the changed slice, its one dependent target and the
+	// includer, whose own include checks read the captures it wrote).
 	public function testSliceFileContentChangePropagatesToItsTargetOnAPlainWarmRun(): void
 	{
 		$projectRoot = dirname(__DIR__, 4);
@@ -232,10 +233,11 @@ final class ResultCacheInvalidationTest extends BaseTestCase
 				. "while the unrelated file's error survives byte-for-byte: " . $run2['diagnostics'],
 			);
 			self::assertStringContainsString(
-				'2 files will be reanalysed',
+				'3 files will be reanalysed',
 				$run2['diagnostics'],
-				'exactly the changed slice and its one dependent target must be reanalysed - never a '
-				. 'whole-cache invalidation, never a silent 0-file no-op: ' . $run2['diagnostics'],
+				'exactly the changed slice, its one dependent target and the includer whose own include checks '
+				. 'read it must be reanalysed - never a whole-cache invalidation, never a silent 0-file no-op: '
+				. $run2['diagnostics'],
 			);
 
 			$sliceAfterRun2 = FileSystem::read($sliceFile);

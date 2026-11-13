@@ -51,7 +51,10 @@ final class UnannotatedRegistrarTest extends TypeInferenceTestCase
 	/**
 	 * @param list<string> $analysedPaths
 	 */
-	private function catalog(array $analysedPaths): NetteEffectiveControlValueTypeResolver
+	private function catalog(
+		array $analysedPaths,
+		?FormShapeCache $cache = null
+	): NetteEffectiveControlValueTypeResolver
 	{
 		$parser = self::getContainer()->getService('currentPhpVersionRichParser');
 		assert($parser instanceof Parser);
@@ -64,7 +67,9 @@ final class UnannotatedRegistrarTest extends TypeInferenceTestCase
 			new CalleeShapeResolver(
 				$parser,
 				self::createReflectionProvider(),
-				new FormShapeCache(sys_get_temp_dir() . '/forms-unannotated-registrar-test-' . uniqid('', true)),
+				$cache ?? new FormShapeCache(
+					sys_get_temp_dir() . '/forms-unannotated-registrar-test-' . uniqid('', true),
+				),
 			),
 			$analysedPaths,
 		);
@@ -168,6 +173,41 @@ final class UnannotatedRegistrarTest extends TypeInferenceTestCase
 				self::assertFalse($resolver->bodyRefutesNameConvention('addText', $receiver, $scope));
 				self::assertFalse($resolver->bodyRefutesNameConvention('addSelect', $receiver, $scope));
 				self::assertFalse($resolver->bodyRefutesNameConvention('addContainer', $receiver, $scope));
+			},
+		);
+
+		self::assertTrue($asserted);
+	}
+
+
+	// The memo serves every file a worker analyses: a hit must still make the asking file depend on
+	// the registrar body the first read parsed.
+	public function testAMemoHitReplaysTheRegistrarBodysFile(): void
+	{
+		$asserted = false;
+
+		self::processFile(
+			dirname(__DIR__, 2) . '/Doubles/Forms/UnannotatedRegistrarCalls.php',
+			function (Node $node, Scope $scope) use (&$asserted): void {
+				if ($asserted || !$node instanceof Expression) {
+					return;
+				}
+
+				$asserted = true;
+				$cache = new FormShapeCache(
+					sys_get_temp_dir() . '/forms-unannotated-registrar-test-' . uniqid('', true),
+				);
+				$resolver = $this->catalog([self::FOREIGN], $cache);
+				$receiver = new ObjectType(UnannotatedRegistrarContainer::class);
+				$file = self::createReflectionProvider()->getClass(UnannotatedRegistrarContainer::class)->getFileName();
+
+				foreach (['first read', 'memo hit'] as $read) {
+					[$refutes, $dependencies] = $cache->recorder()->capture(
+						static fn (): bool => $resolver->bodyRefutesNameConvention('addLabelled', $receiver, $scope),
+					);
+					self::assertTrue($refutes);
+					self::assertArrayHasKey((string) $file, $dependencies, $read);
+				}
 			},
 		);
 

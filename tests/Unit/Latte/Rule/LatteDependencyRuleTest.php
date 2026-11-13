@@ -39,7 +39,7 @@ final class LatteDependencyRuleTest extends BaseTestCase
 	/**
 	 * @group latte2
 	 */
-	public function testATemplateTracksItsNeighbourhoodTheGlobalsAndEveryIncludersSlice(): void
+	public function testATemplateTracksItsNeighbourhoodTheGlobalsEveryIncluderAndEverySlice(): void
 	{
 		[$values, $files] = $this->track(true, $this->dir . '/c.latte');
 
@@ -48,22 +48,32 @@ final class LatteDependencyRuleTest extends BaseTestCase
 				LatteTemplateValueExtension::HARVEST,
 				LatteTemplateValueExtension::TEMPLATE_FACTORY,
 				LatteTemplateValueExtension::neighbourhoodKey('c.latte'),
+				LatteTemplateValueExtension::harvestHostKey('c.latte'),
 			],
 			$values,
 		);
 		self::assertSame(
-			[$this->store()->slicePath('a.latte'), $this->store()->slicePath('b.latte')],
+			[
+				$this->dir . '/a.latte',
+				$this->dir . '/b.latte',
+				$this->store()->slicePath('c.latte'),
+				$this->store()->slicePath('a.latte'),
+				$this->store()->slicePath('b.latte'),
+			],
 			$files,
-			'the slices of every transitive includer feed the contexts, the target\'s own never does',
+			'an includer\'s arguments reach every template below it, and the template\'s own include checks read its own slice',
 		);
 	}
 
-	public function testNarrowingOffTracksNoSlice(): void
+	/**
+	 * @group latte2
+	 */
+	public function testNarrowingOffTracksTheIncludersButNoSlice(): void
 	{
 		[$values, $files] = $this->track(false, $this->dir . '/c.latte');
 
-		self::assertCount(3, $values);
-		self::assertSame([], $files);
+		self::assertCount(4, $values);
+		self::assertSame([$this->dir . '/a.latte', $this->dir . '/b.latte'], $files);
 	}
 
 	public function testAPhpFileTracksNothing(): void

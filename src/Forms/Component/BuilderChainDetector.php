@@ -4,7 +4,6 @@ namespace OriPhpstan\Nette\Forms\Component;
 
 use Nette\Forms\Container as NetteContainer;
 use Nette\Forms\Form as NetteForm;
-use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
@@ -16,7 +15,6 @@ final class BuilderChainDetector
 	public static function detect(
 		MethodCall $call,
 		Scope $scope,
-		FormShapeCache $cache,
 		?string $receiverClass = null
 	): ?BuilderChainDetection
 	{
@@ -40,14 +38,9 @@ final class BuilderChainDetector
 			return null;
 		}
 
-		$declaringClass = $methodReflection->getDeclaringClass();
-		$factoryKey = InterproceduralShapeKey::forFactoryMethod($declaringClass->getName(), $methodName);
-		$cached = $cache->lookupInterprocedural($factoryKey);
-		if ($cached !== null) {
-			return BuilderChainDetection::cacheHit($cached);
-		}
-
-		return BuilderChainDetection::cacheMiss($declaringClass, $methodName);
+		// Never answered from the factory-method shape entry: its producer joins every return arm, each
+		// caller below computes its own way, and a hit would make the answer depend on which ran first.
+		return new BuilderChainDetection($methodReflection->getDeclaringClass(), $methodName);
 	}
 
 }

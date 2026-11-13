@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Forms\Analyzer;
 
 use Nette\Forms\Container as NetteContainer;
 use Nette\Utils\FileSystem;
+use OriPhpstan\Nette\Forms\Cache\DependencyRecorder;
 use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
 use OriPhpstan\Nette\Forms\Graph\ClosureScope;
 use OriPhpstan\Nette\Forms\Support\BoundedMap;
@@ -93,6 +94,11 @@ final class CalleeShapeResolver
 	 * same one rather than being handed a second opinion — the funnel's poisoning rule (one parser per
 	 * FormShapeCache) is a property of the whole stack, not of this class alone.
 	 */
+	public function recorder(): DependencyRecorder
+	{
+		return $this->cache->recorder();
+	}
+
 	public function getRichParser(): Parser
 	{
 		return $this->richParser;

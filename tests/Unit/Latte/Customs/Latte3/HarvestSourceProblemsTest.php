@@ -74,6 +74,12 @@ final class HarvestSourceProblemsTest extends BaseTestCase
 				$reporter->diagnosticsFor('src/a.latte'),
 			),
 		);
+		self::assertSame('none', $reporter->hostValue('src/b.latte'));
+
+		FileSystem::delete($this->root . '/src/a.latte');
+		$reporter = new HarvestProblemReporter($harvester, new LatteUniverse([$this->root . '/src'], $this->root));
+		self::assertNotSame('none', $reporter->hostValue('src/b.latte'), 'the next template takes the report over');
+		self::assertCount(1, $reporter->diagnosticsFor('src/b.latte'));
 	}
 
 	public function testUnlistableShallowDirectoryIsReportedRelativeToTheProjectRoot(): void

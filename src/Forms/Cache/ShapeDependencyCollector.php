@@ -3,7 +3,6 @@
 namespace OriPhpstan\Nette\Forms\Cache;
 
 use OriPhpstan\Nette\Forms\Shape\FormShape;
-use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\Type;
 use function ltrim;
@@ -93,35 +92,7 @@ final class ShapeDependencyCollector
 
 	private function recordHierarchy(string $fqcn): void
 	{
-		if (!$this->reflectionProvider->hasClass($fqcn)) {
-			return;
-		}
-
-		$class = $this->reflectionProvider->getClass($fqcn);
-
-		$lineage = [$class];
-		foreach ($class->getParents() as $parent) {
-			$lineage[] = $parent;
-		}
-
-		foreach ($class->getInterfaces() as $interface) {
-			$lineage[] = $interface;
-		}
-
-		foreach ($lineage as $reflection) {
-			$this->recordFile($reflection);
-			foreach ($reflection->getTraits(true) as $trait) {
-				$this->recordFile($trait);
-			}
-		}
-	}
-
-	private function recordFile(ClassReflection $class): void
-	{
-		$file = $class->getFileName();
-		if ($file !== null) {
-			$this->recorder->record($file);
-		}
+		(new ExpressionDependencies($this->reflectionProvider, $this->recorder))->recordClass($fqcn);
 	}
 
 }

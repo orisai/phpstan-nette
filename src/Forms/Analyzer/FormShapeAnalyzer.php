@@ -238,6 +238,13 @@ final class FormShapeAnalyzer
 			}
 
 			if ($fallbackClassName === null) {
+				// No entry is written for this answer, so the enclosing one must depend on what made the
+				// origin unresolvable, e.g. a constructed class that does not exist yet.
+				$this->factory->recordExpressionDependencies(
+					$functionLike->getStmts() ?? [],
+					$this->callees->enclosingClassName($astFile ?? $scope->getFile(), $functionLike),
+				);
+
 				return FormShape::empty('\\' . ($classes[0] ?? 'mixed'));
 			}
 		}
@@ -291,6 +298,7 @@ final class FormShapeAnalyzer
 
 				$this->literalNameEnv = $this->buildLiteralNameEnv($rootStmts);
 				$this->walkOwnerClass = $this->callees->enclosingClassName($file, $functionLike);
+				$this->factory->recordExpressionDependencies($rootStmts, $this->walkOwnerClass);
 				$this->eventStoredCallbackIds = $this->eventStoredCallbackNodeIds(
 					$rootStmts,
 					$trackedName,
@@ -381,6 +389,7 @@ final class FormShapeAnalyzer
 			function () use ($rootStmts, $paramName, $recordsByNode, $className, $scope, $functionLike, $file): FormShape {
 				$this->literalNameEnv = $this->buildLiteralNameEnv($rootStmts);
 				$this->walkOwnerClass = $this->callees->enclosingClassName($file, $functionLike);
+				$this->factory->recordExpressionDependencies($rootStmts, $this->walkOwnerClass);
 				$this->eventStoredCallbackIds = $this->eventStoredCallbackNodeIds(
 					$rootStmts,
 					$paramName,
@@ -3639,6 +3648,8 @@ final class FormShapeAnalyzer
 		$provider = $this->factory->getReflectionProvider();
 		$className = ltrim($trackedClass, '\\');
 		if (!$provider->hasClass($className)) {
+			$this->cache->recorder()->recordAbsentClass($className);
+
 			return true;
 		}
 

@@ -13,6 +13,13 @@ services:
 		factory: OriPhpstan\Nette\Support\ProjectInstalledVersions::get()
 		autowired: false
 
+	# Runs %bootstrapFiles% for a reader the coordinator asks before PHPStan does (see BootstrapFilesLoader).
+	orisai.nette.bootstrapFilesLoader:
+		factory: OriPhpstan\Nette\Support\BootstrapFilesLoader::create
+		arguments:
+			files: %bootstrapFiles%
+		autowired: false
+
 	orisai.nette.configuration:
 		class: OriPhpstan\Nette\Configuration\Configuration
 		arguments:
@@ -25,6 +32,7 @@ services:
 			configuration: @orisai.nette.configuration
 			fileExtensions: %fileExtensions%
 			installedVersions: @orisai.nette.installedVersions
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 		autowired: false
 
 	-

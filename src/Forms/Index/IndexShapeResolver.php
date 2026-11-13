@@ -1288,22 +1288,13 @@ final class IndexShapeResolver
 			: $call->var;
 		$receiverClass = $this->classTracker->resolveReceiverClass($receiver, $methodNode, $ownerFqcn);
 
-		$detection = BuilderChainDetector::detect($call, $scope, $this->cache, $receiverClass);
+		$detection = BuilderChainDetector::detect($call, $scope, $receiverClass);
 		if ($detection === null) {
 			return null;
 		}
 
-		$cached = $detection->getCachedShape();
-		if ($cached !== null) {
-			return $cached;
-		}
-
 		$declaringClass = $detection->getDeclaringClass();
 		$methodName = $detection->getMethodName();
-		if ($declaringClass === null || $methodName === null) {
-			return null;
-		}
-
 		$native = $declaringClass->getNativeReflection();
 		if (!$native->hasMethod($methodName)) {
 			return null;

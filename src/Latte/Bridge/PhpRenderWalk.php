@@ -193,6 +193,8 @@ final class PhpRenderWalk
 
 	private DiscoveryResolver $discoveryResolver;
 
+	private ?AbsentClassLog $absentClassLog;
+
 	/** @var array<string, array<int, ClassMethod>> */
 	private array $methodNodesByFile = [];
 
@@ -204,9 +206,11 @@ final class PhpRenderWalk
 		Parser $parser,
 		array $firstPartyPaths,
 		TemplateFactoryDefaultResolver $templateFactoryDefault,
-		DiscoveryResolver $discoveryResolver
+		DiscoveryResolver $discoveryResolver,
+		?AbsentClassLog $absentClassLog = null
 	)
 	{
+		$this->absentClassLog = $absentClassLog;
 		$this->reflectionProvider = $reflectionProvider;
 		$this->parser = $parser;
 		$this->templateFactoryDefault = $templateFactoryDefault;
@@ -215,10 +219,25 @@ final class PhpRenderWalk
 		$this->vendorPaths = new VendorPaths($this->firstPartyPaths);
 	}
 
+	// The facts bake in every answer that a class does not exist; a cached envelope is only as fresh
+	// as those answers.
+	private function hasClass(string $className): bool
+	{
+		if ($this->reflectionProvider->hasClass($className)) {
+			return true;
+		}
+
+		if ($this->absentClassLog !== null) {
+			$this->absentClassLog->record($className);
+		}
+
+		return false;
+	}
+
 	public function factsFor(string $className): PhpRenderFacts
 	{
 		$className = ltrim($className, '\\');
-		if (!$this->reflectionProvider->hasClass($className)) {
+		if (!$this->hasClass($className)) {
 			return PhpRenderFacts::empty();
 		}
 
@@ -579,7 +598,7 @@ final class PhpRenderWalk
 		}
 
 		foreach ($type->getObjectClassNames() as $className) {
-			if (!$this->reflectionProvider->hasClass($className)) {
+			if (!$this->hasClass($className)) {
 				continue;
 			}
 
@@ -886,7 +905,7 @@ final class PhpRenderWalk
 		$lifecycle['edges'][$callerId][] = spl_object_id($node);
 
 		$declaringClassName = $target->getDeclaringClass()->getName();
-		$newDeclaringClass = $this->reflectionProvider->hasClass($declaringClassName)
+		$newDeclaringClass = $this->hasClass($declaringClassName)
 			? $this->reflectionProvider->getClass($declaringClassName)
 			: $declaringClass;
 
@@ -1053,7 +1072,7 @@ final class PhpRenderWalk
 
 		$fqcn = ltrim($className, '\\');
 
-		return $this->reflectionProvider->hasClass($fqcn) ? $this->reflectionProvider->getClass($fqcn) : null;
+		return $this->hasClass($fqcn) ? $this->reflectionProvider->getClass($fqcn) : null;
 	}
 
 	/**
@@ -1520,7 +1539,7 @@ final class PhpRenderWalk
 					&& $stmt->expr->class instanceof Name
 				) {
 					$fqcn = ltrim($stmt->expr->class->toString(), '\\');
-					if ($this->reflectionProvider->hasClass($fqcn)) {
+					if ($this->hasClass($fqcn)) {
 						self::recordTemplateClassCandidate(
 							$candidates,
 							TemplateClassFact::CHANNEL_NEW,
@@ -1620,7 +1639,7 @@ final class PhpRenderWalk
 			&& $expr->class instanceof Name
 		) {
 			$fqcn = ltrim($expr->class->toString(), '\\');
-			if ($this->reflectionProvider->hasClass($fqcn)) {
+			if ($this->hasClass($fqcn)) {
 				self::recordTemplateClassCandidate(
 					$candidates,
 					TemplateClassFact::CHANNEL_CONVENTION,
@@ -1675,7 +1694,7 @@ final class PhpRenderWalk
 			}
 
 			$fqcn = ltrim($fetch->class->toString(), '\\');
-			if ($this->reflectionProvider->hasClass($fqcn)) {
+			if ($this->hasClass($fqcn)) {
 				return $fqcn;
 			}
 		}
@@ -1700,7 +1719,7 @@ final class PhpRenderWalk
 
 		$fqcn = ltrim($className, '\\');
 
-		return $this->reflectionProvider->hasClass($fqcn) ? $fqcn : null;
+		return $this->hasClass($fqcn) ? $fqcn : null;
 	}
 
 	/**
@@ -2108,7 +2127,7 @@ final class PhpRenderWalk
 			}
 
 			$declaringClassName = $method->getDeclaringClass()->getName();
-			$declaringClass = $this->reflectionProvider->hasClass($declaringClassName)
+			$declaringClass = $this->hasClass($declaringClassName)
 				? $this->reflectionProvider->getClass($declaringClassName)
 				: $entryClass;
 
@@ -2618,7 +2637,7 @@ final class PhpRenderWalk
 		if ($expr instanceof New_ && $expr->class instanceof Name) {
 			$fqcn = ltrim($expr->class->toString(), '\\');
 
-			return $this->reflectionProvider->hasClass($fqcn) ? new ObjectType($fqcn) : null;
+			return $this->hasClass($fqcn) ? new ObjectType($fqcn) : null;
 		}
 
 		if ($expr instanceof PropertyFetch && $expr->name instanceof Identifier) {
@@ -2721,7 +2740,7 @@ final class PhpRenderWalk
 			return null;
 		}
 
-		return $this->reflectionProvider->hasClass($classNames[0])
+		return $this->hasClass($classNames[0])
 			? $this->reflectionProvider->getClass($classNames[0])
 			: null;
 	}

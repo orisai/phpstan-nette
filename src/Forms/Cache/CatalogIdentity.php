@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Cache;
 
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use PHPStan\Reflection\ReflectionProvider;
 use function implode;
 use function is_file;
@@ -17,15 +18,22 @@ final class CatalogIdentity
 
 	private ReflectionProvider $reflectionProvider;
 
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
 	private ?string $identity = null;
 
 	/**
 	 * @param list<string> $catalogs
 	 */
-	public function __construct(array $catalogs, ReflectionProvider $reflectionProvider)
+	public function __construct(
+		array $catalogs,
+		ReflectionProvider $reflectionProvider,
+		?BootstrapFilesLoader $bootstrapFilesLoader = null
+	)
 	{
 		$this->catalogs = $catalogs;
 		$this->reflectionProvider = $reflectionProvider;
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 	}
 
 	public function get(): string
@@ -36,6 +44,12 @@ final class CatalogIdentity
 
 		if ($this->catalogs === []) {
 			return $this->identity = '';
+		}
+
+		// The coordinator may open the store before PHPStan runs %bootstrapFiles%; a store directory named
+		// without the catalog's file would be pruned by the workers, and theirs by the coordinator.
+		if ($this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
 		}
 
 		$catalogs = $this->catalogs;

@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   whose workers are forked no longer loses the template factory's default class and wiring
 - Latte: the discovery build before each run tells classes from interfaces and traits by their declarations instead of
   reflecting every analysed class in the main process
+- DI and Forms: `bootstrapFiles` also run before the DI container loader is read and before configured
+  `orisai.nette.forms.catalogs` are checked, so a container or catalog class only a bootstrap autoloader loads no
+  longer makes every warm run re-analyse the files asking the container, nor fails a run with spawned workers
 - Latte: the discovery store no longer has to sit inside `paths` for record changes to stay granular, and narrowing
   slices outside `paths` are tracked too; `orisai.nette.latte.discovery.coarseInvalidationAccepted` has no effect
 - With PHPStan's `reuseCollectedDataRuleErrors` toggle, the whole-project Latte and bridge rules and the narrowing
@@ -98,6 +101,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Result cache: warm runs no longer keep results a cold run would not report
+  - Forms: a shape reading a component name, a flag or a control class the scope types (`Names::FIELD`,
+    `Names::name()`, `->setNullable(Flags::NULLABLE)`) depends on the files declaring them, constant initialisers
+    followed through every file they read; a class a shape found missing is re-checked, so creating it re-analyses
+    the readers and invalidates the stored shape
+  - Forms: a file reusing a registrar body another file already read still depends on it, and a builder chain is
+    always resolved by its reader rather than from whichever factory-method shape another file stored first
+  - Latte: an include argument reaches templates any number of includes below its includer, and an including
+    template's own narrowing captures re-analyse it
+  - Latte: the render facts of a class are recomputed when a class they found missing, e.g. a paired template class,
+    appears
+  - Latte: `orisai.nette.latte.customsHarvest` moves to the next template when the one reporting it is deleted
 - Forms: an offset write of a value no `Container::offsetSet()` accepts (`$renderer->wrappers['form']['container'] =
   null`) is no longer a mutation of a component of that name, which made every `form` component of a project
   "mutated externally" and its templates' `$form['x']` an `IComponent`

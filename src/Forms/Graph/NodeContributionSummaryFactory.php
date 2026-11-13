@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Forms\Graph;
 use Nette\Forms\Container as NetteContainer;
 use Nette\Forms\Form;
 use OriPhpstan\Nette\Forms\Cache\DependencyRecorder;
+use OriPhpstan\Nette\Forms\Cache\ExpressionDependencies;
 use OriPhpstan\Nette\Forms\Catalog\ChoiceItemKeyResolver;
 use OriPhpstan\Nette\Forms\Catalog\ControlValueResolution;
 use OriPhpstan\Nette\Forms\Catalog\ControlValueTypeResolver;
@@ -59,13 +60,36 @@ final class NodeContributionSummaryFactory
 
 	private ?DependencyRecorder $recorder;
 
+	private ?ExpressionDependencies $expressionDependencies;
+
 	private ?string $nameOwnerClass = null;
 
 	public function __construct(ControlValueTypeResolver $catalog, ?DependencyRecorder $recorder = null)
 	{
 		$this->catalog = $catalog;
 		$this->recorder = $recorder;
+		$this->expressionDependencies = $recorder !== null
+			? new ExpressionDependencies($catalog->getReflectionProvider(), $recorder)
+			: null;
 		$this->choiceItemKeyResolver = new ChoiceItemKeyResolver($catalog->getReflectionProvider(), $recorder);
+	}
+
+	/**
+	 * @param Node|array<Node> $nodes
+	 */
+	public function recordExpressionDependencies($nodes, ?string $ownerClass): void
+	{
+		if ($this->expressionDependencies === null) {
+			return;
+		}
+
+		$reflectionProvider = $this->catalog->getReflectionProvider();
+		$this->expressionDependencies->record(
+			$nodes,
+			$ownerClass !== null && $reflectionProvider->hasClass($ownerClass)
+				? $reflectionProvider->getClass($ownerClass)
+				: null,
+		);
 	}
 
 	public function getReflectionProvider(): ReflectionProvider
@@ -107,6 +131,13 @@ final class NodeContributionSummaryFactory
 		?string $ownerClass = null
 	): NodeContributionSummary
 	{
+		// The summary types names, flags and control classes through the asking scope, which reads
+		// declarations of other files no shape source records.
+		$this->recordExpressionDependencies($statement, $ownerClass);
+		foreach ($extraChains as $chain) {
+			$this->recordExpressionDependencies($chain['tip'], $ownerClass);
+		}
+
 		$previousOwner = $this->nameOwnerClass;
 		$this->nameOwnerClass = $ownerClass;
 		try {

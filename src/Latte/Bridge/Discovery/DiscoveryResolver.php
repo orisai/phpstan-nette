@@ -10,7 +10,7 @@ use Nette\DI\Container;
 use OriPhpstan\Nette\Forms\Shape\Certainty;
 use OriPhpstan\Nette\Latte\Bridge\MutationFact;
 use OriPhpstan\Nette\Latte\Bridge\SetFileFact;
-use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use PHPStan\Reflection\ClassReflection;
 use ReflectionClass;
 use ReflectionProperty;

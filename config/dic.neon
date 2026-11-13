@@ -9,6 +9,7 @@ services:
 		class: OriPhpstan\Nette\Dic\Metadata\MultiContainerRegistry
 		arguments:
 			loaderFile: @orisai.nette.configuration::get(dic.containerLoader)
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 
 	-
 		class: OriPhpstan\Nette\Dic\Cache\ContainerValueExtension

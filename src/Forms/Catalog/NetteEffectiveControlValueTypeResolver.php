@@ -65,10 +65,12 @@ final class NetteEffectiveControlValueTypeResolver implements ControlValueTypeRe
 
 	private ContainerRegistrationDetector $detector;
 
-	/** @var array<string, bool> */
+	// Both memos serve every file a worker analyses, so a hit replays what the first read recorded.
+
+	/** @var array<string, array{0: bool, 1: array<string, string>}> */
 	private array $conventionMemo = [];
 
-	/** @var array<string, self::REGISTERS_*> */
+	/** @var array<string, array{0: self::REGISTERS_*, 1: array<string, string>}> */
 	private array $registrationMemo = [];
 
 	/**
@@ -260,7 +262,13 @@ final class NetteEffectiveControlValueTypeResolver implements ControlValueTypeRe
 
 		$key = $declaringClass->getName() . '::' . $methodName;
 
-		return $this->conventionMemo[$key] ??= $this->readRegistrarBody($declaringClass->getName(), $methodName);
+		$recorder = $this->callees->recorder();
+		$memo = $this->conventionMemo[$key] ??= $recorder->capture(
+			fn (): bool => $this->readRegistrarBody($declaringClass->getName(), $methodName),
+		);
+		$recorder->replay($memo[1]);
+
+		return $memo[0];
 	}
 
 	private function readRegistrarBody(string $declaringClass, string $methodName): bool
@@ -361,7 +369,13 @@ final class NetteEffectiveControlValueTypeResolver implements ControlValueTypeRe
 		$declaringClass = $receiverType->getMethod($methodName, $scope)->getDeclaringClass()->getName();
 		$key = $declaringClass . '::' . $methodName;
 
-		return $this->registrationMemo[$key] ??= $this->readRegistrations($declaringClass, $methodName);
+		$recorder = $this->callees->recorder();
+		$memo = $this->registrationMemo[$key] ??= $recorder->capture(
+			fn (): string => $this->readRegistrations($declaringClass, $methodName),
+		);
+		$recorder->replay($memo[1]);
+
+		return $memo[0];
 	}
 
 	/**

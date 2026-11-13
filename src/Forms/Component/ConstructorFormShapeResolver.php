@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Component;
 
+use OriPhpstan\Nette\Forms\Cache\ExpressionDependencies;
 use OriPhpstan\Nette\Forms\Cache\FormShapeCache;
 use OriPhpstan\Nette\Forms\Catalog\ControlValueResolution;
 use OriPhpstan\Nette\Forms\Catalog\ControlValueTypeResolver;
@@ -121,12 +122,9 @@ final class ConstructorFormShapeResolver
 
 	private function computeShape(string $fqcn): ?FormShape
 	{
-		if (!$this->reflectionProvider->hasClass($fqcn)) {
-			return null;
-		}
-
-		$classReflection = $this->reflectionProvider->getClass($fqcn);
-		if (!$classReflection->hasConstructor()) {
+		$dependencies = new ExpressionDependencies($this->reflectionProvider, $this->cache->recorder());
+		$classReflection = $dependencies->recordClass($fqcn);
+		if ($classReflection === null || !$classReflection->hasConstructor()) {
 			return null;
 		}
 
@@ -139,6 +137,8 @@ final class ConstructorFormShapeResolver
 		if ($node === null) {
 			return null;
 		}
+
+		$dependencies->record($node->getStmts() ?? [], $classReflection);
 
 		/** @var array<string, ControlValueResolution> $controls */
 		$controls = [];

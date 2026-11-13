@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Configuration\InvalidConfiguration;
 use OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
+use OriPhpstan\Nette\Latte\Customs\HarvestProblemReporter;
 use OriPhpstan\Nette\Support\PhpstanRuntimeStubs;
 use PHPStan\Analyser\ResultCache\ResultCacheValueExtension;
 use function implode;
@@ -25,6 +26,8 @@ final class LatteTemplateValueExtension implements ResultCacheValueExtension
 
 	private const NEIGHBOURHOOD_PREFIX = "neighbourhood\0";
 
+	private const HARVEST_HOST_PREFIX = "harvestHost\0";
+
 	private ConfigurationGuard $guard;
 
 	private TemplateNeighbourhood $neighbourhood;
@@ -33,13 +36,17 @@ final class LatteTemplateValueExtension implements ResultCacheValueExtension
 
 	private ?TemplateFactoryDefaultResolver $templateFactoryDefault;
 
+	private ?HarvestProblemReporter $harvestProblemReporter;
+
 	public function __construct(
 		ConfigurationGuard $guard,
 		TemplateNeighbourhood $neighbourhood,
 		?CustomsHarvester $harvester = null,
-		?TemplateFactoryDefaultResolver $templateFactoryDefault = null
+		?TemplateFactoryDefaultResolver $templateFactoryDefault = null,
+		?HarvestProblemReporter $harvestProblemReporter = null
 	)
 	{
+		$this->harvestProblemReporter = $harvestProblemReporter;
 		$this->guard = $guard;
 		$this->neighbourhood = $neighbourhood;
 		$this->harvester = $harvester;
@@ -49,6 +56,11 @@ final class LatteTemplateValueExtension implements ResultCacheValueExtension
 	public static function neighbourhoodKey(string $relativePath): string
 	{
 		return self::NEIGHBOURHOOD_PREFIX . $relativePath;
+	}
+
+	public static function harvestHostKey(string $relativePath): string
+	{
+		return self::HARVEST_HOST_PREFIX . $relativePath;
 	}
 
 	public function getValue(string $key): string
@@ -75,6 +87,12 @@ final class LatteTemplateValueExtension implements ResultCacheValueExtension
 
 		if (strncmp($key, self::NEIGHBOURHOOD_PREFIX, strlen(self::NEIGHBOURHOOD_PREFIX)) === 0) {
 			return $this->neighbourhood->digest(substr($key, strlen(self::NEIGHBOURHOOD_PREFIX)));
+		}
+
+		if (strncmp($key, self::HARVEST_HOST_PREFIX, strlen(self::HARVEST_HOST_PREFIX)) === 0) {
+			return $this->harvestProblemReporter !== null
+				? $this->harvestProblemReporter->hostValue(substr($key, strlen(self::HARVEST_HOST_PREFIX)))
+				: 'none';
 		}
 
 		return 'unknown';

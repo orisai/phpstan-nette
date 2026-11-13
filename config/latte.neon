@@ -133,7 +133,7 @@ services:
 		arguments:
 			containerLoader: @orisai.nette.configuration::get(dic.containerLoader)
 			latteEngineLoaderFile: @orisai.nette.configuration::get(latte.engineLoader)
-			bootstrapFilesLoader: @latteBootstrapFilesLoader
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 		autowired: false
 
 	# The engine reader is version-selected inside harvest() (first use, outside the containment
@@ -267,7 +267,7 @@ services:
 			discoveryRefResolver: @latteDiscoveryRefResolver
 			factoryProvidedVars: @latteFactoryProvidedVars
 			providerAvailabilityChecker: @latteProviderAvailabilityChecker
-			bootstrapFilesLoader: @latteBootstrapFilesLoader
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 			harvestProblemReporter: @latteHarvestProblemReporter
 		autowired: false
 
@@ -276,12 +276,6 @@ services:
 		arguments:
 			harvester: @latteCustomsHarvester
 			universe: @latteUniverse
-		autowired: false
-
-	latteBootstrapFilesLoader:
-		factory: OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader::create
-		arguments:
-			files: %bootstrapFiles%
 		autowired: false
 
 	# The phar's original file-backed cache storage under a delegate-able name (same pattern as
@@ -364,7 +358,7 @@ services:
 		class: OriPhpstan\Nette\Latte\Bridge\TemplateFactoryDefaultResolver
 		arguments:
 			containerLoaderFile: @orisai.nette.configuration::get(latte.templateFactoryContainerLoader)
-			bootstrapFilesLoader: @latteBootstrapFilesLoader
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 		autowired: false
 
 	# Template-file discovery (SP3): presenter-name inverse over the compiled container's
@@ -378,7 +372,7 @@ services:
 			containerLoaderFile: @orisai.nette.configuration::get(latte.templateFactoryContainerLoader)
 			formulas: @orisai.nette.configuration::get(latte.discovery.formulas)
 			projectRootPath: %currentWorkingDirectory%
-			bootstrapFilesLoader: @latteBootstrapFilesLoader
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 		autowired: false
 
 	# Scope-free per-class render-fact extraction (SP1). reflectionProvider is left to autowiring;
@@ -391,6 +385,12 @@ services:
 			firstPartyPaths: @orisai.nette.configuration::get(latte.firstPartyPaths)
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
 			discoveryResolver: @latteDiscoveryResolver
+			absentClassLog: @latteAbsentClassLog
+		autowired: false
+
+	# The classes a render walk found absent, recorded into the envelope being computed.
+	latteAbsentClassLog:
+		class: OriPhpstan\Nette\Latte\Bridge\AbsentClassLog
 		autowired: false
 
 	# Read-set-validated persistence for render facts (LatteAnalysisCache 'phpfacts|' namespace) -
@@ -404,6 +404,8 @@ services:
 			# The same boundary lattePhpRenderWalk reads: it decides which classes qualify, so it is part
 			# of the envelope identity, not of any read-set file.
 			firstPartyPaths: @orisai.nette.configuration::get(latte.firstPartyPaths)
+			reflectionProvider: @reflectionProvider
+			absentClassLog: @latteAbsentClassLog
 		autowired: false
 
 	# Per-run pure verdict component (see PairingJudge's own class doc); reflectionProvider is left
@@ -619,6 +621,7 @@ services:
 			neighbourhood: @latteTemplateNeighbourhood
 			harvester: @latteCustomsHarvester
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
+			harvestProblemReporter: @latteHarvestProblemReporter
 		tags:
 			- phpstan.resultCacheValueExtension
 

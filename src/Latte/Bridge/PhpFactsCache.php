@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryResolver;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\TemplateDirectoryListing;
 use OriPhpstan\Nette\Latte\Cache\LatteAnalysisCache;
 use OriPhpstan\Nette\Latte\Includes\FirstPartyPaths;
+use PHPStan\Reflection\ReflectionProvider;
 use function array_key_exists;
 use function is_array;
 use function is_bool;
@@ -45,8 +46,9 @@ final class PhpFactsCache
 	// walk's app-root gate reads - a version-10 envelope would keep serving facts computed under a
 	// superseded orisai.nette.latte.firstPartyPaths value. Version 12: a convention method whose body is a
 	// static `return <path>;` resolves without a formula - a version-11 envelope over unchanged files
-	// would keep serving the opaque hole.
-	public const FORMAT_VERSION = 12;
+	// would keep serving the opaque hole. Version 13: the envelope gained the class names the walk
+	// found absent - a version-12 envelope would keep serving facts computed before such a class appeared.
+	public const FORMAT_VERSION = 13;
 
 	private const NAMESPACE_PREFIX = 'phpfacts|';
 
@@ -70,6 +72,10 @@ final class PhpFactsCache
 	/** @var list<string> */
 	private array $firstPartyPaths;
 
+	private ?ReflectionProvider $reflectionProvider;
+
+	private ?AbsentClassLog $absentClassLog;
+
 	/** @var array<string, PhpRenderFacts> */
 	private array $inProcessCache = [];
 
@@ -85,9 +91,13 @@ final class PhpFactsCache
 		LatteAnalysisCache $cache,
 		TemplateFactoryDefaultResolver $templateFactoryDefault,
 		DiscoveryResolver $discoveryResolver,
-		array $firstPartyPaths
+		array $firstPartyPaths,
+		?ReflectionProvider $reflectionProvider = null,
+		?AbsentClassLog $absentClassLog = null
 	)
 	{
+		$this->reflectionProvider = $reflectionProvider;
+		$this->absentClassLog = $absentClassLog;
 		$this->cache = $cache;
 		$this->templateFactoryDefault = $templateFactoryDefault;
 		$this->discoveryResolver = $discoveryResolver;
@@ -114,7 +124,15 @@ final class PhpFactsCache
 			return $this->inProcessCache[$className] = PhpRenderFacts::fromArray($factsData);
 		}
 
-		$facts = $compute();
+		if ($this->absentClassLog !== null) {
+			$this->absentClassLog->begin();
+		}
+
+		try {
+			$facts = $compute();
+		} finally {
+			$absentClasses = $this->absentClassLog !== null ? $this->absentClassLog->end() : [];
+		}
 
 		// An empty read-set (unresolvable/fileless class) has nothing to rehash, so a persisted
 		// entry would validate vacuously forever - compute every run instead.
@@ -129,6 +147,7 @@ final class PhpFactsCache
 				'formulas' => $this->discoveryResolver->getFormulas(),
 				'firstPartyPaths' => $this->firstPartyPaths,
 				'existenceSet' => $discovery === null ? [] : $discovery->getExistenceSet(),
+				'absentClasses' => $absentClasses,
 			]);
 		}
 
@@ -208,6 +227,22 @@ final class PhpFactsCache
 			/** @var DiscoveryFact::PROBE_* $kind */
 			$kind = $probe['kind'];
 			if ($this->probeResult($kind, $probe['path']) !== $probe['result']) {
+				return false;
+			}
+		}
+
+		// The walk's answer that a class does not exist reflects in no read-set file either.
+		$absentClasses = $stored['absentClasses'] ?? null;
+		if (!is_array($absentClasses)) {
+			return false;
+		}
+
+		foreach ($absentClasses as $absentClass) {
+			if (
+				!is_string($absentClass)
+				|| $this->reflectionProvider === null
+				|| $this->reflectionProvider->hasClass($absentClass)
+			) {
 				return false;
 			}
 		}

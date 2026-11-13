@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace OriPhpstan\Nette\Latte\Parser;
+namespace OriPhpstan\Nette\Support;
 
 use PHPStan\Command\BootstrapFilesRunner;
 use PHPStan\DependencyInjection\Container;

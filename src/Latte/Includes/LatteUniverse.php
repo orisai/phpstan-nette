@@ -28,6 +28,9 @@ final class LatteUniverse
 	/** @var array<string, string>|null */
 	private ?array $contentHashes = null;
 
+	/** @var array<string, string>|null */
+	private ?array $absolutePaths = null;
+
 	/**
 	 * @param list<string> $paths
 	 */
@@ -70,6 +73,18 @@ final class LatteUniverse
 	public function relativePath(string $file): string
 	{
 		return ProjectRelativePath::relativize($this->projectRoot, $file);
+	}
+
+	public function absolutePath(string $relativePath): string
+	{
+		if ($this->absolutePaths === null) {
+			$this->absolutePaths = [];
+			foreach ($this->files() as $file) {
+				$this->absolutePaths[$this->relativePath($file)] = $file;
+			}
+		}
+
+		return $this->absolutePaths[$relativePath] ?? $this->projectRoot . '/' . $relativePath;
 	}
 
 	public function projectRoot(): string

@@ -5,7 +5,7 @@ namespace OriPhpstan\Nette\Latte\Customs;
 use Latte\Engine;
 use Nette\Bridges\ApplicationLatte\ILatteFactory;
 use Nette\DI\Container;
-use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use Throwable;
 use function is_array;
 use function is_file;

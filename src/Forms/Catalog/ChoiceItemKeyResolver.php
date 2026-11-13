@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Forms\Catalog;
 
 use OriPhpstan\Nette\Forms\Cache\DependencyRecorder;
+use OriPhpstan\Nette\Forms\Cache\ExpressionDependencies;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -173,6 +174,10 @@ final class ChoiceItemKeyResolver
 		} elseif ($this->reflectionProvider->hasClass($className)) {
 			$target = $this->reflectionProvider->getClass($className);
 		} else {
+			if ($this->recorder !== null) {
+				$this->recorder->recordAbsentClass($className);
+			}
+
 			$target = null;
 		}
 
@@ -181,9 +186,8 @@ final class ChoiceItemKeyResolver
 		}
 
 		$constant = $target->getConstant($fetch->name->toString());
-		$constantFile = $constant->getFileName();
-		if ($this->recorder !== null && $constantFile !== null) {
-			$this->recorder->record($constantFile);
+		if ($this->recorder !== null) {
+			(new ExpressionDependencies($this->reflectionProvider, $this->recorder))->recordConstant($constant);
 		}
 
 		$valueType = $constant->getValueType();

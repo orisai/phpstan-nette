@@ -20,6 +20,8 @@ parameters:
 services:
 	formShapeDependencyRecorder:
 		class: OriPhpstan\Nette\Forms\Cache\DependencyRecorder
+		arguments:
+			reflectionProvider: @reflectionProvider
 
 	formShapeDependencyCollector:
 		class: OriPhpstan\Nette\Forms\Cache\ShapeDependencyCollector
@@ -43,6 +45,7 @@ services:
 		class: OriPhpstan\Nette\Forms\Cache\CatalogIdentity
 		arguments:
 			catalogs: @orisai.nette.configuration::get(forms.catalogs)
+			bootstrapFilesLoader: @orisai.nette.bootstrapFilesLoader
 		autowired: false
 
 	formShapeCache:

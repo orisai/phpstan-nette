@@ -69,6 +69,10 @@ final class LatteDependencyRule implements Rule
 			LatteTemplateValueExtension::class,
 			LatteTemplateValueExtension::neighbourhoodKey($relativePath),
 		);
+		$scope->trackValueDependency(
+			LatteTemplateValueExtension::class,
+			LatteTemplateValueExtension::harvestHostKey($relativePath),
+		);
 
 		foreach ($this->neighbourhood->rendererClasses($relativePath) as $rendererClass) {
 			$scope->trackValueDependency(
@@ -77,8 +81,16 @@ final class LatteDependencyRule implements Rule
 			);
 		}
 
+		// An includer's arguments reach every template below it, through any number of include hops.
+		$ancestors = $this->neighbourhood->ancestors($relativePath);
+		foreach ($ancestors as $includer) {
+			$scope->trackFileDependency($this->universe->absolutePath($includer));
+		}
+
 		if ($this->narrowingEnabled) {
-			foreach ($this->neighbourhood->ancestors($relativePath) as $includer) {
+			// The template's own slice too: its include checks read the captures it wrote.
+			$scope->trackFileDependency($this->siteScopeStore->slicePath($relativePath));
+			foreach ($ancestors as $includer) {
 				$scope->trackFileDependency($this->siteScopeStore->slicePath($includer));
 			}
 		}

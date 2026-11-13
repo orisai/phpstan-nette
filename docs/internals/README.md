@@ -71,7 +71,9 @@ recorded value moved are analysed again:
 | Latte: harvest salt | every template | `LatteTemplateValueExtension` `harvest` |
 | Latte: template factory default and wiring | every template | `LatteTemplateValueExtension` `templateFactory` |
 | (none: PHP-side render facts were never tracked) | per class | `LatteRenderFactsValueExtension`, `PhpRenderFacts::getCanonicalHash()` |
-| (none: narrowing slices outside `%paths%` were never tracked) | per template | file dependencies on the slices of every transitive includer (`LatteDependencyRule`) |
+| (none: narrowing slices outside `%paths%` were never tracked) | per template | file dependencies on the template's own slice and the slices of every transitive includer (`LatteDependencyRule`) |
+| (none: include arguments past the first hop were never tracked) | per template | file dependencies on every transitive includer (`LatteDependencyRule`) |
+| (none: the template hosting the harvest problems was never tracked) | per template | `LatteTemplateValueExtension` `harvestHost` |
 
 `LatteResultCacheMeta` is still a `ResultCacheMetaExtension`, deprecated: `ResultCacheManager::restore()` calls it in the
 coordinator before any file is parsed, the one moment the discovery store can be built (`PreAnalysisIndexBuilder`), and
@@ -84,12 +86,23 @@ their errors or skips the writer.
 
 Value extensions are asked for their values in the coordinator before bootstrap files run and in the workers while a
 file is analysed; both must answer alike, or the file is analysed on every run. A value read off a service a container
-loader creates is the trap: its classes may be loadable only through a bootstrap-registered autoloader, so the Latte
-readers of the loaders (`TemplateFactoryDefaultResolver`, `DiscoveryResolver`, `EngineSource`) run `%bootstrapFiles%`
-first (`BootstrapFilesLoader`). Forked workers inherit what the coordinator memoised and hide such a disagreement —
+loader creates is the trap: its classes may be loadable only through a bootstrap-registered autoloader, so the
+readers of the loaders (`TemplateFactoryDefaultResolver`, `DiscoveryResolver`, `EngineSource`, the DI
+`MultiContainerRegistry`) and the configuration guard's check of the Forms catalog classes run `%bootstrapFiles%`
+first (`BootstrapFilesLoader`, service `orisai.nette.bootstrapFilesLoader`). Without it a container class only
+the bootstrap autoloader loads made every DI answer `unavailable:*` in the coordinator, and such a catalog class failed
+the guard there, which fails a run with spawned workers outright. Forked workers inherit what the coordinator memoised and hide such a disagreement —
 they then analyse with the coordinator's answer instead — so the spawn test of it (`BootstrapDependentWarmRunTest`)
 spawns its workers (`InvalidationScenario::spawnWorkers()`). Spawn tests record which files a warm run analysed
 (`AnalysedFileLog`, `AnalysisRun::getAnalysedFiles()`, the `reanalysed` step key of the invalidation matrices).
+
+A persisted answer is only as fresh as what it records. Besides the files it read, two kinds of input reflect in no
+file content and are recorded explicitly: a class an answer found **missing** (the Forms shape store keeps it as a
+dependency `DependencyRecorder::recordAbsentClass()` re-checks and hands PHPStan as `trackClassDependency()`, the
+`PhpFactsCache` envelope keeps the names `AbsentClassLog` collected from the render walk), and what an expression the
+scope types means in other files (`ExpressionDependencies`, below in [forms.md](forms.md#phpstans-result-cache)).
+Deleting `resultCache.php` alone does not show a stale persisted answer, so an invalidation test states the settled
+error set and does not rely on cold == warm.
 
 ### Test layout
 

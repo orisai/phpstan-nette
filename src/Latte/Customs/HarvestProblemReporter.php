@@ -28,24 +28,35 @@ final class HarvestProblemReporter
 	 */
 	public function diagnosticsFor(string $relativePath): array
 	{
+		$message = $this->messageFor($relativePath);
+		if ($message === null) {
+			return [];
+		}
+
+		return [new Diagnostic(self::IDENTIFIER, $message, 1)];
+	}
+
+	// Moves only for the template that starts or stops hosting the report, e.g. when the first one
+	// is deleted and the next one takes over.
+	public function hostValue(string $relativePath): string
+	{
+		return $this->messageFor($relativePath) ?? 'none';
+	}
+
+	private function messageFor(string $relativePath): ?string
+	{
 		$problems = $this->harvester->harvest()->getSourceProblems();
 		if ($problems === []) {
-			return [];
+			return null;
 		}
 
 		$files = $this->universe->files();
 		if ($files === [] || $this->universe->relativePath($files[0]) !== $relativePath) {
-			return [];
+			return null;
 		}
 
-		return [
-			new Diagnostic(
-				self::IDENTIFIER,
-				'Latte customs harvest: ' . implode('; ', $problems)
-				. ' - its files are left out of the harvest salt, so edits there do not invalidate the analysis.',
-				1,
-			),
-		];
+		return 'Latte customs harvest: ' . implode('; ', $problems)
+			. ' - its files are left out of the harvest salt, so edits there do not invalidate the analysis.';
 	}
 
 }

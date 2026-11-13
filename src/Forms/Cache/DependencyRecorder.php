@@ -3,11 +3,13 @@
 namespace OriPhpstan\Nette\Forms\Cache;
 
 use PHPStan\Analyser\DependencyTracker;
+use PHPStan\Reflection\ReflectionProvider;
 use Throwable;
 use function array_key_exists;
 use function array_keys;
 use function array_pop;
 use function is_file;
+use function ltrim;
 use function sha1_file;
 use function strlen;
 use function strncmp;
@@ -21,6 +23,8 @@ final class DependencyRecorder
 	// the fingerprint validator instead of hashing it as a file.
 	private const FINGERPRINT_PREFIX = "\0fingerprint\x1f";
 
+	private const ABSENT_CLASS_PREFIX = "\0absentClass\x1f";
+
 	/** @var list<array<string, string>> */
 	private array $frames = [];
 
@@ -28,6 +32,13 @@ final class DependencyRecorder
 	private array $hashes = [];
 
 	private ?FingerprintValidator $fingerprintValidator = null;
+
+	private ?ReflectionProvider $reflectionProvider;
+
+	public function __construct(?ReflectionProvider $reflectionProvider = null)
+	{
+		$this->reflectionProvider = $reflectionProvider;
+	}
 
 	public function setFingerprintValidator(FingerprintValidator $fingerprintValidator): void
 	{
@@ -121,6 +132,18 @@ final class DependencyRecorder
 		}
 	}
 
+	public function recordAbsentClass(string $className): void
+	{
+		if ($this->frames === []) {
+			return;
+		}
+
+		$key = self::ABSENT_CLASS_PREFIX . ltrim($className, '\\');
+		foreach ($this->frames as $index => $_) {
+			$this->frames[$index][$key] = '';
+		}
+	}
+
 	/**
 	 * Record a key's contributor fingerprint into every active frame. An entry answered inside a frame
 	 * EMBEDS that answer, whose correctness depends on the key's contributor set (which sites register
@@ -153,6 +176,13 @@ final class DependencyRecorder
 		[$value, $dependencies] = $this->capture($compute);
 
 		foreach (array_keys($dependencies) as $key) {
+			$absentClass = self::absentClassName($key);
+			if ($absentClass !== null) {
+				$tracker->trackClassDependency($absentClass);
+
+				continue;
+			}
+
 			$ipKey = self::fingerprintIpKey($key);
 			$tracker->trackValueDependency(
 				FormsValueExtension::class,
@@ -210,12 +240,30 @@ final class DependencyRecorder
 				continue;
 			}
 
+			$absentClass = self::absentClassName($file);
+			if ($absentClass !== null) {
+				if ($this->reflectionProvider === null || $this->reflectionProvider->hasClass($absentClass)) {
+					return false;
+				}
+
+				continue;
+			}
+
 			if ($this->hash($file) !== $hash) {
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	private static function absentClassName(string $dependencyKey): ?string
+	{
+		if (strncmp($dependencyKey, self::ABSENT_CLASS_PREFIX, strlen(self::ABSENT_CLASS_PREFIX)) !== 0) {
+			return null;
+		}
+
+		return (string) substr($dependencyKey, strlen(self::ABSENT_CLASS_PREFIX));
 	}
 
 	private function hash(string $file): ?string

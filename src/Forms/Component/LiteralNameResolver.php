@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Forms\Component;
 
 use OriPhpstan\Nette\Forms\Cache\DependencyRecorder;
+use OriPhpstan\Nette\Forms\Cache\ExpressionDependencies;
 use PhpParser\Node;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -54,6 +55,10 @@ final class LiteralNameResolver
 			} elseif ($reflectionProvider->hasClass($className)) {
 				$target = $reflectionProvider->getClass($className);
 			} else {
+				if ($recorder !== null) {
+					$recorder->recordAbsentClass($className);
+				}
+
 				return null;
 			}
 
@@ -62,9 +67,8 @@ final class LiteralNameResolver
 			}
 
 			$constant = $target->getConstant($expr->name->toString());
-			$constantFile = $constant->getFileName();
-			if ($recorder !== null && $constantFile !== null) {
-				$recorder->record($constantFile);
+			if ($recorder !== null) {
+				(new ExpressionDependencies($reflectionProvider, $recorder))->recordConstant($constant);
 			}
 
 			$strings = $constant->getValueType()->getConstantStrings();

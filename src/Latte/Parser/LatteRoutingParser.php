@@ -25,6 +25,7 @@ use OriPhpstan\Nette\Latte\Postprocess\DependencyEdgeEmitter;
 use OriPhpstan\Nette\Latte\Postprocess\DiagnosticMaterializer;
 use OriPhpstan\Nette\Latte\Postprocess\RichAttributeDecorator;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use PhpParser\Node\Stmt;
 use PHPStan\Parser\Parser;
 use ReflectionException;

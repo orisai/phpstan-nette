@@ -5,7 +5,7 @@ namespace OriPhpstan\Nette\Latte\Bridge;
 use Nette\Application\UI\TemplateFactory;
 use Nette\Bridges\ApplicationLatte\TemplateFactory as BridgeTemplateFactory;
 use Nette\DI\Container;
-use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use ReflectionProperty;
 use Throwable;
 use function get_class;

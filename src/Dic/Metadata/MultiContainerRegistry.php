@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Dic\Metadata;
 use LogicException;
 use Nette\DI\Container;
 use OriPhpstan\Nette\Dic\Cache\ContainerValueExtension;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayTypeBuilder;
@@ -43,9 +44,12 @@ final class MultiContainerRegistry
 
 	private ParameterTypeWidener $widener;
 
-	public function __construct(?string $loaderFile)
+	private ?BootstrapFilesLoader $bootstrapFilesLoader;
+
+	public function __construct(?string $loaderFile, ?BootstrapFilesLoader $bootstrapFilesLoader = null)
 	{
 		$this->loaderFile = $loaderFile;
+		$this->bootstrapFilesLoader = $bootstrapFilesLoader;
 		$this->widener = new ParameterTypeWidener();
 	}
 
@@ -395,6 +399,12 @@ final class MultiContainerRegistry
 			throw new LogicException(
 				sprintf('DIC container loader file "%s" does not exist.', (string) $this->loaderFile),
 			);
+		}
+
+		// The coordinator values the tracked answers before PHPStan runs %bootstrapFiles%; the loaded
+		// container may need an autoloader only they register.
+		if ($this->bootstrapFilesLoader !== null) {
+			$this->bootstrapFilesLoader->load();
 		}
 
 		$containers = require $this->loaderFile;

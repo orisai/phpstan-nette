@@ -1,9 +1,9 @@
 <?php declare(strict_types = 1);
 
-namespace Tests\OriPhpstan\Nette\Unit\Latte\Parser;
+namespace Tests\OriPhpstan\Nette\Unit\Support;
 
 use Nette\Utils\FileSystem;
-use OriPhpstan\Nette\Latte\Parser\BootstrapFilesLoader;
+use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use PHPStan\Command\BootstrapFilesRunner;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\Testing\PHPStanTestCase;

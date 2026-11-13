@@ -747,9 +747,9 @@ depth D, propagation is bounded by D+1 runs — an upper bound, and in practice 
 context resolution re-walks the whole include graph fresh each run, so narrowing that doesn't
 depend on a previous hop's *captures* (only on its declarations) can travel several hops at
 once; `NarrowingConvergenceTest` pins the bound on the fixture corpus. Runs stay
-incremental throughout: every template depends on the slice files of its transitive includers as
-plain file dependencies, so a changed slice re-analyses exactly its readers, never a wholesale cache
-clear, wherever the store lives.
+incremental throughout: every template depends on its own slice file and the slice files of its
+transitive includers as plain file dependencies, so a changed slice re-analyses exactly its readers,
+never a wholesale cache clear, wherever the store lives.
 
 ### Degradation direction
 
@@ -2380,9 +2380,20 @@ And the implementation-ledgered additions:
   file, a removed one, or a moved record re-analyses that component and nothing else
   (`IncludeTopologyInvalidationTest`). The component is the smallest set no context, block table or
   layout walk leaves, since a template is analysed per incoming context, transitively. The global
-  harvest salt and the template factory wiring are two more values every template tracks. With
-  narrowing on, a template also tracks the slice file of every transitive includer — the captures
-  `ContextResolver` overlays — as a plain file dependency, which holds wherever the store lives.
+  harvest salt and the template factory wiring are two more values every template tracks. The digest
+  holds the component's edges and records, not what its members pass along them: an argument edit in
+  `a.latte` moves `a`'s exported edge fingerprint, which re-analyses its direct targets only, while
+  the argument reaches every template below — `a` includes `b` with `x => 1`, `b` includes `c`,
+  `c` reads `$x`. So every template also tracks the file of every transitive includer
+  (`TemplateNeighbourhood::ancestors()`) as a plain file dependency: an includer edit re-analyses the
+  templates below it and nothing beside or above it. With narrowing on, a template also tracks the
+  slice file of every transitive includer — the captures `ContextResolver` overlays — and its own
+  slice, which its include contract checks read (`IncludeContractChecker`,
+  `DeclarationInjector::capturedBlockArgTypes()`), as plain file dependencies, which hold wherever
+  the store lives and also when the slice appears only after the run that wrote it. The template
+  reporting `orisai.nette.latte.customsHarvest` (the first of the universe) tracks
+  `LatteTemplateValueExtension`'s `harvestHost` value, so the next one takes the report over when it
+  is deleted.
   PHPStan's own
   propagation from a changed dependency to its dependents is **single-hop**: it fires only for files
   whose OWN content hash genuinely changed, not recursively for files that merely got swept along as
@@ -2402,7 +2413,11 @@ And the implementation-ledgered additions:
   render-facts dumps declare `LatteRenderFactsValueExtension` for the class they describe, valued by
   `PhpRenderFacts::getCanonicalHash()`. The facts are read off ancestors' method bodies, probed template
   paths, listed directories and the live container, none of which the class's own file reflects, so a
-  body edit two classes up or a view template appearing re-analyses the class on the same run.
+  body edit two classes up or a view template appearing re-analyses the class on the same run. The
+  `PhpFactsCache` envelope serving them is validated by its read set, probes and live values, and
+  by the class names the walk found missing (`AbsentClassLog`, every `PhpRenderWalk::hasClass()`
+  answering no): a paired template class created later invalidates the envelope, which no read-set
+  file would.
 
 ## Outlook
 

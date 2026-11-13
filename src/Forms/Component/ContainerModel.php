@@ -2930,22 +2930,13 @@ final class ContainerModel
 	): ?FormShape
 	{
 		$receiverClass = $this->chainReceiverTracker()->resolveReceiverClass($call->var, $fn, $ownerFqcn);
-		$detection = BuilderChainDetector::detect($call, $scope, $this->cache, $receiverClass);
+		$detection = BuilderChainDetector::detect($call, $scope, $receiverClass);
 		if ($detection === null) {
 			return null;
 		}
 
-		$cached = $detection->getCachedShape();
-		if ($cached !== null) {
-			return $cached;
-		}
-
 		$declaring = $detection->getDeclaringClass();
 		$methodName = $detection->getMethodName();
-		if ($declaring === null || $methodName === null) {
-			return null;
-		}
-
 		$located = $this->vendorMethodNode($declaring, $methodName);
 		if ($located === null) {
 			return null;
@@ -3051,22 +3042,13 @@ final class ContainerModel
 	): ?FormShape
 	{
 		$receiverClass = $this->chainReceiverTracker()->resolveReceiverClass($call->var, $fn, $ownerFqcn);
-		$detection = BuilderChainDetector::detect($call, $scope, $this->cache, $receiverClass);
+		$detection = BuilderChainDetector::detect($call, $scope, $receiverClass);
 		if ($detection === null) {
 			return null;
 		}
 
-		$cached = $detection->getCachedShape();
-		if ($cached !== null) {
-			return $cached;
-		}
-
 		$declaring = $detection->getDeclaringClass();
 		$methodName = $detection->getMethodName();
-		if ($declaring === null || $methodName === null) {
-			return null;
-		}
-
 		$located = $this->vendorMethodNode($declaring, $methodName);
 		if ($located === null) {
 			return null;

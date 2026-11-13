@@ -2029,7 +2029,15 @@ recomputed the moment any of them changes — not just the analysed file itself.
 - A class referenced via reflection while resolving a variable's class scope-free (e.g. a factory method's declared
   return type, a typed parameter, a property type) — the referenced class's declaring file.
 - A class constant read for a component name or a choice control's item keys (`SomeClass::NAME`, `SomeClass::ITEMS`)
-  — the constant's declaring file, which may differ from the referencing class when inherited.
+  — the constant's declaring file, which may differ from the referencing class when inherited, and, through its
+  initialiser, every file that one reads (`NAME = Other::X` brings `Other`'s file).
+- Every class, constant and function named in the walked function's body and in each registration statement
+  (`ExpressionDependencies`): the walk asks the scope to type a name like `Names::FIELD`, a static call's declared
+  return or a flag argument (`->setNullable(Flags::NULLABLE)`), and that answer is read off declarations in their
+  files — the class with its parents, interfaces and traits, constants followed through their initialisers.
+- A class the computation found **missing** (a `new LateForm()` before `LateForm.php` exists, a constant's or a
+  shape's class) — kept as a marker, not a file, and re-checked against the reflection provider; the entry is stale
+  once the class exists.
 - Every class (and its parents, interfaces, and traits) referenced by the resulting shape — its class name, mapped
   DTO type, and every slot's control/value classes.
 - For a [form held in a property](#forms-held-in-a-property), the file of **every** method of the declaring class — the
@@ -2064,11 +2072,16 @@ and every file recorded into it becomes a value dependency of the analysed file:
   answered) is keyed `FormsValueExtension::contributorsKey()` and valued by `RegistrationIndex::fingerprint()`, so a
   registration appearing in or leaving any file of the universe re-analyses the readers of that key.
 
+- a **missing class** is handed to PHPStan as `trackClassDependency()`, whose value moves when the class is created.
+
 The records are the same ones the shape store validates its entries by, so a reader depends on exactly what the store
 would recompute a shape for. Two conditions keep that complete across files. First, every in-process memo serving a
 shape to more than one file replays what its first computation read: the store entries always did, and the
-`IndexShapeResolver` and `FormPairing` memos capture their computation with `DependencyRecorder::capture()` and replay it
-on every hit. Memos keyed by the analysed file (`ContainerModel`'s per-file caches, `FormFileIndex`,
+`IndexShapeResolver`, `FormPairing` and `NetteEffectiveControlValueTypeResolver` (registrar body) memos capture their
+computation with `DependencyRecorder::capture()` and replay it on every hit. A builder chain
+(`BuilderChainDetector`) is always resolved by its reader rather than served from the factory-method entry another
+reader stored: that entry's producer joins every return arm, the chain readers compute their own way, so serving it
+made the answer depend on which file ran first. Memos keyed by the analysed file (`ContainerModel`'s per-file caches, `FormFileIndex`,
 `ComponentClassResolver`) need not, since a later hit is the same file. Second, a cached class or AST lookup records its
 file on every read, not only on a miss (`CalleeShapeResolver::fileClasses()`, `ContainerModel::richFileClasses()`,
 `TraitAwareMethodLocator`).
@@ -2080,10 +2093,15 @@ declaring file and propagates to its dependents (`ValueDependencyCollector`'s `d
 **What stays cheap.** A comment, a reformat or a docblock reindent in a form-bearing file re-analyses only that file
 (PHPStan's own content hash), and editing a file no shape read re-analyses only itself. The price is paid on restore:
 the coordinator re-digests every recorded shape source each run (one read and one tokenisation per distinct file,
-memoised by content hash within the process).
+memoised by content hash within the process). The names a builder spells over-record on purpose: an edit to a class the walked
+body names (beyond a comment or a reformat) re-analyses the readers of the shape although the field it supplied may not
+have moved; recording them costs one node walk per computed shape.
 
 **Known limitations.** A shape input reached neither through a recorded file nor through the registration index is
-invisible — the same boundary the shape store has, since both read the same records. A file whose PHP 8 attribute is a
+invisible — the same boundary the shape store has, since both read the same records. An expression typed through the
+scope is followed by the names it spells, not by its types: a receiver typed off a property or a method's return in
+another class (`$this->factory->create()->addText(...)`) depends on that declaration only through the files the walk
+records for other reasons. A file whose PHP 8 attribute is a
 shape input and whose analysis runs on PHP 7.4 keeps the attribute in the digest (as a comment token), but nothing in
 this extension reads attributes as form facts today.
 
