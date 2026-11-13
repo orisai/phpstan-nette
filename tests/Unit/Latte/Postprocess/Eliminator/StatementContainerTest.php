@@ -252,7 +252,7 @@ foreach ($iterator = $ʟ_it = new LR\CachingIterator($items, $ʟ_it ?? null) as 
 $iterator = $ʟ_it = $ʟ_it->getParent();
 PHP,
 			<<<'PHP'
-$iterator = new \Latte\Runtime\CachingIterator($items);
+$iterator = new \Latte\Runtime\CachingIterator([]);
 foreach ($items as $item) {
 	echo $iterator->counter;
 }

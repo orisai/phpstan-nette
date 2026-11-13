@@ -20,8 +20,4 @@ final class LatteTpl_fixtures_filtered_block_latte_7f2fe8d9 extends \Latte\Runti
         echo "\n";
         return [];
     }
-    public function lattePrepare(): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

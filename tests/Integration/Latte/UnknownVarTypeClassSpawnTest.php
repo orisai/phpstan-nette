@@ -4,7 +4,6 @@ namespace Tests\OriPhpstan\Nette\Integration\Latte;
 
 use Tests\OriPhpstan\Nette\Integration\Configuration\ConfigurationCorpus;
 use Tests\OriPhpstan\Nette\Toolkit\BaseTestCase;
-use Tests\OriPhpstan\Nette\Toolkit\InstalledVersionsGuard;
 use Tests\OriPhpstan\Nette\Toolkit\ScratchProject;
 
 // The class named by a header {varType} is checked by PHPStan itself, as the type of the injected
@@ -46,16 +45,11 @@ final class UnknownVarTypeClassSpawnTest extends BaseTestCase
 			}
 		}
 
-		// Latte 3 compiles the head into prepare(), which the injector folds into latteMain, so only
-		// Latte 2 keeps a typed lattePrepare to report a second time.
-		$expected = [
+		// Latte 3 compiles the head into prepare(), which the injector folds into latteMain, and Latte 2's prepare() is
+		// dropped once its UIRuntime::initialize() is, so the parameter is reported once on every line.
+		self::assertSame([
 			'2 Parameter $x of method LatteTpl_src_unknown_latte_968817c8::latteMain_ctx0() has invalid type UnknownClass.',
-		];
-		if (InstalledVersionsGuard::latteMajor() === 2) {
-			$expected[] = '2 Parameter $x of method LatteTpl_src_unknown_latte_968817c8::lattePrepare() has invalid type UnknownClass.';
-		}
-
-		self::assertSame($expected, $findings);
+		], $findings);
 	}
 
 	// A block method is reported at its body's first marker (here the tag's own line), on every line.
@@ -79,15 +73,10 @@ final class UnknownVarTypeClassSpawnTest extends BaseTestCase
 			}
 		}
 
-		$expected = [
+		self::assertSame([
 			'2 Parameter $x of method LatteTpl_src_block_latte_3a944519::blockB() has invalid type UnknownClass.',
 			'2 Parameter $x of method LatteTpl_src_block_latte_3a944519::latteMain_ctx0() has invalid type UnknownClass.',
-		];
-		if (InstalledVersionsGuard::latteMajor() === 2) {
-			$expected[] = '2 Parameter $x of method LatteTpl_src_block_latte_3a944519::lattePrepare() has invalid type UnknownClass.';
-		}
-
-		self::assertSame($expected, $findings);
+		], $findings);
 	}
 
 }

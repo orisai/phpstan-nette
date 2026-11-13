@@ -5,7 +5,9 @@ namespace OriPhpstan\Nette\Forms\Graph;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
+use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignOp\Coalesce as CoalesceAssign;
+use PhpParser\Node\Expr\AssignRef;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\Empty_;
 use PhpParser\Node\Expr\Isset_;
@@ -33,6 +35,9 @@ final class ExistenceCheckMarkingNodeVisitor extends NodeVisitorAbstract
 			$this->markChain($node->left);
 		} elseif ($node instanceof CoalesceAssign) {
 			$this->markChain($node->var);
+		} elseif (($node instanceof Assign || $node instanceof AssignRef) && $node->var instanceof PropertyFetch) {
+			// A values crate takes any property: writing one the form does not have is not a read of it.
+			$node->var->setAttribute(self::ATTRIBUTE, true);
 		} elseif (
 			($node instanceof MethodCall || $node instanceof NullsafeMethodCall)
 			&& !$node->isFirstClassCallable()

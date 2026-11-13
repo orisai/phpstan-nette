@@ -17,7 +17,7 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
             echo "\n";
         }
         echo "\n";
-        $iterator = new \Latte\Runtime\CachingIterator($items);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($items as $key => $item) {
             echo '	';
             if ($iterator->isFirst()) {
@@ -31,7 +31,7 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
         }
         echo "\n";
         foreach ($groups as $group) {
-            $iterator = new \Latte\Runtime\CachingIterator($group);
+            $iterator = new \Latte\Runtime\CachingIterator([]);
             foreach ($group as $item) {
                 echo '		';
                 if ($iterator->isFirst()) {
@@ -45,7 +45,7 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
             }
         }
         echo "\n";
-        $iterator = new \Latte\Runtime\CachingIterator($items);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($items as $item) {
             do {
                 echo '		';
@@ -64,13 +64,5 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
             echo "\n";
         }
         return [];
-    }
-    /**
-     * @param array $items
-     * @param array $groups
-     */
-    public function lattePrepare($items, $groups): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
     }
 }

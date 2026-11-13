@@ -51,15 +51,4 @@ final class LatteTpl_fixtures_declarations_latte_101fb50a extends \Latte\Runtime
         echo "\n";
         return [];
     }
-    /**
-     * @param string $title
-     * @param int|null $count
-     * @param array<string> $tags
-     * @param array<int, string> $labels
-     * @param string $label
-     */
-    public function lattePrepare($title, $count, $tags, $labels, $label): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

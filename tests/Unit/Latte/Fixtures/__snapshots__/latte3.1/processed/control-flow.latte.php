@@ -75,7 +75,7 @@ final class LatteTpl_fixtures_control_flow_latte_c4f04f4b extends \Latte\Runtime
             echo "\n";
         }
         echo "\n";
-        $iterator = new \Latte\Essential\CachingIterator($items);
+        $iterator = new \Latte\Essential\CachingIterator([]);
         foreach ($items as $item) {
             if ($item === \null) {
                 /* pos 49:2 */

@@ -59,19 +59,11 @@ parameters:
 			identifier: shipmonk.deadConstant
 			message: '#^Unused LatteDiscovery_[a-zA-Z0-9_]+::RECORDS_HASH$#'
 			reportUnmatched: false
-		# prepare()'s UIRuntime::initialize(...) call is unconditional Latte-compiler boilerplate
-		# in every generated template class; Latte\Runtime\Template::$blocks is private, reachable
-		# only via Template's own __get() compatibility shim at runtime.
-		-
-			identifier: property.private
-			message: '#^Access to private property \$blocks of parent class Latte\\Runtime\\Template\.$#'
-			path: '*.latte'
-			reportUnmatched: false
 		# Generated template code calls the same internal Nette/Latte runtime APIs the real compiled
 		# templates call at render time (Latte\Runtime\Filters::date/upper/lower/trim/... for built-in
 		# filters, Latte\Runtime\Template::render/renderBlock/renderToContentType/createTemplate,
 		# Nette\Utils\Html::attributes(), Nette\Bridges\FormsLatte\Runtime::initializeForm/
-		# renderFormBegin, Nette\Bridges\ApplicationLatte\UIRuntime::initialize() among them) -
+		# renderFormBegin among them) -
 		# internality is the vendor's user-facing containment contract, which doesn't apply to Latte's
 		# own compiled output shape.
 		-
@@ -624,6 +616,11 @@ services:
 			harvestProblemReporter: @latteHarvestProblemReporter
 		tags:
 			- phpstan.resultCacheValueExtension
+
+	-
+		class: OriPhpstan\Nette\Latte\Type\FormHelperObjectReturnTypeExtension
+		tags:
+			- phpstan.broker.dynamicStaticMethodReturnTypeExtension
 
 	-
 		class: OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension

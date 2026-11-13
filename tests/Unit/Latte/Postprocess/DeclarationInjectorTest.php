@@ -91,7 +91,7 @@ final class DeclarationInjectorTest extends BaseTestCase
 		// No templateType/headerVarType/{parameters} at all - main()/prepare() would stay
 		// zero-parameter, a compatible override of Latte\Runtime\Template. Renamed anyway: the
 		// rename is an unconditional invariant of every generated class, not a per-file decision.
-		$php = $this->process("{var int \$x = 1}\n{\$x}\n");
+		$php = $this->process("{layout 'parent.latte'}\n{var int \$x = 1}\n{\$x}\n");
 
 		self::assertStringContainsString('function latteMain()', $php);
 		self::assertStringContainsString('function lattePrepare()', $php);
@@ -167,7 +167,7 @@ final class DeclarationInjectorTest extends BaseTestCase
 		];
 		$php = $this->processWithContexts("{block b}{\$u}{\$v}{/block}\n", $contexts);
 
-		self::assertStringContainsString('@param mixed $u', $php);
+		self::assertStringContainsString('@phpstan-param int|string $u', $php);
 		self::assertStringContainsString('@param bool $v', $php);
 	}
 
@@ -230,7 +230,7 @@ final class DeclarationInjectorTest extends BaseTestCase
 
 	public function testVarTypeThisNeverBecomesAParameter(): void
 	{
-		$php = $this->process("{varType App\\Foo\\Bar \$this}\n<p>static</p>\n");
+		$php = $this->process("{layout 'parent.latte'}\n{varType App\\Foo\\Bar \$this}\n<p>static</p>\n");
 
 		self::assertStringContainsString('function latteMain()', $php);
 		self::assertStringContainsString('function lattePrepare()', $php);
@@ -240,7 +240,7 @@ final class DeclarationInjectorTest extends BaseTestCase
 	public function testContextVarNamedThisNeverBecomesAParameter(): void
 	{
 		$contexts = [TemplateContext::root(['this' => 'App\Foo\Bar', 'x' => 'int'])];
-		$php = $this->processWithContexts("{\$x}\n", $contexts);
+		$php = $this->processWithContexts("{layout 'parent.latte'}\n{\$x}\n", $contexts);
 
 		self::assertStringContainsString('function latteMain_ctx0($x)', $php);
 		self::assertStringContainsString('function lattePrepare($x)', $php);

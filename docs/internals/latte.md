@@ -147,8 +147,11 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   runtime (`begin($form = uiControl['x'], global: …)`, `get('x')`, `get('c', Container::class)`,
   `getScope()`, `renderFormBegin/End()`, `end()`); all three reduce to the same
   `Helpers::form('x')`/`formObject($var)`/`formContainer('c')`/`formField('x')` calls (a dynamic
-  Latte 3 name goes through `formField($name)` too, the Latte 2 `is_object($ʟ_tmp = …) ? … :
-  end(…)[$ʟ_tmp]` ternary stays as it is), with `$ʟ_elem` renamed to `$latteElem`; nette/forms
+  name goes through `formField($name)` too: on Latte 2 the `is_object($ʟ_tmp = …) ? $ʟ_tmp :
+  end(…)[$ʟ_tmp]` ternary becomes `formField(…)`, and the `$latteInput` temp it binds stands for the
+  field in the label and attributed-input stand-ins below, so a dynamic `{label $x}…{/label}` binds
+  `formLabel($latteInput)` like a static one; an object argument keeps its own class through
+  `FormHelperObjectReturnTypeExtension`), with `$ʟ_elem` renamed to `$latteElem`; nette/forms
   3.3's `{form scope x}` ternary (`isNested() ? forms->get($ʟ_tmp, Container::class) :
   uiControl[$ʟ_tmp]`) types as the form named `x`, `{form detached x}` as a plain `{form x}`. A
   paired `{label x}…{/label}` keeps its label in a temp on every bridge — Latte 2 guards it with
@@ -197,8 +200,9 @@ The compiled PHP then goes through post-compile passes (`src/Latte/Postprocess/`
   statement which does nothing. An edge anchor's manifest counts as a read of every variable the included block
   reads. `get_defined_vars()` does not: Latte passes it to the blocks, whose reads arrive as manifests. A function
   calling `extract()`, `compact()`, `parse_str()`, `eval`/`include`, using `goto` or a variable variable is left
-  whole. Dropping the hoisted `$iterator` also stops its `EXPR` from being analysed twice per loop, so a finding in a
-  `{foreach}` expression is reported once. `ImplicitBindingPrunerTest` pins the shapes and
+  whole. The hoisted `$iterator` is built from `[]` (the stub types neither its keys nor its values), so `EXPR` is
+  analysed once, by the loop, and a finding in a `{foreach}` expression is reported once — never again as
+  `CachingIterator`'s constructor argument. The hoist carries the loop's line. `ImplicitBindingPrunerTest` pins the shapes and
   `GeneratedBindingUnusedSpawnTest` the findings of a real analysis.
 - **Diagnostics materialization** — recorded diagnostics (unknown macro, unresolved include, ...)
   become synthetic calls that a small rule (`LatteDiagnosticRule`) turns into ordinary
@@ -227,8 +231,12 @@ undefined — that is the intended, fully-strict default, not a bug.
   php-parser from the file native reflection names, never through PHPStan's `FileTypeMapper` or
   reflection provider, because this runs at parse time (see *Bootstrap files and the parse-time
   `{templateType}` lookup*); a text which phpdoc-parser cannot parse is passed through unchanged. A
-  bare `@template` parameter of the class, anywhere in the type, resolves to `mixed` rather than to
-  whatever an `@extends UITemplate<FooControl>` binds it to. Local and imported type aliases
+  bare `@template` parameter of the declaring class, anywhere in the type, resolves to what the
+  `@extends` chain from the `{templateType}` class binds it to (`@extends UITemplate<FooControl>` makes
+  `/** @var C */ public Control $control` a `FooControl`), read off the classes' `@extends`/
+  `@phpstan-extends`/`@template-extends` tags with phpdoc-parser and qualified in each class's own name
+  scope; a parameter nothing binds is its plain class bound (`@template C of Control` → `Control`), or
+  `mixed` without one. Local and imported type aliases
   (`@phpstan-type`, `@phpstan-import-type`) are not resolved: an alias name is qualified like a
   class name, and only the first line of a `@var` is read. The surface is
   native reflection, so a purely virtual class-level `@property` tag with no backing property
@@ -732,7 +740,10 @@ An edge anchor is a statement `EdgeAnchorInjector` splices right before the incl
 statement, in the `latteMain_ctx{i}` clone of the context it records. A file include inside a
 `{block}`/`{define}`/`{snippet}` body has that statement in the block's own method, so the anchor
 goes there — one per context, since every clone visits the shared block method. Block params are
-the union of the contexts' types (`mixed` on disagreement), so such an anchor is emitted only when
+the union of the contexts' types (`DeclarationInjector::unionType()`: one flat union, a member spelled
+two ways — `\stdClass[]`, `array<stdClass>` — once, declared through `@phpstan-param` because it is the
+analysis's union, not the author's, and PHPDoc style rules such as shipmonk's `nonNormalizedType` read
+only `@param`), so such an anchor is emitted only when
 every context declares the same type for each name it would record (the manifest, or every
 provided name once explicit args are captured); otherwise the edge's per-context type already
 beats anything the block scope could prove and the anchor is skipped — a missed capture, the safe
@@ -789,8 +800,10 @@ get removed), and any *new* use warns immediately instead of blending into norma
 
 The scaffolding itself is ignored by `config/latte.neon`, every entry `reportUnmatched: false`, so
 a project on either line runs with PHPStan's default `reportUnmatchedIgnoredErrors` and never sees
-an unmatched-ignore error: Latte 2's `UIRuntime::initialize()` prologue (`method.internal`) and its
-private `Template::$blocks` read. Latte 3 needs no entry of its own: its `Blocks`/`Source`/
+an unmatched-ignore error. Latte 2's `prepare()` prologue `UIRuntime::initialize($this, $this->parentName,
+$this->blocks)` — the runtime's layout lookup, reading the private `Template::$blocks` and writing `$parentName` by
+reference — is dropped by `PrologEliminator` instead: at level max its `mixed` argument and `$parentName` write were
+reported on every template. Latte 3 needs no entry of its own: its `Blocks`/`Source`/
 `ContentType` template-class constants override the vendor `Template`'s, which shipmonk's vendor
 usage provider counts as used, and 3.1's `$parentArgs` is declared on `Template`.
 `RuntimeInternalsIgnoreSpawnTest` spawns each line's corpus with unmatched reporting on, with and

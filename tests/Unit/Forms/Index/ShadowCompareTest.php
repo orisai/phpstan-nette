@@ -77,6 +77,7 @@ final class ShadowCompareTest extends BaseTestCase
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\ScopeFreeConcreteLabelsResolve::onOk#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\ScopeFreeConcreteLabelsResolve::onOkDerived#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\UndecidableStaysIComponent::fill#0',
+		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\ValuesPropertyIsGetValues::profileSucceeded#0',
 		'mp:Tests\OriPhpstan\Nette\Doubles\Forms\MatrixAssert\RemoteNewFactoryControl::onEditorSuccess#0',
 	];
 

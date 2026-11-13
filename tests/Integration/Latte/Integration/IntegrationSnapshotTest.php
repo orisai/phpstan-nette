@@ -78,7 +78,7 @@ final class IntegrationSnapshotTest extends BaseTestCase
 					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
-					'--level=8',
+					'--level=max',
 					'--error-format=raw',
 					'-c',
 					$isolated->getConfigPath(),

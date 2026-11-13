@@ -27,13 +27,6 @@ final class LatteTpl_fixtures_embed_latte_1475771c extends \Latte\Runtime\Templa
     /**
      * @param string $mode
      */
-    public function lattePrepare($mode): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
-    /**
-     * @param string $mode
-     */
     public function blockSub($mode): void
     {
         echo 'embedded sub block';

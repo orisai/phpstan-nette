@@ -10,11 +10,13 @@ use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\NodeFinder;
 use PhpParser\ParserFactory;
+use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use ReflectionClass;
 use ReflectionProperty;
 use function array_key_exists;
-use function array_merge;
-use function array_unique;
+use function array_keys;
+use function array_map;
 use function array_values;
 use function class_exists;
 use function explode;
@@ -26,6 +28,7 @@ use function ltrim;
 use function preg_match_all;
 use function strpos;
 use function strtolower;
+use const PREG_SET_ORDER;
 
 /**
  * @phpstan-type FileScope array{string, array<string, string>}
@@ -73,32 +76,55 @@ final class ClassNameScope
 
 	private ?string $parentClassName;
 
-	/** @var list<string> */
-	private array $templateNames;
+	/** @var array<string, string> */
+	private array $templateTypes;
 
 	/**
 	 * @param array<string, string> $uses
-	 * @param list<string> $templateNames
+	 * @param array<string, string> $templateTypes
 	 */
 	private function __construct(
 		string $namespace,
 		array $uses,
 		string $className,
 		?string $parentClassName,
-		array $templateNames
+		array $templateTypes
 	)
 	{
 		$this->namespace = $namespace;
 		$this->uses = $uses;
 		$this->className = $className;
 		$this->parentClassName = $parentClassName;
-		$this->templateNames = $templateNames;
+		$this->templateTypes = $templateTypes;
 	}
 
-	public static function forProperty(ReflectionProperty $property): self
+	/**
+	 * @param ReflectionClass<object>|null $leaf
+	 */
+	public static function forProperty(ReflectionProperty $property, ?ReflectionClass $leaf = null): self
 	{
 		$class = $property->getDeclaringClass();
 		$source = self::sourceOf($class, $property);
+		$templateTypes = self::templateTypesOf($source) + self::templateTypesOf($class);
+		if ($leaf !== null) {
+			$templateTypes = self::boundTemplateTypes($leaf, $class) + $templateTypes;
+		}
+
+		return self::forClass($source, $templateTypes, $class);
+	}
+
+	/**
+	 * @param ReflectionClass<object> $source
+	 * @param array<string, string> $templateTypes
+	 * @param ReflectionClass<object>|null $class
+	 */
+	private static function forClass(
+		ReflectionClass $source,
+		array $templateTypes,
+		?ReflectionClass $class = null
+	): self
+	{
+		$class ??= $source;
 		[$namespace, $uses] = self::fileScopeOf($source);
 		$parent = $class->getParentClass();
 
@@ -107,8 +133,78 @@ final class ClassNameScope
 			$uses,
 			$class->getName(),
 			$parent !== false ? $parent->getName() : null,
-			array_values(array_unique(array_merge(self::templateNamesOf($class), self::templateNamesOf($source)))),
+			$templateTypes,
 		);
+	}
+
+	// What the `@extends` chain from $leaf binds $declaring's template parameters to, qualified; a parameter no
+	// `@extends` binds is left out.
+
+	/**
+	 * @param ReflectionClass<object> $leaf
+	 * @param ReflectionClass<object> $declaring
+	 * @return array<string, string>
+	 */
+	private static function boundTemplateTypes(ReflectionClass $leaf, ReflectionClass $declaring): array
+	{
+		$bindings = [];
+		$class = $leaf;
+		while (strtolower($class->getName()) !== strtolower($declaring->getName())) {
+			$parent = $class->getParentClass();
+			if ($parent === false) {
+				return [];
+			}
+
+			$scope = self::forClass($class, $bindings + self::templateTypesOf($class));
+			$arguments = [];
+			foreach (self::extendsArguments($class) as $extended => $typeArguments) {
+				if (strtolower(ltrim($scope->resolveClassName($extended), '\\')) === strtolower($parent->getName())) {
+					$arguments = $typeArguments;
+
+					break;
+				}
+			}
+
+			$parentBindings = [];
+			foreach (array_keys(self::templateTypesOf($parent)) as $i => $name) {
+				if (isset($arguments[$i])) {
+					$parentBindings[$name] = PhpDocTypeQualifier::qualify($arguments[$i], $scope);
+				}
+			}
+
+			$bindings = $parentBindings;
+			$class = $parent;
+		}
+
+		return $bindings;
+	}
+
+	/**
+	 * @param ReflectionClass<object> $class
+	 * @return array<string, list<string>>
+	 */
+	private static function extendsArguments(ReflectionClass $class): array
+	{
+		$doc = $class->getDocComment();
+		if ($doc === false) {
+			return [];
+		}
+
+		preg_match_all('~@(?:phpstan-|psalm-)?(?:extends|template-extends)\s+(.+?)\s*(?:\*/)?$~m', $doc, $m);
+		$extends = [];
+		foreach ($m[1] as $type) {
+			$node = PhpDocTypeQualifier::parse($type);
+			if (!$node instanceof GenericTypeNode) {
+				continue;
+			}
+
+			$extends[(string) $node->type] = array_values(array_map(
+				static fn (TypeNode $argument): string => (string) $argument,
+				$node->genericTypes,
+			));
+		}
+
+		return $extends;
 	}
 
 	public function resolveTypeName(string $name): string
@@ -122,8 +218,8 @@ final class ClassNameScope
 			return $name;
 		}
 
-		if (in_array($name, $this->templateNames, true)) {
-			return 'mixed';
+		if (array_key_exists($name, $this->templateTypes)) {
+			return $this->templateTypes[$name];
 		}
 
 		return $this->resolveClassName($name);
@@ -186,20 +282,41 @@ final class ClassNameScope
 		return $class;
 	}
 
+	// The class's template parameters in declaration order, each standing for its bound: a plain class bound
+	// qualified in the class's own scope, `mixed` otherwise.
+
 	/**
 	 * @param ReflectionClass<object> $class
-	 * @return list<string>
+	 * @return array<string, string>
 	 */
-	private static function templateNamesOf(ReflectionClass $class): array
+	private static function templateTypesOf(ReflectionClass $class): array
 	{
 		$doc = $class->getDocComment();
 		if ($doc === false) {
 			return [];
 		}
 
-		preg_match_all('~@template\s+(\w+)~', $doc, $m);
+		preg_match_all(
+			'~@(?:phpstan-|psalm-)?template(?:-covariant|-contravariant)?\s+(\w+)(?:\s+(?:of|as)\s+([\\\\\w]+)(?=\s|$))?~m',
+			$doc,
+			$m,
+			PREG_SET_ORDER,
+		);
+		$types = [];
+		foreach ($m as $match) {
+			$types[$match[1]] = 'mixed';
+		}
 
-		return $m[1];
+		[$namespace, $uses] = self::fileScopeOf($class);
+		$scope = new self($namespace, $uses, $class->getName(), null, $types);
+		foreach ($m as $match) {
+			$bound = $match[2] ?? '';
+			if ($bound !== '' && !in_array(strtolower($bound), self::KEYWORDS, true)) {
+				$types[$match[1]] = $scope->resolveClassName($bound);
+			}
+		}
+
+		return $types;
 	}
 
 	/**

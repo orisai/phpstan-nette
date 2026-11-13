@@ -40,13 +40,6 @@ final class LatteTpl_fixtures_blocks_snippets_latte_6640b14a extends \Latte\Runt
     /**
      * @param string $x
      */
-    public function lattePrepare($x): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
-    /**
-     * @param string $x
-     */
     public function blockContent($x): void
     {
         echo '	block body ';

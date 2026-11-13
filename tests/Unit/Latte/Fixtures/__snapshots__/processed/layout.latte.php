@@ -27,7 +27,6 @@ final class LatteTpl_fixtures_layout_latte_c2b2d2f9 extends \Latte\Runtime\Templ
     {
         $this->parentName = 'parent.latte';
         $this->createTemplate('blocks-snippets.latte', $this->params, "import")->render();
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
     }
     /**
      * @param string $title

@@ -6,6 +6,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -27,6 +28,10 @@ final class PrologEliminator extends EliminatorVisitor
 
 	public const ROLE_EMPTY_PREPARE = 'emptyPrepare';
 
+	// Latte 2 prepare()'s UIRuntime::initialize($this, $this->parentName, $this->blocks): the runtime's layout lookup,
+	// reading the private Template::$blocks and writing $parentName by reference.
+	public const ROLE_UI_INITIALIZE = 'uiInitialize';
+
 	public function describePattern(): string
 	{
 		$patterns = $this->patterns();
@@ -34,6 +39,7 @@ final class PrologEliminator extends EliminatorVisitor
 		return 'return get_defined_vars() -> return []; '
 			. ($patterns->has(self::ROLE_EXTENDS_GUARD) ? 'drop getParentName() extends-guard; ' : '')
 			. 'drop prepare() overwrite-warning foreach'
+			. ($patterns->has(self::ROLE_UI_INITIALIZE) ? '; drop UIRuntime::initialize(...)' : '')
 			. ($patterns->has(self::ROLE_EMPTY_PREPARE) ? '; drop prepare() when it becomes empty' : '')
 			. ': ' . $patterns->describe();
 	}
@@ -52,6 +58,10 @@ final class PrologEliminator extends EliminatorVisitor
 		}
 
 		if ($node instanceof If_ && $this->isOverwriteWarningGuard($node)) {
+			return NodeVisitor::REMOVE_NODE;
+		}
+
+		if ($node instanceof Expression && $node->expr instanceof StaticCall && $this->isUiInitialize($node->expr)) {
 			return NodeVisitor::REMOVE_NODE;
 		}
 
@@ -119,6 +129,17 @@ final class PrologEliminator extends EliminatorVisitor
 		return $inner instanceof Expression
 			&& $inner->expr instanceof FuncCall
 			&& $this->isFuncCallNamed($inner->expr, $trigger);
+	}
+
+	private function isUiInitialize(StaticCall $node): bool
+	{
+		return $node->class instanceof Name
+			&& $node->name instanceof Node\Identifier
+			&& $this->patterns()->isStaticCall(
+				self::ROLE_UI_INITIALIZE,
+				$node->class->toString(),
+				$node->name->toString(),
+			);
 	}
 
 	private function isGetDefinedVarsCall(?Node $node): bool

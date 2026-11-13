@@ -31,6 +31,7 @@ parameters:
 			- ../tests/Unit/Latte/Declarations/Fixtures
 			- ../tests/Unit/Latte/Includes/Fixtures
 			- ../tests/Integration/Latte/Closures/Fixtures
+			- ../tests/Integration/Latte/Fixtures
 			- ../tests/Integration/Latte/Integration/Fixtures
 			- ../tests/Integration/Latte/Parity/Factory/Fixtures
 			- ../tests/Integration/Latte/Parity/Includes/Fixtures

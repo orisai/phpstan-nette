@@ -125,6 +125,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   children only, instead of to every child of the form
 - Latte: `{input x:$key}` and `{label x:$key /}` on a control the analysis cannot resolve no longer report
   `BaseControl::getControlPart()`/`getLabelPart()` invoked with 1 parameter
+- Latte: at level max, generated code no longer reports `mixed` the template's author did not write
+  - Latte 2: `prepare()`'s `UIRuntime::initialize()` is dropped, so every template stops reporting its `$blocks`
+    argument and `$parentName` write as `mixed`
+  - Latte 2: a dynamic `{input $x}`, `{label $x}`, `n:name="$x"` or `{formContainer $x}` reads the field through
+    `Helpers::formField($x)` like Latte 3, instead of an `is_object() ? : end(formsStack)[…]` ternary reporting
+    `mixed` (or `is_object()` always true at level 4) on every use; an object argument keeps its class, a label or
+    attributed input binds the `Html` stand-in, and only a `mixed` `$x` itself is reported
+  - `<select n:name>`/`<textarea n:name>` print `Helpers::formInput()->getHtml()` instead of calling `getHtml()` on
+    `Html|string`
+  - a `{foreach}` reading `$iterator` no longer analyses its loop expression a second time as `CachingIterator`'s
+    argument (which reported each finding in it twice), and the hoisted iterator and an `n:class` call report on
+    their template line instead of line -1
+- Latte: a `{templateType}` property typed with a class template parameter (`@template C of Control`,
+  `/** @var C */`) takes what the template class's `@extends` chain binds it to, or its bound, instead of `mixed`
+- Latte: a block reached with several contexts that disagree on a variable's type declares their union instead of
+  `mixed`
+- Forms: `$form->values` is typed like `$form->getValues()` wherever the call is, including a handler's form parameter;
+  a write to a values crate's property the form has not got is no longer reported as
+  `orisai.nette.forms.noSuchComponent`
 
 - Latte: the variables Latte binds by itself (`$iterator`, Latte 2's `$iterations`, `$form`, `$formContainer`,
   `$ʟ_*` temporaries) are left out of the analysed code where nothing reads them, so PHPStan 2.3's unused-variable

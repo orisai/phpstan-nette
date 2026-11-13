@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Forms\Inference;
 
+use Nette\Forms\Container as NetteContainer;
 use Nette\Utils\ArrayHash;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Forms\Analyzer\AnalyzerStackFactory;
@@ -95,8 +96,20 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 	public function getType(Expr $expr, Scope $scope): ?Type
 	{
+		if (!$this->enabled) {
+			return null;
+		}
+
+		if (
+			$expr instanceof PropertyFetch
+			&& $expr->name instanceof Identifier
+			&& $expr->name->toString() === 'values'
+		) {
+			return $this->valuesPropertyType($expr, $scope);
+		}
+
 		// Own-file gates only, ahead of the frame every other expression of the project would open.
-		if (!$this->enabled || !$this->index->hasAnyTrackedForm($scope->getFile())) {
+		if (!$this->index->hasAnyTrackedForm($scope->getFile())) {
 			return null;
 		}
 
@@ -121,10 +134,6 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 		if ($expr instanceof ArrayDimFetch) {
 			return $this->offsetType($expr, $scope);
-		}
-
-		if ($expr instanceof PropertyFetch) {
-			return $this->propertyType($expr, $scope);
 		}
 
 		return $expr instanceof Variable ? $this->variableType($expr, $scope) : null;
@@ -409,14 +418,10 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 		return MappedTypeDetector::detect($fn->getStmts() ?? [], $expr->var->name);
 	}
 
-	private function propertyType(PropertyFetch $expr, Scope $scope): ?Type
+	// SmartObject reads `$form->values` through getValues(), so the property is typed as that call wherever it is
+	// answered: by the methodCallType() above for a tracked local, by FormGetValuesDynamicReturnTypeExtension otherwise.
+	private function valuesPropertyType(PropertyFetch $expr, Scope $scope): ?Type
 	{
-		if (!$expr->name instanceof Identifier) {
-			return null;
-		}
-
-		$property = $expr->name->toString();
-
 		$guardKey = $scope->getFile() . '|' . spl_object_id($expr);
 		if (isset($this->resolving[$guardKey])) {
 			return null;
@@ -424,12 +429,11 @@ final class FormAccessExpressionTypeResolver implements ExpressionTypeResolverEx
 
 		$this->resolving[$guardKey] = true;
 		try {
-			$base = $this->receiverType($expr->var, $scope);
-			if ($property === 'values' && $base instanceof FormShapeType) {
-				return FormValuesProjector::projectObject($base->getFormShape());
+			if (!(new ObjectType(NetteContainer::class))->isSuperTypeOf($scope->getType($expr->var))->yes()) {
+				return null;
 			}
 
-			return null;
+			return $scope->getType(new MethodCall($expr->var, new Identifier('getValues'), [], $expr->getAttributes()));
 		} finally {
 			unset($this->resolving[$guardKey]);
 		}

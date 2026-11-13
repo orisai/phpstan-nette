@@ -21,7 +21,6 @@ final class LatteTpl_fixtures_extends_latte_4e7b036e extends \Latte\Runtime\Temp
     public function lattePrepare($title): void
     {
         $this->parentName = 'parent.latte';
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
     }
     /**
      * @param string $title

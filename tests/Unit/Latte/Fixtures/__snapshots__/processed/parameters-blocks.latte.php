@@ -14,10 +14,6 @@ final class LatteTpl_fixtures_parameters_blocks_latte_3e63c928 extends \Latte\Ru
         echo "\n";
         return [];
     }
-    public function lattePrepare(): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
     /**
      * @param string $p
      */

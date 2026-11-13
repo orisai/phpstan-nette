@@ -11,22 +11,56 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\Imported\I
 use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\NameScopeTemplate;
 use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\SiblingOption;
 use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\NameScope\Traits\TraitOnly;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateBinding\BoundControlBase;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateBinding\Leaf\BoundTemplateLeaf;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateBinding\Leaf\LeafControl;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateBinding\UnboundTemplateLeaf;
 use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateParamPropertyFixture;
+use Tests\OriPhpstan\Nette\Unit\Latte\Declarations\Fixtures\TemplateParamPropertyFixtureBound;
 use Tests\OriPhpstan\Nette\Unit\Latte\Fixtures\Support\FixtureTemplate;
 use function ksort;
 
 final class PropertyTypeResolverTest extends BaseTestCase
 {
 
-	// UITemplate's `@template C of Control` + `/** @var C */ public Control $control` leaks the bare
-	// type-parameter letter as if it were a real class name (class.notFound "C") once a concrete
-	// template binds it via @extends - resolving that binding is out of scope, but the leak itself
-	// must not surface.
-	public function testTemplateParameterPropertyResolvesAsMixed(): void
+	// UITemplate's `@template C of Control` + `/** @var C */ public Control $control`: a parameter nothing binds stands
+	// for its bound, never for a class named after the letter.
+	public function testUnboundTemplateParameterPropertyResolvesToItsBound(): void
 	{
 		$reflection = new ReflectionClass(TemplateParamPropertyFixture::class);
 
-		self::assertSame('mixed', PropertyTypeResolver::resolve($reflection->getProperty('control')));
+		self::assertSame(
+			'\\' . TemplateParamPropertyFixtureBound::class,
+			PropertyTypeResolver::resolve($reflection->getProperty('control')),
+		);
+	}
+
+	public function testTemplateParametersResolveThroughTheExtendsChainOfTheReadClass(): void
+	{
+		$leaf = '\\' . LeafControl::class;
+
+		self::assertSame(
+			[
+				'control' => $leaf,
+				'controls' => "list<$leaf>",
+				'item' => 'string|null',
+			],
+			PropertyTypeResolver::resolveAllPublic(BoundTemplateLeaf::class),
+		);
+	}
+
+	public function testTemplateParametersNoExtendsBindResolveToTheirBounds(): void
+	{
+		$bound = '\\' . BoundControlBase::class;
+
+		self::assertSame(
+			[
+				'control' => $bound,
+				'controls' => "list<$bound>",
+				'item' => 'mixed|null',
+			],
+			PropertyTypeResolver::resolveAllPublic(UnboundTemplateLeaf::class),
+		);
 	}
 
 	public function testNonTemplateParameterPropertyIsUnaffected(): void

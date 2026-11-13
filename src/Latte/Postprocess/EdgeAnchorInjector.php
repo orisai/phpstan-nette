@@ -226,7 +226,7 @@ final class EdgeAnchorInjector
 				// A file-form site inside a {block}/{define}/{snippet} body has its line-tagged
 				// statement in that block's own method, never in a clone: the anchor goes next to it
 				// there. The block method is shared by every clone and its params are the UNION of
-				// the contexts' types (DeclarationInjector::buildUnionParams, `mixed` on
+				// the contexts' types (DeclarationInjector::buildUnionParams, a union on
 				// disagreement), so a capture there is only the per-context truth when every context
 				// declares the same type for each name it would record - otherwise the edge already
 				// knows better than the block scope and the anchor is skipped (a missed capture is

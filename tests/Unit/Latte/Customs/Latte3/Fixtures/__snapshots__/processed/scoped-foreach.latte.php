@@ -29,7 +29,7 @@ final class LatteTpl_fixtures_scoped_foreach_latte_8809dd88 extends \Latte\Runti
         }
         echo '</ul>
 ';
-        $iterator = new \Latte\Essential\CachingIterator($items);
+        $iterator = new \Latte\Essential\CachingIterator([]);
         foreach ($items as $item) {
             echo '	';
             echo $iterator->counter;

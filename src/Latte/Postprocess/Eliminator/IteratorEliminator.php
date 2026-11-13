@@ -6,6 +6,7 @@ use OriPhpstan\Nette\Latte\Postprocess\ImplicitBindingPruner;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\MethodCall;
@@ -19,6 +20,7 @@ use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
+use function array_intersect_key;
 use function count;
 
 final class IteratorEliminator extends EliminatorVisitor
@@ -36,10 +38,12 @@ final class IteratorEliminator extends EliminatorVisitor
 
 	private const MARKER_ITERATOR_NEW = 'iteratorEliminator.iteratorNew';
 
+	private const LINE_ATTRIBUTES = ['startLine' => true, 'endLine' => true];
+
 	public function describePattern(): string
 	{
 		return 'foreach ($iterator = $ʟ_it = new CachingIterator(EXPR, $ʟ_it ?? null) as ...) -> '
-			. '$iterator = new CachingIterator(EXPR); foreach (EXPR as ...); drop '
+			. '$iterator = new CachingIterator([]); foreach (EXPR as ...); drop '
 			. '$iterator = $ʟ_it = $ʟ_it->getParent() restores'
 			. ($this->patterns()->has(
 				self::ROLE_ITERATIONS_VAR,
@@ -75,19 +79,27 @@ final class IteratorEliminator extends EliminatorVisitor
 			return null;
 		}
 
+		// The stub types neither the iterator's keys nor its values, so the hoist takes an empty array: EXPR is analysed
+		// once, by the foreach, and a value the foreach rejects is not reported again as the constructor's argument.
+		$attributes = array_intersect_key($node->getAttributes(), self::LINE_ATTRIBUTES);
 		$assign = new Assign(
-			new Variable(self::ITERATOR_VAR),
-			new New_(new FullyQualified($this->patterns()->name(self::ROLE_CACHING_ITERATOR)), [new Arg($expr)]),
+			new Variable(self::ITERATOR_VAR, $attributes),
+			new New_(
+				new FullyQualified($this->patterns()->name(self::ROLE_CACHING_ITERATOR), $attributes),
+				[new Arg(new Array_([], $attributes), false, false, $attributes)],
+				$attributes,
+			),
+			$attributes,
 		);
 		$assign->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_STATEMENT);
-		$iteratorAssign = new Expression($assign);
+		$iteratorAssign = new Expression($assign, $attributes);
 		$iteratorAssign->setAttribute(self::MARKER_ITERATOR_NEW, true);
 
 		$foreach = new Foreach_($expr, $node->valueVar, [
 			'keyVar' => $node->keyVar,
 			'byRef' => $node->byRef,
 			'stmts' => $node->stmts,
-		]);
+		], $attributes);
 
 		return [$iteratorAssign, $foreach];
 	}

@@ -94,6 +94,9 @@ final class FormsShapeFamilyTest extends BaseTestCase
 			'kinds.latte',
 		);
 
+		// Latte 2 prints <select n:name> as getControl()->getHtml(), which the Html stand-in takes; Latte 3 reads the
+		// control part it already holds.
+		$selectHtml = InstalledVersionsGuard::latteMajor() === 2 ? [[12, "formInput('sel')"]] : [];
 		self::assertSame(
 			[
 				[1, "form('myForm')"],
@@ -108,6 +111,7 @@ final class FormsShapeFamilyTest extends BaseTestCase
 				[10, "formField('name')"],
 				[11, "formField('name')"],
 				[12, "formField('sel')"],
+				...$selectHtml,
 				[13, "formField('send')"],
 				[14, "formContainer('address')"],
 				[15, "formField('street')"],

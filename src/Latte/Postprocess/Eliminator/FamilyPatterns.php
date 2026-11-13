@@ -76,7 +76,9 @@ final class FamilyPatterns
 	{
 		$latte2 = $line === ShapeFamily::LATTE_2;
 
-		return new PatternSet([], [
+		return new PatternSet($latte2 ? [
+			PrologEliminator::ROLE_UI_INITIALIZE => ['Nette\Bridges\ApplicationLatte\UIRuntime' => ['initialize']],
+		] : [], [
 			PrologEliminator::ROLE_DEFINED_VARS => ['get_defined_vars'],
 			PrologEliminator::ROLE_EXTENDS_GUARD => $latte2 ? ['getParentName'] : [],
 			PrologEliminator::ROLE_OVERWRITE_WARNING => ['array_intersect_key', 'trigger_error'],

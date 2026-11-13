@@ -19,7 +19,7 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
             echo "\n";
         }
         echo "\n";
-        $iterator = new \Latte\Essential\CachingIterator($items);
+        $iterator = new \Latte\Essential\CachingIterator([]);
         foreach ($items as $key => $item) {
             echo '	';
             if ($iterator->isFirst()) {
@@ -33,7 +33,7 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
         }
         echo "\n";
         foreach ($groups as $group) {
-            $iterator = new \Latte\Essential\CachingIterator($group);
+            $iterator = new \Latte\Essential\CachingIterator([]);
             foreach ($group as $item) {
                 echo '		';
                 if ($iterator->isFirst()) {
@@ -47,7 +47,7 @@ final class LatteTpl_fixtures_foreach_iterator_latte_898f2db1 extends \Latte\Run
             }
         }
         echo "\n";
-        $iterator = new \Latte\Essential\CachingIterator($items);
+        $iterator = new \Latte\Essential\CachingIterator([]);
         foreach ($items as $item) {
             do {
                 echo '		';

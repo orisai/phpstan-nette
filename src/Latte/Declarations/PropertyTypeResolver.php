@@ -28,18 +28,24 @@ final class PropertyTypeResolver
 	public static function resolveAllPublic(string $class): array
 	{
 		$types = [];
-		foreach ((new ReflectionClass($class))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-			$types[$property->getName()] = self::resolve($property);
+		$reflection = new ReflectionClass($class);
+		foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+			$types[$property->getName()] = self::resolve($property, $reflection);
 		}
 
 		return $types;
 	}
 
-	public static function resolve(ReflectionProperty $property): string
+	// $leaf is the class the property is read on: its `@extends` chain binds the declaring class's template parameters.
+
+	/**
+	 * @param ReflectionClass<object>|null $leaf
+	 */
+	public static function resolve(ReflectionProperty $property, ?ReflectionClass $leaf = null): string
 	{
 		$doc = $property->getDocComment();
 		if ($doc !== false && preg_match('~@var\s+(.+?)(?:\s+\$\w+.*)?\s*(?:\*/)?\s*$~m', $doc, $m) === 1) {
-			return PhpDocTypeQualifier::qualify($m[1], ClassNameScope::forProperty($property));
+			return PhpDocTypeQualifier::qualify($m[1], ClassNameScope::forProperty($property, $leaf));
 		}
 
 		$type = $property->getType();

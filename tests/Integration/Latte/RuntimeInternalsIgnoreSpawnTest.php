@@ -11,9 +11,8 @@ use function basename;
 use function in_array;
 use function strpos;
 
-// config/latte.neon ignores the Latte 2 runtime internals every generated template class carries: with
-// reportUnmatchedIgnoredErrors on (PHPStan's default) a Latte 3 project never sees an unmatched-ignore
-// error for them.
+// config/latte.neon ignores the runtime internals generated template code calls: with reportUnmatchedIgnoredErrors on
+// (PHPStan's default) a project on either line never sees an unmatched-ignore error for them.
 final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 {
 
@@ -46,12 +45,12 @@ final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 		self::assertSame([], $this->runtimeInternalFindings([]));
 	}
 
-	// With every ignore entry overridden away the same corpus reports the line's internals, which
-	// pins that the entries are needed and that the spawn sees what a project sees. The entries
-	// every line shares (dead LatteTpl_* methods, LATTE_EDGE_FINGERPRINT) are left out of the pin.
-	// Latte 3 needs none: shipmonk counts its Blocks/Source/ContentType constants as overrides of the
-	// vendor Template's, and 3.1's $parentArgs is declared there.
-	public function testTheInstalledLinesInternalsAreReportedWithoutTheIgnoreEntries(): void
+	// With every ignore entry overridden away the same corpus reports none of the internals either: Latte 2's
+	// prepare() read the private Template::$blocks only through UIRuntime::initialize(), which the analysed code drops,
+	// and Latte 3 needs no entry - shipmonk counts its Blocks/Source/ContentType constants as overrides of the vendor
+	// Template's, and 3.1's $parentArgs is declared there. The entries every line shares (dead LatteTpl_* methods,
+	// LATTE_EDGE_FINGERPRINT) are left out of the pin.
+	public function testTheInstalledLinesInternalsAreNotReportedWithoutTheIgnoreEntries(): void
 	{
 		$findings = [];
 		foreach ($this->runtimeInternalFindings(['ignoreErrors!' => []]) as $finding) {
@@ -63,15 +62,7 @@ final class RuntimeInternalsIgnoreSpawnTest extends BaseTestCase
 			}
 		}
 
-		self::assertSame(
-			TestAdapter::factory()->family()->latteLine === ShapeFamily::LATTE_2
-				? [
-					'page.latte:4 property.private Access to private property $blocks of parent class Latte\Runtime\Template.',
-					'xml.latte:3 property.private Access to private property $blocks of parent class Latte\Runtime\Template.',
-				]
-				: [],
-			$findings,
-		);
+		self::assertSame([], $findings);
 	}
 
 	/**

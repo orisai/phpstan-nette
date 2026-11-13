@@ -18,8 +18,4 @@ Hello ';
         echo "\n";
         return [];
     }
-    public function lattePrepare(): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

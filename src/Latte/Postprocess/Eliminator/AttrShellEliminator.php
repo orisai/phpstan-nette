@@ -270,11 +270,13 @@ final class AttrShellEliminator extends EliminatorVisitor
 			return null;
 		}
 
+		$attributes = $node->exprs[0]->getAttributes();
+
 		return new Echo_([
 			new StaticCall(new FullyQualified(self::HELPERS_CLASS), new Identifier('classes'), [
 				new Arg($classesArg),
-			]),
-		]);
+			], $attributes),
+		], $node->getAttributes());
 	}
 
 	private function matchNClassTernary(Expr $expr): ?Expr

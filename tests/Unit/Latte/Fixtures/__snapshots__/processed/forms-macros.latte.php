@@ -38,8 +38,4 @@ final class LatteTpl_fixtures_forms_macros_latte_257f81ab extends \Latte\Runtime
         echo "\n";
         return [];
     }
-    public function lattePrepare(): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

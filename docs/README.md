@@ -989,8 +989,8 @@ The shape of a form — its children, their classes and values — is inferred w
 `createComponent*()` building it, an `onSuccess` callback, a presenter nesting it, a helper, a template.
 
 - `$form['email']` and `getComponent('email')` – the control's class; paths such as `$form['address-city']` too
-- `getValues()`, `getUntrustedValues()`, `getValue()` – typed values; disabled and omitted controls and buttons are
-  handled
+- `getValues()` (and `$form->values`), `getUntrustedValues()`, `getValue()` – typed values; disabled and omitted
+  controls and buttons are handled
 - `onSuccess` and other callbacks – the form and `$values` parameters typed
 - validation – `setRequired()` and rules narrow values in `onSuccess` and after `isValid()`/`isSuccess()`
 - choice controls – `setItems()` narrows the value to the item keys
@@ -1040,6 +1040,10 @@ The shape of a form — its children, their classes and values — is inferred w
   implementation; the shape opens, and controls the implementation adds read as *may not exist*.
 - A form read in another file uses the builder's own names and container classes, but a modifier argument held in a
   variable (`setRequired($flag)`, `setItems($items)`) is typed in the reading file's scope.
+- Writing a field the form has (`$values->name = 'x'` on typed values) is reported as `assign.propertyReadOnly`; copy
+  the values into your own array or DTO to change them.
+- In an `onClick` handler taking the button, `$button->getForm()` is the declared form class: its values are not
+  typed.
 
 ### Latte features
 
@@ -1116,7 +1120,8 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - Filters added at render time (`$template->addFilter()`) are not seen — they are reported as unknown.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - In the `@var` of a `{templateType}` class's property, type aliases (`@phpstan-type`, `@phpstan-import-type`) are not
-  resolved and only the tag's first line is read; a `@template` parameter of the class is `mixed`.
+  resolved and only the tag's first line is read; a `@template` parameter of the class is what the template class's
+  `@extends` chain binds it to, else its class bound, else `mixed`.
 - `orisai.nette.latte.templateMissing` is not reported for a renderer which links no template at all.
 - The Latte shapes are verified on latte/latte 2.11.7, 3.0.26 and 3.1.6; other patch releases are not tested.
 - Sandbox policies are not modelled: a template breaking a `{sandbox}` or sandbox-mode policy is not reported.

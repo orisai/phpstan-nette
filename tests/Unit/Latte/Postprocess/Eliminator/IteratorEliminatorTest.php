@@ -31,9 +31,9 @@ PHP);
 
 		// Latte 3 has neither the Latte 2 iterator class nor the $iterations counter: both stay as written.
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
-        $iterator = new \Latte\Essential\CachingIterator($groups);
+        $iterator = new \Latte\Essential\CachingIterator([]);
         foreach ($groups as $group) {
-            $iterator = new \Latte\Essential\CachingIterator($group);
+            $iterator = new \Latte\Essential\CachingIterator([]);
             foreach ($group as $item) {
                 echo \Latte\Runtime\HtmlHelpers::escapeText($item);
             }
@@ -61,7 +61,7 @@ PHP);
 
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
         $iterations = 0;
-        $iterator = new \Latte\Runtime\CachingIterator($items);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($items as $item) {
             echo \Latte\Runtime\Filters::escapeHtmlText($item);
             $iterations++;

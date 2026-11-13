@@ -313,11 +313,11 @@ PHP);
             echo $latteLabel;
         }
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getError();
-        $latteInput = $_input = \is_object($ʟ_tmp = $dyn) ? $ʟ_tmp : \end($this->global->formsStack)[$ʟ_tmp];
+        $latteInput = $_input = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField($dyn);
         echo $latteInput->getControl();
         $latteInput = $_input = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('sel');
         echo $latteInput->getControlPart()->attributes();
-        echo $latteInput->getControl()->getHtml();
+        echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('sel')->getHtml();
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formFieldPart('k')->getControlPart($key);
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formInput('k', $key)->addAttributes(['class' => "c"]);
         echo '</form>';
@@ -333,10 +333,9 @@ PHP);
 PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
 	}
 
-	// A dynamic reference keeps the bridge's getLabel() assignment, so the label temp may still be
-	// null at the closing tag: both of its guards stay. A static reference right after it binds the
-	// temp again and drops them.
-	public function testDynamicPairedLabelKeepsItsGuardsOnTheMacrosShape(): void
+	// A dynamic reference becomes Helpers::formField(), and its input temp stands for the field in the label stand-in, so
+	// neither label needs a guard.
+	public function testDynamicPairedLabelBindsTheStandInOnTheMacrosShape(): void
 	{
 		// PHPStan 2.2.9 changed how the generated forms-helper string arguments are printed.
 		InstalledVersionsGuard::requirePhpstan('>=2.2.9');
@@ -351,14 +350,11 @@ PHP), self::eliminate(EliminatorRun::family(ShapeFamily::LATTE_2), $php));
 PHP);
 
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
-        $latteInput = \is_object($ʟ_tmp = $dyn) ? $ʟ_tmp : \end($this->global->formsStack)[$ʟ_tmp];
-        if ($latteLabel = $latteInput->getLabel()) {
-            echo $latteLabel->addAttributes(['class' => "c"])->startTag();
-        }
+        $latteInput = \OriPhpstan\Nette\Latte\Runtime\Helpers::formField($dyn);
+        $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel($latteInput);
+        echo $latteLabel->addAttributes(['class' => "c"])->startTag();
         echo 'L';
-        if ($latteLabel) {
-            echo $latteLabel->endTag();
-        }
+        echo $latteLabel->endTag();
         $latteLabel = \OriPhpstan\Nette\Latte\Runtime\Helpers::formLabel('x');
         echo $latteLabel->startTag();
         echo 'S';

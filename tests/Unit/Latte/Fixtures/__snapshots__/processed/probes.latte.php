@@ -56,7 +56,6 @@ final class LatteTpl_fixtures_probes_latte_4c7d2b2d extends \Latte\Runtime\Templ
     public function lattePrepare($name, $mode): void
     {
         $this->createTemplate('blocks-snippets.latte', $this->params, "import")->render();
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
     }
     /**
      * @param string $name

@@ -49,6 +49,12 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 			self::assertSame($second, $third, 'steady-state runs must agree');
 			self::assertSame(
 				[
+					// ChoiceControl::getItems() is declared a plain array: echoing an item label is the template's own
+					// looseness, the only mixed the analysis at level max may report here.
+					[
+						'line' => 3,
+						'message' => 'Parameter #1 (mixed) of echo cannot be converted to string.',
+					],
 					[
 						'line' => 5,
 						'message' => 'Call to an undefined method Nette\Forms\Controls\TextInput::getItems().',
@@ -64,8 +70,13 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 			$this->messages($projectRoot, $srcDir, $tmpDir, $storeDir, self::TEMPLATE);
 			$afterEdit = $this->messages($projectRoot, $srcDir, $tmpDir, $storeDir, self::TEMPLATE);
 
+			// The undefined getItems() is an error type, which level max reports again where the loop uses it.
 			self::assertSame(
 				[
+					[
+						'line' => 2,
+						'message' => 'Argument of an invalid type mixed supplied for foreach, only iterables are supported.',
+					],
 					[
 						'line' => 2,
 						'message' => 'Call to an undefined method Nette\Forms\Controls\TextInput::getItems().',
@@ -77,6 +88,10 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 					[
 						'line' => 3,
 						'message' => 'Method Nette\Forms\Controls\BaseControl::getLabelPart() invoked with 1 parameter, 0 required.',
+					],
+					[
+						'line' => 3,
+						'message' => 'Parameter #1 (mixed) of echo cannot be converted to string.',
 					],
 					[
 						'line' => 5,
@@ -259,7 +274,7 @@ final class FormMacroTypingSpawnIntegrationTest extends BaseTestCase
 					$projectRoot . '/' . VendorDirectory::name() . '/bin/phpstan',
 					'analyse',
 					'--no-progress',
-					'--level=8',
+					'--level=max',
 					'--error-format=json',
 					'-c',
 					$isolated->getConfigPath(),

@@ -25,12 +25,4 @@ final class LatteTpl_fixtures_ifcurrent_latte_90517d0b extends \Latte\Runtime\Te
         }
         return [];
     }
-    /**
-     * @param string $dest
-     * @param string $label
-     */
-    public function lattePrepare($dest, $label): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

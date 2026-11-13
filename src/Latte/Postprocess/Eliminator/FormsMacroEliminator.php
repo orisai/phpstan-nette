@@ -29,7 +29,6 @@ use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeVisitor;
 use function array_map;
 use function array_reverse;
-use function assert;
 use function count;
 use function in_array;
 use function is_array;
@@ -39,8 +38,9 @@ use function is_string;
 // of them reduce to the same Helpers::form()/formObject()/formContainer()/formField() calls the
 // LatteForms bridge types. A paired {label} keeps its label in a temp on every bridge (Latte 2 guards
 // it with `if`, Latte 3 with `?->`); both become one `$latteLabel = Helpers::formLabel('x')` statement
-// followed by the plain startTag()/endTag() echoes. A dynamic reference on the stack-offset shape
-// stays as it is: its `is_object($ʟ_tmp = …) ? $ʟ_tmp : end(…)[$ʟ_tmp]` ternary is untyped either way.
+// followed by the plain startTag()/endTag() echoes. A dynamic reference on the stack-offset shape,
+// `is_object($ʟ_tmp = …) ? $ʟ_tmp : end(…)[$ʟ_tmp]`, becomes Helpers::formField(…) like the Latte 3 one, and the
+// input temp it binds stands for the field in the label and attributed-input stand-ins.
 final class FormsMacroEliminator extends EliminatorVisitor
 {
 
@@ -110,6 +110,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 	private const DYNAMIC_TEMP = "\u{29F}_tmp";
 
+	private const DYNAMIC_FIELD_ATTRIBUTE = 'formsMacroEliminator.dynamicField';
+
 	private const TEMP_RENAMES = [
 		self::ROLE_INPUT_TEMP => 'latteInput',
 		self::ROLE_LABEL_TEMP => 'latteLabel',
@@ -117,6 +119,10 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	];
 
 	private bool $labelBound = false;
+
+	private bool $dynamicInputBound = false;
+
+	private ?Expr $inputBinding = null;
 
 	public function describePattern(): string
 	{
@@ -128,7 +134,8 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			. 'parent restore); {formContainer c} formsStack[] = $formContainer = <lookup> | forms->begin($formContainer '
 			. '= forms->get(\'c\', Container::class)) -> $formContainer = Helpers::formContainer(\'c\'); '
 			. '{input}/{label}/{inputError}/n:name end(formsStack)["x"] | Runtime::item(\'x\', $this->global) | '
-			. 'forms->get(\'x\') -> Helpers::formField(\'x\') with the trailing ->getControl()/->getLabel()/->getError()/'
+			. 'forms->get(\'x\') | is_object($ʟ_tmp = $x) ? $ʟ_tmp : end(formsStack)[$ʟ_tmp] -> Helpers::formField(\'x\') '
+			. '/ Helpers::formField($x) with the trailing ->getControl()/->getLabel()/->getError()/'
 			. '->getControlPart()->attributes() chain kept; $ʟ_input/$ʟ_label/$ʟ_elem temps renamed to '
 			. '$latteInput/$latteLabel/$latteElem: ' . $this->patterns()->describe();
 	}
@@ -139,14 +146,13 @@ final class FormsMacroEliminator extends EliminatorVisitor
 	public function leaveNode(Node $node)
 	{
 		if ($node instanceof Expression) {
+			$this->noteInputBinding($node->expr);
 			$rebuilt = $this->rebuildFormOpen($node->expr) ?? $this->rebuildContainerPush($node->expr);
 			if ($rebuilt !== null) {
 				$rebuilt->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_VALUE);
 
 				return new Expression($rebuilt, $node->getAttributes());
 			}
-
-			$this->markDynamicContainerPush($node->expr);
 
 			return $this->isScopePlumbing($node->expr) ? NodeVisitor::REMOVE_NODE : null;
 		}
@@ -177,9 +183,19 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$input = $this->rebuildAttributedInput($node) ?? $this->rebuildPartGetter($node);
+		$input = $this->rebuildAttributedInput($node) ?? $this->rebuildPartGetter($node) ?? $this->rebuildControlHtml(
+			$node,
+		);
 		if ($input !== null) {
 			return $input;
+		}
+
+		$dynamic = $this->matchDynamicFieldReference($node);
+		if ($dynamic !== null) {
+			$call = $this->helperCall('formField', $dynamic, $node);
+			$call->setAttribute(self::DYNAMIC_FIELD_ATTRIBUTE, true);
+
+			return $call;
 		}
 
 		$lookup = $this->matchFieldLookup($node);
@@ -510,19 +526,6 @@ final class FormsMacroEliminator extends EliminatorVisitor
 		return $name === null ? null : new Assign($inner->var, $this->helperCall('formContainer', $name, $inner->expr));
 	}
 
-	// {formContainer $var}: the is_object() ternary stays, its $formContainer binding is still the macro's own.
-	private function markDynamicContainerPush(Expr $expr): void
-	{
-		if (
-			$expr instanceof Assign
-			&& $this->isFormsStackPush($expr->var)
-			&& $expr->expr instanceof Assign
-			&& $this->isVariableNamed($expr->expr->var, self::CONTAINER_VAR)
-		) {
-			$expr->expr->setAttribute(ImplicitBindingPruner::ATTRIBUTE, ImplicitBindingPruner::KIND_VALUE);
-		}
-	}
-
 	private function isScopePlumbing(Expr $expr): bool
 	{
 		if ($expr instanceof StaticCall && $this->isRuntimeCall($expr, self::METHOD_INITIALIZE_FORM)) {
@@ -722,12 +725,10 @@ final class FormsMacroEliminator extends EliminatorVisitor
 			return null;
 		}
 
-		$name = $this->matchHelperCall($expr->var, 'formField');
+		$name = $this->matchHelperCall($expr->var, 'formField') ?? $this->matchDynamicInput($expr->var);
 		if ($name === null) {
 			return null;
 		}
-
-		assert($expr->var instanceof StaticCall);
 
 		return new MethodCall(
 			$this->helperCall('formFieldPart', $name, $expr->var),
@@ -739,7 +740,96 @@ final class FormsMacroEliminator extends EliminatorVisitor
 
 	private function matchFieldCall(Expr $expr): ?Expr
 	{
-		return $this->matchHelperCall($expr, 'formField') ?? $this->matchHelperCall($expr, 'formFieldPart');
+		return $this->matchDynamicInput($expr)
+			?? $this->matchHelperCall($expr, 'formField')
+			?? $this->matchHelperCall($expr, 'formFieldPart');
+	}
+
+	private function matchDynamicInput(Expr $expr): ?Expr
+	{
+		return $this->dynamicInputBound && $this->isVariableNamed($expr, self::TEMP_RENAMES[self::ROLE_INPUT_TEMP])
+			? $expr
+			: null;
+	}
+
+	// Latte 2 {input $x}/{label $x}/n:name=$x: `is_object($ʟ_tmp = $x) ? $ʟ_tmp : end(formsStack)[$ʟ_tmp]`.
+	private function matchDynamicFieldReference(Expr $expr): ?Expr
+	{
+		if (!$expr instanceof Ternary || !$this->isVariableNamed($expr->if, self::DYNAMIC_TEMP)) {
+			return null;
+		}
+
+		if (
+			!$expr->cond instanceof FuncCall
+			|| !$this->isFuncCallNamed($expr->cond, 'is_object')
+			|| count($expr->cond->args) !== 1
+			|| !$expr->cond->args[0] instanceof Arg
+		) {
+			return null;
+		}
+
+		$tmpAssign = $expr->cond->args[0]->value;
+		if (!$tmpAssign instanceof Assign || !$this->isVariableNamed($tmpAssign->var, self::DYNAMIC_TEMP)) {
+			return null;
+		}
+
+		return $this->isVariableNamed(
+			$this->matchFieldLookup($expr->else),
+			self::DYNAMIC_TEMP,
+		)
+			? $tmpAssign->expr
+			: null;
+	}
+
+	// `$ʟ_input = [$_input =] <field>`: only a dynamic reference leaves the temp as the one handle on the field; the
+	// binding is the name of a static reference or the temp of a dynamic one.
+	private function noteInputBinding(Expr $expr): void
+	{
+		if (
+			!$expr instanceof Assign
+			|| !$this->isVariableNamed($expr->var, self::TEMP_RENAMES[self::ROLE_INPUT_TEMP])
+		) {
+			return;
+		}
+
+		$value = $expr->expr;
+		while ($value instanceof Assign) {
+			$value = $value->expr;
+		}
+
+		$this->dynamicInputBound = $value instanceof StaticCall
+			&& $value->getAttribute(self::DYNAMIC_FIELD_ATTRIBUTE) === true;
+		$this->inputBinding = $this->dynamicInputBound ? $expr->var : $this->matchHelperCall($value, 'formField');
+	}
+
+	// <select n:name> and <textarea n:name> print `$ʟ_input->getControl()->getHtml()`, which the vendor macro assumes
+	// to be Html like an attributed input.
+	private function rebuildControlHtml(Expr $expr): ?MethodCall
+	{
+		if (
+			!$expr instanceof MethodCall
+			|| !$expr->name instanceof Identifier
+			|| $expr->name->toString() !== 'getHtml'
+			|| !$expr->var instanceof MethodCall
+			|| !$expr->var->name instanceof Identifier
+			|| $expr->var->name->toString() !== 'getControl'
+			|| $expr->var->args !== []
+			|| $this->inputBinding === null
+			|| !$this->isVariableNamed($expr->var->var, self::TEMP_RENAMES[self::ROLE_INPUT_TEMP])
+		) {
+			return null;
+		}
+
+		$name = $this->inputBinding instanceof String_
+			? new String_($this->inputBinding->value)
+			: new Variable(self::TEMP_RENAMES[self::ROLE_INPUT_TEMP]);
+
+		return new MethodCall(
+			$this->helperCall('formInput', $name, $expr->var),
+			$expr->name,
+			$expr->args,
+			$expr->getAttributes(),
+		);
 	}
 
 	private function matchHelperCall(Expr $expr, string $method): ?Expr

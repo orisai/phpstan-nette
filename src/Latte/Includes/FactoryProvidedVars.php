@@ -624,7 +624,8 @@ final class FactoryProvidedVars
 
 		$vars = [];
 		if (class_exists(TemplateVariable::class) && is_a($rendererClass, Presenter::class, true)) {
-			foreach ((new ReflectionClass($rendererClass))->getProperties() as $property) {
+			$renderer = new ReflectionClass($rendererClass);
+			foreach ($renderer->getProperties() as $property) {
 				if (
 					!$property->isPublic()
 					|| $property->isStatic()
@@ -636,7 +637,7 @@ final class FactoryProvidedVars
 
 				$vars[$property->getName()] = [
 					'certainty' => Certainty::HAPPENS,
-					'type' => PropertyTypeResolver::resolve($property),
+					'type' => PropertyTypeResolver::resolve($property, $renderer),
 					'class' => $property->getDeclaringClass()->getName(),
 				];
 			}

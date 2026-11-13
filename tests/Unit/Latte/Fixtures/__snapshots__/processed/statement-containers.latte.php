@@ -147,17 +147,6 @@ final class LatteTpl_fixtures_statement_containers_latte_bfe136fb extends \Latte
      * @param string $x
      * @param string $tagName
      */
-    public function lattePrepare($cond, $level, $items, $x, $tagName): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
-    /**
-     * @param bool $cond
-     * @param int $level
-     * @param array $items
-     * @param string $x
-     * @param string $tagName
-     */
     public function blockSub($cond, $level, $items, $x, $tagName): void
     {
         echo 'embedded sub block';

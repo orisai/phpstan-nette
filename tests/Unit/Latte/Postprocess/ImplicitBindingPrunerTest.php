@@ -78,7 +78,7 @@ PHP));
 	public function testForeachElseKeepsItsIteratorAndDropsItsCounter(): void
 	{
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
-        $iterator = new \Latte\Runtime\CachingIterator($items);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($items as $item) {
             echo $item;
         }
@@ -103,7 +103,7 @@ PHP));
 	{
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
         foreach ($groups as $group) {
-            $iterator = new \Latte\Runtime\CachingIterator($group);
+            $iterator = new \Latte\Runtime\CachingIterator([]);
             foreach ($group as $item) {
                 echo $iterator->counter;
             }
@@ -126,10 +126,10 @@ PHP));
 	public function testOuterIteratorReadOnAPathAroundTheInnerLoopIsKept(): void
 	{
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
-        $iterator = new \Latte\Runtime\CachingIterator($groups);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($groups as $group) {
             if ($group) {
-                $iterator = new \Latte\Runtime\CachingIterator($group);
+                $iterator = new \Latte\Runtime\CachingIterator([]);
                 foreach ($group as $item) {
                     echo $iterator->counter;
                 }
@@ -153,7 +153,7 @@ PHP));
 	public function testIteratorReadInTheNextIterationAfterABreakIsKept(): void
 	{
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
-        $iterator = new \Latte\Runtime\CachingIterator($groups);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($groups as $group) {
             if ($group) {
                 break;
@@ -176,7 +176,7 @@ PHP));
         \OriPhpstan\Nette\Latte\Runtime\Helpers::form('f');
         echo \OriPhpstan\Nette\Latte\Runtime\Helpers::formField('x')->getControl();
         \OriPhpstan\Nette\Latte\Runtime\Helpers::formContainer('c');
-        $this->global->formsStack[] = \is_object($ʟ_tmp = $d) ? $ʟ_tmp : \end($this->global->formsStack)[$ʟ_tmp];
+        \OriPhpstan\Nette\Latte\Runtime\Helpers::formContainer($d);
         $form = $control['f'];
 PHP), self::pruneLatte2(<<<'PHP'
 		$form = $this->global->formsStack[] = $this->global->uiControl["f"];
@@ -280,7 +280,7 @@ PHP),
 
 		self::assertSame(EliminatorRun::printed(<<<'PHP'
         $iterations = 0;
-        $iterator = new \Latte\Runtime\CachingIterator($items);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($items as $item) {
             \OriPhpstan\Nette\Latte\Runtime\Helpers::edgeScope('k', []);
             $this->renderBlock('b', \get_defined_vars(), 'html');

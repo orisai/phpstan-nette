@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Postprocess;
 
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
+use OriPhpstan\Nette\Latte\Declarations\PhpDocTypeQualifier;
 use OriPhpstan\Nette\Latte\Declarations\PropertyTypeResolver;
 use OriPhpstan\Nette\Latte\Includes\ArgTyper;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
@@ -44,6 +45,15 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\CloningVisitor;
 use PHPStan\Parser\Parser;
+use PHPStan\PhpDocParser\Ast\Type\ArrayShapeNode;
+use PHPStan\PhpDocParser\Ast\Type\ArrayTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\ConstTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\NullableTypeNode;
+use PHPStan\PhpDocParser\Ast\Type\ObjectShapeNode;
+use PHPStan\PhpDocParser\Ast\Type\TypeNode;
+use PHPStan\PhpDocParser\Ast\Type\UnionTypeNode;
 use ReflectionClass;
 use ReflectionProperty;
 use function array_filter;
@@ -61,6 +71,8 @@ use function end;
 use function implode;
 use function is_string;
 use function ksort;
+use function ltrim;
+use function reset;
 use function rtrim;
 use function sort;
 use function strlen;
@@ -97,6 +109,9 @@ final class DeclarationInjector
 	private ArgTyper $argTyper;
 
 	private DeclaredVarsResolver $declaredVarsResolver;
+
+	/** @var array<string, true> */
+	private array $contextUnions = [];
 
 	public function __construct(
 		Parser $phpParser,
@@ -382,10 +397,106 @@ final class DeclarationInjector
 
 		$params = [];
 		foreach ($typesByName as $name => $types) {
-			$params[] = [$name, count($types) === 1 ? array_key_first($types) : 'mixed'];
+			$params[] = [$name, count($types) === 1 ? array_key_first($types) : $this->unionType(array_keys($types))];
 		}
 
 		return $params;
+	}
+
+	// The contexts' types as one flat union, members that are the same type spelled differently (`\\stdClass[]`,
+	// `array<stdClass>`) once. The union is the analysis's own, so it is declared through `@phpstan-param`, which
+	// PHPDoc style rules for the template's author leave alone.
+
+	/**
+	 * @param list<string> $types
+	 */
+	private function unionType(array $types): string
+	{
+		$union = self::flatUnion($types);
+		$this->contextUnions[$union] = true;
+
+		return $union;
+	}
+
+	/**
+	 * @param list<string> $types
+	 */
+	private static function flatUnion(array $types): string
+	{
+		sort($types);
+		$members = [];
+		foreach ($types as $type) {
+			$node = PhpDocTypeQualifier::parse($type);
+			if ($node === null) {
+				return implode('|', array_map(static fn (string $type): string => '(' . $type . ')', $types));
+			}
+
+			foreach (self::unionMembers($node) as $member) {
+				$members[self::memberKey($member)] = $member;
+			}
+		}
+
+		if (isset($members['mixed'])) {
+			return 'mixed';
+		}
+
+		ksort($members, SORT_STRING);
+		if (count($members) === 1) {
+			return (string) reset($members);
+		}
+
+		return implode('|', array_map(
+			static fn (TypeNode $member): string => $member instanceof IdentifierTypeNode
+				|| $member instanceof GenericTypeNode
+				|| $member instanceof ArrayTypeNode
+				|| $member instanceof ArrayShapeNode
+				|| $member instanceof ObjectShapeNode
+				|| $member instanceof ConstTypeNode
+					? (string) $member
+					: '(' . $member . ')',
+			$members,
+		));
+	}
+
+	/**
+	 * @return list<TypeNode>
+	 */
+	private static function unionMembers(TypeNode $node): array
+	{
+		if ($node instanceof NullableTypeNode) {
+			return array_merge(self::unionMembers($node->type), [new IdentifierTypeNode('null')]);
+		}
+
+		if (!$node instanceof UnionTypeNode) {
+			return [$node];
+		}
+
+		$members = [];
+		foreach ($node->types as $type) {
+			$members = array_merge($members, self::unionMembers($type));
+		}
+
+		return $members;
+	}
+
+	private static function memberKey(TypeNode $node): string
+	{
+		if ($node instanceof IdentifierTypeNode) {
+			return strtolower(ltrim($node->name, '\\'));
+		}
+
+		if ($node instanceof ArrayTypeNode) {
+			return 'array<' . self::memberKey($node->type) . '>';
+		}
+
+		if ($node instanceof GenericTypeNode) {
+			return self::memberKey($node->type) . '<' . implode(',', array_map(
+				static fn (TypeNode $type): string => self::memberKey($type),
+				$node->genericTypes,
+			)) . '>';
+		}
+
+		return (string) $node;
 	}
 
 	private function renameOverridingMethods(Class_ $class): void
@@ -438,7 +549,7 @@ final class DeclarationInjector
 				foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
 					$name = $property->getName();
 					$names[] = $name;
-					$types[$name] = PropertyTypeResolver::resolve($property);
+					$types[$name] = PropertyTypeResolver::resolve($property, $reflection);
 				}
 			} else {
 				$diagnostics[] = new Diagnostic(
@@ -926,7 +1037,7 @@ final class DeclarationInjector
 
 			$params[] = new Param(new Variable($name));
 			if ($type !== null) {
-				$docLines[] = " * @param $type \$$name";
+				$docLines[] = ' * ' . (isset($this->contextUnions[$type]) ? '@phpstan-param' : '@param') . " $type \$$name";
 			}
 		}
 

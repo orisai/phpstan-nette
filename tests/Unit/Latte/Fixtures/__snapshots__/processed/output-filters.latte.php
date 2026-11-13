@@ -36,13 +36,4 @@ final class LatteTpl_fixtures_output_filters_latte_903857f4 extends \Latte\Runti
         echo "\n";
         return [];
     }
-    /**
-     * @param string $x
-     * @param string $name
-     * @param \DateTimeImmutable $created
-     */
-    public function lattePrepare($x, $name, $created): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

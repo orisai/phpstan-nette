@@ -78,14 +78,4 @@ final class LatteTpl_fixtures_n_attributes_latte_366f42ea extends \Latte\Runtime
 ';
         return [];
     }
-    /**
-     * @param bool $cond
-     * @param array $items
-     * @param string $activeClass
-     * @param string $tagName
-     */
-    public function lattePrepare($cond, $items, $activeClass, $tagName): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

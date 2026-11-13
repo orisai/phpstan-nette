@@ -29,11 +29,4 @@ final class LatteTpl_fixtures_ui_macros_latte_1e9a68ee extends \Latte\Runtime\Te
 ';
         return [];
     }
-    /**
-     * @param object $obj
-     */
-    public function lattePrepare($obj): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

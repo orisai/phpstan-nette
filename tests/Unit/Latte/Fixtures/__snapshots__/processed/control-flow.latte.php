@@ -76,7 +76,7 @@ final class LatteTpl_fixtures_control_flow_latte_c4f04f4b extends \Latte\Runtime
             echo "\n";
         }
         echo "\n";
-        $iterator = new \Latte\Runtime\CachingIterator($items);
+        $iterator = new \Latte\Runtime\CachingIterator([]);
         foreach ($items as $item) {
             if ($item === \null) {
                 /* line 49 */
@@ -101,16 +101,5 @@ final class LatteTpl_fixtures_control_flow_latte_c4f04f4b extends \Latte\Runtime
         }
         echo "\n";
         return [];
-    }
-    /**
-     * @param bool $show
-     * @param int $level
-     * @param array $items
-     * @param bool $flag
-     * @param bool $showCaptured
-     */
-    public function lattePrepare($show, $level, $items, $flag, $showCaptured): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
     }
 }

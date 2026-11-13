@@ -28,11 +28,4 @@ final class LatteTpl_fixtures_capture_spaceless_latte_520212b0 extends \Latte\Ru
         \OriPhpstan\Nette\Latte\Runtime\Helpers::analyzed($x, '$x');
         return [];
     }
-    /**
-     * @param string $x
-     */
-    public function lattePrepare($x): void
-    {
-        \Nette\Bridges\ApplicationLatte\UIRuntime::initialize($this, $this->parentName, $this->blocks);
-    }
 }

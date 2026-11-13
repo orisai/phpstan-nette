@@ -150,9 +150,8 @@ final class EliminatorTest extends BaseTestCase
 		self::assertStringNotContainsString('trigger_error', $php);
 		self::assertStringNotContainsString('array_intersect_key', $php);
 		self::assertStringNotContainsString('getReferringTemplate', $php);
-		if (InstalledVersionsGuard::latteMajor() === 2) {
-			self::assertStringContainsString('UIRuntime::initialize', $php);
-		}
+		self::assertStringNotContainsString('UIRuntime::initialize', $php);
+		self::assertStringNotContainsString('lattePrepare', $php);
 	}
 
 	public function testEmptyPrepareMethodRemoved(): void
@@ -191,7 +190,7 @@ final class EliminatorTest extends BaseTestCase
 			"{varType array<int> \$items}\n{foreach \$items as \$i}{\$iterator->counter}{\$i}{/foreach}\n",
 		);
 
-		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '($items', $php);
+		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '([]);', $php);
 		self::assertStringContainsString('foreach ($items as $i)', $php);
 		self::assertStringNotContainsString('ʟ_it', $php);
 	}
@@ -239,8 +238,6 @@ final class EliminatorTest extends BaseTestCase
 
 		self::assertStringNotContainsString('ʟ_it', $php);
 		self::assertSame(2, substr_count($php, 'new \\' . self::cachingIteratorClass() . '('));
-		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '($groups);', $php);
-		self::assertStringContainsString('$iterator = new \\' . self::cachingIteratorClass() . '($group);', $php);
 		self::assertStringContainsString('foreach ($groups as $group)', $php);
 		self::assertStringContainsString('foreach ($group as $item)', $php);
 		self::assertStringNotContainsString('getParent', $php);
