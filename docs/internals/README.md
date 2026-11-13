@@ -13,6 +13,7 @@ Architecture, invariants, cache design, test layout and known limitations, for s
 - [latte-versions.md](latte-versions.md) – Latte 2/3 version seam, shape families, the Latte 3 compile, the upstream
   template corpus
 - [latte-forms.md](latte-forms.md) – the bridge checking form control names in templates
+- [phpstan-workarounds.md](phpstan-workarounds.md) – workarounds of PHPStan limitations and the upstream wishlist
 
 The [library-wide notes](#library-wide-notes) below cover the configuration guard, result-cache dependency tracking,
 test layout, dependency profiles, static analysis and running the gates.
