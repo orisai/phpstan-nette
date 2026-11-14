@@ -2138,6 +2138,31 @@ name was an unrelated method's `'user'` instead of dynamic, closing a shape that
 
 What still reads the asking scope is listed under [Known limitations](#known-limitations).
 
+### The asking class is a key, the asking scope is not
+
+`$this->hook($form)` in a base-class builder means a different body for every subclass: an abstract hook has none on
+the base, an overridable one is replaced by the override. So a walk asked on behalf of a class (the registering class
+`IndexShapeResolver::registeredFormShapeFor()` reads a scope-free shape for) resolves `$this->` calls against that
+**receiver** class, not against the class lexically enclosing the builder (`FormShapeAnalyzer::walkReceiver()`):
+
+- Only the receiver moves. Component names (`self::X`, `static::X`), the expression dependencies and the nested
+  container classes stay on the lexical class (`walkOwnerClass`); `$this->m()`, `[$this, 'm']`, `static` callables
+  and the invocation timing of a callee's parameters use `walkReceiverClass`.
+- The receiver is the asking class only when it is a proper subclass of the lexical class and the walked body names
+  `$this` at all; otherwise it is the lexical class and the entry key is unchanged. A receiver that differs adds
+  `@<receiver>` to the walk's store key, so the base's own entry (the abstract hook unfollowed, the shape open) and
+  each subclass's entry are separate, and a builder that never touches `$this` keeps one entry for all subclasses.
+- A followed callee inherits the receiver: `calleeContribution()` passes it to the nested
+  `analyzeContainerParam()`, which keys its own entry the same way, so a hook reached through a non-abstract helper
+  (`$this->buildExtra($form)` calling `$this->buildFooter($form)`) also resolves to the deepest override.
+- A walk under a foreign receiver records every ancestor file of the receiver, so a subclass adding or dropping an
+  override invalidates the entry even though the walked body did not move; the override's own body is recorded by
+  `CalleeShapeResolver` like any other followed callee, and becomes a dependency of every reader of the shape
+  (`HookOverrideInvalidationTest`).
+
+The receiver is a class name, a property of the request and not of the consumer's variables, so shapes stay
+independent of which file asks first.
+
 # What's checked
 
 Beyond inference, a few rules flag misuse:
@@ -2232,7 +2257,6 @@ wizards; DTO mapping; forms held in an object property (`$this->form`); generic 
 | Magic `add*` methods via `extensionMethod()`              | Runtime `__call` registrations aren't real methods, so PHPStan can't see them and no shape is inferred.                                                                                                                                          | [Add a real component](#magic-add-methods-are-not-supported) — offset assignment or extend + shared trait. |
 | Dynamic / non-constant component names                    | `addContainer($name)` / `addComponent(new Foo(), $bar)` with a non-literal name can't be keyed; the child resolves to `unknown`. A removal by non-literal name opens the shape.                                                                 | Use a constant string name.                                               |
 | `setMappedType()` with a non-literal or conditional class | Only a direct `setMappedType(Dto::class)` statement with a class-constant literal is captured; otherwise the container falls back to the crate/array shape.                                                                                     | Call it unconditionally with a `Dto::class` argument.                     |
-| An **abstract hook** a base-class builder calls           | `createComponentForm()` in an abstract base calling `$this->buildTypeFields($form)`, implemented by each subclass, is walked once per declaring file and resolves `$this->` against the class lexically enclosing the builder, where the hook is abstract and has no body. The call is unfollowed and the shape opens (`unfollowed_call`), so on a subclass the controls the override adds read as *may not exist* rather than as their classes. Following the override would need the walk keyed by the asking subclass as well, since the same builder then has one shape per subclass. | Call the hook with the form from the subclass's own `createComponentForm()`, or accept the open shape. |
 | Value-side inputs still read the **asking scope**          | Names and nested container classes are scope-free (see [A shape does not depend on who asks](#a-shape-does-not-depend-on-who-asks)), but other walk inputs are still typed through the consumer's scope: a control assigned as `$form['x'] = $control` or `addComponent($control, 'x')`, modifier arguments (`setRequired($flag)`, `setItems($items)`, `setNullable($n)`), a choice control's item keys from a variable, a replicator's own class (`$rep = $form->addDynamic(…)`). Where a consumer's scope binds the same variable name these can differ by who asked first. | Pass literals to modifiers in builders read from other files. |
 | `eval()` / `extract()` in a form-building method          | The body can't be analysed and the shape opens.                                                                                                                                                                                                 | Don't use them in a builder.                                              |
 | Writing a **known field** of a values crate                | `$values = $form->getValues(); $values->name = 'x';` reports `assign.propertyReadOnly`: the projection is a PHPStan object shape, whose properties are read-only, and the writable wrapper it would need is an `ExtendedPropertyReflection`, which PHPStan reserves (`@api-do-not-implement`). A field the form has not got is writable (the crate's own dynamic property) and not reported. | Copy the values into your own array or DTO before changing them. |

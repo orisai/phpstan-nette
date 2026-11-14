@@ -46,6 +46,8 @@ use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\ExternallyMutatedRe
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\FreeReachedRenderer;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\GetterReachedRenderer;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\HelperReachedRenderer;
+use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\HookBaseControl;
+use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\HookChildControl;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\InheritedBaseControl;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\InheritedSiblingControl;
 use Tests\OriPhpstan\Nette\Unit\LatteForms\Fixtures\Renderer\NewsManageRenderer;
@@ -565,6 +567,22 @@ final class FormPairingTest extends FormShapeTestCase
 			'no instance of the mutated subclass is a sibling of it - the match reaches up and down, never across',
 		);
 		self::assertSame(ResolvedForm::LOOKUP_ABSENT, $sibling->lookup([], 'late'));
+	}
+
+	public function testAnAbstractHookResolvesToTheOverrideOfTheRendererSubclass(): void
+	{
+		$child = $this->singleForm([HookChildControl::class], 'hookForm');
+
+		self::assertTrue($child->isClosed());
+		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $child->lookup([], 'early'));
+		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $child->lookup([], 'hooked'));
+		self::assertSame(ResolvedForm::LOOKUP_ABSENT, $child->lookup([], 'nope'));
+
+		$base = $this->singleForm([HookBaseControl::class], 'hookForm');
+
+		self::assertFalse($base->isClosed(), 'the base itself has no body for the abstract hook');
+		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $base->lookup([], 'early'));
+		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $base->lookup([], 'hooked'));
 	}
 
 	public function testADynamicallyNamedButtonOpensTheShapeThoughItCarriesNoValueUnknown(): void

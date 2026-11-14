@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Latte discovery follows `Presenter::switch()` (nette/application 3.2) as a view mutation
 - Latte: an ordinary run creates an absent narrowing store directory and removes the store files of deleted templates,
   also when it analyses only part of the paths; each store file records its including template
+- Forms: a base-class builder's `$this->hook($form)` (abstract or overridable) resolves to the asking subclass's
+  override, so a subclass, its templates and its callbacks see the fields the override adds instead of an open shape
 
 ### Changed
 

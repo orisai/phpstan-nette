@@ -121,6 +121,8 @@ final class FormShapeAnalyzer
 
 	private ?string $walkOwnerClass = null;
 
+	private ?string $walkReceiverClass = null;
+
 	private ?LocalVariableClassTracker $classTracker = null;
 
 	private ?ConstructedFormShapeResolver $constructedResolver = null;
@@ -268,10 +270,12 @@ final class FormShapeAnalyzer
 
 		$file = $astFile ?? $scope->getFile();
 		$fileHash = is_file($file) ? (string) sha1_file($file) : sha1($file);
+		$lexicalClass = $this->callees->enclosingClassName($file, $functionLike);
+		$receiverClass = $this->walkReceiver($lexicalClass, $ownerFqcn, $rootStmts);
 		$key = self::CACHE_VERSION . '|' . $this->codeVersion() . '|' . NodeId::functionLikeKey(
 			$astFile ?? '',
 			$functionLike,
-		) . '#' . $trackedName;
+		) . '#' . $trackedName . self::receiverKeySuffix($lexicalClass, $receiverClass);
 
 		return $this->cache->remember(
 			$fileHash,
@@ -286,7 +290,8 @@ final class FormShapeAnalyzer
 				$functionLike,
 				$ownerFqcn,
 				$scope,
-				$file
+				$lexicalClass,
+				$receiverClass
 			): FormShape {
 				if ($scopeFree) {
 					// Rerun the tracked-class resolution the caller already did above: that
@@ -297,7 +302,7 @@ final class FormShapeAnalyzer
 				}
 
 				$this->literalNameEnv = $this->buildLiteralNameEnv($rootStmts);
-				$this->walkOwnerClass = $this->callees->enclosingClassName($file, $functionLike);
+				$this->enterWalkOwner($lexicalClass, $receiverClass);
 				$this->factory->recordExpressionDependencies($rootStmts, $this->walkOwnerClass);
 				$this->eventStoredCallbackIds = $this->eventStoredCallbackNodeIds(
 					$rootStmts,
@@ -316,6 +321,7 @@ final class FormShapeAnalyzer
 				} finally {
 					$this->activeWalkNames[$trackedName]--;
 					$this->walkOwnerClass = null;
+					$this->walkReceiverClass = null;
 				}
 
 				$this->literalNameEnv = [];
@@ -366,7 +372,8 @@ final class FormShapeAnalyzer
 		string $className,
 		array $taggedRecords,
 		Scope $scope,
-		?string $astFile = null
+		?string $astFile = null,
+		?string $askingClass = null
 	): FormShape
 	{
 		$recordsByNode = [];
@@ -378,17 +385,27 @@ final class FormShapeAnalyzer
 
 		$file = $astFile ?? $scope->getFile();
 		$fileHash = is_file($file) ? (string) sha1_file($file) : sha1($file);
+		$lexicalClass = $this->callees->enclosingClassName($file, $functionLike);
+		$receiverClass = $this->walkReceiver($lexicalClass, $askingClass, $rootStmts);
 		$key = self::CACHE_VERSION . '|param|' . $this->codeVersion() . '|' . NodeId::functionLikeKey(
 			$astFile ?? '',
 			$functionLike,
-		) . '#' . $paramName;
+		) . '#' . $paramName . self::receiverKeySuffix($lexicalClass, $receiverClass);
 
 		return $this->cache->remember(
 			$fileHash,
 			$key,
-			function () use ($rootStmts, $paramName, $recordsByNode, $className, $scope, $functionLike, $file): FormShape {
+			function () use (
+				$rootStmts,
+				$paramName,
+				$recordsByNode,
+				$className,
+				$scope,
+				$lexicalClass,
+				$receiverClass
+			): FormShape {
 				$this->literalNameEnv = $this->buildLiteralNameEnv($rootStmts);
-				$this->walkOwnerClass = $this->callees->enclosingClassName($file, $functionLike);
+				$this->enterWalkOwner($lexicalClass, $receiverClass);
 				$this->factory->recordExpressionDependencies($rootStmts, $this->walkOwnerClass);
 				$this->eventStoredCallbackIds = $this->eventStoredCallbackNodeIds(
 					$rootStmts,
@@ -407,6 +424,7 @@ final class FormShapeAnalyzer
 				} finally {
 					$this->activeWalkNames[$paramName]--;
 					$this->walkOwnerClass = null;
+					$this->walkReceiverClass = null;
 				}
 
 				$this->literalNameEnv = [];
@@ -417,6 +435,59 @@ final class FormShapeAnalyzer
 				);
 			},
 		);
+	}
+
+	/**
+	 * @param array<Node> $rootStmts
+	 */
+	private function walkReceiver(?string $lexicalClass, ?string $askingClass, array $rootStmts): ?string
+	{
+		if ($lexicalClass === null || $askingClass === null) {
+			return $lexicalClass;
+		}
+
+		$asking = ltrim($askingClass, '\\');
+		if (strtolower($asking) === strtolower($lexicalClass)) {
+			return $lexicalClass;
+		}
+
+		$provider = $this->factory->getReflectionProvider();
+		if (!$provider->hasClass($asking) || !$provider->hasClass($lexicalClass)) {
+			return $lexicalClass;
+		}
+
+		$askingReflection = $provider->getClass($asking);
+		if (!$askingReflection->isSubclassOfClass($provider->getClass($lexicalClass))) {
+			return $lexicalClass;
+		}
+
+		$usesThis = (new NodeFinder())->findFirst(
+			$rootStmts,
+			static fn (Node $n): bool => $n instanceof Variable && $n->name === 'this',
+		);
+
+		return $usesThis === null ? $lexicalClass : $askingReflection->getName();
+	}
+
+	private static function receiverKeySuffix(?string $lexicalClass, ?string $receiverClass): string
+	{
+		return $receiverClass === null || $receiverClass === $lexicalClass ? '' : '@' . $receiverClass;
+	}
+
+	private function enterWalkOwner(?string $lexicalClass, ?string $receiverClass): void
+	{
+		$this->walkOwnerClass = $lexicalClass;
+		$this->walkReceiverClass = $receiverClass;
+		if ($receiverClass === null || $receiverClass === $lexicalClass) {
+			return;
+		}
+
+		foreach ($this->factory->getReflectionProvider()->getClass($receiverClass)->getAncestors() as $ancestor) {
+			$ancestorFile = $ancestor->getFileName();
+			if ($ancestorFile !== null) {
+				$this->cache->recorder()->record($ancestorFile);
+			}
+		}
 	}
 
 	private function constructedFormClass(Expr $formExpr, FunctionLike $functionLike, Scope $scope): ?string
@@ -3430,7 +3501,7 @@ final class FormShapeAnalyzer
 			return null;
 		}
 
-		$resolved = $this->callees->resolveContainerParam($call, $argIndex, $this->walkOwnerClass);
+		$resolved = $this->callees->resolveContainerParam($call, $argIndex, $this->walkReceiverClass);
 		if ($resolved === null) {
 			return null;
 		}
@@ -3457,6 +3528,7 @@ final class FormShapeAnalyzer
 			(new EnclosingFunctionLikeLocator())->taggedRecords($resolved['method'], $ctx->getScope()),
 			$ctx->getScope(),
 			$resolved['file'],
+			$this->walkReceiverClass,
 		);
 
 		if ($contribution->getMappedType() !== null) {
@@ -3780,7 +3852,11 @@ final class FormShapeAnalyzer
 	): CompositionState
 	{
 		foreach ($this->mutatingCallbackArguments($stmt, $ctx->getTrackedName(), $ctx->getRecordsByNode()) as $entry) {
-			if (!$this->callees->parameterImmediacy($entry['call'], $entry['index'], $this->walkOwnerClass)->maybe()) {
+			if (!$this->callees->parameterImmediacy(
+				$entry['call'],
+				$entry['index'],
+				$this->walkReceiverClass,
+			)->maybe()) {
 				continue;
 			}
 
@@ -3975,7 +4051,7 @@ final class FormShapeAnalyzer
 	private function callableTargetClass(Expr $target): ?string
 	{
 		if ($target instanceof Variable) {
-			return $target->name === 'this' ? $this->walkOwnerClass : null;
+			return $target->name === 'this' ? $this->walkReceiverClass : null;
 		}
 
 		if (
@@ -3993,8 +4069,12 @@ final class FormShapeAnalyzer
 	private function resolveCallableClassName(string $name): ?string
 	{
 		$lower = strtolower($name);
-		if ($lower === 'self' || $lower === 'static') {
+		if ($lower === 'self') {
 			return $this->walkOwnerClass;
+		}
+
+		if ($lower === 'static') {
+			return $this->walkReceiverClass;
 		}
 
 		return $lower === 'parent' ? null : ltrim($name, '\\');
@@ -4078,7 +4158,7 @@ final class FormShapeAnalyzer
 	{
 		$ids = [];
 		foreach ($this->mutatingCallbackArguments($haystack, $trackedName, $recordsByNode) as $entry) {
-			if ($this->callees->parameterImmediacy($entry['call'], $entry['index'], $this->walkOwnerClass)->yes()) {
+			if ($this->callees->parameterImmediacy($entry['call'], $entry['index'], $this->walkReceiverClass)->yes()) {
 				continue;
 			}
 
