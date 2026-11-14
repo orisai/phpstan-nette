@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   read precisely opens the shape (`external_mutation_unmodelled`) instead of leaving it closed without the field
 - Forms: `$button->getForm()` in an `onClick` handler (a closure or a `[$this, 'method']` registered on a button of a
   built form) is the form the button belongs to, with its typed values and components
+- Forms: writing a field of typed form values (`$values->name = 'x'`) no longer reports `assign.propertyReadOnly`; the
+  written type is not checked
 
 ### Changed
 

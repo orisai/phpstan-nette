@@ -1051,8 +1051,8 @@ The shape of a form — its children, their classes and values — is inferred w
   `parent::` calls are not followed and open the shape.
 - A form read in another file uses the builder's own names and container classes, but a modifier argument held in a
   variable (`setRequired($flag)`, `setItems($items)`) is typed in the reading file's scope.
-- Writing a field the form has (`$values->name = 'x'` on typed values) is reported as `assign.propertyReadOnly`; copy
-  the values into your own array or DTO to change them.
+- Writing a field the form has (`$values->name = 'x'` on typed values) is allowed, but the written value is not checked:
+  `$values->name = 1` on a `string` field is not reported, and later reads keep the field's form type.
 - `$button->getForm()` is typed only in an `onClick` handler registered on a button added to a form in the same
   method (a closure) or in a `createComponent*()` of the same class (`[$this, 'method']`), with the button as its first,
   `SubmitButton`-typed parameter.

@@ -240,13 +240,15 @@ with the code.
 
 ### A values crate cannot be writable
 
-- **Does.** Nothing: a write to a known field of typed values (`$values->name = 'x'`) is reported as
-  `assign.propertyReadOnly`.
+- **Does.** `FormValuesWriteIgnoreExtension` (`phpstan.ignoreErrorExtension`) drops `assign.propertyReadOnly` on a
+  `PropertyAssignNode` whose fetch is a field the receiver's `FormValuesObjectShapeType` lists (`$values->name = 'x'`).
+  Every other read-only write still reports.
 - **Because.** The projection is an object shape, whose properties are read-only; a writable wrapper would implement
   `ExtendedPropertyReflection`, which is `@api-do-not-implement`.
 - **Needs.** A writable object-shape property, or permission to implement the reflection.
-- **Cost.** Users copy values into an array or DTO ([known limitations](forms.md#known-limitations)).
-- **Gone when.** PHPStan offers either.
+- **Cost.** The written value is not checked against the field's type, and reads after the write keep the form's type
+  ([known limitations](forms.md#known-limitations)). `PropertyAssignNode` is not `@api` (table below).
+- **Gone when.** PHPStan offers either; then the extension goes and a write is type-checked.
 
 ### One stub per class
 
@@ -325,6 +327,7 @@ Each is ignored by path in `tools/phpstan.common.neon` (or inline, or in the bas
 | `DicUsageProvider` | `instanceof InClassNode` | shipmonk's usage provider receives every node; the class node is not BC-promised |
 | `TypeCanonicalizer` | `instanceof AccessoryType` | accessory types are skipped when compound types are flattened |
 | `FormShapeType` | `VerbosityLevel::isPrecise()` | the precise describe of a shape |
+| `FormValuesWriteIgnoreExtension` | `instanceof PropertyAssignNode`, `getPropertyFetch()` | the node `WritingToReadOnlyPropertiesRule` reports on ([above](#a-values-crate-cannot-be-writable)) |
 | tests (`TrackingScope`, rule tests, `TestFileFinder`, …) | constructors of `CollectedDataNode`, `InClassNode`, `CleaningParser`, … | build PHPStan internals by hand |
 
 ## Seen, not worked around in code
@@ -357,6 +360,6 @@ Ordered by value to this library.
 | 5 | A `DependencyTracker` for parsers | `LatteDependencyRule` |
 | 6 | Offset narrowing that asks `offsetGet()` return type extensions | `ComponentAccessTypeResolver::offsetGetType()`, the `??` limitation |
 | 7 | A volatile marker for `CollectedDataNode` rules | `RerunValueExtension` |
-| 8 | Writable object-shape properties | the `assign.propertyReadOnly` limitation |
+| 8 | Writable object-shape properties | `FormValuesWriteIgnoreExtension` and its unchecked write types |
 | 9 | Per-member stub merging | the reflection-read catalogs (in part) |
 | 10 | `@api` on `VarTagTypeRuleHelper`, `FileFinder`, `FileExcluder`, `BootstrapFilesRunner` | the remaining `phpstanApi.*` ignores |

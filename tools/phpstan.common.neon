@@ -176,6 +176,11 @@ parameters:
 			path: ../src/Latte/Customs/EngineSource.php
 			reportUnmatched: false
 
+		# A values crate field write is reported on PropertyAssignNode, the node the ignore extension has to read.
+		-
+			identifiers: [phpstanApi.class, phpstanApi.method]
+			path: ../src/Forms/Type/FormValuesWriteIgnoreExtension.php
+
 		# The analysed-paths universe walk reuses PHPStan's own file finder.
 		-
 			identifier: phpstanApi.method

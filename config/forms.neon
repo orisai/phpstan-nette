@@ -412,3 +412,8 @@ services:
 			resolver: @indexShapeResolver
 		tags:
 			- phpstan.rules.rule
+
+	-
+		class: OriPhpstan\Nette\Forms\Type\FormValuesWriteIgnoreExtension
+		tags:
+			- phpstan.ignoreErrorExtension
