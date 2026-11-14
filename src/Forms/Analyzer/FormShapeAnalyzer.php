@@ -125,6 +125,8 @@ final class FormShapeAnalyzer
 
 	private ?string $walkReceiverClass = null;
 
+	private ?FunctionLike $walkFunction = null;
+
 	private ?LocalVariableClassTracker $classTracker = null;
 
 	private ?ConstructedFormShapeResolver $constructedResolver = null;
@@ -305,6 +307,7 @@ final class FormShapeAnalyzer
 
 				$this->literalNameEnv = $this->buildLiteralNameEnv($rootStmts);
 				$this->enterWalkOwner($lexicalClass, $receiverClass);
+				$this->walkFunction = $functionLike;
 				$this->factory->recordExpressionDependencies($rootStmts, $this->walkOwnerClass);
 				$this->eventStoredCallbackIds = $this->eventStoredCallbackNodeIds(
 					$rootStmts,
@@ -324,6 +327,7 @@ final class FormShapeAnalyzer
 					$this->activeWalkNames[$trackedName]--;
 					$this->walkOwnerClass = null;
 					$this->walkReceiverClass = null;
+					$this->walkFunction = null;
 				}
 
 				$this->literalNameEnv = [];
@@ -404,10 +408,12 @@ final class FormShapeAnalyzer
 				$className,
 				$scope,
 				$lexicalClass,
-				$receiverClass
+				$receiverClass,
+				$functionLike
 			): FormShape {
 				$this->literalNameEnv = $this->buildLiteralNameEnv($rootStmts);
 				$this->enterWalkOwner($lexicalClass, $receiverClass);
+				$this->walkFunction = $functionLike;
 				$this->factory->recordExpressionDependencies($rootStmts, $this->walkOwnerClass);
 				$this->eventStoredCallbackIds = $this->eventStoredCallbackNodeIds(
 					$rootStmts,
@@ -427,6 +433,7 @@ final class FormShapeAnalyzer
 					$this->activeWalkNames[$paramName]--;
 					$this->walkOwnerClass = null;
 					$this->walkReceiverClass = null;
+					$this->walkFunction = null;
 				}
 
 				$this->literalNameEnv = [];
@@ -1286,6 +1293,21 @@ final class FormShapeAnalyzer
 			return $state->withContainerShape($name, $childShape);
 		}
 
+		if ($expr instanceof Assign && $expr === $taggedNode && $expr->var instanceof ArrayDimFetch) {
+			return $state->withContainerShape(
+				$name,
+				$this->offsetWrittenContainerShape(
+					$expr->expr,
+					$this->nestedContainerClass(
+						$this->offsetWrittenValueClass($expr->expr) ?? $this->classNameOfType(
+							$scope->getType($expr->expr),
+						),
+						$trackedClass,
+					),
+				),
+			);
+		}
+
 		$childClassName = $this->nestedContainerClass(
 			$this->trackedAddReturnClass($taggedNode, $ctx) ?? $this->classNameOfType($scope->getType($taggedNode)),
 			$trackedClass,
@@ -1730,7 +1752,48 @@ final class FormShapeAnalyzer
 			$controlEscaped,
 			$this->absorbedBodyBoundNames,
 			$this->walkOwnerClass,
+			$rec['node'] instanceof Assign && $rec['node']->var instanceof ArrayDimFetch
+				? $this->offsetWrittenValueClass($rec['node']->expr)
+				: null,
 		);
+	}
+
+	/**
+	 * The class of a value written into a component offset, read off the walked function and the
+	 * declarations it names rather than off the asking scope, which may bind the same names to anything.
+	 */
+	private function offsetWrittenValueClass(Expr $value): ?string
+	{
+		if ($this->walkFunction === null) {
+			return null;
+		}
+
+		$class = $this->classTracker()->resolveExpressionClass(
+			$value,
+			$this->walkFunction,
+			$this->walkReceiverClass ?? $this->walkOwnerClass,
+		);
+
+		return $class === null || !$this->factory->getReflectionProvider()->hasClass($class) ? null : $class;
+	}
+
+	/**
+	 * A container written into an offset was built elsewhere: a `new X()` is its constructor's shape, any
+	 * other value has the constructor's fields of its class at best, plus whatever its producer added.
+	 */
+	private function offsetWrittenContainerShape(Expr $value, string $childClassName): FormShape
+	{
+		$new = $value instanceof New_ && $value->class instanceof Node\Name;
+		$class = $new ? $value->class->toString() : ltrim($childClassName, '\\');
+		$constructed = $class === '' || strpos($class, '|') !== false
+			? null
+			: $this->constructedResolver()->resolve($class, $new ? count($value->getArgs()) : 1);
+
+		$shape = $constructed ?? FormShape::empty($class === '' ? null : '\\' . $class)->withUnknownReason(
+			UnknownReason::UNRESOLVED_ORIGIN,
+		);
+
+		return $new ? $shape : $shape->withUnknownReason(UnknownReason::CONTAINER_REFERENCE);
 	}
 
 	/**

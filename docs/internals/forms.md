@@ -1394,6 +1394,19 @@ if ($cond) {
 $form->getValues(); // => Nette\Utils\ArrayHash{sub: Nette\Utils\ArrayHash{x: string|null, y: string|null}}
 ```
 
+A container built elsewhere and written into an offset keeps its class, read off the builder's own code (the declared
+return of a factory method, a typed property or parameter) rather than off the asking scope. A `new X()` is shaped by
+`X`'s constructor and may close; any other producer (a generated factory, a helper) contributes the constructor's
+fields of its declared class but leaves the container open (`container_reference`), since the producer may add more:
+
+```php
+$form['phone'] = $this->phoneFactory->create(true); // => PhoneContainer{number: string, …+unknown(container_reference)}
+$form['card'] = new PhoneContainer();               // => PhoneContainer{number: string}
+```
+
+An offset write whose value has no resolvable class leaves an opaque field and opens the shape with
+`unresolved_origin`, so the `partiallyUnknown` report on it names a reason.
+
 ## Replicators
 
 Kdyby's `addDynamic`, contributte's `addMultiplier`, or any tagged replicator (
@@ -2368,7 +2381,7 @@ wizards; DTO mapping; forms held in an object property (`$this->form`); generic 
 | Magic `add*` methods via `extensionMethod()`              | Runtime `__call` registrations aren't real methods, so PHPStan can't see them and no shape is inferred.                                                                                                                                          | [Add a real component](#magic-add-methods-are-not-supported) — offset assignment or extend + shared trait. |
 | Dynamic / non-constant component names                    | `addContainer($name)` / `addComponent(new Foo(), $bar)` with a non-literal name can't be keyed; the child resolves to `unknown`. A removal by non-literal name opens the shape.                                                                 | Use a constant string name.                                               |
 | `setMappedType()` with a non-literal or conditional class | Only a direct `setMappedType(Dto::class)` statement with a class-constant literal is captured; otherwise the container falls back to the crate/array shape.                                                                                     | Call it unconditionally with a `Dto::class` argument.                     |
-| Value-side inputs still read the **asking scope**          | Names and nested container classes are scope-free (see [A shape does not depend on who asks](#a-shape-does-not-depend-on-who-asks)), but other walk inputs are still typed through the consumer's scope: a control assigned as `$form['x'] = $control` or `addComponent($control, 'x')`, modifier arguments (`setRequired($flag)`, `setItems($items)`, `setNullable($n)`), a choice control's item keys from a variable, a replicator's own class (`$rep = $form->addDynamic(…)`). Where a consumer's scope binds the same variable name these can differ by who asked first. | Pass literals to modifiers in builders read from other files. |
+| Value-side inputs still read the **asking scope**          | Names and nested container classes are scope-free (see [A shape does not depend on who asks](#a-shape-does-not-depend-on-who-asks)), but other walk inputs are still typed through the consumer's scope: a control assigned as `$form['x'] = $control` whose class the builder's own code does not name, `addComponent($control, 'x')`, modifier arguments (`setRequired($flag)`, `setItems($items)`, `setNullable($n)`), a choice control's item keys from a variable, a replicator's own class (`$rep = $form->addDynamic(…)`). Where a consumer's scope binds the same variable name these can differ by who asked first. | Pass literals to modifiers in builders read from other files. |
 | `eval()` / `extract()` in a form-building method          | The body can't be analysed and the shape opens.                                                                                                                                                                                                 | Don't use them in a builder.                                              |
 | Writing a **known field** of a values crate is **not type-checked** | `$values = $form->getValues(); $values->name = 'x';` is legal on the runtime crate, but the projection is a PHPStan object shape, whose properties are read-only, and the writable wrapper it would need is an `ExtendedPropertyReflection`, which PHPStan reserves (`@api-do-not-implement`). `FormValuesWriteIgnoreExtension` therefore drops `assign.propertyReadOnly` for a field the crate's shape lists — and only that — so a wrong-typed write (`$values->name = 1` on a `string` field) goes unreported and later reads keep the form's type. A field the form has not got is writable (the crate's own dynamic property) and not reported. | Copy the values into your own array or DTO when the written type matters. |
 | Reading a divergent field inside a shared helper                | A helper typed `function(Form $f)` is analysed once: the shapes from its call sites are merged into their **union**, so a field present at any site counts as present. This only matters when the helper **reads** a field whose *presence* differs between sites — that read isn't flagged as possibly-absent. Passing a form/container around otherwise (logging it, adding the same container to several forms, bulk-setting inputs nullable) is unaffected, since those don't depend on a per-site-divergent field. | Split the helper along the divergence, or guard the read with `isset()`. |

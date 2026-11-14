@@ -138,6 +138,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Forms: a control passed as the target of `addConditionOn()` keeps its value type, and a helper that only reads a
   child off the form (`$c = $form[$name]; assert(…); return $c;`) no longer opens the shape when its result is used only
   as such a target
+- Forms: a container written into an offset (`$form['phone'] = $this->phoneFactory->create()`) keeps its class and its
+  constructor's fields instead of standing closed and empty, and an offset-written value of unknown type names
+  `unresolved_origin` instead of an empty reason list
 - Forms: an offset keyed by one of several literal names (`foreach (['a', 'b'] as $n) $form[$n]`) resolves to those
   children only, instead of to every child of the form
 - Latte: `{input x:$key}` and `{label x:$key /}` on a control the analysis cannot resolve no longer report

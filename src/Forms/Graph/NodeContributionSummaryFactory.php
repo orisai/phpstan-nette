@@ -128,7 +128,8 @@ final class NodeContributionSummaryFactory
 		array $extraChains = [],
 		bool $controlEscaped = false,
 		array $bodyBoundNames = [],
-		?string $ownerClass = null
+		?string $ownerClass = null,
+		?string $offsetValueClass = null
 	): NodeContributionSummary
 	{
 		// The summary types names, flags and control classes through the asking scope, which reads
@@ -152,6 +153,7 @@ final class NodeContributionSummaryFactory
 				$extraChains,
 				$controlEscaped,
 				$bodyBoundNames,
+				$offsetValueClass,
 			);
 		} finally {
 			$this->nameOwnerClass = $previousOwner;
@@ -173,7 +175,8 @@ final class NodeContributionSummaryFactory
 		array $literalNameEnv,
 		array $extraChains,
 		bool $controlEscaped,
-		array $bodyBoundNames
+		array $bodyBoundNames,
+		?string $offsetValueClass = null
 	): NodeContributionSummary
 	{
 		$opKind = $tagged->getOperationKind();
@@ -235,12 +238,19 @@ final class NodeContributionSummaryFactory
 				null,
 				$this->isBodyBoundVariable($node->expr, $bodyBoundNames)
 					? new ControlValueResolution(ControlValueResolution::KIND_UNKNOWN_TYPE, null, [])
-					: $this->catalog->resolveControlType($scope->getType($node->expr)),
+					: $this->catalog->resolveControlType(
+						$offsetValueClass !== null ? new ObjectType($offsetValueClass) : $scope->getType($node->expr),
+					),
 				$scope,
 				$extraChains,
 				$controlEscaped ? Certainty::UNKNOWN : Certainty::HAPPENS,
 				$bodyBoundNames,
 			);
+
+			$reasons = $dynamicName ? [UnknownReason::DYNAMIC_NAME] : [];
+			if ($resolution->getKind() === ControlValueResolution::KIND_UNKNOWN_TYPE) {
+				$reasons[] = UnknownReason::UNRESOLVED_ORIGIN;
+			}
 
 			return new NodeContributionSummary(
 				$nodeId,
@@ -248,7 +258,7 @@ final class NodeContributionSummaryFactory
 				$name,
 				$dynamicName,
 				$resolution,
-				$dynamicName ? [UnknownReason::DYNAMIC_NAME] : [],
+				$reasons,
 			);
 		}
 

@@ -50,6 +50,20 @@ final class InferenceUnknownRuleTest extends InferenceRuleTest
 		);
 	}
 
+	public function testAnOffsetWriteOfAnUnknownValueNamesItsReason(): void
+	{
+		$this->analyse(
+			[__DIR__ . '/Fixtures/Rule/OffsetWrittenUnknownValue.php'],
+			[
+				[
+					"Form value 'raw' has an unknown type.",
+					15,
+					'Form shape opened by: unresolved_origin',
+				],
+			],
+		);
+	}
+
 	/**
 	 * An opaque slot lost its VALUE type, not its component. FormShapeProjector::offset() now reads
 	 * the control class back out of componentTypes for these names instead of answering mixed, and
