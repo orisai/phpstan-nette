@@ -14,7 +14,9 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeFinder;
+use function assert;
 use function is_string;
 use function spl_object_id;
 
@@ -132,6 +134,135 @@ final class ComponentHandleUses
 		}
 
 		return true;
+	}
+
+	/**
+	 * Whether every occurrence of the handle only reads it without calling anything on it: the read
+	 * that bound it (or $origin, the assignment target the caller bound it with), an `instanceof` probe,
+	 * a condition target, and — when the caller answers for the returned value — `return $handle;`.
+	 * Stricter than everyUseIsInert(): a handle whose name is unknown may be a container, on which a
+	 * non-registering call (`setMappedType()`) still changes the values.
+	 *
+	 * @param array<Node> $stmts
+	 */
+	public static function everyUseIsPassive(
+		array $stmts,
+		string $handleName,
+		string $trackedName,
+		bool $returnIsInert,
+		?Variable $origin = null
+	): bool
+	{
+		$finder = new NodeFinder();
+
+		$inert = [];
+		if ($origin !== null) {
+			$inert[spl_object_id($origin)] = true;
+		}
+
+		foreach (self::reads($stmts, $trackedName) as $read) {
+			if ($read['handle'] === $handleName) {
+				$inert[spl_object_id($read['assign']->var)] = true;
+			}
+		}
+
+		foreach ($finder->findInstanceOf($stmts, Instanceof_::class) as $probe) {
+			if ($probe->expr instanceof Variable && $probe->expr->name === $handleName) {
+				$inert[spl_object_id($probe->expr)] = true;
+			}
+		}
+
+		foreach (self::conditionTargets($stmts) as $target) {
+			$inert[spl_object_id($target)] = true;
+		}
+
+		if ($returnIsInert) {
+			foreach ($finder->findInstanceOf($stmts, Return_::class) as $return) {
+				if ($return->expr instanceof Variable && $return->expr->name === $handleName) {
+					$inert[spl_object_id($return->expr)] = true;
+				}
+			}
+		}
+
+		$seen = false;
+		foreach ($finder->findInstanceOf($stmts, Variable::class) as $variable) {
+			if ($variable->name !== $handleName) {
+				continue;
+			}
+
+			if (!isset($inert[spl_object_id($variable)])) {
+				return false;
+			}
+
+			$seen = true;
+		}
+
+		return $seen;
+	}
+
+	/**
+	 * Whether a function only reads children off its container parameter into handles, each of
+	 * which it uses passively and may return: such a body registers and removes nothing on it.
+	 *
+	 * @param array<Node> $stmts
+	 */
+	public static function onlyPassiveReads(array $stmts, string $paramName): bool
+	{
+		$reading = [];
+		foreach ((new NodeFinder())->findInstanceOf($stmts, Expression::class) as $expression) {
+			if (!$expression->expr instanceof Assign) {
+				continue;
+			}
+
+			foreach (self::reads([$expression->expr], $paramName) as $read) {
+				if ($read['assign'] !== $expression->expr || $read['handle'] === $paramName) {
+					continue;
+				}
+
+				if (!self::everyUseIsPassive($stmts, $read['handle'], $paramName, true)) {
+					return false;
+				}
+
+				$receiver = $read['assign']->expr;
+				assert($receiver instanceof ArrayDimFetch || $receiver instanceof MethodCall);
+				$reading[spl_object_id($receiver->var)] = true;
+			}
+		}
+
+		foreach ((new NodeFinder())->findInstanceOf($stmts, Variable::class) as $variable) {
+			if ($variable->name === $paramName && !isset($reading[spl_object_id($variable)])) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * The variables passed as the control a condition is evaluated on — `addConditionOn($control, …)`
+	 * stores the control to read its value during validation and never changes or attaches it.
+	 *
+	 * @param array<Node> $nodes
+	 * @return list<Variable>
+	 */
+	public static function conditionTargets(array $nodes): array
+	{
+		$targets = [];
+		foreach ((new NodeFinder())->find(
+			$nodes,
+			static fn (Node $n): bool => ($n instanceof MethodCall || $n instanceof NullsafeMethodCall)
+				&& $n->name instanceof Identifier
+				&& $n->name->toLowerString() === 'addconditionon'
+				&& !$n->isFirstClassCallable(),
+		) as $call) {
+			assert($call instanceof MethodCall || $call instanceof NullsafeMethodCall);
+			$arg = $call->getArgs()[0] ?? null;
+			if ($arg !== null && $arg->name === null && !$arg->unpack && $arg->value instanceof Variable) {
+				$targets[] = $arg->value;
+			}
+		}
+
+		return $targets;
 	}
 
 	/**

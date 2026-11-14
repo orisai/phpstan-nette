@@ -95,6 +95,8 @@ use function sha1;
 use function sha1_file;
 use function sort;
 use function spl_object_id;
+use function stripos;
+use function strlen;
 use function strncmp;
 use function strpos;
 use function strtolower;
@@ -1008,6 +1010,13 @@ final class FormShapeAnalyzer
 			}
 
 			foreach ($this->trackedArgumentCalls($stmt, $trackedName) as $passed) {
+				if (
+					$passed['index'] !== null
+					&& $this->passiveReaderCall($stmt, $passed['call'], $passed['index'], $ctx)
+				) {
+					continue;
+				}
+
 				$contribution = $passed['index'] === null
 					? null
 					: $this->calleeContribution($passed['call'], $passed['index'], $ctx);
@@ -1775,7 +1784,7 @@ final class FormShapeAnalyzer
 
 			$root = $this->chainRootDepth($expr, $controlVar, $binding->getRulesVars(), $trackedName);
 			if ($root === null) {
-				if (!$pureAlias && $this->referencesAnyVariable($expr, $controlVar, $binding->getRulesVars())) {
+				if (!$pureAlias && $this->leaksAnyVariable($expr, $controlVar, $binding->getRulesVars())) {
 					$bindings[$controlVar] = $binding->escape();
 					$state = $this->refoldBinding($bindings[$controlVar], $trackedName, $trackedClass, $state);
 				}
@@ -2101,9 +2110,35 @@ final class FormShapeAnalyzer
 			}
 
 			foreach ($call->getArgs() as $arg) {
-				if ($this->referencesAnyVariable($arg, $controlVar, $rulesVars)) {
+				if ($this->leaksAnyVariable($arg, $controlVar, $rulesVars)) {
 					return true;
 				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * referencesAnyVariable() less the occurrences that only name a condition's target control:
+	 * `addConditionOn($control, …)` reads the control's value when validating and never changes it.
+	 *
+	 * @param array<string, int> $rulesVars
+	 */
+	private function leaksAnyVariable(Node $node, string $controlVar, array $rulesVars): bool
+	{
+		$conditionTargets = [];
+		foreach (ComponentHandleUses::conditionTargets([$node]) as $target) {
+			$conditionTargets[spl_object_id($target)] = true;
+		}
+
+		foreach ((new NodeFinder())->findInstanceOf($node, Variable::class) as $variable) {
+			if (!is_string($variable->name) || isset($conditionTargets[spl_object_id($variable)])) {
+				continue;
+			}
+
+			if ($variable->name === $controlVar || isset($rulesVars[$variable->name])) {
+				return true;
 			}
 		}
 
@@ -3506,6 +3541,74 @@ final class FormShapeAnalyzer
 				|| $this->isAnalysisSentinel($call)
 				|| $this->isContainerRegistration($call, $trackedName),
 		);
+	}
+
+	/**
+	 * A call to a helper that only reads children off the form (`$control = $form[$name]; assert(…);
+	 * return $control;`) adds nothing, provided this statement discards the result or binds it to a
+	 * local used only passively here too.
+	 */
+	private function passiveReaderCall(Node\Stmt $stmt, CallLike $call, int $argIndex, WalkContext $ctx): bool
+	{
+		if (!$stmt instanceof Expression) {
+			return false;
+		}
+
+		$expr = $stmt->expr;
+		if ($expr !== $call) {
+			if (
+				!$expr instanceof Assign
+				|| $expr->expr !== $call
+				|| !$expr->var instanceof Variable
+				|| !is_string($expr->var->name)
+				|| !ComponentHandleUses::everyUseIsPassive(
+					$ctx->getRootStmts(),
+					$expr->var->name,
+					$ctx->getTrackedName(),
+					false,
+					$expr->var,
+				)
+			) {
+				return false;
+			}
+		}
+
+		$resolved = $this->callees->resolveContainerParam($call, $argIndex, $this->walkReceiverClass);
+
+		return $resolved !== null
+			&& ComponentHandleUses::onlyPassiveReads($resolved['method']->stmts ?? [], $resolved['paramName'])
+			&& !$this->declaresAnyComponentFactory($resolved['paramClass'])
+			&& !$this->declaresAnyComponentFactory($ctx->getTrackedClass());
+	}
+
+	/**
+	 * A read under a name the call does not spell creates and attaches through a `createComponent<Name>()`
+	 * of the container, so a reader is passive only on a class declaring none. A class reflection cannot
+	 * resolve may declare one.
+	 */
+	private function declaresAnyComponentFactory(string $class): bool
+	{
+		$provider = $this->factory->getReflectionProvider();
+		$className = ltrim($class, '\\');
+		if ($className === '' || strpos($className, '|') !== false || !$provider->hasClass($className)) {
+			return true;
+		}
+
+		$classReflection = $provider->getClass($className);
+		foreach ($classReflection->getAncestors() as $ancestor) {
+			$file = $ancestor->getFileName();
+			if ($file !== null) {
+				$this->cache->recorder()->record($file);
+			}
+		}
+
+		foreach ($classReflection->getNativeReflection()->getMethods() as $method) {
+			if (strlen($method->getName()) > 15 && stripos($method->getName(), 'createComponent') === 0) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

@@ -1280,6 +1280,30 @@ $form->addText('c2')->addCondition(Form::Filled)->addRule(Form::Float);         
 $form->addText('c')->addConditionOn($form['x'], Form::Equal, 1)->endCondition()->addRule(Form::Float); // => ''|float
 ```
 
+A control named as a condition's target (`addConditionOn($has, …)`) is only read, so a bound control passed there
+keeps its slot typed; any other argument position still counts as a leak of the binding and opens its value. The same
+target position is a passive use of a pulled-out handle, which is what lets a reader helper stay closed:
+
+```php
+private function getControl(Form $form, string $name): Control
+{
+    $control = $form[$name];               // a read under a name the helper does not spell
+    assert($control instanceof Control);   // a type probe
+
+    return $control;                       // handed back, and used only as a condition target there
+}
+
+$nationality = $this->getControl($form, 'nationality');
+$form->addText('birth')->addConditionOn($nationality, Form::Equal, 'CZ'); // the form stays closed
+```
+
+Such a call adds nothing when the helper's body touches its container parameter only through reads into handles
+used passively (the read, `instanceof`, a condition target, `return`) and the caller discards the result or binds it
+to a local used passively as well (`ComponentHandleUses::onlyPassiveReads()`, `everyUseIsPassive()`). A method call on
+the handle is not passive here, unlike for a leaf pulled under a literal name: the child is unknown and may be a
+container whose values a non-registering call (`setMappedType()`) still changes. A container class declaring any
+`createComponent<Name>()` is refused, since a read under an unknown name may create and attach.
+
 These fold identically whether the rule is chained inline, applied as a separate statement on a control variable, or
 applied through a `Rules` variable:
 

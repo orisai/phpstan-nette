@@ -111,7 +111,7 @@ final class CollidingChannelsOffset
 		} else {
 			$slot = $form->addText('bag');
 			$c = $form->addText('c');
-			$c->addConditionOn($slot, $form::EQUAL, true)->setRequired();
+			$c->setHtmlAttribute('data-peer', $slot)->setRequired();
 		}
 
 		assertType('Tests\OriPhpstan\Nette\Doubles\Forms\Form\FormContainer{inner: string}', $form['bag']);

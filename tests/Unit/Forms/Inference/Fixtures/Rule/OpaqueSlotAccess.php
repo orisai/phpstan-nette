@@ -12,7 +12,7 @@ final class OpaqueSlotAccess
 		$form = new ApplicationForm();
 		$a = $form->addText('a');
 		$c = $form->addText('c');
-		$c->addConditionOn($a, $form::EQUAL, true)->setRequired();
+		$c->setHtmlAttribute('data-peer', $a)->setRequired();
 
 		$form['a'];
 	}
@@ -22,7 +22,7 @@ final class OpaqueSlotAccess
 		$form = new ApplicationForm();
 		$a = $form->addText('a');
 		$c = $form->addText('c');
-		$c->addConditionOn($a, $form::EQUAL, true)->setRequired();
+		$c->setHtmlAttribute('data-peer', $a)->setRequired();
 
 		$form->getValues()->a;
 	}
