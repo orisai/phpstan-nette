@@ -265,6 +265,15 @@ services:
 			- phpstan.broker.dynamicMethodReturnTypeExtension
 
 	-
+		class: OriPhpstan\Nette\Forms\Component\ButtonFormTypeResolver
+		arguments:
+			guard: @orisai.nette.configurationGuard
+			enabled: @orisai.nette.configuration::get(forms.enabled)
+			model: @containerModel
+		tags:
+			- phpstan.broker.expressionTypeResolverExtension
+
+	-
 		class: OriPhpstan\Nette\Forms\Component\HandlerParamFormTypeResolver
 		arguments:
 			guard: @orisai.nette.configurationGuard

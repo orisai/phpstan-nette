@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Forms: fields another class adds to a built component (`$control['form']->addText('extra')`) are part of the form's
   shape as optional fields, in `onSuccess` handlers, `$this['form']` reads and templates; an addition that cannot be
   read precisely opens the shape (`external_mutation_unmodelled`) instead of leaving it closed without the field
+- Forms: `$button->getForm()` in an `onClick` handler (a closure or a `[$this, 'method']` registered on a button of a
+  built form) is the form the button belongs to, with its typed values and components
 
 ### Changed
 

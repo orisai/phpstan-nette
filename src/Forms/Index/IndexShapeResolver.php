@@ -253,6 +253,49 @@ final class IndexShapeResolver
 	}
 
 	/**
+	 * The form a button-event handler method's button belongs to: every `$form->...->onClick[] = [$this,
+	 * 'method']` registration on a form a createComponent* returns, merged like the form-param handlers.
+	 */
+	public function resolveButtonHandlerForm(string $class, string $method): ?FormShape
+	{
+		$key = InterproceduralShapeKey::forButtonHandlerForm($class, $method);
+		if ($this->cache->recorder()->hasActiveFrame()) {
+			$this->cache->recorder()->recordFingerprint($key, $this->index->fingerprint($key));
+		}
+
+		if (array_key_exists($key, $this->memo)) {
+			$this->cache->recorder()->replay($this->memo[$key][1]);
+
+			return $this->memo[$key][0];
+		}
+
+		if (isset($this->resolving[$key])) {
+			return null;
+		}
+
+		$this->resolving[$key] = true;
+		try {
+			$this->memo[$key] = $this->cache->recorder()->capture(function () use ($class, $method): ?FormShape {
+				$result = null;
+				foreach ($this->index->buttonHandlerSites($class, $method) as $site) {
+					$siteShape = $this->registeredFormShape($site['fact']);
+					if ($siteShape === null) {
+						continue;
+					}
+
+					$result = $result === null ? $siteShape : $result->merge($siteShape);
+				}
+
+				return $result;
+			});
+		} finally {
+			unset($this->resolving[$key]);
+		}
+
+		return $this->memo[$key][0];
+	}
+
+	/**
 	 * The registered form's constructed class for a handler/pass-through param key, resolved scope-free
 	 * WITHOUT the shape walk (no analyzeFormValue, no getType() on the reader scope). A caller narrows
 	 * the bare handler-param variable to this class BEFORE the offset walk that reflects the builder's

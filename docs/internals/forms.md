@@ -1072,6 +1072,29 @@ public function filterSubmitted(ApplicationForm $f): void
 }
 ```
 
+A **button** handler gets the button, not the form, so what is typed is `$button->getForm()`
+(`ButtonFormTypeResolver`, through `ContainerModel::resolveButtonFormShape()`), as a `FormShapeType` of the form the button
+was added to — so `getValues()`, offsets and a local bound to it all read the shape:
+
+```php
+$form->addSubmit('save')->onClick[] = [$this, 'saveClicked'];
+$form['box']['delete']->onClick[] = function (SubmitButton $button): void {
+    $button->getForm()->getValues(); // => Nette\Utils\ArrayHash{…the form's fields…}
+};
+
+public function saveClicked(SubmitButton $button): void
+{
+    $button->getForm()['name']; // => Nette\Forms\Controls\TextInput
+}
+```
+
+The receiver of `onClick` is peeled back to the form variable it hangs off (`RegistrationRecognizer::eventReceiverRoot()`:
+`add*` calls, literal offsets and `getComponent()` hops, and a local bound once to such a chain). A method handler is
+recorded in the registration index like a form-param handler, under its own key (`bf:<class>::<method>`, so the
+button parameter is never typed as the form) and only from a `createComponent*()` returning that form; a closure is
+resolved from its own registration in the enclosing method. The button must be the handler's first parameter, typed
+as a `SubmitButton` (or a subclass) and never reassigned, and `getForm()` must use the default `$throw`.
+
 A handler that **registers a component** on its form parameter is a different question, answered on the builder's side:
 the registration is deferred past the factory, so the built form's shape opens instead of claiming the control absent —
 see [Callables stored on an event property](#callables-stored-on-an-event-property).
@@ -2320,7 +2343,6 @@ wizards; DTO mapping; forms held in an object property (`$this->form`); generic 
 | Value-side inputs still read the **asking scope**          | Names and nested container classes are scope-free (see [A shape does not depend on who asks](#a-shape-does-not-depend-on-who-asks)), but other walk inputs are still typed through the consumer's scope: a control assigned as `$form['x'] = $control` or `addComponent($control, 'x')`, modifier arguments (`setRequired($flag)`, `setItems($items)`, `setNullable($n)`), a choice control's item keys from a variable, a replicator's own class (`$rep = $form->addDynamic(…)`). Where a consumer's scope binds the same variable name these can differ by who asked first. | Pass literals to modifiers in builders read from other files. |
 | `eval()` / `extract()` in a form-building method          | The body can't be analysed and the shape opens.                                                                                                                                                                                                 | Don't use them in a builder.                                              |
 | Writing a **known field** of a values crate                | `$values = $form->getValues(); $values->name = 'x';` reports `assign.propertyReadOnly`: the projection is a PHPStan object shape, whose properties are read-only, and the writable wrapper it would need is an `ExtendedPropertyReflection`, which PHPStan reserves (`@api-do-not-implement`). A field the form has not got is writable (the crate's own dynamic property) and not reported. | Copy the values into your own array or DTO before changing them. |
-| `$button->getForm()` in an `onClick` handler               | Only a handler's **form** parameter is typed as the form it is bound on; a `SubmitButton` parameter's `getForm()` keeps the declared `Form`, so its values are a plain `ArrayHash`. | Take the form from `$button->getForm()` in a closure registered in the builder, or register an `onSuccess` handler. |
 | Reading a divergent field inside a shared helper                | A helper typed `function(Form $f)` is analysed once: the shapes from its call sites are merged into their **union**, so a field present at any site counts as present. This only matters when the helper **reads** a field whose *presence* differs between sites — that read isn't flagged as possibly-absent. Passing a form/container around otherwise (logging it, adding the same container to several forms, bulk-setting inputs nullable) is unaffected, since those don't depend on a per-site-divergent field. | Split the helper along the divergence, or guard the read with `isset()`. |
 | `$c['x'] ?? …` on PHPStan 2.3 types its left side as `IComponent` | PHPStan 2.3 prices the `??` from `Type::getOffsetValueType()` too, which never asks the `offsetGet()` dynamic return type extensions, and the value an assignment stores from the coalesce does not go through an expression type resolver answering the offset. `isset()` is restored (see [Existence checks](#existence-checks-whose-answer-is-already-known)); `??` is not. | Read the offset under an `isset()` guard instead of `??`. |
 | Anonymous-class controls referenced from another file     | The anonymous-class reference isn't serialisable across files; the slot exists but its control class falls back to a generic ancestor.                                                                                                          | Move it to a named class.                                                 |

@@ -42,6 +42,8 @@ use function strncmp;
 final class RegistrationRecognizer
 {
 
+	public const BUTTON_EVENT = 'onClick';
+
 	/**
 	 * @return list<RegistrationFact>
 	 */
@@ -135,13 +137,15 @@ final class RegistrationRecognizer
 				continue;
 			}
 
-			if (!$lhs->var instanceof Variable || !is_string($lhs->var->name)) {
+			$propName = $lhs->name->toString();
+			if (!EventPropertyName::matches($propName)) {
 				continue;
 			}
 
-			$receiverVar = $lhs->var->name;
-			$propName = $lhs->name->toString();
-			if (!EventPropertyName::matches($propName)) {
+			$receiverVar = $propName === self::BUTTON_EVENT
+				? $this->eventReceiverRoot($lhs->var, $method, $returnedVars)
+				: ($lhs->var instanceof Variable && is_string($lhs->var->name) ? $lhs->var->name : null);
+			if ($receiverVar === null) {
 				continue;
 			}
 
@@ -174,6 +178,76 @@ final class RegistrationRecognizer
 		}
 
 		return $facts;
+	}
+
+	/**
+	 * The variable an event receiver hangs off: `$form->addSubmit('save')`, `$form['box']['save']` and a
+	 * local bound once to such a chain all hang off `$form`. A variable in $stopAt, or one bound to
+	 * anything but a chain, is the root; a chain step that is not an add*, a literal offset or a
+	 * literal getComponent(), or a variable bound more than once, roots at nothing.
+	 *
+	 * @param array<string, true> $stopAt
+	 */
+	public function eventReceiverRoot(Expr $expr, ClassMethod $method, array $stopAt): ?string
+	{
+		$stmts = $method->getStmts() ?? [];
+		$closureInnerIds = ClosureScope::innerNodeIds($stmts);
+		$seen = [];
+		while (true) {
+			if ($expr instanceof Variable) {
+				if (!is_string($expr->name) || $expr->name === 'this' || isset($seen[$expr->name])) {
+					return null;
+				}
+
+				$name = $expr->name;
+				if (isset($stopAt[$name])) {
+					return $name;
+				}
+
+				$seen[$name] = true;
+				$assigns = [];
+				foreach ((new NodeFinder())->findInstanceOf($stmts, Assign::class) as $assign) {
+					if ($assign->var instanceof Variable && $assign->var->name === $name) {
+						$assigns[] = $assign;
+					}
+				}
+
+				if (count($assigns) !== 1 || isset($closureInnerIds[spl_object_id($assigns[0])])) {
+					return null;
+				}
+
+				$bound = $assigns[0]->expr;
+				if (!$bound instanceof MethodCall && !$bound instanceof ArrayDimFetch) {
+					return $name;
+				}
+
+				$expr = $bound;
+
+				continue;
+			}
+
+			if ($expr instanceof ArrayDimFetch && $expr->dim instanceof String_) {
+				$expr = $expr->var;
+
+				continue;
+			}
+
+			if (
+				$expr instanceof MethodCall
+				&& $expr->name instanceof Identifier
+				&& !$expr->isFirstClassCallable()
+				&& (
+					RegisteringMethodName::matches($expr->name->toString())
+					|| $this->literalAccess($expr) !== null
+				)
+			) {
+				$expr = $expr->var;
+
+				continue;
+			}
+
+			return null;
+		}
 	}
 
 	/**

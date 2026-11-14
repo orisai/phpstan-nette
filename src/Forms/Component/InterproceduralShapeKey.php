@@ -39,6 +39,11 @@ final class InterproceduralShapeKey
 		return 'mp:' . ltrim($declaringFqcn, '\\') . '::' . $methodName . '#' . $paramIndex;
 	}
 
+	public static function forButtonHandlerForm(string $declaringFqcn, string $methodName): string
+	{
+		return 'bf:' . ltrim($declaringFqcn, '\\') . '::' . $methodName;
+	}
+
 	public static function forComponentMutation(string $componentName): string
 	{
 		return 'mut:' . $componentName;

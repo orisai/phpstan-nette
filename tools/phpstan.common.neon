@@ -75,7 +75,7 @@ parameters:
 			path: ../src/Forms/Catalog/Stub/VendorCatalogFreshness.php
 		-
 			identifier: cast.useless
-			count: 3
+			count: 4
 			path: ../src/Forms/Component/ContainerModel.php
 		-
 			identifier: cast.useless

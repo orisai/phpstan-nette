@@ -101,6 +101,16 @@ class RegistrationIndex implements FingerprintValidator
 	}
 
 	/**
+	 * @return list<array{file: string, fact: RegistrationFact}>
+	 */
+	public function buttonHandlerSites(string $class, string $method): array
+	{
+		$this->build();
+
+		return $this->handlerContrib[InterproceduralShapeKey::forButtonHandlerForm($class, $method)] ?? [];
+	}
+
+	/**
 	 * Pass-through edges are stored PRE-CONTAINMENT: the analysed-paths gate belongs on the callee
 	 * method's declaring file, which only reflection resolves, so A6 (IndexShapeResolver) applies
 	 * it when it resolves the declaring file. The syntactic calleeClass keyed here is the class the
@@ -237,7 +247,9 @@ class RegistrationIndex implements FingerprintValidator
 		foreach ($this->pendingHandler as $entry) {
 			$fact = $entry['fact'];
 			foreach ($this->targetClasses($fact->getRegisteringClass()) as $class) {
-				$key = InterproceduralShapeKey::forMethodParam($class, $fact->getHandlerMethod(), 0);
+				$key = $fact->getEventProperty() === RegistrationRecognizer::BUTTON_EVENT
+					? InterproceduralShapeKey::forButtonHandlerForm($class, $fact->getHandlerMethod())
+					: InterproceduralShapeKey::forMethodParam($class, $fact->getHandlerMethod(), 0);
 				$handler[$key][] = ['file' => $entry['file'], 'fact' => $this->reKeyHandler($fact, $class)];
 			}
 		}

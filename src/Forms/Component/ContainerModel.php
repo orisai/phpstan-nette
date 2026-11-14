@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Forms\Component;
 
 use Nette\Application\UI\Component as UiComponent;
 use Nette\Forms\Container as NetteContainer;
+use Nette\Forms\Controls\SubmitButton;
 use Nette\Forms\Form as NetteForm;
 use Nette\IOException;
 use Nette\Utils\ArrayHash;
@@ -19,6 +20,7 @@ use OriPhpstan\Nette\Forms\Catalog\WizardMeta;
 use OriPhpstan\Nette\Forms\Graph\ClosureScope;
 use OriPhpstan\Nette\Forms\Graph\NodeContributionSummaryFactory;
 use OriPhpstan\Nette\Forms\Index\IndexShapeResolver;
+use OriPhpstan\Nette\Forms\Index\RegistrationRecognizer;
 use OriPhpstan\Nette\Forms\Inference\EnclosingFunctionLikeLocator;
 use OriPhpstan\Nette\Forms\Inference\EventContextLocator;
 use OriPhpstan\Nette\Forms\Inference\EventPropertyName;
@@ -142,6 +144,9 @@ final class ContainerModel
 
 	/** @var array<int, true> */
 	private array $eventCallbackShapesComputing = [];
+
+	/** @var array<string, true> */
+	private array $buttonFormComputing = [];
 
 	private ?string $currentFile = null;
 
@@ -1176,6 +1181,162 @@ final class ContainerModel
 	private static function replicatorIdentity(?string $parentClassName, string $name): string
 	{
 		return sha1(($parentClassName ?? '') . '|' . $name);
+	}
+
+	/**
+	 * The form `$button->getForm()` returns inside a button-event handler: a closure registered as
+	 * `<chain off the form>->onClick[] = function (SubmitButton $button) {…}`, or a method registered
+	 * as `[$this, 'method']` there. The button is the handler's first parameter, as Nette passes it.
+	 */
+	public function resolveButtonFormShape(MethodCall $call, Scope $scope): ?FormShape
+	{
+		$this->evictOnFileChange($scope->getFile());
+
+		$classReflection = $scope->getClassReflection();
+		$functionName = $scope->getFunctionName();
+		if (
+			!$call->name instanceof Identifier
+			|| $call->name->toString() !== 'getForm'
+			|| !$call->var instanceof Variable
+			|| !is_string($call->var->name)
+			|| $call->var->name === 'this'
+			|| !self::throwsByDefault($call)
+			|| $classReflection === null
+			|| $functionName === null
+		) {
+			return null;
+		}
+
+		$pair = $this->ownerAndEnclosing($scope);
+		if ($pair === null) {
+			return null;
+		}
+
+		[, $enclosing] = $pair;
+
+		$guardKey = $scope->getFile() . '|' . spl_object_id($call);
+		if (isset($this->buttonFormComputing[$guardKey])) {
+			return null;
+		}
+
+		$this->buttonFormComputing[$guardKey] = true;
+		try {
+			$closure = $this->capturingClosureFor($call->var, $enclosing);
+			if ($closure !== null) {
+				return $this->buttonClosureFormShape(
+					$call->var,
+					$closure,
+					$enclosing,
+					$classReflection->getName(),
+					$scope,
+				);
+			}
+
+			if (!$this->isButtonParam($enclosing->getParams()[0] ?? null, $call->var->name, $enclosing, $scope)) {
+				return null;
+			}
+
+			$this->indexShapeResolver->bindScope($scope);
+
+			return $this->indexShapeResolver->resolveButtonHandlerForm($classReflection->getName(), $functionName);
+		} finally {
+			unset($this->buttonFormComputing[$guardKey]);
+		}
+	}
+
+	private function buttonClosureFormShape(
+		Variable $button,
+		Closure $closure,
+		ClassMethod $enclosing,
+		string $ownerFqcn,
+		Scope $scope
+	): ?FormShape
+	{
+		if (
+			!is_string($button->name)
+			|| !$this->isButtonParam($closure->getParams()[0] ?? null, $button->name, $closure, $scope)
+		) {
+			return null;
+		}
+
+		$assign = $this->findEnclosingEventAssign($closure, $enclosing);
+		if ($assign === null || $assign[1] !== RegistrationRecognizer::BUTTON_EVENT) {
+			return null;
+		}
+
+		$recognizer = new RegistrationRecognizer();
+		$returned = $recognizer->returnedVariableNames($enclosing);
+		$root = $recognizer->eventReceiverRoot($assign[0], $enclosing, $returned);
+		if ($root === null) {
+			return null;
+		}
+
+		$methodName = $enclosing->name->toString();
+		if (isset($returned[$root]) && strncmp($methodName, 'createComponent', 15) === 0) {
+			return $this->classComponentShape($ownerFqcn, lcfirst((string) substr($methodName, 15)), $scope);
+		}
+
+		$analyzer = AnalyzerStackFactory::build(
+			$this->catalogReader,
+			$this->cache,
+			$this->richParser,
+			$this->analysedPaths->all(),
+		);
+		$shape = $analyzer->analyzeFormValue(
+			new Variable($root),
+			$enclosing,
+			(new EnclosingFunctionLikeLocator())->taggedRecords($enclosing, $scope),
+			$scope,
+			$scope->getFile(),
+			$ownerFqcn,
+			true,
+		);
+
+		return $this->isContainerShape($shape) ? $shape : null;
+	}
+
+	private function isContainerShape(FormShape $shape): bool
+	{
+		$className = $shape->getClassName();
+
+		return !ReturnShapeSupport::isClassNameUnresolved($className)
+			&& (new ObjectType(NetteContainer::class))->isSuperTypeOf(new ObjectType(ltrim($className, '\\')))->yes();
+	}
+
+	private function isButtonParam(?Node\Param $param, string $name, Node\FunctionLike $function, Scope $scope): bool
+	{
+		if ($param === null || !$param->var instanceof Variable || $param->var->name !== $name) {
+			return false;
+		}
+
+		$type = $param->type instanceof Node\NullableType ? $param->type->type : $param->type;
+		if (!$type instanceof Name) {
+			return false;
+		}
+
+		if (!(new ObjectType(SubmitButton::class))->isSuperTypeOf(new ObjectType($scope->resolveName($type)))->yes()) {
+			return false;
+		}
+
+		foreach ((new NodeFinder())->findInstanceOf($function->getStmts() ?? [], Assign::class) as $assign) {
+			if ($assign->var instanceof Variable && $assign->var->name === $name) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private static function throwsByDefault(MethodCall $call): bool
+	{
+		$args = $call->getArgs();
+		if ($args === []) {
+			return true;
+		}
+
+		return count($args) === 1
+			&& $args[0]->value instanceof Node\Expr\ConstFetch
+			&& $args[0]->value->name->toLowerString() === 'true';
 	}
 
 	public function resolveEventCallbackFormShape(Variable $node, Scope $scope): ?FormShape

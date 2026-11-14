@@ -991,7 +991,8 @@ The shape of a form — its children, their classes and values — is inferred w
 - `$form['email']` and `getComponent('email')` – the control's class; paths such as `$form['address-city']` too
 - `getValues()` (and `$form->values`), `getUntrustedValues()`, `getValue()` – typed values; disabled and omitted
   controls and buttons are handled
-- `onSuccess` and other callbacks – the form and `$values` parameters typed
+- `onSuccess` and other callbacks – the form and `$values` parameters typed; in an `onClick` handler,
+  `$button->getForm()` is the form the button was added to
 - validation – `setRequired()` and rules narrow values in `onSuccess` and after `isValid()`/`isSuccess()`
 - choice controls – `setItems()` narrows the value to the item keys
 - date controls – `setFormat()` selects the value type
@@ -1052,8 +1053,9 @@ The shape of a form — its children, their classes and values — is inferred w
   variable (`setRequired($flag)`, `setItems($items)`) is typed in the reading file's scope.
 - Writing a field the form has (`$values->name = 'x'` on typed values) is reported as `assign.propertyReadOnly`; copy
   the values into your own array or DTO to change them.
-- In an `onClick` handler taking the button, `$button->getForm()` is the declared form class: its values are not
-  typed.
+- `$button->getForm()` is typed only in an `onClick` handler registered on a button added to a form in the same
+  method (a closure) or in a `createComponent*()` of the same class (`[$this, 'method']`), with the button as its first,
+  `SubmitButton`-typed parameter.
 
 ### Latte features
 
