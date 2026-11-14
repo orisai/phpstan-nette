@@ -75,7 +75,7 @@ parameters:
 			path: ../src/Forms/Catalog/Stub/VendorCatalogFreshness.php
 		-
 			identifier: cast.useless
-			count: 2
+			count: 3
 			path: ../src/Forms/Component/ContainerModel.php
 		-
 			identifier: cast.useless
@@ -83,7 +83,7 @@ parameters:
 			path: ../src/Forms/Component/FormOriginTracer.php
 		-
 			identifier: cast.useless
-			count: 1
+			count: 2
 			path: ../src/Forms/Index/IndexShapeResolver.php
 		-
 			identifier: cast.useless

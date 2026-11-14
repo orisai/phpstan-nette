@@ -383,7 +383,11 @@ final class FormPairingTest extends FormShapeTestCase
 			'OutsideMutator adds user_employer_id to this very form; the builder walk cannot see it',
 		);
 		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $form->lookup([], 'name'));
-		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $form->lookup([], 'user_employer_id'));
+		self::assertSame(
+			ResolvedForm::LOOKUP_PRESENT,
+			$form->lookup([], 'user_employer_id'),
+			'the outside mutation is folded into the shape as a maybe-present control',
+		);
 		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $form->lookup([], 'nothing_adds_this'));
 	}
 
@@ -396,7 +400,8 @@ final class FormPairingTest extends FormShapeTestCase
 			'ParentPresenterReplica adds files_submit through $this[newsManage][newsForm]',
 		);
 		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $form->lookup([], 'title'));
-		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $form->lookup([], 'files_submit'));
+		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $form->lookup([], 'files_submit'));
+		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $form->lookup([], 'nothing_adds_this'));
 	}
 
 	public function testAMutationThatNamesItsOwnerLeavesEveryOtherClassClosed(): void
@@ -547,7 +552,8 @@ final class FormPairingTest extends FormShapeTestCase
 			'the owner the index can name is the builder\'s declared SubtypedBaseControl, not this class',
 		);
 		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $reached->lookup([], 'early'));
-		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $reached->lookup([], 'late'));
+		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $reached->lookup([], 'late'));
+		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $reached->lookup([], 'nothing_adds_this'));
 	}
 
 	public function testMutationKeyedToASubclassReachesTheBaseDeclaringTheComponent(): void
@@ -560,7 +566,8 @@ final class FormPairingTest extends FormShapeTestCase
 			'the owner the index can name is InheritedChildControl, a subclass of the class holding the component',
 		);
 		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $base->lookup([], 'early'));
-		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $base->lookup([], 'late'));
+		self::assertSame(ResolvedForm::LOOKUP_PRESENT, $base->lookup([], 'late'));
+		self::assertSame(ResolvedForm::LOOKUP_UNRESOLVED, $base->lookup([], 'nothing_adds_this'));
 
 		self::assertTrue(
 			$sibling->isClosed(),

@@ -1941,6 +1941,51 @@ final class ContainerModel
 	 */
 	private function eventAssignFormShape(array $assign, ClassMethod $enclosing, Scope $scope): ?FormShape
 	{
+		$shape = $this->eventAssignBuiltShape($assign, $enclosing, $scope);
+		$methodName = $enclosing->name->toString();
+		$classReflection = $scope->getClassReflection();
+		if (
+			$shape === null
+			|| !$assign[0] instanceof Variable
+			|| !is_string($assign[0]->name)
+			|| $classReflection === null
+			|| strncmp($methodName, 'createComponent', 15) !== 0
+			|| !$this->returnsVariable($enclosing, $assign[0]->name)
+		) {
+			return $shape;
+		}
+
+		$this->indexShapeResolver->bindScope($scope);
+
+		return $this->indexShapeResolver->foldExternalMutations(
+			$classReflection->getName(),
+			lcfirst((string) substr($methodName, 15)),
+			$shape,
+		);
+	}
+
+	private function returnsVariable(ClassMethod $method, string $name): bool
+	{
+		$stmts = $method->getStmts() ?? [];
+		$innerIds = ClosureScope::innerNodeIds($stmts);
+		foreach ((new NodeFinder())->findInstanceOf($stmts, Return_::class) as $return) {
+			if (
+				!isset($innerIds[spl_object_id($return)])
+				&& $return->expr instanceof Variable
+				&& $return->expr->name === $name
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param array{0: Expr, 1: string} $assign
+	 */
+	private function eventAssignBuiltShape(array $assign, ClassMethod $enclosing, Scope $scope): ?FormShape
+	{
 		$receiverType = $scope->getType($assign[0]);
 		if ($receiverType instanceof FormShapeType) {
 			return $receiverType->getFormShape();

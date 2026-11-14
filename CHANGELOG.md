@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   also when it analyses only part of the paths; each store file records its including template
 - Forms: a base-class builder's `$this->hook($form)` (abstract or overridable) resolves to the asking subclass's
   override, so a subclass, its templates and its callbacks see the fields the override adds instead of an open shape
+- Forms: fields another class adds to a built component (`$control['form']->addText('extra')`) are part of the form's
+  shape as optional fields, in `onSuccess` handlers, `$this['form']` reads and templates; an addition that cannot be
+  read precisely opens the shape (`external_mutation_unmodelled`) instead of leaving it closed without the field
 
 ### Changed
 

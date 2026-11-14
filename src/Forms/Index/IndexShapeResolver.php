@@ -19,10 +19,12 @@ use OriPhpstan\Nette\Forms\Component\InterproceduralShapeKey;
 use OriPhpstan\Nette\Forms\Component\ReturnShapeSupport;
 use OriPhpstan\Nette\Forms\Component\TraitAwareMethodLocator;
 use OriPhpstan\Nette\Forms\Graph\ClosureScope;
+use OriPhpstan\Nette\Forms\Graph\ExternalComponentAccess;
 use OriPhpstan\Nette\Forms\Graph\PropertyFormAccess;
 use OriPhpstan\Nette\Forms\Inference\EnclosingFunctionLikeLocator;
 use OriPhpstan\Nette\Forms\Shape\FormShape;
 use OriPhpstan\Nette\Forms\Shape\UnknownReason;
+use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\MethodCall;
@@ -53,6 +55,7 @@ use function is_string;
 use function ksort;
 use function lcfirst;
 use function ltrim;
+use function sha1;
 use function spl_object_id;
 use function strncmp;
 use function substr;
@@ -131,6 +134,14 @@ final class IndexShapeResolver
 	/** @var array<string, true> */
 	private array $resolvingProperty = [];
 
+	/** @var array<string, array{array{FormShape|null, bool}, array<string, string>}> */
+	private array $externalMemo = [];
+
+	/** @var array<string, true> */
+	private array $foldingExternal = [];
+
+	private RegistrationRecognizer $recognizer;
+
 	/**
 	 * @param list<string> $analysedPaths
 	 */
@@ -163,6 +174,7 @@ final class IndexShapeResolver
 		$this->support = new ReturnShapeSupport($reflectionProvider, $this->constructedResolver);
 		$this->classTracker = new LocalVariableClassTracker($reflectionProvider, $cache->recorder());
 		$this->analysedPaths = new AnalysedPaths($analysedPaths);
+		$this->recognizer = new RegistrationRecognizer();
 	}
 
 	public function bindScope(Scope $scope): void
@@ -396,7 +408,9 @@ final class IndexShapeResolver
 	private function registeredFormShapeFor(
 		string $registeringClass,
 		string $registeringMethod,
-		?string $expectedFormVar
+		?string $expectedFormVar,
+		?string $componentName = null,
+		bool $foldExternal = true
 	): ?FormShape
 	{
 		// The registered-form walk needs a borrowed analysis scope; without one the site degrades to
@@ -421,7 +435,255 @@ final class IndexShapeResolver
 			return null;
 		}
 
-		return $this->methodFormShape($methodNode, $file, $registeringClass, $registeringMethod, $expectedFormVar);
+		$shape = $this->methodFormShape($methodNode, $file, $registeringClass, $registeringMethod, $expectedFormVar);
+		$returned = $this->returnedVariableNames($methodNode);
+		if (
+			$shape === null
+			|| !$foldExternal
+			|| strncmp($registeringMethod, 'createComponent', 15) !== 0
+			|| ($expectedFormVar !== null && !in_array($expectedFormVar, $returned, true))
+		) {
+			return $shape;
+		}
+
+		return $this->foldExternalMutations(
+			$registeringClass,
+			$componentName ?? lcfirst((string) substr($registeringMethod, 15)),
+			$shape,
+		);
+	}
+
+	/**
+	 * Folds into a component's shape what sites outside its builder add to it — `$control['form']->addText()`
+	 * from the class creating the control, `$this['form']->addHidden()` from one of its own methods. None
+	 * of them provably runs for every instance, so each name they add is maybe-present. A site whose owner
+	 * matches (or cannot be named) and which the fold cannot read precisely opens the shape instead.
+	 */
+	public function foldExternalMutations(string $ownerFqcn, string $componentName, FormShape $shape): FormShape
+	{
+		$className = $shape->getClassName();
+		if ($className === null || !$this->isContainerClass($className) || $this->scope === null) {
+			return $shape;
+		}
+
+		$recorder = $this->cache->recorder();
+		if ($recorder->hasActiveFrame()) {
+			$fingerprintKey = InterproceduralShapeKey::forComponentMutation($componentName);
+			$recorder->recordFingerprint($fingerprintKey, $this->index->fingerprint($fingerprintKey));
+		}
+
+		$key = ltrim($ownerFqcn, '\\') . "\0" . $componentName;
+		if (isset($this->foldingExternal[$key])) {
+			return $shape->withUnknownReason(UnknownReason::EXTERNAL_MUTATION_UNMODELLED);
+		}
+
+		$this->foldingExternal[$key] = true;
+		try {
+			[$contribution, $open] = $this->externalContribution($ownerFqcn, $componentName, $className);
+		} finally {
+			unset($this->foldingExternal[$key]);
+		}
+
+		if ($contribution !== null) {
+			$shape = $shape->merge($contribution->joinBranch(FormShape::empty($contribution->getClassName())));
+		}
+
+		return $open ? $shape->withUnknownReason(UnknownReason::EXTERNAL_MUTATION_UNMODELLED) : $shape;
+	}
+
+	/**
+	 * @return array{FormShape|null, bool}
+	 */
+	private function externalContribution(string $ownerFqcn, string $componentName, string $className): array
+	{
+		$memoKey = ltrim($ownerFqcn, '\\') . "\0" . $componentName . "\0" . $className;
+		if (array_key_exists($memoKey, $this->externalMemo)) {
+			$this->cache->recorder()->replay($this->externalMemo[$memoKey][1]);
+
+			return $this->externalMemo[$memoKey][0];
+		}
+
+		$this->externalMemo[$memoKey] = $this->cache->recorder()->capture(
+			fn (): array => $this->computeExternalContribution($ownerFqcn, $componentName, $className),
+		);
+
+		return $this->externalMemo[$memoKey][0];
+	}
+
+	/**
+	 * @return array{FormShape|null, bool}
+	 */
+	private function computeExternalContribution(string $ownerFqcn, string $componentName, string $className): array
+	{
+		$contribution = null;
+		$open = false;
+		foreach ($this->index->componentMutationSites($componentName) as $entry) {
+			$fact = $entry['fact'];
+			$this->cache->recorder()->record($entry['file']);
+
+			$located = $fact->isDirectMutation() && $fact->getMutatedComponent() === $componentName
+				? $this->locateMutatingMethod($fact)
+				: null;
+			if ($located === null) {
+				$owner = $this->mutationOwnerClass($fact);
+				if ($owner === null || self::ownerMatches($owner, $ownerFqcn)) {
+					$open = true;
+				}
+
+				continue;
+			}
+
+			[$methodNode, $file] = $located;
+			foreach ($this->mutationGroups($fact, $methodNode) as $groupKey => $group) {
+				if ($group['owner'] === null) {
+					$open = true;
+
+					continue;
+				}
+
+				if (!self::ownerMatches($group['owner'], $ownerFqcn)) {
+					continue;
+				}
+
+				$arm = $this->groupContribution($groupKey, $group['matches'], $methodNode, $file, $className);
+				if ($arm === null) {
+					$open = true;
+
+					continue;
+				}
+
+				$contribution = $contribution === null ? $arm : $contribution->merge($arm);
+			}
+		}
+
+		return [$contribution, $open];
+	}
+
+	/**
+	 * @return array{ClassMethod, string}|null
+	 */
+	private function locateMutatingMethod(RegistrationFact $fact): ?array
+	{
+		$class = $fact->getMutatingClass();
+		if (!$this->reflectionProvider->hasClass($class)) {
+			return null;
+		}
+
+		$native = $this->reflectionProvider->getClass($class)->getNativeReflection();
+		if (!$native->hasMethod($fact->getMutatingMethod())) {
+			return null;
+		}
+
+		$reflectionMethod = $native->getMethod($fact->getMutatingMethod());
+		$file = $this->methodLocator->ownFile($reflectionMethod);
+		$methodNode = $this->methodLocator->locate($reflectionMethod);
+
+		return $file === null || $methodNode === null ? null : [$methodNode, $file];
+	}
+
+	/**
+	 * The accesses of one mutated component in the mutating method, grouped by what they are rooted
+	 * at: a `$this`-rooted spelling is one group owned by the class the fact names, a local-rooted one
+	 * a group per local, owned by the class that local provably holds.
+	 *
+	 * @return array<string, array{owner: string|null, matches: callable(Node): bool}>
+	 */
+	private function mutationGroups(RegistrationFact $fact, ClassMethod $methodNode): array
+	{
+		$scope = $fact->getOwnerScope();
+		$ownerComponent = $fact->getOwnerComponent();
+		$name = $fact->getMutatedComponent();
+		$recognizer = $this->recognizer;
+
+		if ($scope !== RegistrationFact::OWNER_UNKNOWN) {
+			return [
+				$scope . "\0" . $ownerComponent . "\0" . $name => [
+					'owner' => $this->mutationOwnerClass($fact),
+					'matches' => static function (Node $node) use ($recognizer, $scope, $ownerComponent, $name): bool {
+						if (!$node instanceof Expr) {
+							return false;
+						}
+
+						$access = $recognizer->componentAccess($node);
+
+						return $access !== null
+							&& $access['scope'] === $scope
+							&& $access['owner'] === $ownerComponent
+							&& $access['name'] === $name;
+					},
+				],
+			];
+		}
+
+		$groups = [];
+		foreach ((new NodeFinder())->findInstanceOf($methodNode->getStmts() ?? [], Expr::class) as $expr) {
+			$access = $recognizer->componentAccess($expr);
+			if ($access === null || $access['scope'] !== RegistrationFact::OWNER_UNKNOWN || $access['name'] !== $name) {
+				continue;
+			}
+
+			$root = $access['receiver'];
+			if (!$root instanceof Variable || !is_string($root->name)) {
+				$groups['?'] = ['owner' => null, 'matches' => static fn (Node $node): bool => false];
+
+				continue;
+			}
+
+			$rootName = $root->name;
+			if (isset($groups[$rootName])) {
+				continue;
+			}
+
+			$groups[$rootName] = [
+				'owner' => $this->classTracker->resolveExpressionClass($root, $methodNode, $fact->getMutatingClass()),
+				'matches' => static function (Node $node) use ($recognizer, $name, $rootName): bool {
+					if (!$node instanceof Expr) {
+						return false;
+					}
+
+					$access = $recognizer->componentAccess($node);
+
+					return $access !== null
+						&& $access['scope'] === RegistrationFact::OWNER_UNKNOWN
+						&& $access['name'] === $name
+						&& $access['receiver'] instanceof Variable
+						&& $access['receiver']->name === $rootName;
+				},
+			];
+		}
+
+		ksort($groups);
+
+		return $groups;
+	}
+
+	/**
+	 * @param callable(Node): bool $matches
+	 */
+	private function groupContribution(
+		string $groupKey,
+		callable $matches,
+		ClassMethod $methodNode,
+		string $file,
+		string $className
+	): ?FormShape
+	{
+		if ($this->scope === null || ExternalComponentAccess::matchesInsideClosure($methodNode, $matches)) {
+			return null;
+		}
+
+		$variableName = ExternalComponentAccess::variableName(sha1($groupKey));
+		$rewritten = ExternalComponentAccess::rewrite($methodNode, $matches, $variableName);
+		$arm = $this->analyzer->analyzeExternalContribution(
+			$variableName,
+			$rewritten,
+			$className,
+			$this->records->taggedRecords($rewritten, $this->scope),
+			$this->scope,
+			$file,
+		);
+
+		return $arm === null || $arm->getUnknown()->hasUnknown() || $arm->getUnknown()->hasNameUnknown() ? null : $arm;
 	}
 
 	/**
@@ -622,6 +884,7 @@ final class IndexShapeResolver
 			$ownerFqcn,
 			'createComponent' . ucfirst($componentName),
 			null,
+			$componentName,
 		);
 	}
 
@@ -935,7 +1198,13 @@ final class IndexShapeResolver
 			return null;
 		}
 
-		$shape = $this->classComponentShape($fact->getMutatingClass(), $fact->getOwnerComponent());
+		$shape = $this->registeredFormShapeFor(
+			$fact->getMutatingClass(),
+			'createComponent' . ucfirst($fact->getOwnerComponent()),
+			null,
+			$fact->getOwnerComponent(),
+			false,
+		);
 		$className = $shape === null ? null : $shape->getClassName();
 
 		// The intermediate hop of `$this['ctrl']['form']` is usually a CONTROL, and a builder that

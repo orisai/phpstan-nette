@@ -438,6 +438,34 @@ final class FormShapeAnalyzer
 	}
 
 	/**
+	 * @param list<array{node: Node, stmt: Node, scope: Scope, tagged: TaggedNode}> $taggedRecords
+	 */
+	public function analyzeExternalContribution(
+		string $variableName,
+		ClassMethod $method,
+		string $className,
+		array $taggedRecords,
+		Scope $scope,
+		string $astFile
+	): ?FormShape
+	{
+		if ($this->calleeSubtracts($method, $variableName, $className)) {
+			return null;
+		}
+
+		$contribution = $this->analyzeContainerParam(
+			$variableName,
+			$method,
+			$className,
+			$taggedRecords,
+			$scope,
+			$astFile,
+		);
+
+		return $contribution->getMappedType() !== null ? null : $contribution;
+	}
+
+	/**
 	 * @param array<Node> $rootStmts
 	 */
 	private function walkReceiver(?string $lexicalClass, ?string $askingClass, array $rootStmts): ?string

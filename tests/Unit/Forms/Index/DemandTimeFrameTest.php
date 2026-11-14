@@ -23,6 +23,7 @@ use function assert;
 use function getcwd;
 use function is_dir;
 use function is_file;
+use function strpos;
 use function sys_get_temp_dir;
 use function uniqid;
 
@@ -102,7 +103,7 @@ final class DemandTimeFrameTest extends FormShapeTestCase
 		// not, so its edit cannot invalidate the embedding entry.
 		$recordedFiles = [];
 		foreach ($deps as $depKey => $_) {
-			if ($depKey !== $fingerprintKey && is_file($depKey)) {
+			if (strpos($depKey, "\0") === false && is_file($depKey)) {
 				$recordedFiles[$depKey] = true;
 			}
 		}

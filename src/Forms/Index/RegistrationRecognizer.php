@@ -285,6 +285,7 @@ final class RegistrationRecognizer
 	{
 		$stmts = $method->getStmts() ?? [];
 		$finder = new NodeFinder();
+		$methodName = $method->name->toString();
 
 		$aliases = $this->localAliases($finder, $stmts);
 
@@ -298,7 +299,7 @@ final class RegistrationRecognizer
 
 			$target = $this->componentAccessChain($assign->var->var);
 			if ($target !== null) {
-				$facts[] = $this->mutationFact($className, $target);
+				$facts[] = $this->mutationFact($className, $target, null, $methodName, RegistrationFact::VIA_DIRECT);
 			}
 		}
 
@@ -315,7 +316,7 @@ final class RegistrationRecognizer
 				$args = $call->getArgs();
 				$parent = isset($args[0]) ? $this->componentAccessChain($args[0]->value) : null;
 				if ($parent !== null) {
-					$facts[] = $this->mutationFact($className, $parent);
+					$facts[] = $this->mutationFact($className, $parent, null, $methodName);
 				}
 
 				continue;
@@ -327,14 +328,14 @@ final class RegistrationRecognizer
 
 			$receiver = $this->componentAccessChain($call->var);
 			if ($receiver !== null) {
-				$facts[] = $this->mutationFact($className, $receiver);
+				$facts[] = $this->mutationFact($className, $receiver, null, $methodName, RegistrationFact::VIA_DIRECT);
 
 				continue;
 			}
 
 			if ($call->var instanceof Variable && is_string($call->var->name)) {
 				foreach ($aliases[$call->var->name] ?? [] as $aliased) {
-					$facts[] = $this->mutationFact($className, $aliased);
+					$facts[] = $this->mutationFact($className, $aliased, null, $methodName);
 				}
 
 				continue;
@@ -342,12 +343,12 @@ final class RegistrationRecognizer
 
 			$indirect = $this->indirectAccessRoot($call->var);
 			if ($indirect !== null) {
-				$facts[] = $this->mutationFact($className, $indirect);
+				$facts[] = $this->mutationFact($className, $indirect, null, $methodName);
 			}
 		}
 
 		foreach ($this->handedOverAccesses($finder, $stmts, $selfDispatchProperties) as $handOver) {
-			$facts[] = $this->mutationFact($className, $handOver['access'], $handOver['callee']);
+			$facts[] = $this->mutationFact($className, $handOver['access'], $handOver['callee'], $methodName);
 		}
 
 		return $facts;
@@ -938,11 +939,14 @@ final class RegistrationRecognizer
 
 	/**
 	 * @param array{scope: string, owner: string, name: string} $access
+	 * @param RegistrationFact::VIA_* $via
 	 */
 	private function mutationFact(
 		string $className,
 		array $access,
-		?string $handOverCallee = null
+		?string $handOverCallee,
+		string $methodName,
+		string $via = RegistrationFact::VIA_INDIRECT
 	): RegistrationFact
 	{
 		/** @var RegistrationFact::OWNER_* $scope */
@@ -954,7 +958,23 @@ final class RegistrationRecognizer
 			$access['owner'],
 			$access['name'],
 			$handOverCallee,
+			$methodName,
+			$via,
 		);
+	}
+
+	/**
+	 * @return array{scope: string, owner: string, name: string, receiver: Expr}|null
+	 */
+	public function componentAccess(Expr $expr): ?array
+	{
+		$chain = $this->componentAccessChain($expr);
+		$access = $this->literalAccess($expr);
+		if ($chain === null || $access === null) {
+			return null;
+		}
+
+		return $chain + ['receiver' => $access['receiver']];
 	}
 
 	// add* is the whole component-registering surface a project can extend (an extension method's

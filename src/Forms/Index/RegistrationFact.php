@@ -34,6 +34,12 @@ final class RegistrationFact
 	// of the resolved owner is a candidate, and componentMutationSites folds it into every lookup.
 	public const MUTATED_ANY = '*';
 
+	// How the mutating statement reaches the access: spelled on it as the receiver or offset-write
+	// target (direct), or through a local copy, a setParent() argument, a getter hop or a hand-over.
+	public const VIA_DIRECT = 'direct';
+
+	public const VIA_INDIRECT = 'indirect';
+
 	private string $kind;
 
 	/** @var array<string, mixed> */
@@ -93,13 +99,16 @@ final class RegistrationFact
 	 * @param self::OWNER_* $ownerScope
 	 * @param string|null $handOverCallee the callee key a hand-over site is conditional on, null for a
 	 *                                    mutation spelled at the site itself
+	 * @param self::VIA_* $via
 	 */
 	public static function componentMutation(
 		string $mutatingClass,
 		string $ownerScope,
 		string $ownerComponent,
 		string $mutatedComponent,
-		?string $handOverCallee = null
+		?string $handOverCallee = null,
+		string $mutatingMethod = '',
+		string $via = self::VIA_INDIRECT
 	): self
 	{
 		return new self(self::KIND_COMPONENT_MUTATION, [
@@ -108,6 +117,8 @@ final class RegistrationFact
 			'ownerComponent' => $ownerComponent,
 			'mutatedComponent' => $mutatedComponent,
 			'handOverCallee' => $handOverCallee,
+			'mutatingMethod' => $mutatingMethod,
+			'via' => $via,
 		]);
 	}
 
@@ -258,6 +269,16 @@ final class RegistrationFact
 	public function getMutatedComponent(): string
 	{
 		return $this->stringField('mutatedComponent');
+	}
+
+	public function getMutatingMethod(): string
+	{
+		return $this->stringField('mutatingMethod');
+	}
+
+	public function isDirectMutation(): bool
+	{
+		return $this->stringField('via') === self::VIA_DIRECT;
 	}
 
 	public function getHandOverCallee(): ?string

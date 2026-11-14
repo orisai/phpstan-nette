@@ -431,6 +431,8 @@ class RegistrationIndex implements FingerprintValidator
 			$fact->getOwnerComponent(),
 			$fact->getMutatedComponent(),
 			$fact->getHandOverCallee(),
+			$fact->getMutatingMethod(),
+			$fact->isDirectMutation() ? RegistrationFact::VIA_DIRECT : RegistrationFact::VIA_INDIRECT,
 		);
 	}
 

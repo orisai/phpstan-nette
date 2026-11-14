@@ -999,6 +999,9 @@ The shape of a form — its children, their classes and values — is inferred w
 - `setMappedType(Dto::class)` and `getValues(Dto::class)` – the DTO
 - `addProtection()` – the `_token_` control
 - `getPresenter()`, `getForm()`, `lookupPath()` – not nullable when called with the default `$throw`
+- fields another class adds to a built component (`$control['form']->addText('extra')` where the control is
+  created, `$this['form']->addHidden('x')` in a signal) – part of the form's values in handlers and `$this['form']`
+  reads, as optional keys (`extra?: string`)
 - a builder in a base class calling a hook on `$this` (`$this->buildFields($form)`, abstract or overridable) – the
   subclass's override is followed, so each subclass, its templates and its callbacks see the fields its own override
   adds; on the base class itself an abstract hook keeps the shape open
@@ -1039,6 +1042,10 @@ The shape of a form — its children, their classes and values — is inferred w
   as present in it.
 - A container pulled into a variable and passed around (`$section = $form['section']`) opens the whole form's shape.
 - `@form-adds` is checked against the method's signature, not its body — a wrong tag gives a wrong shape.
+- A field another class adds is always optional: nothing proves the adding code runs for every instance. An addition
+  the analysis cannot read exactly — through a local copy of the component, a getter, a helper it is passed to, a
+  closure, or on a receiver whose class is unknown — opens the form's shape instead, and a container nested in the form
+  and mutated from outside (`$control['form']['address']->addText()`) is not followed.
 - A hook is followed only when it is called on `$this` as a method (`$this->buildFields($form)`); `static::` and
   `parent::` calls are not followed and open the shape.
 - A form read in another file uses the builder's own names and container classes, but a modifier argument held in a

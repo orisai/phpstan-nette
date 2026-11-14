@@ -64,6 +64,8 @@ final class ShadowCompareTest extends BaseTestCase
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MEventLocalFormReceiverResolves::handleEdit#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MEventStoredCallbackSpellings::processesOnly#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MEventStoredCallbackSpellings::registersOnForm#0',
+		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MExternalMutationInHandlerValuesControl::succeeded#0',
+		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MExternalMutationUnreadableOpensControl::succeeded#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MFormOnSuccessHandlerStyles::handleSuccess#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MFormOnSuccessHandlerStylesShuffled::handleSuccess#0',
 		'mp:Tests\OriPhpstan\Nette\Unit\Forms\Component\Fixtures\DumpType\MParamPassThroughHelperResolves::innerHelper#0',

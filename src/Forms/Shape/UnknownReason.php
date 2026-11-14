@@ -62,6 +62,11 @@ final class UnknownReason
 	// does not exist" is born.
 	public const PROPERTY_WRITE_UNMODELLED = 'property_write_unmodelled';
 
+	// A component of this name is mutated from outside its builder by a site the fold cannot read
+	// precisely: an owner it cannot name, a local copy, a getter hop, a hand-over, a closure, a removal
+	// or a mutation the walk itself could not follow.
+	public const EXTERNAL_MUTATION_UNMODELLED = 'external_mutation_unmodelled';
+
 	// Produced only by the Latte+Forms bridge, for a form whose name set it cannot prove complete
 	// although the shape itself records no unknown.
 	public const UNPROVEN_COMPLETE = 'unproven_complete';
@@ -79,6 +84,7 @@ final class UnknownReason
 		// this shape DOES list may already mean something else — which is precisely what this set
 		// names, as against the reasons that only promise further unlisted names.
 		self::PROPERTY_WRITE_UNMODELLED,
+		self::EXTERNAL_MUTATION_UNMODELLED,
 		self::UNPROVEN_COMPLETE,
 	];
 

@@ -429,8 +429,9 @@ only one of them adds becomes optional — because which one ran last is not a s
 | `protected` | always open | any subclass, in any file, can write to it |
 | `public` | always open | any caller anywhere can write to it |
 
-This is not caution for its own sake. External writes are **not modelled** in this version: nothing collects
-`$holder->form->addText('extra')` from the rest of the project, so a `public` property whose builder reads cleanly would
+This is not caution for its own sake. External writes to a property are **not modelled** in this version (for a
+component slot they are, see [Fields added from outside the builder](#fields-added-from-outside-the-builder)): nothing
+collects `$holder->form->addText('extra')` from the rest of the project, so a `public` property whose builder reads cleanly would
 close over a field set that is missing whatever the outside added — and a closed shape is what makes
 `Form component 'extra' does not exist` fire on correct code. Closing without having seen every write is exactly how a
 false "this field does not exist" is born, so the shape says so instead: it renders with the usual `...<mixed>` tail and
@@ -466,6 +467,65 @@ half-answering it is a false close. Lifting both restrictions is one piece of wo
 for properties, the counterpart of the one the component slot already has for
 `$ctrl['form']->addText(…)`. With that, a `public` or `protected` property with no external writer could close, and a
 foreign receiver could be resolved from its type.
+
+## Fields added from outside the builder
+
+A component's shape is its `createComponentX()` builder, but other code can reach the built component and add to it —
+the class creating a control, a signal of the control itself:
+
+```php
+final class UsersPresenter extends Presenter
+{
+    protected function createComponentEmployer(): EmployerControl
+    {
+        $control = new EmployerControl();
+        $control['employerForm']->addInteger('user_employer_id');
+
+        return $control;
+    }
+}
+
+final class EmployerControl extends Control
+{
+    protected function createComponentEmployerForm(): Form { /* addText('name'), onSuccess[] = [$this, 'saved'] */ }
+
+    public function saved(Form $form): void
+    {
+        $form->getValues('array'); // => array{name: string, user_employer_id?: int|null}
+    }
+}
+```
+
+`RegistrationIndex` already records every such site (the *mutation surface* in
+[latte-forms.md](latte-forms.md#the-mutation-surface)); each `componentMutation` fact also carries the mutating
+method and whether the site spells the access directly (`via`: the access is the receiver of an `add*` call or the
+target of an offset write) or reaches it some other way. `IndexShapeResolver::foldExternalMutations()` folds the sites
+of the queried `(owner class, component name)` into the shape. It runs in `registeredFormShapeFor()` for a
+`createComponentX()` whose returned form is the one asked about — so `$this['employerForm']` reads, `[$this, 'saved']`
+handler parameters and template pairing all see it — and in `ContainerModel::eventAssignFormShape()` for a closure
+registered on the returned form inside its own builder.
+
+- **Which sites belong.** A site's owner is the class the fact names (`$this['x']`), the class of the component it
+  hops through (`$this['ctrl']['x']`), or, for a local root (`$control['x']`), the class `LocalVariableClassTracker`
+  proves the local holds in the mutating method. It belongs when it matches the queried class up or down the
+  hierarchy (`ownerMatches()`, the same rule the bridge's mutation gate uses); a site of an unrelated class is
+  ignored.
+- **What it adds.** The mutating method is cloned with every matching access rewritten to one synthetic variable
+  (`ExternalComponentAccess`, the counterpart of `PropertyFormAccess`) and walked as a container parameter
+  (`FormShapeAnalyzer::analyzeExternalContribution()`), so `add*` classes, modifiers and conditional adds are read as in
+  a builder.
+- **Always maybe-present.** Nothing proves the mutating code runs for every instance — another creator of the control
+  adds nothing, a signal fires on some requests only — so every name a site adds is joined against an empty branch:
+  optional in arrays (`extra?: int|null`), nullable in a crate, and never proven absent.
+- **Otherwise open.** A belonging site the fold cannot read precisely opens the shape with
+  `external_mutation_unmodelled`, a lost-field reason: an owner it cannot name (a root that is not a local, a local of
+  unknown class — such a site belongs to every class), a local copy (`$f = $ctrl['form']; $f->addText()`), a
+  `setParent()`, a getter hop, a hand-over to a registering callee, an access inside a closure, a removal, a
+  `setMappedType()`, or a walk that itself comes back with an unknown.
+
+The fold records the `mut:<name>` contributor fingerprint and every mutating file it read, so adding or editing a site
+re-analyses the shape's readers (`ExternalMutationInvalidationTest`). A nested container mutated from outside
+(`$ctrl['form']['address']->addText()`) is keyed to the container's name, not the form's, and is not folded.
 
 ## Removing a child
 

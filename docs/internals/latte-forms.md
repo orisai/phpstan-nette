@@ -318,7 +318,9 @@ extension's registration index, and this is the positive statement of what it de
 
 An access the recording layer sees is what makes a shape **open**: `{input nope}` on it answers
 "unresolved" rather than "does not exist". Everything below reads as *non-mutating*, which means a
-name the builder does not list is reported **absent**.
+name the builder does not list is reported **absent**. What a precisely readable site adds is also folded into the
+shape itself ([forms.md](forms.md#fields-added-from-outside-the-builder)), so `{input user_employer_id}` on a form its
+instantiator extends answers "present" while the form as a whole stays open.
 
 **An offset write of a value that can never be a component is not a mutation.** `Container::offsetSet()`
 hands its value to `addComponent(IComponent …)`, so `$renderer->wrappers['form']['container'] = null`
