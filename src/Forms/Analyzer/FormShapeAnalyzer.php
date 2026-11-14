@@ -3480,9 +3480,13 @@ final class FormShapeAnalyzer
 		$finder = new NodeFinder();
 
 		$nestedCallIds = [];
+		// A compound statement's arms are walked as statements of their own, each absorbing its calls
+		// into its own branch state; absorbing them here as well would make an arm's callee unconditional.
 		foreach ($finder->find(
 			$stmt,
-			static fn (Node $n): bool => $n instanceof Closure || $n instanceof ArrowFunction,
+			static fn (Node $n): bool => $n instanceof Closure
+				|| $n instanceof ArrowFunction
+				|| ($n instanceof Node\Stmt && $n !== $stmt),
 		) as $closure) {
 			foreach ($finder->find(
 				$closure,

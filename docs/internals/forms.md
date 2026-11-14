@@ -63,6 +63,10 @@ $form?->addText('e');                                    // e optional (nullsafe
 $form->getValues(); // => Nette\Utils\ArrayHash{a: string|null, b: string|null, d: string|null, e: string|null}
 ```
 
+The same holds for a helper the form is handed to inside such an arm (`if ($c) { $this->addFields($form); }`): what
+it adds is maybe-present. A compound statement contributes only the calls in its own header; the calls inside its arms
+are absorbed by the arm's own walk (`FormShapeAnalyzer::trackedArgumentCalls()`).
+
 A modifier **chained onto** such an add still shapes the same maybe-present slot (`$c && $form->addText('a')->setRequired()`),
 and so does an unconditional later-statement modifier through a bound variable — modifying the control never proves the
 add ran (`$field = $form?->addText('a'); $field->setRequired();` keeps `a` maybe-present).

@@ -133,6 +133,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   container's class off the builder's own receiver; a different file count or parallel job split no longer changes
   findings
 - Forms: a followed helper's early `return;` makes what it adds afterwards maybe-present instead of present
+- Forms: a helper the form is handed to inside an `if`/`switch`/`try`/loop arm adds maybe-present fields; it used to be
+  followed a second time for the whole statement, which made them present and `isset()` on them "always exists"
 - Forms: an offset keyed by one of several literal names (`foreach (['a', 'b'] as $n) $form[$n]`) resolves to those
   children only, instead of to every child of the form
 - Latte: `{input x:$key}` and `{label x:$key /}` on a control the analysis cannot resolve no longer report
