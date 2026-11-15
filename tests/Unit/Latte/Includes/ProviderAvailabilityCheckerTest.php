@@ -105,14 +105,23 @@ final class ProviderAvailabilityCheckerTest extends PHPStanTestCase
 		self::assertSame([], $this->check([FactoryVarsVendorDefaultPresenter::class], [self::CONTROL_SITE]));
 	}
 
-	// The all-renderers discipline itself: ONE non-NONE renderer among several poisons the whole
-	// claim, exactly like FactoryProvidedVars::intersect()'s own all-or-nothing fold - a resolver
-	// that merely picked the "best" renderer would still report here.
-	public function testSilentWhenOnlyOneOfSeveralLinkedRenderersProvesControlNone(): void
+	// The all-renderers discipline itself: ONE non-NONE renderer among several keeps the certain
+	// finding off, exactly like FactoryProvidedVars::intersect()'s own all-or-nothing fold; the
+	// standalone renderer's paths still lack the provider, which is the weaker finding.
+	public function testPossiblyUnavailableWhenOnlyOneOfSeveralLinkedRenderersProvesControlNone(): void
 	{
 		$renderers = [FactoryVarsStandaloneControl::class, FactoryVarsControlRenderer::class];
 
-		self::assertSame([], $this->check($renderers, [self::CONTROL_SITE]));
+		$diagnostics = $this->check($renderers, [self::CONTROL_SITE]);
+
+		self::assertCount(1, $diagnostics);
+		self::assertSame(ProviderAvailabilityChecker::POSSIBLY_IDENTIFIER, $diagnostics[0]->getIdentifier());
+		self::assertSame(3, $diagnostics[0]->getLatteLine());
+		self::assertStringContainsString(
+			'renderer ' . FactoryVarsStandaloneControl::class . ' creates',
+			$diagnostics[0]->getMessage(),
+		);
+		self::assertStringContainsString('may be undefined', $diagnostics[0]->getMessage());
 	}
 
 	// A template with no provider-requiring macro at all: silent regardless of how certainly every

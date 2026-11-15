@@ -10,7 +10,10 @@ use OriPhpstan\Nette\Latte\Bridge\Qualification;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use PHPStan\DependencyInjection\Container;
 use function array_keys;
+use function count;
+use function sort;
 use function sprintf;
+use const SORT_STRING;
 
 // Nette\Bridges\ApplicationLatte\TemplateFactory::setupLatte2() (TemplateFactory.php, ~lines
 // 158-169) adds uiControl/uiPresenter/snippetBridge inside a single `if ($control) { ... }`:
@@ -26,14 +29,15 @@ use function sprintf;
 // compiling to $this->global->uiControl/uiPresenter->... (or a {snippet} built on snippetDriver)
 // dereferences null at runtime.
 //
-// OPEN, never false-close - the SAME all-renderers discipline FactoryProvidedVars::resolve() applies
-// to this axis' other consumer: a template is rendered through EVERY renderer the discovery store
-// links it to, in turn, so this claims a site only when EVERY ONE of them proves CONTROL_NONE. No
-// store records, any CONTROL_SELF, any CONTROL_OTHER, a non-qualifying renderer, or the flag being
-// off, all mean silence - at least one path through this template may really own a control, and this
-// source has no business claiming otherwise.
+// The SAME all-renderers discipline FactoryProvidedVars::resolve() applies to this axis' other
+// consumer: a template is rendered through EVERY renderer the discovery store links it to, in turn, so
+// a site is certainly broken only when EVERY ONE of them proves CONTROL_NONE. When only some do, the
+// paths through those renderers still lack the providers: that is reported as possibly unavailable
+// (providerPossiblyUnavailable), naming one of them. No store records, or no renderer proving
+// CONTROL_NONE (CONTROL_SELF, CONTROL_OTHER, unobserved, non-qualifying), or the flag being off, mean
+// silence - nothing proves a path without a control.
 //
-// {plink}/{ifCurrent} are reported on that SAME condition and no finer one. uiPresenter is added
+// {plink}/{ifCurrent} are reported on those SAME conditions and no finer one. uiPresenter is added
 // INSIDE the same `if ($control)` block but from a POSSIBLY-NULL $presenter
 // ($presenter = $control ? $control->getPresenterIfExists() : null) - so a detached control (CONTROL_SELF
 // on a plain, non-Presenter Control) has the provider PRESENT but null, which would ALSO fatal on
@@ -45,6 +49,8 @@ final class ProviderAvailabilityChecker
 {
 
 	public const IDENTIFIER = 'orisai.nette.latte.providerUnavailable';
+
+	public const POSSIBLY_IDENTIFIER = 'orisai.nette.latte.providerPossiblyUnavailable';
 
 	public const RECORD_SOURCE_SERVICE_NAME = 'latteDiscoveryRecordSource';
 
@@ -69,56 +75,79 @@ final class ProviderAvailabilityChecker
 	 */
 	public function check(string $projectRelativePath, array $sites): array
 	{
-		if ($sites === [] || !$this->enabled || !$this->everyLinkedRendererProvesControlNone($projectRelativePath)) {
+		if ($sites === [] || !$this->enabled) {
+			return [];
+		}
+
+		[$standalone, $all] = $this->standaloneRenderers($projectRelativePath);
+		if ($standalone === []) {
 			return [];
 		}
 
 		$diagnostics = [];
 		foreach ($sites as $site) {
-			$diagnostics[] = new Diagnostic(
-				self::IDENTIFIER,
-				sprintf(
-					'%s needs the %s provider, only available when createTemplate() receives a control, but '
-					. 'every renderer linked to this template creates it standalone (no control argument) - '
-					. '%s is undefined here, so this macro fatals at runtime.',
-					$site['macro'],
-					$site['provider'],
-					$site['provider'],
-				),
-				$site['line'],
-			);
+			$diagnostics[] = $all
+				? new Diagnostic(
+					self::IDENTIFIER,
+					sprintf(
+						'%s needs the %s provider, only available when createTemplate() receives a control, but '
+						. 'every renderer linked to this template creates it standalone (no control argument) - '
+						. '%s is undefined here, so this macro fatals at runtime.',
+						$site['macro'],
+						$site['provider'],
+						$site['provider'],
+					),
+					$site['line'],
+				)
+				: new Diagnostic(
+					self::POSSIBLY_IDENTIFIER,
+					sprintf(
+						'%s needs the %s provider, only available when createTemplate() receives a control, but '
+						. 'renderer %s creates this template standalone (no control argument) - %s may be undefined '
+						. 'here, so this macro may fatal at runtime.',
+						$site['macro'],
+						$site['provider'],
+						$standalone[0],
+						$site['provider'],
+					),
+					$site['line'],
+				);
 		}
 
 		return $diagnostics;
 	}
 
-	private function everyLinkedRendererProvesControlNone(string $projectRelativePath): bool
+	// The linked renderers proving CONTROL_NONE, sorted, and whether every linked renderer does. A
+	// renderer proving anything else, or nothing, may own a control; one proving NONE never gives the
+	// template the providers, on the paths it renders.
+
+	/**
+	 * @return array{list<string>, bool}
+	 */
+	private function standaloneRenderers(string $projectRelativePath): array
 	{
 		$classNames = [];
 		foreach ($this->store->recordsForTemplate($projectRelativePath) as $record) {
 			$classNames[$record['class']] = true;
 		}
 
-		// OPEN, never false-close: no store records at all means no renderer proved anything.
-		if ($classNames === []) {
-			return false;
-		}
-
+		$standalone = [];
 		foreach (array_keys($classNames) as $className) {
 			$facts = $this->recordSource()->factsFor($className);
 
 			// Shared qualification gate: a non-qualifying renderer's facts carry no reliable
 			// createTemplateControl answer either - see Qualification's own doc.
-			if (!Qualification::qualifies($facts)) {
-				return false;
-			}
-
-			if ($facts->getCreateTemplateControl() !== PhpRenderFacts::CONTROL_NONE) {
-				return false;
+			if (
+				Qualification::qualifies($facts)
+				&& $facts->getCreateTemplateControl() === PhpRenderFacts::CONTROL_NONE
+			) {
+				$standalone[] = $className;
 			}
 		}
 
-		return true;
+		sort($standalone, SORT_STRING);
+
+		return [$standalone, $standalone !== [] && count($standalone) === count($classNames)];
 	}
 
 	private function recordSource(): DiscoveryRecordSource

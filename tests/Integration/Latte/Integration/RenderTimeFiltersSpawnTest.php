@@ -244,6 +244,7 @@ final class DynamicControl extends Nette\Application\UI\Control
 	public function render(string $name): void
 	{
 		$this->template->addFilter($name, 'strtoupper');
+		$this->template->addFunction($name, 'strtoupper');
 		$html = $this->template->renderToString(__DIR__ . '/dynamic.latte');
 		echo $html;
 	}
@@ -270,13 +271,19 @@ PHP);
 		$this->project->write('src/api.latte', "{=1|formatDescription}\n{=1|email}\n{=1|phoneNumber}\n");
 		$this->project->write('src/guest.latte', "{=1|widen}\n{='x'|opaque}\n");
 		$this->project->write('src/other.latte', "{='x'|visibleForRole}\n");
-		$this->project->write('src/dynamic.latte', "{='x'|anything}\n");
+		$this->project->write('src/dynamic.latte', "{='x'|anything}\n{=anyFunction('x')}\n{=strlen('x')}\n");
 
 		self::assertSame(
 			[
 				'api.latte:1 argument.type Parameter #1 $description of method ApiPresenter::formatDescription() expects string, int given.',
 				'api.latte:2 argument.type Parameter #1 $email of static method Functions::email() expects string, int given.',
 				"api.latte:3 orisai.nette.latte.unknownFilter Unknown Latte filter 'phoneNumber'.",
+				"dynamic.latte:1 orisai.nette.latte.possiblyUnknownFilter Latte filter 'anything' might not exist - its renderer"
+					. ' DynamicControl registers filters with a dynamic name (DynamicControl.php:11), so the filters of this'
+					. ' template are not known completely.',
+				"dynamic.latte:2 orisai.nette.latte.possiblyUnknownFunction Latte function 'anyFunction' might not exist - its"
+					. ' renderer DynamicControl registers functions with a dynamic name (DynamicControl.php:12), so the functions'
+					. ' of this template are not known completely.',
 				'guest.latte:1 argument.type Parameter #1 $' . (PHP_VERSION_ID >= 80000 ? 'string' : 'str')
 					. ' of function strtoupper expects string, int given.',
 				'layout.latte:1 argument.type Parameter #1 $email of static method Functions::email() expects string, int given.',

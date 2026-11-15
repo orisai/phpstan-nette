@@ -629,13 +629,14 @@ can only *miss* findings, never invent them; with `orisai.nette.latte.includeIso
 matches the runtime exactly. The default stays a union because `{embed}` is rare; correcting the default matters only for a
 project that uses `{embed}`.
 
-### `orisai.nette.latte.unknownBlock` suppression
+### `orisai.nette.latte.unknownBlock` vs `orisai.nette.latte.possiblyUnknownBlock`
 
 Phase 1 only sees explicit Latte-tag edges (`{include}`, `{extends}`, `{import}`, ...); it has no
 model of Nette's *convention*-based wiring — presenter auto-layout discovery, `setFile()`,
 component render callbacks — which attach files to each other invisibly. Reporting
 `orisai.nette.latte.unknownBlock` against a file phase 1 cannot prove is reachable-or-not would be a false
-positive, so two categories are exempt (OPEN, never false-close):
+positive, so two categories report the weaker `orisai.nette.latte.possiblyUnknownBlock` instead — the block
+may be defined by a template the analysis does not see, but nothing proves it is:
 
 1. **Files with zero incoming edges** — nothing in the graph points at them, so an
    `{include #block}` inside could still be satisfied by a convention-wired extender the model
@@ -648,6 +649,35 @@ positive, so two categories are exempt (OPEN, never false-close):
    Deliberately **kept** after discovery landed: discovery links only part of a real project's
    `.latte` files, so a layout's extender set is provably incomplete and the exemption still earns
    its keep.
+
+### Possibly-undefined names
+
+A name a template uses is reported when nothing provably defines it: certainly undefined with the
+established identifier, possibly undefined — some path or some unseen code may define it — with an
+identifier of its own, so a project can accept the weaker class wholesale. The audit of every place an
+open, unknown or opaque state used to decide:
+
+| Place | Before | Now |
+| --- | --- | --- |
+| Filter name, render-time set open (dynamic name, `addFilter(null, …)`, `addFilterLoader()`) | untyped, silent | `possiblyUnknownFilter`, naming the opener |
+| Function name, render-time set open (`addFunction($name, …)`) | PHPStan's `function.notFound` | `possiblyUnknownFunction`, naming the opener; PHP functions untouched |
+| Engine-harvested callable with no referenceable declaration (Latte 2 instance-bound, invokable object, unreflectable) | `unknownFilter` / `function.notFound` for a registered name | known, untyped |
+| A callable a filter loader answers that cannot be referenced | `unknownFilter` for an answered name | known, untyped |
+| Filter loaders dropped because the template scan failed | `unknownFilter` | unchanged: still reported (certainly-unknown wording); a distinct wording needs a salted harvest flag — the state is a `harvest note:` in `dumpLatteCustoms()` |
+| Block of an unreached template or an `@` layout | silent | `possiblyUnknownBlock` |
+| Include target variable provided by only some contexts of the includer | silent | `includePossiblyMissingVariable` |
+| Include target variable of a param-less same-file block, maybe provided by the includer's loop locals | silent (`missingExempt`) | unchanged: the ambient locals are not modelled, so a report would be blind, not "possibly" — needs a model of block-local ambient scope |
+| Include target variable provided by none | `includeMissingVariable` | unchanged |
+| Include argument type overlapping the declaration only partly | silent | unchanged: a type question, not an undefined name |
+| Provider (`uiControl`, `uiPresenter`, `snippetDriver`) when only some renderers prove no control | silent | `providerPossiblyUnavailable`, naming the renderer |
+| Provider when every renderer proves no control | `providerUnavailable` | unchanged |
+| Provider when no renderer proves anything (`self`, `other`, unobserved) | silent | unchanged: nothing proves a path without the provider |
+| Template variable no context defines | PHPStan's `variable.undefined` | unchanged |
+| Template variable some branch defines | PHPStan's "might not be defined" | unchanged |
+| Factory variable whose dependency may be unwired | present as nullable | unchanged: the runtime defines it as `null` |
+| Open include edge (`(expand)` arguments) | target's declared variables `mixed` | unchanged: the target declares them; only their type is unknown |
+| Unknown tag or `n:` attribute | `unknownMacro` | unchanged |
+| Dynamic include/extends target | `dynamicInclude` / `dynamicExtends` | unchanged |
 
 ## Call-site narrowing
 
@@ -1021,11 +1051,16 @@ makes the name known: the engine-harvest precedent, which treats every registere
 rather than a new finding class — templates have no matching precedent for possibly-missing variables
 either. The certainty shows in `dumpLatteRenderFacts()`.
 
-**Open sets.** A dynamic name (`addFilter($name, …)`, Latte 2's `addFilter(null, …)`) or an
-`addFilterLoader()` on such a receiver can register any name, so the facts' filter set is open: every
-template the renderer reaches types an otherwise unknown filter as `Helpers::untypedFilter()` instead of
-reporting `orisai.nette.latte.unknownFilter` — OPEN, never false-close. A name no template can write
-(not `[a-z_]\w*`) is ignored.
+**Open sets.** A dynamic name (`addFilter($name, …)`, `addFunction($name, …)`, Latte 2's
+`addFilter(null, …)`) or an `addFilterLoader()` on such a receiver can register any name, so the facts
+record the site opening the filter or function set (`getOpenFilterSites()`/`getOpenFunctionSites()`,
+with the reason). An otherwise unknown name in a template the renderer reaches is then not certainly
+missing, and not known either: `FilterRewriter` reports `orisai.nette.latte.possiblyUnknownFilter` /
+`orisai.nette.latte.possiblyUnknownFunction` instead of `unknownFilter` / PHPStan's `function.notFound`,
+naming the first opener (sorted by renderer, file and line) — the call itself is typed through the
+`Helpers::unknownFilter()` stand-in like an unknown one. A function call is only claimed when PHPStan
+knows no function of that name (`RenderTimeCustoms::functionExists()`), so `strlen()` stays PHP's.
+A name no template can write (not `[a-z_]\w*`) is ignored.
 
 **Per template** (`RenderTimeCustoms`). The renderers reaching a template are its own discovery
 records plus those of every template above it, transitively along the non-discovery incoming edges
@@ -1835,14 +1870,17 @@ Latte-specific identifiers (all ordinary, ignorable, baselinable, reported on `.
 | `orisai.nette.latte.parseError` | template failed to tokenize/compile, a vendor throwable during the compile (`Thrown exception '…'`), or generated PHP which does not parse (`Error in template: …`) | offending line (file-level fallback line 1) |
 | `orisai.nette.latte.unknownMacro` | tag / n:attribute not in the registered set | tag site |
 | `orisai.nette.latte.unknownFilter` | filter name not in the known set | filter site |
+| `orisai.nette.latte.possiblyUnknownFilter` / `orisai.nette.latte.possiblyUnknownFunction` | name in no known set, while a renderer reaching the template registers filters/functions with a dynamic name or a filter loader | call site |
 | `orisai.nette.latte.unknownType` | `{templateType}`/`{varType}` references an unknown class | declaration site |
 | `orisai.nette.latte.dynamicInclude` | include target not statically determinable | include site |
 | `orisai.nette.latte.dynamicExtends` | extends/layout target not statically determinable | tag site |
 | `orisai.nette.latte.unknownInclude` | static include target file does not exist | include site |
 | `orisai.nette.latte.unknownBlock` | block include target exists in no reachable table (see suppression above) | include site |
+| `orisai.nette.latte.possiblyUnknownBlock` | the same in an unreached template or an `@` layout, whose extenders are not all known | include site |
 | `orisai.nette.latte.includeCycle` | include chain cycles | closing edge site |
 | `orisai.nette.latte.includeTypeMismatch` | provided context incompatible with target's declaration | include site |
 | `orisai.nette.latte.includeMissingVariable` | declared (defaultless) variable not provided by edge | include site |
+| `orisai.nette.latte.includePossiblyMissingVariable` | declared (defaultless) variable provided by some contexts of the includer only | include site |
 | `orisai.nette.latte.internalAccess` | template source writes `$this->member` on the compiled runtime class | access site |
 | `orisai.nette.latte.duplicateDeclaration` | `{varType}` override exactly matches its native declaration | `{varType}` site |
 | `orisai.nette.latte.narrowingOverride` | `{varType}` override narrows its native declaration (see *Declaration consistency*) | `{varType}` site |
@@ -2107,8 +2145,10 @@ CONTROL_NONE` — the exact recorded axis *TemplateFactory-provided variables* a
 template is rendered through every linked renderer in turn, so only one of them owning a control at
 all makes the claim wrong.
 
-**OPEN, never false-close.** No store records, any `CONTROL_SELF`, any `CONTROL_OTHER`, or no
-observed `createTemplate()` call at all — all four mean silence, never a guess.
+**Some renderers.** When only some linked renderers prove `CONTROL_NONE`, the paths through those
+renderers still lack the providers: `orisai.nette.latte.providerPossiblyUnavailable` reports the site,
+naming the first such renderer. No store records, or no renderer proving `CONTROL_NONE` (any mix of
+`CONTROL_SELF`, `CONTROL_OTHER` and no observed `createTemplate()` call) mean silence, never a guess.
 
 **Macro sites, read from the pipeline's own eliminators rather than a second hand-parse of the
 `.latte` source.** `UiMacroEliminator` and `FormsMacroEliminator` already tell every one of these

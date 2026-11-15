@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
+use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FamilyPatterns;
@@ -38,8 +39,10 @@ use PhpParser\NodeVisitorAbstract;
 use function array_merge;
 use function array_slice;
 use function assert;
+use function basename;
 use function count;
 use function in_array;
+use function sprintf;
 use function strtolower;
 
 final class FilterRewriter extends NodeVisitorAbstract
@@ -57,6 +60,10 @@ final class FilterRewriter extends NodeVisitorAbstract
 	// harvested function called inside {foreach}/{if}), silently violating "Functions: no tip".
 	// This marker is checked BEFORE that fallback, short-circuiting it unconditionally.
 	public const FUNCTION_NO_TIP_ATTRIBUTE = 'latte.functionNoTip';
+
+	public const POSSIBLY_UNKNOWN_FILTER = 'orisai.nette.latte.possiblyUnknownFilter';
+
+	public const POSSIBLY_UNKNOWN_FUNCTION = 'orisai.nette.latte.possiblyUnknownFunction';
 
 	private const FILTER_INFO_TEMP = "\u{29F}_fi";
 
@@ -195,6 +202,27 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 			if ($known) {
 				return $this->rewriteResolvedCall($literalName, $node->args, $node->getStartLine(), 'function');
+			}
+
+			// A name no table knows and PHP does not declare is a function call PHPStan reports as missing;
+			// with the render-time functions open it may be registered after all.
+			$openSite = $this->renderTimeFunctions !== null ? $this->renderTimeFunctions->firstOpenSite() : null;
+			if ($openSite !== null && !$this->renderTimeFunctions->hasFunction($literalName)) {
+				$this->diagnostics[] = self::possiblyUnknownDiagnostic(
+					'function',
+					$literalName,
+					$node->getStartLine(),
+					$openSite,
+				);
+				$call = new StaticCall(
+					new FullyQualified(Helpers::class),
+					new Identifier('unknownFilter'),
+					$node->args,
+					['startLine' => $node->getStartLine(), 'endLine' => $node->getStartLine()],
+				);
+				$call->setAttribute(self::FUNCTION_NO_TIP_ATTRIBUTE, true);
+
+				return $call;
 			}
 		}
 
@@ -510,9 +538,46 @@ final class FilterRewriter extends NodeVisitorAbstract
 			);
 		}
 
+		$openSite = $kind === 'filter' && $this->renderTimeFilters !== null
+			? $this->renderTimeFilters->firstOpenSite()
+			: null;
+		if ($openSite !== null) {
+			return self::possiblyUnknownDiagnostic('filter', $name, $line, $openSite);
+		}
+
 		return new Diagnostic(
 			'orisai.nette.latte.unknownFilter',
 			$kind === 'filter' ? "Unknown Latte filter '$name'." : "Unknown Latte function '$name'.",
+			$line,
+		);
+	}
+
+	/**
+	 * @param array{class: string, file: string, line: int, reason: CallableFact::OPEN_*} $openSite
+	 */
+	private static function possiblyUnknownDiagnostic(
+		string $kind,
+		string $name,
+		int $line,
+		array $openSite
+	): Diagnostic
+	{
+		$registration = $openSite['reason'] === CallableFact::OPEN_LOADER
+			? 'adds a filter loader'
+			: "registers {$kind}s with a dynamic name";
+
+		return new Diagnostic(
+			$kind === 'filter' ? self::POSSIBLY_UNKNOWN_FILTER : self::POSSIBLY_UNKNOWN_FUNCTION,
+			sprintf(
+				"Latte %s '%s' might not exist - its renderer %s %s (%s:%d), so the %ss of this template are not known completely.",
+				$kind,
+				$name,
+				$openSite['class'],
+				$registration,
+				basename($openSite['file']),
+				$openSite['line'],
+				$kind,
+			),
 			$line,
 		);
 	}

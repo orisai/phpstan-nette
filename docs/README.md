@@ -867,9 +867,11 @@ calls and in its traits, on `$this->template`, `$this->getTemplate()`, a local h
   arguments nor its result are checked; the same holds for a name registered with different callables by different
   methods or renderers.
 - A registration inside a condition counts as registered.
-- A filter registered with a dynamic name (`addFilter($name, …)`) or a filter loader added on the template's engine
-  (`addFilterLoader()`) can be any name, so unknown filters are not reported in the templates that renderer reaches;
-  they are untyped there.
+- A filter or function registered with a dynamic name (`addFilter($name, …)`, `addFunction($name, …)`) or a filter
+  loader added on the template's engine (`addFilterLoader()`) can be any name. An otherwise unknown filter or function
+  in the templates that renderer reaches is then reported as one which might not exist
+  (`orisai.nette.latte.possiblyUnknownFilter`, `orisai.nette.latte.possiblyUnknownFunction`), naming the registration,
+  instead of as unknown — ignore the identifier to accept such names.
 - A registered filter or function replaces one of the same name from your engine, Latte or PHP, as at runtime; one of
   the template's `{templateType}` class replaces both.
 - Editing the registration, or the file declaring the callable, analyses the affected templates again.
@@ -1137,14 +1139,17 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | Template which does not compile                                          | `orisai.nette.latte.parseError`                  |                                                    |
 | Unknown macro or `n:` attribute                                          | `orisai.nette.latte.unknownMacro`                |                                                    |
 | Unknown filter, or engine function with no declaration to check          | `orisai.nette.latte.unknownFilter`               |                                                    |
+| Filter or function a dynamically named registration may define           | `orisai.nette.latte.possiblyUnknownFilter`, `orisai.nette.latte.possiblyUnknownFunction` | names the registration; needs discovery |
 | Unknown class in `{templateType}` or `{varType}`                         | `orisai.nette.latte.unknownType`                 |                                                    |
 | Include target not statically known                                      | `orisai.nette.latte.dynamicInclude`              |                                                    |
 | Extends or layout target not statically known                            | `orisai.nette.latte.dynamicExtends`              |                                                    |
 | Included file does not exist                                             | `orisai.nette.latte.unknownInclude`              |                                                    |
 | Included block exists in no reachable template                           | `orisai.nette.latte.unknownBlock`                |                                                    |
+| Included block a template outside the analysis may define               | `orisai.nette.latte.possiblyUnknownBlock`        | an unreached template or an `@` layout             |
 | Include cycle                                                            | `orisai.nette.latte.includeCycle`                |                                                    |
 | Include passes a type the target does not accept                         | `orisai.nette.latte.includeTypeMismatch`         |                                                    |
 | Include misses a variable the target declares                            | `orisai.nette.latte.includeMissingVariable`      | `latte.includeIsolation` widens it                 |
+| Include misses a variable the target declares on some paths              | `orisai.nette.latte.includePossiblyMissingVariable` |                                                 |
 | `{varType}` repeating the native declaration                             | `orisai.nette.latte.duplicateDeclaration`        |                                                    |
 | `{varType}` narrowing the native declaration                             | `orisai.nette.latte.narrowingOverride`           | `latte.allowNarrowingOverride`                     |
 | `{varType}` wider than or unrelated to the native declaration            | `orisai.nette.latte.impossibleOverride`          |                                                    |
@@ -1168,6 +1173,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 | Linked template without `{templateType}`                                 | `orisai.nette.latte.templateTypeRequired`        | needs discovery, `latte.templateTypeRequired`      |
 | Template no render, include or layout reaches                            | `orisai.nette.latte.orphanTemplate`              | needs discovery; advisory                          |
 | `{control}`, `{link}`, `{snippet}`, … where no control renders the template | `orisai.nette.latte.providerUnavailable`       | needs discovery                                    |
+| `{control}`, `{link}`, `{snippet}`, … where one renderer gives no control | `orisai.nette.latte.providerPossiblyUnavailable` | needs discovery                                  |
 | Debugging function output                                                | `orisai.nette.latte.debugDump`                   | [debugging](#latte-debugging)                      |
 | Narrowing store rewritten by this run                                    | `orisai.nette.latte.narrowingStoreChanged`       | non-ignorable; [lifecycle](#narrowing-store-lifecycle) |
 

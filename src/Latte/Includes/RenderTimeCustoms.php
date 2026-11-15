@@ -7,9 +7,12 @@ use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryRecordSource;
 use OriPhpstan\Nette\Latte\Bridge\Qualification;
 use OriPhpstan\Nette\Latte\Cache\TemplateNeighbourhood;
+use PhpParser\Node\Name\FullyQualified;
 use PHPStan\DependencyInjection\Container;
+use PHPStan\Reflection\ReflectionProvider;
 use function array_key_exists;
 use function ksort;
+use function ltrim;
 use const SORT_STRING;
 
 // The filters and functions PHP code registers on a template or its engine before rendering it
@@ -32,6 +35,8 @@ final class RenderTimeCustoms
 	private bool $enabled;
 
 	private ?DiscoveryRecordSource $recordSource = null;
+
+	private ?ReflectionProvider $reflectionProvider = null;
 
 	/** @var array<string, Resolved> */
 	private array $memo = [];
@@ -73,6 +78,15 @@ final class RenderTimeCustoms
 	public function openFunctionSitesFor(string $projectRelativePath): array
 	{
 		return $this->resolved($projectRelativePath)['openFunctions'];
+	}
+
+	public function functionExists(string $name): bool
+	{
+		if ($this->reflectionProvider === null) {
+			$this->reflectionProvider = $this->container->getByType(ReflectionProvider::class);
+		}
+
+		return $this->reflectionProvider->hasFunction(new FullyQualified(ltrim($name, '\\')), null);
 	}
 
 	/**

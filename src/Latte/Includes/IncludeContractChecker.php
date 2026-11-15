@@ -176,8 +176,22 @@ final class IncludeContractChecker
 		// any slot declared behind an unlinked extender falsely unreachable. Pinned by
 		// DiscoveryEdgeIngestionTest::testAtPrefixedLayoutKeepsItsValveDespiteIncomingEdges.
 		$basename = basename($projectRelativePath);
-		if ($this->index->incomingEdges($projectRelativePath) === [] || $basename[0] === '@') {
-			return [];
+		$unreached = $this->index->incomingEdges($projectRelativePath) === [];
+		if ($unreached || $basename[0] === '@') {
+			return [
+				new Diagnostic(
+					'orisai.nette.latte.possiblyUnknownBlock',
+					sprintf(
+						"Block '%s' might not exist - it is not reachable from '%s', and %s.",
+						$site->getRawTarget(),
+						$projectRelativePath,
+						$unreached
+							? 'no include, layout or renderer reaches the template, so the template rendering it is unknown'
+							: 'a layout gets blocks from the templates extending it, which are not all known',
+					),
+					$site->getLatteLine(),
+				),
+			];
 		}
 
 		return [
@@ -466,10 +480,26 @@ final class IncludeContractChecker
 			];
 		}
 
-		// Provided in some contexts of this includer but not others: which one is "correct"
-		// depends on the caller path, so stay silent rather than guess (OPEN).
+		// Provided on some paths reaching this includer but not on others: the include may run without it.
 		if (count($providedTypes) < count($contexts)) {
-			return [];
+			if (in_array($name, $defaultNames, true)) {
+				return [];
+			}
+
+			return [
+				new Diagnostic(
+					'orisai.nette.latte.includePossiblyMissingVariable',
+					sprintf(
+						"Include target '%s' requires variable \$%s (%s) that only %d of the %d contexts reaching this include provide, and has no default.",
+						$targetPath,
+						$name,
+						$declaredType,
+						count($providedTypes),
+						count($contexts),
+					),
+					$site->getLatteLine(),
+				),
+			];
 		}
 
 		return $this->checkMismatch($site, $name, $declaredType, $providedTypes, $targetPath);

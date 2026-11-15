@@ -85,7 +85,7 @@ final class SpawnLayoutPresenter extends \Nette\Application\UI\Presenter
 
 PHP);
 			FileSystem::write($srcDir . '/templates/SpawnLayout/default.latte', "<p>view</p>\n");
-			FileSystem::write($srcDir . '/templates/@layout.latte', "{include content}\n");
+			FileSystem::write($srcDir . '/templates/@layout.latte', "{block content}{/block}\n");
 
 			$layoutRel = "$relSrc/templates/@layout.latte";
 			$viewRel = "$relSrc/templates/SpawnLayout/default.latte";

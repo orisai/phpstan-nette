@@ -173,6 +173,14 @@ final class FilterTableTest extends BaseTestCase
 		self::assertSame([Helpers::class, 'untypedFilter', false], self::table($harvested)->resolve('myfilter'));
 	}
 
+	// A Latte 2 harvest resolves static callables only; an instance-bound one is still a registered filter.
+	public function testHarvestedCallableWithoutAReferenceableDeclarationIsKnownButUntyped(): void
+	{
+		$harvested = new HarvestedCustoms(['bound' => [new self('bound'), 'fixtureFilterMethod']], [], [], [], [], []);
+
+		self::assertSame([Helpers::class, 'untypedFilter', false], self::table($harvested)->resolve('bound'));
+	}
+
 	public function testAnonymousClosureALoaderAnswersIsKnownButUntyped(): void
 	{
 		$harvested = HarvestedCustoms::empty()->withFilterLoaders(new FilterLoaderProbe(
@@ -410,27 +418,16 @@ final class FilterTableTest extends BaseTestCase
 		);
 	}
 
-	public function testOpenRenderTimeSetKnowsEveryNameUntyped(): void
+	public function testOpenRenderTimeSetLeavesUnknownNamesUnknown(): void
 	{
-		$open = new RenderTimeCallableSet(
-			[],
-			[['class' => 'DynamicControl', 'file' => '/app/DynamicControl.php', 'line' => 12, 'reason' => CallableFact::OPEN_DYNAMIC_NAME]],
-			false,
-		);
+		$site = ['class' => 'DynamicControl', 'file' => '/app/DynamicControl.php', 'line' => 12, 'reason' => CallableFact::OPEN_DYNAMIC_NAME];
+		$open = new RenderTimeCallableSet([], [$site, ['line' => 3] + $site, ['class' => 'A'] + $site], false);
 
-		self::assertSame(
-			[Helpers::class, 'untypedFilter', false, false, true, null],
+		self::assertNull(
 			self::table()->resolveForTemplate('definitelynotafilter', null, null, 'definitelyNotAFilter', $open),
 		);
-		self::assertNull(
-			self::table()->resolveForTemplate(
-				'definitelynotafilter',
-				null,
-				null,
-				'definitelyNotAFilter',
-				RenderTimeCallableSet::none(),
-			),
-		);
+		self::assertSame(['class' => 'A'] + $site, $open->firstOpenSite());
+		self::assertNull(RenderTimeCallableSet::none()->firstOpenSite());
 	}
 
 	private function templateTypeCustoms(): TemplateTypeCustoms

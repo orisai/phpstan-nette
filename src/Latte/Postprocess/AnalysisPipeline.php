@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
+use Closure;
 use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
@@ -27,7 +28,7 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
-use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\Closure as ClosureExpr;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\NodeTraverser;
@@ -71,7 +72,7 @@ final class AnalysisPipeline
 
 	private ?RenderTimeCustoms $renderTimeCustoms;
 
-	/** @var array<string, Closure|null> */
+	/** @var array<string, ClosureExpr|null> */
 	private array $stubs = [];
 
 	public function __construct(
@@ -253,13 +254,14 @@ final class AnalysisPipeline
 				$this->renderTimeEntries($this->renderTimeCustoms->functionsFor($relativePath)),
 				$this->renderTimeCustoms->openFunctionSitesFor($relativePath),
 				$caseSensitive,
+				Closure::fromCallable([$this->renderTimeCustoms, 'functionExists']),
 			),
 		];
 	}
 
 	/**
 	 * @param array<string, CallableFact> $facts
-	 * @return array<string, array{string, string, bool, bool, Closure|null}>
+	 * @return array<string, array{string, string, bool, bool, ClosureExpr|null}>
 	 */
 	private function renderTimeEntries(array $facts): array
 	{
@@ -272,7 +274,7 @@ final class AnalysisPipeline
 	}
 
 	/**
-	 * @return array{string, string, bool, bool, Closure|null}
+	 * @return array{string, string, bool, bool, ClosureExpr|null}
 	 */
 	private function renderTimeEntry(CallableFact $fact): array
 	{
@@ -304,12 +306,14 @@ final class AnalysisPipeline
 		}
 	}
 
-	private function stub(string $source): ?Closure
+	private function stub(string $source): ?ClosureExpr
 	{
 		if (!array_key_exists($source, $this->stubs)) {
 			$stmts = $this->phpParser->parseString('<?php ' . $source . ';');
 			$stmt = $stmts[0] ?? null;
-			$this->stubs[$source] = $stmt instanceof Expression && $stmt->expr instanceof Closure ? $stmt->expr : null;
+			$this->stubs[$source] = $stmt instanceof Expression && $stmt->expr instanceof ClosureExpr
+				? $stmt->expr
+				: null;
 		}
 
 		return $this->stubs[$source];

@@ -42,17 +42,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   built form) is the form the button belongs to, with its typed values and components
 - Forms: writing a field of typed form values (`$values->name = 'x'`) no longer reports `assign.propertyReadOnly`; the
   written type is not checked
-- Latte: filters a presenter or control registers before rendering (`$template->addFilter()`,
-  `$template->getLatte()->addFilter()`, in lifecycle methods, `createTemplate()` overrides, base classes, helpers and
-  traits) are known in the templates it renders and in their includes and layouts, checked against the registered
-  callable — closures and private methods by their native signature; a dynamic name or a filter loader stops unknown
-  filters from being reported there (needs `orisai.nette.latte.discovery.enabled`)
-- Latte: functions registered the same way (`$template->addFunction()`, `$template->getLatte()->addFunction()`) are known
-  and checked like render-time filters
+- Latte: filters and functions a presenter or control registers before rendering (`$template->addFilter()`,
+  `$template->addFunction()`, the same on `$template->getLatte()`, in lifecycle methods, `createTemplate()` overrides,
+  base classes, helpers and traits) are known in the templates it renders and in their includes and layouts, checked
+  against the registered callable — closures and private methods by their native signature (needs
+  `orisai.nette.latte.discovery.enabled`)
+- Latte: a name something may define but nothing provably does is reported with an identifier of its own:
+  `orisai.nette.latte.possiblyUnknownFilter` and `orisai.nette.latte.possiblyUnknownFunction` where a renderer registers
+  filters or functions with a dynamic name or adds a filter loader, `orisai.nette.latte.possiblyUnknownBlock` in an
+  unreached template or an `@` layout, `orisai.nette.latte.includePossiblyMissingVariable` where only some contexts of
+  the includer pass a variable the target needs, `orisai.nette.latte.providerPossiblyUnavailable` where one renderer of
+  the template creates it without a control
+- Latte: an engine filter or function, or a loader answer, whose callable has no declaration to reference is known and
+  untyped instead of reported as unknown
 - Latte: a template passed to `$template->render($file)` or `$template->renderToString($file)` is linked to its
   renderer like one passed to `setFile()`; the literal keys of the params array are its template variables
 - Latte: methods a presenter or control gets from its first-party traits are read for template variables, template
-  files and filters like its own
+  files, filters and functions like its own
 
 ### Changed
 

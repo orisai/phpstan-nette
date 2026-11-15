@@ -2,7 +2,6 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
-use Closure;
 use LogicException;
 use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
@@ -119,13 +118,8 @@ final class FilterTable
 		}
 
 		$loaded = $this->resolveFromLoaders($writtenName ?? $lowerName);
-		if ($loaded !== null) {
-			return [$loaded[0], $loaded[1], $loaded[2], false, $loaded[3], null];
-		}
 
-		return $renderTime !== null && $renderTime->isOpen()
-			? [Helpers::class, 'untypedFilter', false, false, true, null]
-			: null;
+		return $loaded === null ? null : [$loaded[0], $loaded[1], $loaded[2], false, $loaded[3], null];
 	}
 
 	// The registered spelling a case-sensitive miss differs from only in case, if any.
@@ -181,21 +175,21 @@ final class FilterTable
 
 	/**
 	 * @param callable(mixed...): mixed $callable
-	 * @return array{string, string, bool, bool}|null
+	 * @return array{string, string, bool, bool}
 	 */
-	private function loaderEntry(callable $callable): ?array
+	private function loaderEntry(callable $callable): array
 	{
 		try {
 			$target = $this->resolveDefaultTarget($callable);
 			if ($target === null) {
-				return $callable instanceof Closure ? [Helpers::class, 'untypedFilter', false, true] : null;
+				return [Helpers::class, 'untypedFilter', false, true];
 			}
 
 			[$class, $method, $isStatic] = $target;
 
 			return [$class, $method, $this->isContentAware($class, $method), $isStatic];
 		} catch (Throwable $e) {
-			return null;
+			return [Helpers::class, 'untypedFilter', false, true];
 		}
 	}
 
@@ -221,10 +215,10 @@ final class FilterTable
 	// isContentAware() never throw for on the stock domain but aren't representable as a static
 	// "Class::method"/plain-function AST reference at all - a Closure, an invokable object, and on a
 	// Latte 2 harvest an instance-bound [$object, 'method'] array (a Latte 3 extension harvest
-	// resolves those and named-method closures to an instance dispatch). A Closure without a
-	// declaration to reference is known but untyped (Helpers::untypedFilter()); the other shapes stay
-	// unknown rather than crashing or guessing. A built-in of the same lowercase name always wins
-	// (register() above runs first).
+	// resolves those and named-method closures to an instance dispatch). A callable without a
+	// declaration to reference - or one whose declaration cannot be reflected - is registered all the
+	// same, so it is known but untyped (Helpers::untypedFilter()). A built-in of the same lowercase name
+	// always wins (register() above runs first).
 
 	/**
 	 * @param callable(mixed...): mixed $callable
@@ -240,9 +234,7 @@ final class FilterTable
 		try {
 			$target = $this->resolveHarvestedTarget($callable, $extensionHarvest);
 			if ($target === null) {
-				if ($callable instanceof Closure) {
-					$this->table[$key] = [Helpers::class, 'untypedFilter', false];
-				}
+				$this->table[$key] = [Helpers::class, 'untypedFilter', false];
 
 				return;
 			}
@@ -250,6 +242,8 @@ final class FilterTable
 			[$class, $method, $isStatic] = $target;
 			$isContentAware = $this->isContentAware($class, $method);
 		} catch (Throwable $e) {
+			$this->table[$key] = [Helpers::class, 'untypedFilter', false];
+
 			return;
 		}
 
