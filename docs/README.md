@@ -983,7 +983,8 @@ Nothing to add. The bridge uses what Forms and Latte know — annotations and fo
 
 Writing your own PHPStan rule which offers a fix (`fixNode()`)? Code analysed from a `.latte` file has no source to
 rewrite, so fixes on template code are dropped. Check `OriPhpstan\Nette\Latte\FixSupport::supportsFixes($scope)` to
-skip building them.
+skip building them. A fix is also dropped when the error is reported in a `.latte` file (`->file()`, as a
+`CollectedDataNode` rule does) or a fixed node names one (`fixNode($node, $callback, $file)`); the error stays.
 
 ## Features
 
@@ -1211,6 +1212,11 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
   `orisai.nette.latte.parseError` (`Thrown exception '…'`).
 - Latte 2's `$iterations` counters stay in a template, block or closure which reads `$iterations` anywhere, so a loop
   whose counter is not read there can still be reported as an unused value.
+- The extension replaces PHPStan's analysis parser, also with Latte off, and PHPStan then no longer tells a PHP file's
+  PHPDoc cache built from a partial run from one built from a full run. After a run of only some paths (or an editor
+  run) which read a file without analysing it, a later run analysing that file can ignore the PHPDoc of the members of
+  classes declared inside function bodies, such as anonymous classes, until the file changes or
+  `%tmpDir%/cache/PHPStan` is deleted.
 
 ### Bridges features
 
