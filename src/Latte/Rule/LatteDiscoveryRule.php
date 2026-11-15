@@ -10,6 +10,7 @@ use OriPhpstan\Nette\Latte\Bridge\PhpRenderFacts;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\Qualification;
 use OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
@@ -19,7 +20,6 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use function sprintf;
 use function strpos;
-use function substr_compare;
 
 /**
  * @implements Rule<InClassNode>
@@ -70,7 +70,7 @@ final class LatteDiscoveryRule implements Rule
 		// Compiled LatteTpl_* classes report the .latte file itself as their source - raw Latte
 		// source is unparseable for the walk, and discovery describes hand-written render-side
 		// classes, never compiled template output.
-		if (substr_compare($scope->getFile(), '.latte', -6) === 0) {
+		if (TemplatePath::is($scope->getFile())) {
 			return [];
 		}
 

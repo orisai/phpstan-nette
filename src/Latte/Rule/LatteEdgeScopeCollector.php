@@ -6,6 +6,7 @@ use Nette\IOException;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Array_;
@@ -24,7 +25,6 @@ use function is_string;
 use function sha1;
 use function strlen;
 use function strncmp;
-use function substr_compare;
 
 /**
  * @implements Collector<StaticCall, array{key: string, sha: string, vars: array<string, string>, args: array<string, string>}>
@@ -76,7 +76,7 @@ final class LatteEdgeScopeCollector implements Collector
 	 */
 	private function capture(StaticCall $node, Scope $scope): ?array
 	{
-		if (substr_compare($scope->getFile(), '.latte', -6) !== 0) {
+		if (!TemplatePath::is($scope->getFile())) {
 			return null;
 		}
 

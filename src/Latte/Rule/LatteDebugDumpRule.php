@@ -20,6 +20,7 @@ use OriPhpstan\Nette\Latte\Includes\ContextResolver;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\FuncCall;
@@ -44,7 +45,6 @@ use function preg_match;
 use function sort;
 use function sprintf;
 use function strtolower;
-use function substr_compare;
 use const SORT_STRING;
 
 /**
@@ -165,7 +165,7 @@ final class LatteDebugDumpRule implements Rule
 			return [$this->dumpDiscovery($node, $scope)];
 		}
 
-		if (substr_compare($scope->getFile(), '.latte', -6) !== 0) {
+		if (!TemplatePath::is($scope->getFile())) {
 			return [];
 		}
 

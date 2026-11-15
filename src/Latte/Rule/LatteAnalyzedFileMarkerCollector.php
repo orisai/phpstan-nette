@@ -4,11 +4,11 @@ namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Node\FileNode;
-use function substr_compare;
 
 /**
  * @implements Collector<FileNode, string>
@@ -50,7 +50,7 @@ final class LatteAnalyzedFileMarkerCollector implements Collector
 		}
 
 		$file = $scope->getFile();
-		if (substr_compare($file, '.latte', -6) !== 0) {
+		if (!TemplatePath::is($file)) {
 			return null;
 		}
 

@@ -5,11 +5,11 @@ namespace OriPhpstan\Nette\Latte\Rule;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Node\FileNode;
-use function substr_compare;
 
 // Each analysed template's own {templateType} declaration, carried to the AGGREGATE stage. The
 // template-type checks compare it against a pairing verdict computed from OTHER files' method
@@ -62,7 +62,7 @@ final class LatteTemplateTypeDeclarationCollector implements Collector
 		}
 
 		$file = $scope->getFile();
-		if (substr_compare($file, '.latte', -6) !== 0) {
+		if (!TemplatePath::is($file)) {
 			return null;
 		}
 

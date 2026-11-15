@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Cache;
 
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PHPStan\Cache\CacheStorage;
 use function strpos;
 
@@ -52,9 +53,10 @@ final class LatteReflectionCacheBypass implements CacheStorage
 		$this->inner->save($key, $variableKey, $data);
 	}
 
+	// Not TemplatePath::is(): the path sits inside the key (osfsl-<path>-presentSymbols).
 	private function isLatteDerived(string $key): bool
 	{
-		return strpos($key, '.latte') !== false;
+		return strpos($key, TemplatePath::Extension) !== false;
 	}
 
 }

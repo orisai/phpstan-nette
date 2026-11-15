@@ -8,11 +8,11 @@ use OriPhpstan\Nette\Latte\Cache\LatteTemplateValueExtension;
 use OriPhpstan\Nette\Latte\Cache\TemplateNeighbourhood;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Includes\SiteScopeStore;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\FileNode;
 use PHPStan\Rules\Rule;
-use function substr_compare;
 
 /**
  * @implements Rule<FileNode>
@@ -57,7 +57,7 @@ final class LatteDependencyRule implements Rule
 	public function processNode(Node $node, Scope $scope): array
 	{
 		$file = $scope->getFile();
-		if (!$this->enabled || substr_compare($file, '.latte', -6) !== 0) {
+		if (!$this->enabled || !TemplatePath::is($file)) {
 			return [];
 		}
 

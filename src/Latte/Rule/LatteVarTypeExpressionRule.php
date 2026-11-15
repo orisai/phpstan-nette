@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Rule;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Declarations\VarTypePlacement;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
@@ -25,7 +26,6 @@ use function count;
 use function is_string;
 use function preg_match;
 use function strncmp;
-use function substr_compare;
 
 // Third {varType} axis (see VarTypePlacementChecker's own note for the other two): the declared
 // type against the REAL inferred type of the expression the anchor assigns. Registered on Stmt the
@@ -90,7 +90,7 @@ final class LatteVarTypeExpressionRule implements Rule
 			return [];
 		}
 
-		if (substr_compare($scope->getFile(), '.latte', -6) !== 0) {
+		if (!TemplatePath::is($scope->getFile())) {
 			return [];
 		}
 

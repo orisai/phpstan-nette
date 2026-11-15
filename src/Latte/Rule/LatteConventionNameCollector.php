@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
@@ -10,7 +11,6 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use function count;
 use function strpbrk;
-use function substr_compare;
 
 // The one channel a per-class walk structurally cannot see: a convention locator derives its
 // template path from $this->file, and $this->file is written from OUTSIDE the class - a component
@@ -57,7 +57,7 @@ final class LatteConventionNameCollector implements Collector
 
 		// Compiled LatteTpl_* classes report the .latte file itself as their source - the render
 		// side this describes is always hand-written PHP.
-		if (substr_compare($scope->getFile(), '.latte', -6) === 0) {
+		if (TemplatePath::is($scope->getFile())) {
 			return null;
 		}
 

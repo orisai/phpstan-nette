@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Rule;
 use Nette\IOException;
 use Nette\Utils\FileSystem;
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\MethodCall;
@@ -16,7 +17,6 @@ use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use function preg_match_all;
-use function substr_compare;
 use function substr_count;
 use const PREG_OFFSET_CAPTURE;
 
@@ -44,7 +44,7 @@ final class LatteInternalAccessRule implements Rule
 	 */
 	public function processNode(Node $node, Scope $scope): array
 	{
-		if (substr_compare($scope->getFile(), '.latte', -6) !== 0) {
+		if (!TemplatePath::is($scope->getFile())) {
 			return [];
 		}
 

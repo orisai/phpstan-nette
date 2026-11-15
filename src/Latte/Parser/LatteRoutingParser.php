@@ -24,6 +24,7 @@ use OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline;
 use OriPhpstan\Nette\Latte\Postprocess\DependencyEdgeEmitter;
 use OriPhpstan\Nette\Latte\Postprocess\DiagnosticMaterializer;
 use OriPhpstan\Nette\Latte\Postprocess\RichAttributeDecorator;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 use OriPhpstan\Nette\Support\BootstrapFilesLoader;
 use PhpParser\Node\Stmt;
@@ -35,7 +36,6 @@ use function array_merge;
 use function class_exists;
 use function sha1;
 use function sort;
-use function substr_compare;
 use const SORT_STRING;
 
 final class LatteRoutingParser implements Parser
@@ -155,7 +155,7 @@ final class LatteRoutingParser implements Parser
 	 */
 	public function parseFile(string $file): array
 	{
-		if (substr_compare($file, '.latte', -6) === 0) {
+		if (TemplatePath::is($file)) {
 			if (!$this->enabled) {
 				return [];
 			}

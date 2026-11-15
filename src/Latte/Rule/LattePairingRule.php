@@ -11,6 +11,7 @@ use OriPhpstan\Nette\Latte\Bridge\PhpRenderFacts;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
 use OriPhpstan\Nette\Latte\Bridge\Qualification;
 use OriPhpstan\Nette\Latte\Cache\LatteRenderFactsValueExtension;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
@@ -21,7 +22,6 @@ use function array_values;
 use function implode;
 use function in_array;
 use function sprintf;
-use function substr_compare;
 
 /**
  * @implements Rule<InClassNode>
@@ -74,7 +74,7 @@ final class LattePairingRule implements Rule
 		// Compiled LatteTpl_* classes report the .latte file itself as their source - raw Latte
 		// source is unparseable for the walk, and pairing describes hand-written render-side
 		// classes, never compiled template output.
-		if (substr_compare($scope->getFile(), '.latte', -6) === 0) {
+		if (TemplatePath::is($scope->getFile())) {
 			return [];
 		}
 

@@ -10,6 +10,7 @@ use OriPhpstan\Nette\Forms\Type\FormShapeProjector;
 use OriPhpstan\Nette\Forms\Type\FormShapeType;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
@@ -28,7 +29,6 @@ use function count;
 use function in_array;
 use function ltrim;
 use function spl_object_id;
-use function substr_compare;
 
 // The bridge's second consumer of the template -> renderer -> shape join, this one at analysis
 // time: the eliminator leaves {form x} as Helpers::form('x') (UiForm) and every control reference as
@@ -268,7 +268,7 @@ final class FormMacroTypeResolver implements ExpressionTypeResolverExtension
 
 	private static function isLatteFile(string $file): bool
 	{
-		return substr_compare($file, '.latte', -6) === 0;
+		return TemplatePath::is($file);
 	}
 
 }

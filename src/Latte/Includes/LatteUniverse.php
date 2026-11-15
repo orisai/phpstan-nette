@@ -5,6 +5,7 @@ namespace OriPhpstan\Nette\Latte\Includes;
 use LogicException;
 use Nette\Utils\Finder;
 use OriPhpstan\Nette\Latte\Compile\ProjectRelativePath;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use function in_array;
 use function is_dir;
 use function is_file;
@@ -105,7 +106,7 @@ final class LatteUniverse
 		$files = [];
 		foreach ($this->paths as $path) {
 			if (is_file($path)) {
-				if (substr_compare($path, '.latte', -6) === 0) {
+				if (TemplatePath::is($path)) {
 					$files[] = $path;
 				}
 
