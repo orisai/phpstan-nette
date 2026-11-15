@@ -94,7 +94,8 @@ first (`BootstrapFilesLoader`, service `orisai.nette.bootstrapFilesLoader`). Wit
 the bootstrap autoloader loads made every DI answer `unavailable:*` in the coordinator, and such a catalog class failed
 the guard there, which fails a run with spawned workers outright. Forked workers inherit what the coordinator memoised and hide such a disagreement —
 they then analyse with the coordinator's answer instead — so the spawn test of it (`BootstrapDependentWarmRunTest`)
-spawns its workers (`InvalidationScenario::spawnWorkers()`). Spawn tests record which files a warm run analysed
+spawns its workers (`InvalidationScenario::spawnWorkers()`; `singleProcess()` runs PHPStan's debug mode, its only
+in-process analysis, for the other side of such a comparison). Spawn tests record which files a warm run analysed
 (`AnalysedFileLog`, `AnalysisRun::getAnalysedFiles()`, the `reanalysed` step key of the invalidation matrices).
 
 A persisted answer is only as fresh as what it records. Besides the files it read, two kinds of input reflect in no

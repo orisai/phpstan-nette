@@ -8,11 +8,14 @@ use Nette\Utils\JsonException;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
+use function count;
+use function explode;
 use function getmypid;
 use function is_array;
 use function sort;
 use function str_replace;
 use function strpos;
+use function trim;
 use function uniqid;
 use const PHP_BINARY;
 
@@ -63,6 +66,9 @@ final class InvalidationScenario
 	/** @var list<string> */
 	private array $phpArguments = [];
 
+	/** @var list<string> */
+	private array $analyseArguments = [];
+
 	/**
 	 * @param callable(list<string>, string): string $configFactory receives the analysed paths and
 	 * the PHPStan tmpDir, returns the path of a ready-to-use isolated config file
@@ -97,6 +103,15 @@ final class InvalidationScenario
 	public function spawnWorkers(): self
 	{
 		$this->phpArguments = ['-d', 'disable_functions=pcntl_fork'];
+
+		return $this;
+	}
+
+	// PHPStan analyses in its main process only in debug mode, which also lists every analysed file on
+	// stdout ahead of the report.
+	public function singleProcess(): self
+	{
+		$this->analyseArguments = ['--debug'];
 
 		return $this;
 	}
@@ -197,6 +212,7 @@ final class InvalidationScenario
 				'--level=8',
 				'--error-format=json',
 				'-vv',
+				...$this->analyseArguments,
 				'-c',
 				$configPath,
 			],
@@ -217,6 +233,10 @@ final class InvalidationScenario
 	{
 		$exitCode = $process->getExitCode();
 		$output = $process->getOutput();
+		if ($this->analyseArguments !== []) {
+			$lines = explode("\n", trim($output));
+			$output = $lines[count($lines) - 1];
+		}
 
 		// 0 (clean) and 1 (errors reported) are the only codes under which a report exists at all;
 		// a bootstrap fatal or a killed worker has no error set and must not be compared as one.

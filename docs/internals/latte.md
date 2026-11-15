@@ -1078,7 +1078,8 @@ renderers reaching it, so a changed registration, a changed closure signature or
 behind a stub re-analyses the component's templates; the facts' read set holds the registering file and
 the callable's declaring file. A public method or function referenced directly is a PHPStan dependency
 of the template file as well. `RenderTimeFilterInvalidationTest` pins each edit with cold == warm and the
-exact set of re-analysed files.
+exact set of re-analysed files; `RenderTimeCustomsWorkerAgreementTest` pins a single-process run against
+spawned workers (identical findings, and a warm run re-analysing nothing).
 
 ### Typed filters and functions
 
