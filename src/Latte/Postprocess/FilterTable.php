@@ -9,6 +9,7 @@ use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
+use PhpParser\Node\Expr\Closure as ClosureExpr;
 use Throwable;
 use function array_key_exists;
 use function array_key_first;
@@ -83,41 +84,56 @@ final class FilterTable
 
 	// A name neither table knows goes to the harvested engine's filter loaders, asked with the name as
 	// written ($writtenName; see FilterLoaderProbe for Latte 2's lowercase fallback). With case-sensitive
-	// names, an entry matches only a registered spelling of $writtenName.
+	// names, an entry matches only a registered spelling of $writtenName. A filter registered on the
+	// template at render time ($renderTime) replaces the engine's own of that name, as the later
+	// addFilter() does at runtime; processParams() registers the {templateType} customs later still.
+	// The 6th element is the closure standing in for a callable no template can reference.
 
 	/**
-	 * @return array{string, string, bool, bool, bool}|null
+	 * @return array{string, string, bool, bool, bool, ClosureExpr|null}|null
 	 */
 	public function resolveForTemplate(
 		string $lowerName,
 		?string $templateTypeClass,
 		?TemplateTypeCustoms $templateTypeCustoms,
-		?string $writtenName = null
+		?string $writtenName = null,
+		?RenderTimeFilterSet $renderTime = null
 	): ?array
 	{
 		$exact = $this->caseSensitive ? $writtenName : null;
 		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
 			$scoped = $templateTypeCustoms->filtersFor($templateTypeClass)[$lowerName] ?? null;
 			if ($scoped !== null && ($exact === null || $scoped[1] === $exact)) {
-				return [$scoped[0], $scoped[1], $scoped[2], true, $scoped[3]];
+				return [$scoped[0], $scoped[1], $scoped[2], true, $scoped[3], null];
 			}
+		}
+
+		$registered = $renderTime !== null ? $renderTime->resolve($writtenName ?? $lowerName) : null;
+		if ($registered !== null) {
+			return [$registered[0], $registered[1], $registered[2], false, $registered[3], $registered[4]];
 		}
 
 		$base = $this->resolve($lowerName);
 		if ($base !== null && ($exact === null || isset($this->spellings[$lowerName][$exact]))) {
-			return [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
+			return [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName]), null];
 		}
 
 		$loaded = $this->resolveFromLoaders($writtenName ?? $lowerName);
+		if ($loaded !== null) {
+			return [$loaded[0], $loaded[1], $loaded[2], false, $loaded[3], null];
+		}
 
-		return $loaded === null ? null : [$loaded[0], $loaded[1], $loaded[2], false, $loaded[3]];
+		return $renderTime !== null && $renderTime->isOpen()
+			? [Helpers::class, 'untypedFilter', false, false, true, null]
+			: null;
 	}
 
 	// The registered spelling a case-sensitive miss differs from only in case, if any.
 	public function registeredSpelling(
 		string $writtenName,
 		?string $templateTypeClass,
-		?TemplateTypeCustoms $templateTypeCustoms
+		?TemplateTypeCustoms $templateTypeCustoms,
+		?RenderTimeFilterSet $renderTime = null
 	): ?string
 	{
 		if (!$this->caseSensitive) {
@@ -130,6 +146,11 @@ final class FilterTable
 			if ($scoped !== null && $scoped[1] !== $writtenName) {
 				return $scoped[1];
 			}
+		}
+
+		$registered = $renderTime !== null ? $renderTime->registeredSpelling($writtenName) : null;
+		if ($registered !== null) {
+			return $registered;
 		}
 
 		$spellings = $this->spellings[$lowerName] ?? [];

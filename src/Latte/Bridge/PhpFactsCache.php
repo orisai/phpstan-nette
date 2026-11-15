@@ -48,7 +48,9 @@ final class PhpFactsCache
 	// static `return <path>;` resolves without a formula - a version-11 envelope over unchanged files
 	// would keep serving the opaque hole. Version 13: the envelope gained the class names the walk
 	// found absent - a version-12 envelope would keep serving facts computed before such a class appeared.
-	public const FORMAT_VERSION = 13;
+	// Version 14: facts gained the filters registered on the template - a version-13 envelope lacks the
+	// keys fromArray() now requires.
+	public const FORMAT_VERSION = 14;
 
 	private const NAMESPACE_PREFIX = 'phpfacts|';
 

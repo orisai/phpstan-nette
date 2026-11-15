@@ -53,6 +53,8 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoverySetFileOpaque
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryTemplatesPathControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DiscoveryVendorPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\DynamicViewPresenter;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\DumpedFilterControl;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FilterHelpers;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\FixtureTemplatesPathControlBase;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\GetTemplateOnlySurfaceFixture;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\LifecycleViewsPresenter;
@@ -650,6 +652,34 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 				. "\n\$maybe: string (maybe) @ {$file}:22"
 				. "\nsetFile targets: (none)"
 				. "\nrender sites: (none)",
+				$errors[0]->getMessage(),
+			);
+		} finally {
+			FileSystem::delete($dir);
+		}
+	}
+
+	public function testDumpRenderFactsRendersRegisteredFilters(): void
+	{
+		$dir = $this->isolatedDir('render-facts-filters');
+		FileSystem::write($dir . '/lonely.latte', "irrelevant\n");
+		$file = (new ReflectionClass(DumpedFilterControl::class))->getFileName();
+
+		try {
+			$errors = $this->ruleWithRenderWalk($dir)->processNode(
+				$this->funcCall(
+					'OriPhpstan\Nette\Latte\Testing\dumpLatteRenderFacts',
+					[$this->classConstFetch(DumpedFilterControl::class)],
+				),
+				$this->scopeForFile($dir . '/lonely.latte'),
+			);
+
+			self::assertCount(1, $errors);
+			self::assertStringEndsWith(
+				"\nrender sites: (none)"
+				. "\nfilters: (open: a dynamic name or a filter loader)"
+				. "\nmail: static " . FilterHelpers::class . "::email (happens) @ {$file}:16"
+				. "\nshout: stub (maybe) @ {$file}:18",
 				$errors[0]->getMessage(),
 			);
 		} finally {

@@ -125,7 +125,7 @@ final class Latte3EngineReaderTest extends BaseTestCase
 		$functions = new FunctionTable($defaults, $harvested);
 
 		self::assertSame(
-			[FixtureExtension::class, 'shout', false, false, false],
+			[FixtureExtension::class, 'shout', false, false, false, null],
 			$filters->resolveForTemplate('shout', null, null),
 		);
 		self::assertSame(
@@ -136,7 +136,7 @@ final class Latte3EngineReaderTest extends BaseTestCase
 		self::assertTrue($functions->receivesTemplate('greet'));
 		self::assertFalse($functions->receivesTemplate('greetmaybe'));
 		self::assertFalse($functions->receivesTemplate('hasblock'));
-		self::assertSame(['', 'trim', false, false, true], $filters->resolveForTemplate('trimmed', null, null));
+		self::assertSame(['', 'trim', false, false, true, null], $filters->resolveForTemplate('trimmed', null, null));
 	}
 
 	// The fixed set's CacheExtension exists only with nette/caching installed.

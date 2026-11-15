@@ -71,7 +71,7 @@ recorded value moved are analysed again:
 | Latte: discovery store template set / content | per connected component | the same digest folds every member's records, discovery edges and auto-layout ancestors |
 | Latte: harvest salt | every template | `LatteTemplateValueExtension` `harvest` |
 | Latte: template factory default and wiring | every template | `LatteTemplateValueExtension` `templateFactory` |
-| (none: PHP-side render facts were never tracked) | per class | `LatteRenderFactsValueExtension`, `PhpRenderFacts::getCanonicalHash()` |
+| (none: PHP-side render facts were never tracked) | per class | `LatteRenderFactsValueExtension`, `PhpRenderFacts::getCanonicalHash()`; templates track the facts without sites, render-time filters included |
 | (none: narrowing slices outside `%paths%` were never tracked) | per template | file dependencies on the template's own slice and the slices of every transitive includer (`LatteDependencyRule`) |
 | (none: include arguments past the first hop were never tracked) | per template | file dependencies on every transitive includer (`LatteDependencyRule`) |
 | (none: the template hosting the harvest problems was never tracked) | per template | `LatteTemplateValueExtension` `harvestHost` |

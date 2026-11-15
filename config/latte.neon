@@ -230,6 +230,7 @@ services:
 			# always wired but only ever claims anything under this same flag (its own `enabled`
 			# argument), so a scan whose only consumer is dormant is pure NodeFinder-walk waste.
 			providerScanEnabled: @orisai.nette.configuration::get(latte.discovery.enabled)
+			renderTimeFilters: @latteRenderTimeFilters
 		autowired: false
 
 	# Runs the same tagged visitor suite RichParser::parseString runs (ParentStmtTypesVisitor,
@@ -652,6 +653,17 @@ services:
 		arguments:
 			store: @latteDiscoveryStore
 			templateFactoryDefault: @latteTemplateFactoryDefaultResolver
+			enabled: @orisai.nette.configuration::get(latte.discovery.enabled)
+		autowired: false
+
+	# Filters PHP code registers on a template or its engine before rendering it, read off the render
+	# facts of every renderer reaching the template - the store's class->file links, so gated on the
+	# store flag like latteFactoryProvidedVars. The record source is fetched lazily by name for the same
+	# DI-cycle reason.
+	latteRenderTimeFilters:
+		class: OriPhpstan\Nette\Latte\Includes\RenderTimeFilters
+		arguments:
+			neighbourhood: @latteTemplateNeighbourhood
 			enabled: @orisai.nette.configuration::get(latte.discovery.enabled)
 		autowired: false
 

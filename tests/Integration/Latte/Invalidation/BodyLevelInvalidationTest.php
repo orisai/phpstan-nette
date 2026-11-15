@@ -142,24 +142,13 @@ final class BodyLevelInvalidationTest extends LatteInvalidationMatrixCase
 		);
 	}
 
-	// Scenario 17 - the body edit happens in a TRAIT the renderer uses. PHPStan's result cache has a
-	// dedicated trait branch (ResultCacheManager (D): a file whose exported nodes are ALL traits
-	// reanalyses its using files even when nothing exported changed), so this row could have been
-	// the one body-only case core already carries.
-	//
-	// It is instead vacuous for a reason the assertions state outright: PhpRenderWalk never walks a
-	// TRAIT-declared method body at all (isResolvedMethodBody() compares the resolved method's
-	// DECLARING class - PHP reports the USING class for a trait method - against the class whose AST
-	// the walk is iterating, and the trait's own AST is never iterated), so the trait-using renderer
-	// pairs the bare floor and the trait's body was never one of the verdict's inputs to go stale.
-	// Both the seed and the post-edit state say so, which is what turns a scenario that cannot
-	// discriminate into a pin: teach the walk about traits and this test goes red, and whoever does
-	// it has to answer the invalidation question at the same time. The walk gap itself is a
-	// SOUNDNESS finding, out of this task's scope - reported, not fixed.
-	public function testBodyEditInATraitTheRendererUsesMovesNothingBecauseTraitBodiesAreNotWalked(): void
+	// Scenario 17 - the body edit happens in a TRAIT the renderer uses. PhpRenderWalk walks the methods
+	// a class's first-party traits give it, so the trait's convention hook pairs the renderer and the
+	// trait file is part of the renderer's read set: the body-only edit reaches the template through
+	// the renderer's render facts, which PHPStan's own trait branch (ResultCacheManager (D) reanalyses
+	// the using files) would not do for a .latte file.
+	public function testBodyEditInATraitTheRendererUsesReachesTheTemplate(): void
 	{
-		$floorMismatch = $this->mismatchError('Nette\Application\UI\Template');
-
 		$this->assertScenario(
 			'body-trait',
 			[
@@ -168,15 +157,21 @@ final class BodyLevelInvalidationTest extends LatteInvalidationMatrixCase
 						'ScratchTemplateClassTrait.php',
 						$this->traitSource(self::OTHER_TEMPLATE),
 					),
-					'expect' => [$floorMismatch],
-					'maxReanalysed' => 2,
+					'expect' => [$this->mismatchError(self::OTHER_TEMPLATE)],
+					'reanalysed' => [self::CONTROL . '.php', 'ScratchTemplateClassTrait.php', 'shared.latte'],
+				],
+				[
+					'mutate' => fn (InvalidationScenario $scenario) => $scenario->write(
+						'ScratchTemplateClassTrait.php',
+						$this->traitSource(self::BASE_TEMPLATE),
+					),
+					'expect' => [],
 				],
 			],
 			function (InvalidationScenario $scenario): void {
 				$scenario->write('ScratchTemplateClassTrait.php', $this->traitSource(self::BASE_TEMPLATE));
 				$scenario->write(self::CONTROL . '.php', $this->traitUsingControlSource());
 			},
-			[$floorMismatch],
 		);
 	}
 

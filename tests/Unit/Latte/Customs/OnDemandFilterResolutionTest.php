@@ -43,7 +43,7 @@ final class OnDemandFilterResolutionTest extends BaseTestCase
 		$table = $this->filterTable($this->harvest(self::ENGINE_LOADER, "{\$a|dyn}\n"));
 
 		self::assertSame(
-			[FixtureLoaderFilters::class, 'dyn', false, false, true],
+			[FixtureLoaderFilters::class, 'dyn', false, false, true, null],
 			$table->resolveForTemplate('dyn', null, null, 'dyn'),
 		);
 		self::assertNull($table->resolveForTemplate('nope', null, null, 'nope'));
@@ -54,7 +54,7 @@ final class OnDemandFilterResolutionTest extends BaseTestCase
 		$table = $this->filterTable($this->harvest(self::ENGINE_LOADER, "{\$a|formatDyn}\n"));
 
 		self::assertSame(
-			[FixtureLoaderFilters::class, 'dyn', false, false, true],
+			[FixtureLoaderFilters::class, 'dyn', false, false, true, null],
 			$table->resolveForTemplate('formatdyn', null, null, 'formatDyn'),
 		);
 		self::assertSame(
@@ -73,7 +73,7 @@ final class OnDemandFilterResolutionTest extends BaseTestCase
 
 		$resolved = $table->resolveForTemplate('dyn', null, null, 'dYn');
 		if ($this->isLatte2()) {
-			self::assertSame([FixtureLoaderFilters::class, 'dyn', false, false, true], $resolved);
+			self::assertSame([FixtureLoaderFilters::class, 'dyn', false, false, true, null], $resolved);
 		} else {
 			self::assertNull($resolved);
 		}
@@ -85,7 +85,7 @@ final class OnDemandFilterResolutionTest extends BaseTestCase
 
 		$resolved = $table->resolveForTemplate('dyn', null, null, 'dYn');
 		if ($this->isLatte2()) {
-			self::assertSame([FixtureLoaderFilters::class, 'dyn', false, false, true], $resolved);
+			self::assertSame([FixtureLoaderFilters::class, 'dyn', false, false, true, null], $resolved);
 		} else {
 			self::assertNull($resolved);
 		}

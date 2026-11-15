@@ -42,6 +42,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   built form) is the form the button belongs to, with its typed values and components
 - Forms: writing a field of typed form values (`$values->name = 'x'`) no longer reports `assign.propertyReadOnly`; the
   written type is not checked
+- Latte: filters a presenter or control registers before rendering (`$template->addFilter()`,
+  `$template->getLatte()->addFilter()`, in lifecycle methods, `createTemplate()` overrides, base classes, helpers and
+  traits) are known in the templates it renders and in their includes and layouts, checked against the registered
+  callable — closures and private methods by their native signature; a dynamic name or a filter loader stops unknown
+  filters from being reported there (needs `orisai.nette.latte.discovery.enabled`)
+- Latte: methods a presenter or control gets from its first-party traits are read for template variables, template
+  files and filters like its own
 
 ### Changed
 

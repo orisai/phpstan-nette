@@ -14,6 +14,7 @@ use PhpParser\Node\ArgPlaceholder;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
@@ -32,9 +33,11 @@ use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\VariadicPlaceholder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor;
+use PhpParser\NodeVisitor\CloningVisitor;
 use PhpParser\NodeVisitorAbstract;
 use function array_merge;
 use function array_slice;
+use function assert;
 use function count;
 use function in_array;
 use function strtolower;
@@ -81,6 +84,8 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 	private ?TemplateTypeCustoms $templateTypeCustoms = null;
 
+	private ?RenderTimeFilterSet $renderTimeFilters = null;
+
 	/** @var array<Diagnostic> */
 	private array $diagnostics = [];
 
@@ -98,13 +103,15 @@ final class FilterRewriter extends NodeVisitorAbstract
 		FilterTable $filterTable,
 		FunctionTable $functionTable,
 		?string $templateTypeClass = null,
-		?TemplateTypeCustoms $templateTypeCustoms = null
+		?TemplateTypeCustoms $templateTypeCustoms = null,
+		?RenderTimeFilterSet $renderTimeFilters = null
 	): array
 	{
 		$this->filterTable = $filterTable;
 		$this->functionTable = $functionTable;
 		$this->templateTypeClass = $templateTypeClass;
 		$this->templateTypeCustoms = $templateTypeCustoms;
+		$this->renderTimeFilters = $renderTimeFilters;
 		$this->diagnostics = [];
 
 		$traverser = new NodeTraverser();
@@ -393,9 +400,12 @@ final class FilterRewriter extends NodeVisitorAbstract
 					$this->templateTypeClass,
 					$this->templateTypeCustoms,
 					$name,
+					$this->renderTimeFilters,
 				)
 				: null;
+			$stub = $resolved !== null ? $resolved[5] : null;
 		} else {
+			$stub = null;
 			$resolved = $this->functionTable !== null
 				? $this->functionTable->resolveForTemplate(
 					strtolower($name),
@@ -434,6 +444,13 @@ final class FilterRewriter extends NodeVisitorAbstract
 			? array_merge([new Arg($this->filterInfoCall())], $args)
 			: $args;
 
+		if ($stub !== null) {
+			$call = new FuncCall(self::stubAt($stub, $line), $finalArgs, $attributes);
+			$call->setAttribute(self::FILTER_PROVENANCE_ATTRIBUTE, $name);
+
+			return $call;
+		}
+
 		// A STATIC method - per-template or stock - dispatches as Class::method(), never through the
 		// instance-receiver shape below: PHP allows calling a static method through `->`, but
 		// PHPStan's own staticMethod.dynamicCall flags it at strict level 8 (verified via a real
@@ -454,10 +471,20 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 	private function unresolvedDiagnostic(string $name, int $line, string $kind): Diagnostic
 	{
-		$table = $kind === 'filter' ? $this->filterTable : $this->functionTable;
-		$spelling = $table !== null
-			? $table->registeredSpelling($name, $this->templateTypeClass, $this->templateTypeCustoms)
-			: null;
+		if ($kind === 'filter') {
+			$spelling = $this->filterTable !== null
+				? $this->filterTable->registeredSpelling(
+					$name,
+					$this->templateTypeClass,
+					$this->templateTypeCustoms,
+					$this->renderTimeFilters,
+				)
+				: null;
+		} else {
+			$spelling = $this->functionTable !== null
+				? $this->functionTable->registeredSpelling($name, $this->templateTypeClass, $this->templateTypeCustoms)
+				: null;
+		}
 
 		if ($spelling !== null) {
 			return new Diagnostic(
@@ -506,6 +533,40 @@ final class FilterRewriter extends NodeVisitorAbstract
 		);
 
 		return new MethodCall($receiver, new Identifier($method), $args, $attributes);
+	}
+
+	// Each call site gets its own copy, on the call's own line: errors the stub's signature causes
+	// report on the template line, and no two sites share a node.
+	private static function stubAt(Closure $stub, int $line): Closure
+	{
+		$traverser = new NodeTraverser();
+		$traverser->addVisitor(new CloningVisitor());
+		$traverser->addVisitor(new class ($line) extends NodeVisitorAbstract {
+
+			private int $line;
+
+			public function __construct(int $line)
+			{
+				$this->line = $line;
+			}
+
+			/**
+			 * @return null
+			 */
+			public function enterNode(Node $node)
+			{
+				$node->setAttribute('startLine', $this->line);
+				$node->setAttribute('endLine', $this->line);
+
+				return null;
+			}
+
+		});
+
+		$copy = $traverser->traverse([$stub])[0];
+		assert($copy instanceof Closure);
+
+		return $copy;
 	}
 
 	private function filterInfoCall(): StaticCall

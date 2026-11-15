@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Bridge;
 
+use Latte\Runtime\FilterInfo;
 use Latte\Runtime\Template as LatteRuntimeTemplate;
 use Nette\Application\UI\Control as UiControl;
 use Nette\Application\UI\Presenter as UiPresenter;
@@ -21,6 +22,7 @@ use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\PropertyFetch;
@@ -28,6 +30,7 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\Float_;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\MagicConst\Dir;
@@ -71,16 +74,19 @@ use function in_array;
 use function is_string;
 use function lcfirst;
 use function ltrim;
+use function preg_match;
 use function realpath;
 use function spl_object_id;
 use function strlen;
 use function strncmp;
+use function strpos;
 use function strtolower;
 use function substr;
 
 /**
  * @phpstan-type LifecycleState array{presenter: bool, methods: array<int, array{name: string, public: bool, static: bool}>, edges: array<int, list<int>>, mutations: list<array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION|MutationFact::KIND_SWITCH, argument: string|null, line: int, conditional: bool, methodId: int, file: string}>, signalTargets: list<array{name: string, conditional: bool}>, signalTargetIds: list<array{id: int, conditional: bool}>, closures: list<array{node: Closure|ArrowFunction, conditional: bool, file: string, declaringClass: ClassReflection}>, closureIds: list<int>}
  * @phpstan-type ViewEntry array{certainty: Certainty::HAPPENS|Certainty::MAYBE, sites: list<array{file: string, line: int}>, sources: list<MutationFact|string>}
+ * @phpstan-type FilterBuilder array{filters: array<string, FilterFact>, open: bool}
  * @phpstan-type SetFileSeed array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, methodId: int, conventionMethod: string|null}
  */
 final class PhpRenderWalk
@@ -93,6 +99,14 @@ final class PhpRenderWalk
 	private const SET_FILE_METHOD = 'setFile';
 
 	private const RENDER_METHOD = 'render';
+
+	private const GET_LATTE_METHOD = 'getlatte';
+
+	private const ADD_FILTER_METHOD = 'addfilter';
+
+	private const ADD_FILTER_LOADER_METHOD = 'addfilterloader';
+
+	private const FILTER_NAME_PATTERN = '~^[a-z_][a-z0-9_]*$~i';
 
 	private const FACTORY_STATIC_METHOD = 'create';
 
@@ -258,6 +272,9 @@ final class PhpRenderWalk
 		/** @var array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $assignmentBuilder */
 		$assignmentBuilder = [];
 
+		/** @var FilterBuilder $filterBuilder */
+		$filterBuilder = ['filters' => [], 'open' => false];
+
 		/** @var list<SetFileSeed> $setFileBuilder */
 		$setFileBuilder = [];
 
@@ -305,16 +322,20 @@ final class PhpRenderWalk
 		}
 
 		foreach ($this->appAncestorChain($classReflection) as $ancestor) {
-			$file = $ancestor->getFileName();
-			if ($file === null) {
+			$ancestorFile = $ancestor->getFileName();
+			if ($ancestorFile === null) {
 				continue;
 			}
 
-			if (!in_array($file, $readSet, true)) {
-				$readSet[] = $file;
+			if (!in_array($ancestorFile, $readSet, true)) {
+				$readSet[] = $ancestorFile;
 			}
 
-			foreach ($this->methodNodesByLine($file) as $node) {
+			foreach ($this->declaredMethodNodes($ancestor, $ancestorFile) as [$file, $node]) {
+				if (!in_array($file, $readSet, true)) {
+					$readSet[] = $file;
+				}
+
 				$this->walkMethod(
 					$node,
 					$classReflection,
@@ -323,6 +344,7 @@ final class PhpRenderWalk
 					$readSet,
 					$visited,
 					$assignmentBuilder,
+					$filterBuilder,
 					$setFileBuilder,
 					$renderSiteBuilder,
 					$templateClassCandidates,
@@ -337,6 +359,7 @@ final class PhpRenderWalk
 			$readSet,
 			$visited,
 			$assignmentBuilder,
+			$filterBuilder,
 			$setFileBuilder,
 			$renderSiteBuilder,
 			$templateClassCandidates,
@@ -427,6 +450,8 @@ final class PhpRenderWalk
 			$finalized['open'],
 			$this->discoveryResolver->resolve($classReflection, $lifecycle['presenter'], $viewNames, $discoveryEntries),
 			$this->finalizeCreateTemplateControl($classReflection, $controlShapes),
+			$filterBuilder['filters'],
+			$filterBuilder['open'],
 		);
 	}
 
@@ -656,10 +681,72 @@ final class PhpRenderWalk
 		return $chain;
 	}
 
+	// The class's own methods and the ones its first-party traits give it: a trait's lifecycle hook or
+	// createTemplate() override is called by the vendor, never by a walked method.
+
+	/**
+	 * @return list<array{string, ClassMethod}>
+	 */
+	private function declaredMethodNodes(ClassReflection $class, string $ownFile): array
+	{
+		$nodes = [];
+		foreach ($this->methodNodesByLine($ownFile) as $node) {
+			$nodes[] = [$ownFile, $node];
+		}
+
+		$native = $class->getNativeReflection();
+		foreach (self::usedTraits($class) as $trait) {
+			$traitFile = $trait->getFileName();
+			if ($traitFile === null || !$this->isUnderAppRoot($traitFile)) {
+				continue;
+			}
+
+			foreach ($this->methodNodesByLine($traitFile) as $line => $node) {
+				$name = $node->name->toString();
+				if (!$native->hasMethod($name)) {
+					continue;
+				}
+
+				$method = $native->getMethod($name);
+				if ($method->getFileName() === $traitFile && $method->getStartLine() === $line) {
+					$nodes[] = [$traitFile, $node];
+				}
+			}
+		}
+
+		return $nodes;
+	}
+
+	// The traits the class itself uses and the traits those use - not its parents' traits, which the
+	// parents' own turn in the ancestor chain walks with the right lexical class.
+
+	/**
+	 * @return array<string, ClassReflection>
+	 */
+	private static function usedTraits(ClassReflection $class): array
+	{
+		$traits = [];
+		$queue = $class->getTraits();
+		while ($queue !== []) {
+			$trait = array_pop($queue);
+			if (isset($traits[$trait->getName()])) {
+				continue;
+			}
+
+			$traits[$trait->getName()] = $trait;
+			foreach ($trait->getTraits() as $nested) {
+				$queue[] = $nested;
+			}
+		}
+
+		return $traits;
+	}
+
 	/**
 	 * @param list<string> $readSet
 	 * @param array<int, true> $visited
 	 * @param array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $assignmentBuilder
+	 * @param FilterBuilder $filterBuilder
 	 * @param list<SetFileSeed> $setFileBuilder
 	 * @param list<array{fileArgPresent: bool, literalPath: string|null, site: array{file: string, line: int}}> $renderSiteBuilder
 	 * @param list<array{channel: TemplateClassFact::CHANNEL_*, className: string, certainty: Certainty::*, sites: list<int>}> $templateClassCandidates
@@ -674,6 +761,7 @@ final class PhpRenderWalk
 		array &$readSet,
 		array &$visited,
 		array &$assignmentBuilder,
+		array &$filterBuilder,
 		array &$setFileBuilder,
 		array &$renderSiteBuilder,
 		array &$templateClassCandidates,
@@ -701,13 +789,15 @@ final class PhpRenderWalk
 
 		$templateLocals = $this->templateProvenancedLocals($node, $entryClass, $declaringClass);
 
-		$this->extractAssignmentsFromMethod(
+		$this->extractTemplateWritesFromMethod(
 			$node,
 			$file,
 			$entryClass,
 			$declaringClass,
 			$templateLocals,
+			$readSet,
 			$assignmentBuilder,
+			$filterBuilder,
 		);
 		$this->extractSetFileFromMethod(
 			$node,
@@ -754,6 +844,7 @@ final class PhpRenderWalk
 				$readSet,
 				$visited,
 				$assignmentBuilder,
+				$filterBuilder,
 				$setFileBuilder,
 				$renderSiteBuilder,
 				$templateClassCandidates,
@@ -855,6 +946,7 @@ final class PhpRenderWalk
 	 * @param list<string> $readSet
 	 * @param array<int, true> $visited
 	 * @param array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $assignmentBuilder
+	 * @param FilterBuilder $filterBuilder
 	 * @param list<SetFileSeed> $setFileBuilder
 	 * @param list<array{fileArgPresent: bool, literalPath: string|null, site: array{file: string, line: int}}> $renderSiteBuilder
 	 * @param list<array{channel: TemplateClassFact::CHANNEL_*, className: string, certainty: Certainty::*, sites: list<int>}> $templateClassCandidates
@@ -869,6 +961,7 @@ final class PhpRenderWalk
 		array &$readSet,
 		array &$visited,
 		array &$assignmentBuilder,
+		array &$filterBuilder,
 		array &$setFileBuilder,
 		array &$renderSiteBuilder,
 		array &$templateClassCandidates,
@@ -917,6 +1010,7 @@ final class PhpRenderWalk
 			$readSet,
 			$visited,
 			$assignmentBuilder,
+			$filterBuilder,
 			$setFileBuilder,
 			$renderSiteBuilder,
 			$templateClassCandidates,
@@ -1143,17 +1237,24 @@ final class PhpRenderWalk
 		}
 	}
 
+	// Variables and filters reach a template through the same receivers: the template itself, a local
+	// holding it, and for filters also its engine (getLatte(), or a local holding that).
+
 	/**
 	 * @param array<string, true> $templateLocals
+	 * @param list<string> $readSet
 	 * @param array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $assignmentBuilder
+	 * @param FilterBuilder $filterBuilder
 	 */
-	private function extractAssignmentsFromMethod(
+	private function extractTemplateWritesFromMethod(
 		ClassMethod $method,
 		string $file,
 		ClassReflection $entryClass,
 		ClassReflection $declaringClass,
 		array $templateLocals,
-		array &$assignmentBuilder
+		array &$readSet,
+		array &$assignmentBuilder,
+		array &$filterBuilder
 	): void
 	{
 		$stmts = $method->stmts;
@@ -1161,25 +1262,45 @@ final class PhpRenderWalk
 			return;
 		}
 
+		$engineLocals = $this->engineProvenancedLocals($method, $entryClass, $declaringClass, $templateLocals);
+
 		/** @var array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $perMethod */
 		$perMethod = [];
 		$this->walkConditionalStructure(
 			$stmts,
 			false,
-			function (Stmt $stmt, bool $conditional) use ($file, $entryClass, $declaringClass, $templateLocals, &$perMethod): void {
-				if (!$stmt instanceof Expression || !$stmt->expr instanceof Assign) {
+			function (Stmt $stmt, bool $conditional) use ($file, $entryClass, $declaringClass, $templateLocals, $engineLocals, &$perMethod, &$readSet, &$filterBuilder): void {
+				if (!$stmt instanceof Expression) {
 					return;
 				}
 
-				$this->recordAssignIfQualifying(
-					$stmt->expr,
-					$conditional,
-					$file,
-					$entryClass,
-					$declaringClass,
-					$templateLocals,
-					$perMethod,
-				);
+				if ($stmt->expr instanceof Assign) {
+					$this->recordAssignIfQualifying(
+						$stmt->expr,
+						$conditional,
+						$file,
+						$entryClass,
+						$declaringClass,
+						$templateLocals,
+						$perMethod,
+					);
+
+					return;
+				}
+
+				if ($stmt->expr instanceof MethodCall) {
+					$this->recordFilterIfQualifying(
+						$stmt->expr,
+						$conditional,
+						$file,
+						$entryClass,
+						$declaringClass,
+						$templateLocals,
+						$engineLocals,
+						$readSet,
+						$filterBuilder,
+					);
+				}
 			},
 		);
 
@@ -1207,10 +1328,7 @@ final class PhpRenderWalk
 			return;
 		}
 
-		if (
-			!$this->isTemplateOrigin($var->var, $entryClass, $declaringClass)
-			&& !$this->isProvenancedLocal($var->var, $templateLocals)
-		) {
+		if (!$this->isTemplateReceiver($var->var, $entryClass, $declaringClass, $templateLocals)) {
 			return;
 		}
 
@@ -1224,9 +1342,383 @@ final class PhpRenderWalk
 	/**
 	 * @param array<string, true> $templateLocals
 	 */
+	private function isTemplateReceiver(
+		Expr $expr,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array $templateLocals
+	): bool
+	{
+		return $this->isTemplateOrigin($expr, $entryClass, $declaringClass)
+			|| $this->isProvenancedLocal($expr, $templateLocals);
+	}
+
+	/**
+	 * @param array<string, true> $templateLocals
+	 */
 	private function isProvenancedLocal(Expr $expr, array $templateLocals): bool
 	{
 		return $expr instanceof Variable && is_string($expr->name) && isset($templateLocals[$expr->name]);
+	}
+
+	/**
+	 * @param array<string, true> $templateLocals
+	 * @return array<string, true>
+	 */
+	private function engineProvenancedLocals(
+		ClassMethod $method,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array $templateLocals
+	): array
+	{
+		$engineLocals = [];
+		if ($method->stmts === null) {
+			return $engineLocals;
+		}
+
+		foreach ((new NodeFinder())->findInstanceOf($method->stmts, Assign::class) as $assign) {
+			if (
+				$assign->var instanceof Variable
+				&& is_string($assign->var->name)
+				&& $this->isTemplateEngineOf($assign->expr, $entryClass, $declaringClass, $templateLocals)
+			) {
+				$engineLocals[$assign->var->name] = true;
+			}
+		}
+
+		return $engineLocals;
+	}
+
+	/**
+	 * @param array<string, true> $templateLocals
+	 */
+	private function isTemplateEngineOf(
+		Expr $expr,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array $templateLocals
+	): bool
+	{
+		return $expr instanceof MethodCall
+			&& $expr->name instanceof Identifier
+			&& strtolower($expr->name->toString()) === self::GET_LATTE_METHOD
+			&& $this->isTemplateReceiver($expr->var, $entryClass, $declaringClass, $templateLocals);
+	}
+
+	/**
+	 * @param array<string, true> $templateLocals
+	 * @param array<string, true> $engineLocals
+	 * @param list<string> $readSet
+	 * @param FilterBuilder $builder
+	 */
+	private function recordFilterIfQualifying(
+		MethodCall $call,
+		bool $conditional,
+		string $file,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array $templateLocals,
+		array $engineLocals,
+		array &$readSet,
+		array &$builder
+	): void
+	{
+		if (!$call->name instanceof Identifier) {
+			return;
+		}
+
+		$methodName = strtolower($call->name->toString());
+		if ($methodName !== self::ADD_FILTER_METHOD && $methodName !== self::ADD_FILTER_LOADER_METHOD) {
+			return;
+		}
+
+		if (
+			!$this->isTemplateReceiver($call->var, $entryClass, $declaringClass, $templateLocals)
+			&& !$this->isTemplateEngineOf($call->var, $entryClass, $declaringClass, $templateLocals)
+			&& !$this->isProvenancedLocal($call->var, $engineLocals)
+		) {
+			return;
+		}
+
+		$nameExpr = self::argValue($call->args, 0, 'name');
+		if ($methodName === self::ADD_FILTER_LOADER_METHOD || !$nameExpr instanceof String_) {
+			$builder['open'] = true;
+
+			return;
+		}
+
+		// A name no template can write is never called, so it registers nothing to know.
+		if (preg_match(self::FILTER_NAME_PATTERN, $nameExpr->value) !== 1) {
+			return;
+		}
+
+		[$kind, $target, $contentAware] = $this->classifyFilterCallable(
+			self::argValue($call->args, 1, 'callback'),
+			$entryClass,
+			$declaringClass,
+			$readSet,
+		);
+
+		$name = $nameExpr->value;
+		$fact = new FilterFact(
+			$name,
+			$kind,
+			$target,
+			$contentAware,
+			$conditional ? Certainty::MAYBE : Certainty::HAPPENS,
+			[['file' => $file, 'line' => $call->getStartLine()]],
+		);
+
+		$builder['filters'][$name] = isset($builder['filters'][$name])
+			? $builder['filters'][$name]->mergedWith($fact)
+			: $fact;
+	}
+
+	/**
+	 * @param array<Node> $args
+	 */
+	private static function argValue(array $args, int $position, string $name): ?Expr
+	{
+		foreach ($args as $index => $arg) {
+			if (!$arg instanceof Arg || $arg->unpack) {
+				return null;
+			}
+
+			if ($arg->name !== null ? $arg->name->toString() === $name : $index === $position) {
+				return $arg->value;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param list<string> $readSet
+	 * @return array{FilterFact::KIND_*, string, bool}
+	 */
+	private function classifyFilterCallable(
+		?Expr $expr,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array &$readSet
+	): array
+	{
+		$untyped = [FilterFact::KIND_UNTYPED, '', false];
+
+		if ($expr instanceof Closure || $expr instanceof ArrowFunction) {
+			return self::stubTarget(FilterClosureStub::of($expr, $declaringClass, $this->reflectionProvider));
+		}
+
+		if ($expr instanceof Array_) {
+			$parts = self::callableArrayParts($expr);
+			if ($parts === null) {
+				return $untyped;
+			}
+
+			[$receiver, $method] = $parts;
+			if ($receiver instanceof ClassConstFetch || $receiver instanceof String_) {
+				$className = $this->callableClassName($receiver, $entryClass, $declaringClass);
+
+				return $className === null
+					? $untyped
+					: $this->methodFilterTarget($className, $method, true, $readSet);
+			}
+
+			$class = $this->classOfReceiverExpr($receiver, $entryClass, $declaringClass);
+
+			return $class === null ? $untyped : $this->methodFilterTarget($class->getName(), $method, false, $readSet);
+		}
+
+		if ($expr instanceof String_) {
+			$pos = strpos($expr->value, '::');
+
+			return $pos === false
+				? $this->functionFilterTarget($expr->value, $readSet)
+				: $this->methodFilterTarget(
+					ltrim(substr($expr->value, 0, $pos), '\\'),
+					substr($expr->value, $pos + 2),
+					true,
+					$readSet,
+				);
+		}
+
+		if ($expr instanceof FuncCall && $expr->isFirstClassCallable()) {
+			return $expr->name instanceof Name
+				? $this->functionFilterTarget(
+					$expr->name->toString(),
+					$readSet,
+				)
+				: $untyped;
+		}
+
+		if ($expr instanceof StaticCall && $expr->isFirstClassCallable()) {
+			$className = $expr->class instanceof Name
+				? $this->callableClassName(new ClassConstFetch($expr->class, 'class'), $entryClass, $declaringClass)
+				: null;
+
+			return $className === null || !$expr->name instanceof Identifier
+				? $untyped
+				: $this->methodFilterTarget($className, $expr->name->toString(), true, $readSet);
+		}
+
+		if ($expr instanceof MethodCall && $expr->isFirstClassCallable()) {
+			$class = $this->classOfReceiverExpr($expr->var, $entryClass, $declaringClass);
+
+			return $class === null || !$expr->name instanceof Identifier
+				? $untyped
+				: $this->methodFilterTarget($class->getName(), $expr->name->toString(), false, $readSet);
+		}
+
+		$invokable = $expr === null ? null : $this->classOfReceiverExpr($expr, $entryClass, $declaringClass);
+
+		return $invokable !== null && $invokable->hasNativeMethod('__invoke')
+			? $this->methodFilterTarget($invokable->getName(), '__invoke', false, $readSet)
+			: $untyped;
+	}
+
+	/**
+	 * @return array{Expr, string}|null
+	 */
+	private static function callableArrayParts(Array_ $array): ?array
+	{
+		$values = [];
+		foreach ($array->items as $item) {
+			if ($item->key !== null || $item->byRef || $item->unpack) {
+				return null;
+			}
+
+			$values[] = $item->value;
+		}
+
+		if (count($values) !== 2 || !$values[1] instanceof String_) {
+			return null;
+		}
+
+		return [$values[0], $values[1]->value];
+	}
+
+	/**
+	 * @param ClassConstFetch|String_ $expr
+	 */
+	private function callableClassName(
+		Expr $expr,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass
+	): ?string
+	{
+		if ($expr instanceof String_) {
+			$className = ltrim($expr->value, '\\');
+		} elseif (
+			$expr->class instanceof Name
+			&& $expr->name instanceof Identifier
+			&& strtolower($expr->name->toString()) === 'class'
+		) {
+			$name = $expr->class->toString();
+			$lower = strtolower($name);
+			if ($lower === 'static') {
+				$className = $entryClass->getName();
+			} elseif ($lower === 'self') {
+				$className = $declaringClass->getName();
+			} elseif ($lower === 'parent') {
+				$parent = $declaringClass->getParentClass();
+				$className = $parent === null ? null : $parent->getName();
+			} else {
+				$className = ltrim($name, '\\');
+			}
+		} else {
+			return null;
+		}
+
+		return $className !== null && $this->hasClass($className) ? $className : null;
+	}
+
+	/**
+	 * @param list<string> $readSet
+	 * @return array{FilterFact::KIND_*, string, bool}
+	 */
+	private function methodFilterTarget(string $className, string $methodName, bool $staticForm, array &$readSet): array
+	{
+		$untyped = [FilterFact::KIND_UNTYPED, '', false];
+		if (!$this->hasClass($className)) {
+			return $untyped;
+		}
+
+		$class = $this->reflectionProvider->getClass($className);
+		if (!$class->hasNativeMethod($methodName)) {
+			return $untyped;
+		}
+
+		$method = $class->getNativeMethod($methodName);
+		$native = $class->getNativeReflection()->getMethod($methodName);
+		$file = $native->getFileName();
+		if ($file !== false && !in_array($file, $readSet, true)) {
+			$readSet[] = $file;
+		}
+
+		if ($staticForm && !$method->isStatic()) {
+			return $untyped;
+		}
+
+		$parameters = $method->getVariants()[0]->getParameters();
+		$contentAware = $parameters !== []
+			&& $parameters[0]->getNativeType()->getObjectClassNames() === [FilterInfo::class];
+
+		if ($method->isPublic()) {
+			return [
+				$method->isStatic() ? FilterFact::KIND_STATIC : FilterFact::KIND_INSTANCE,
+				$class->getName() . '::' . $method->getName(),
+				$contentAware,
+			];
+		}
+
+		$line = $native->getStartLine();
+		$node = $file !== false && $line !== false && $this->isUnderAppRoot($file)
+			? $this->methodNodesByLine($file)[$line] ?? null
+			: null;
+		$declaringName = $method->getDeclaringClass()->getName();
+		$declaring = $this->hasClass($declaringName) ? $this->reflectionProvider->getClass($declaringName) : $class;
+
+		return $node === null
+			? $untyped
+			: self::stubTarget(
+				FilterClosureStub::of($node, $declaring, $this->reflectionProvider),
+			);
+	}
+
+	/**
+	 * @param list<string> $readSet
+	 * @return array{FilterFact::KIND_*, string, bool}
+	 */
+	private function functionFilterTarget(string $functionName, array &$readSet): array
+	{
+		$name = new FullyQualified(ltrim($functionName, '\\'));
+		if (!$this->reflectionProvider->hasFunction($name, null)) {
+			return [FilterFact::KIND_UNTYPED, '', false];
+		}
+
+		$function = $this->reflectionProvider->getFunction($name, null);
+		$file = $function->getFileName();
+		if ($file !== null && !in_array($file, $readSet, true)) {
+			$readSet[] = $file;
+		}
+
+		$parameters = $function->getVariants()[0]->getParameters();
+		$contentAware = $parameters !== []
+			&& $parameters[0]->getNativeType()->getObjectClassNames() === [FilterInfo::class];
+
+		return [FilterFact::KIND_FUNCTION, $function->getName(), $contentAware];
+	}
+
+	/**
+	 * @param array{string, bool}|null $stub
+	 * @return array{FilterFact::KIND_*, string, bool}
+	 */
+	private static function stubTarget(?array $stub): array
+	{
+		return $stub === null
+			? [FilterFact::KIND_UNTYPED, '', false]
+			: [FilterFact::KIND_STUB, $stub[0], $stub[1]];
 	}
 
 	/**
@@ -1348,10 +1840,7 @@ final class PhpRenderWalk
 				// Receiver-type filter: a same-named setFile() on a non-template receiver must
 				// never be recorded. Only consumes isTemplateOrigin()'s trust boundary, never
 				// widens it.
-				if (
-					!$this->isTemplateOrigin($call->var, $entryClass, $declaringClass)
-					&& !$this->isProvenancedLocal($call->var, $templateLocals)
-				) {
+				if (!$this->isTemplateReceiver($call->var, $entryClass, $declaringClass, $templateLocals)) {
 					return;
 				}
 
@@ -1435,10 +1924,7 @@ final class PhpRenderWalk
 
 				// Same receiver-type filter as setFile: an unrelated ->render() (e.g. rendering a
 				// child Nette Control, not the Template) must not be recorded.
-				if (
-					!$this->isTemplateOrigin($call->var, $entryClass, $declaringClass)
-					&& !$this->isProvenancedLocal($call->var, $templateLocals)
-				) {
+				if (!$this->isTemplateReceiver($call->var, $entryClass, $declaringClass, $templateLocals)) {
 					return;
 				}
 
@@ -2071,6 +2557,7 @@ final class PhpRenderWalk
 	 * @param list<string> $readSet
 	 * @param array<int, true> $visited
 	 * @param array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $assignmentBuilder
+	 * @param FilterBuilder $filterBuilder
 	 * @param list<SetFileSeed> $setFileBuilder
 	 * @param list<array{fileArgPresent: bool, literalPath: string|null, site: array{file: string, line: int}}> $renderSiteBuilder
 	 * @param list<array{channel: TemplateClassFact::CHANNEL_*, className: string, certainty: Certainty::*, sites: list<int>}> $templateClassCandidates
@@ -2082,6 +2569,7 @@ final class PhpRenderWalk
 		array &$readSet,
 		array &$visited,
 		array &$assignmentBuilder,
+		array &$filterBuilder,
 		array &$setFileBuilder,
 		array &$renderSiteBuilder,
 		array &$templateClassCandidates,
@@ -2139,6 +2627,7 @@ final class PhpRenderWalk
 				$readSet,
 				$visited,
 				$assignmentBuilder,
+				$filterBuilder,
 				$setFileBuilder,
 				$renderSiteBuilder,
 				$templateClassCandidates,

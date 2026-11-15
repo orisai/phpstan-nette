@@ -90,13 +90,39 @@ final class TemplateNeighbourhood
 	 */
 	public function ancestors(string $relativePath): array
 	{
+		return $this->upward($relativePath)['ancestors'];
+	}
+
+	// The renderers whose engine renders this template: its own, and those of every template above it,
+	// since an included, embedded, imported or layout template is rendered by its includer's engine.
+
+	/**
+	 * @return list<string>
+	 */
+	public function renderersReaching(string $relativePath): array
+	{
+		return $this->upward($relativePath)['renderers'];
+	}
+
+	/**
+	 * @return array{ancestors: list<string>, renderers: list<string>}
+	 */
+	private function upward(string $relativePath): array
+	{
 		$ancestors = [];
+		$renderers = [];
 		$queue = [$relativePath];
 		while ($queue !== []) {
 			$current = array_pop($queue);
 			foreach ($this->edgeIndex->incomingEdges($current) as $edge) {
 				$includer = $edge['includer'];
-				if ($edge['site']->getKind() === IncludeTarget::KIND_DISCOVERY || isset($ancestors[$includer])) {
+				if ($edge['site']->getKind() === IncludeTarget::KIND_DISCOVERY) {
+					$renderers[$includer] = true;
+
+					continue;
+				}
+
+				if (isset($ancestors[$includer])) {
 					continue;
 				}
 
@@ -107,8 +133,10 @@ final class TemplateNeighbourhood
 
 		$ancestors = array_keys($ancestors);
 		sort($ancestors, SORT_STRING);
+		$renderers = array_keys($renderers);
+		sort($renderers, SORT_STRING);
 
-		return $ancestors;
+		return ['ancestors' => $ancestors, 'renderers' => $renderers];
 	}
 
 	public function digest(string $relativePath): string

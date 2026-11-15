@@ -4,6 +4,7 @@ namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\CandidatePath;
+use OriPhpstan\Nette\Latte\Bridge\FilterFact;
 use OriPhpstan\Nette\Latte\Bridge\MutationFact;
 use OriPhpstan\Nette\Latte\Bridge\Pairing\PairingJudge;
 use OriPhpstan\Nette\Latte\Bridge\Pairing\PairingOpaque;
@@ -387,6 +388,21 @@ final class LatteDebugDumpRule implements Rule
 				} else {
 					$lines[] = $site . " (file: '" . $this->universe->relativePath($literalPath) . "')";
 				}
+			}
+		}
+
+		if ($facts->getFilters() !== [] || $facts->hasOpenFilterSet()) {
+			$lines[] = 'filters:' . ($facts->hasOpenFilterSet() ? ' (open: a dynamic name or a filter loader)' : '');
+			foreach ($facts->getFilters() as $filter) {
+				$lines[] = sprintf(
+					'%s: %s (%s) @ %s',
+					$filter->getName(),
+					$filter->getKind() === FilterFact::KIND_STUB || $filter->getTarget() === ''
+						? $filter->getKind()
+						: $filter->getKind() . ' ' . $filter->getTarget(),
+					$filter->getCertainty(),
+					$this->describeSites($filter->getSites()),
+				);
 			}
 		}
 

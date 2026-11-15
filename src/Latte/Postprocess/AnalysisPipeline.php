@@ -2,6 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
+use OriPhpstan\Nette\Latte\Bridge\FilterFact;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
@@ -10,6 +11,7 @@ use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
+use OriPhpstan\Nette\Latte\Includes\RenderTimeFilters;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\AttrShellEliminator;
@@ -22,13 +24,19 @@ use OriPhpstan\Nette\Latte\Postprocess\Eliminator\FormsMacroEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\IteratorEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\PrologEliminator;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\UiMacroEliminator;
+use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\LatteVersionAdapterAccessor;
 use OriPhpstan\Nette\Latte\Version\ShapeFamily;
+use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\Expression;
 use PhpParser\NodeTraverser;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Parser\Parser;
+use function array_key_exists;
 use function array_merge;
+use function strpos;
+use function substr;
 
 final class AnalysisPipeline
 {
@@ -61,6 +69,11 @@ final class AnalysisPipeline
 
 	private bool $providerScanEnabled;
 
+	private ?RenderTimeFilters $renderTimeFilters;
+
+	/** @var array<string, Closure|null> */
+	private array $stubs = [];
+
 	public function __construct(
 		Parser $phpParser,
 		LatteVersionAdapterAccessor $adapterAccessor,
@@ -71,9 +84,11 @@ final class AnalysisPipeline
 		?CustomsHarvester $harvester = null,
 		?TemplateTypeCustoms $templateTypeCustoms = null,
 		bool $includeIsolation = false,
-		bool $providerScanEnabled = true
+		bool $providerScanEnabled = true,
+		?RenderTimeFilters $renderTimeFilters = null
 	)
 	{
+		$this->renderTimeFilters = $renderTimeFilters;
 		$this->phpParser = $phpParser;
 		$this->adapterAccessor = $adapterAccessor;
 		$this->templateTypeCustoms = $templateTypeCustoms;
@@ -217,6 +232,68 @@ final class AnalysisPipeline
 		return $this->functionTable;
 	}
 
+	private function renderTimeFilterSet(string $relativePath): RenderTimeFilterSet
+	{
+		if ($this->renderTimeFilters === null || $relativePath === '') {
+			return RenderTimeFilterSet::none();
+		}
+
+		$entries = [];
+		foreach ($this->renderTimeFilters->filtersFor($relativePath) as $name => $fact) {
+			$entries[$name] = $this->renderTimeEntry($fact);
+		}
+
+		return new RenderTimeFilterSet(
+			$entries,
+			$this->renderTimeFilters->isOpenFor($relativePath),
+			$this->adapterAccessor->get()->family()->latteLine !== ShapeFamily::LATTE_2,
+		);
+	}
+
+	/**
+	 * @return array{string, string, bool, bool, Closure|null}
+	 */
+	private function renderTimeEntry(FilterFact $fact): array
+	{
+		$untyped = [Helpers::class, 'untypedFilter', false, true, null];
+		$target = $fact->getTarget();
+		switch ($fact->getKind()) {
+			case FilterFact::KIND_STATIC:
+			case FilterFact::KIND_INSTANCE:
+				$pos = strpos($target, '::');
+				if ($pos === false) {
+					return $untyped;
+				}
+
+				return [
+					substr($target, 0, $pos),
+					substr($target, $pos + 2),
+					$fact->isContentAware(),
+					$fact->getKind() === FilterFact::KIND_STATIC,
+					null,
+				];
+			case FilterFact::KIND_FUNCTION:
+				return ['', $target, $fact->isContentAware(), true, null];
+			case FilterFact::KIND_STUB:
+				$stub = $this->stub($target);
+
+				return $stub === null ? $untyped : ['', '', $fact->isContentAware(), true, $stub];
+			default:
+				return $untyped;
+		}
+	}
+
+	private function stub(string $source): ?Closure
+	{
+		if (!array_key_exists($source, $this->stubs)) {
+			$stmts = $this->phpParser->parseString('<?php ' . $source . ';');
+			$stmt = $stmts[0] ?? null;
+			$this->stubs[$source] = $stmt instanceof Expression && $stmt->expr instanceof Closure ? $stmt->expr : null;
+		}
+
+		return $this->stubs[$source];
+	}
+
 	private function harvested(): HarvestedCustoms
 	{
 		return $this->harvester !== null ? $this->harvester->harvest() : HarvestedCustoms::empty();
@@ -323,6 +400,7 @@ final class AnalysisPipeline
 			$this->functionTable(),
 			$declarations->getTemplateTypeClass(),
 			$this->templateTypeCustoms,
+			$this->renderTimeFilterSet($relativePath),
 		);
 		$this->lastDiagnostics = array_merge($compileDiagnostics, $injectorDiagnostics, $filterDiagnostics);
 

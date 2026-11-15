@@ -7,6 +7,7 @@ use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FilterTable;
+use OriPhpstan\Nette\Latte\Postprocess\RenderTimeFilterSet;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use PHPStan\Parser\Parser;
@@ -132,7 +133,7 @@ final class FilterTableTest extends BaseTestCase
 		}
 
 		self::assertSame(
-			['Latte\Essential\Filters', 'upper', false, false, true],
+			['Latte\Essential\Filters', 'upper', false, false, true, null],
 			self::table()->resolveForTemplate('upper', null, null),
 		);
 	}
@@ -179,7 +180,7 @@ final class FilterTableTest extends BaseTestCase
 		));
 
 		self::assertSame(
-			[Helpers::class, 'untypedFilter', false, false, true],
+			[Helpers::class, 'untypedFilter', false, false, true, null],
 			self::table($harvested)->resolveForTemplate('dyn', null, null, 'dyn'),
 		);
 	}
@@ -201,7 +202,7 @@ final class FilterTableTest extends BaseTestCase
 		self::assertNotNull($table->resolveForTemplate('modifydate', null, null, 'modifyDate'));
 		self::assertSame('modifyDate', $table->registeredSpelling('modifydate', null, null));
 		self::assertSame(
-			[self::class, 'fixtureFilterMethod', false, false, true],
+			[self::class, 'fixtureFilterMethod', false, false, true, null],
 			$table->resolveForTemplate('myfilter', null, null, 'myFilter'),
 		);
 		self::assertNull($table->resolveForTemplate('myfilter', null, null, 'MyFilter'));
@@ -215,7 +216,7 @@ final class FilterTableTest extends BaseTestCase
 		$customs = $this->templateTypeCustoms();
 
 		self::assertSame(
-			[ProcessParamsQualificationFixture::class, 'docFilter', false, true, false],
+			[ProcessParamsQualificationFixture::class, 'docFilter', false, true, false, null],
 			$table->resolveForTemplate('docfilter', ProcessParamsQualificationFixture::class, $customs, 'docFilter'),
 		);
 		self::assertNull(
@@ -256,7 +257,7 @@ final class FilterTableTest extends BaseTestCase
 	public function testResolveForTemplateWithoutATemplateTypeClassFallsBackToTheBaseTable(): void
 	{
 		self::assertSame(
-			[self::filtersClass(), 'upper', false, false, true],
+			[self::filtersClass(), 'upper', false, false, true, null],
 			self::table()->resolveForTemplate('upper', null, $this->templateTypeCustoms()),
 		);
 	}
@@ -269,7 +270,7 @@ final class FilterTableTest extends BaseTestCase
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame([ProcessParamsQualificationFixture::class, 'docFilter', false, true, false], $resolved);
+		self::assertSame([ProcessParamsQualificationFixture::class, 'docFilter', false, true, false, null], $resolved);
 	}
 
 	// A per-template STATIC method must resolve as isStatic=true, so
@@ -286,7 +287,7 @@ final class FilterTableTest extends BaseTestCase
 		);
 
 		self::assertSame(
-			[ProcessParamsQualificationFixture::class, 'docStaticFilter', false, true, true],
+			[ProcessParamsQualificationFixture::class, 'docStaticFilter', false, true, true, null],
 			$resolved,
 		);
 	}
@@ -299,7 +300,7 @@ final class FilterTableTest extends BaseTestCase
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame([self::filtersClass(), 'upper', false, false, true], $resolved);
+		self::assertSame([self::filtersClass(), 'upper', false, false, true, null], $resolved);
 	}
 
 	// A DIFFERENT template's declaring class must never see this one's per-template filter -
@@ -330,7 +331,101 @@ final class FilterTableTest extends BaseTestCase
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame([ProcessParamsQualificationFixture::class, 'docFilter', false, true, false], $resolved);
+		self::assertSame([ProcessParamsQualificationFixture::class, 'docFilter', false, true, false, null], $resolved);
+	}
+
+	public function testRenderTimeFilterReplacesTheEnginesOwnOfThatName(): void
+	{
+		$renderTime = new RenderTimeFilterSet(
+			['upper' => [self::class, 'fixtureFilterMethod', false, true, null]],
+			false,
+			false,
+		);
+
+		self::assertSame(
+			[self::class, 'fixtureFilterMethod', false, false, true, null],
+			self::table()->resolveForTemplate('upper', null, null, 'upper', $renderTime),
+		);
+		self::assertSame(
+			[self::filtersClass(), 'upper', false, false, true, null],
+			self::table()->resolveForTemplate('upper', null, null, 'upper', RenderTimeFilterSet::none()),
+		);
+	}
+
+	public function testTemplateTypeFilterWinsOverARenderTimeOne(): void
+	{
+		$renderTime = new RenderTimeFilterSet(
+			['docFilter' => [self::class, 'fixtureFilterMethod', false, true, null]],
+			false,
+			false,
+		);
+
+		self::assertSame(
+			[ProcessParamsQualificationFixture::class, 'docFilter', false, true, false, null],
+			self::table()->resolveForTemplate(
+				'docfilter',
+				ProcessParamsQualificationFixture::class,
+				$this->templateTypeCustoms(),
+				'docFilter',
+				$renderTime,
+			),
+		);
+	}
+
+	public function testRenderTimeNamesFollowTheLinesCaseRule(): void
+	{
+		$entry = [self::class, 'fixtureFilterMethod', false, true, null];
+		$insensitive = new RenderTimeFilterSet(['formatDescription' => $entry], false, false);
+		$sensitive = new RenderTimeFilterSet(['formatDescription' => $entry], false, true);
+		$table = new FilterTable(self::defaults(), null, true);
+
+		self::assertNotNull(
+			self::table()->resolveForTemplate('formatdescription', null, null, 'formatdescription', $insensitive),
+		);
+		self::assertNotNull(
+			$table->resolveForTemplate('formatdescription', null, null, 'formatDescription', $sensitive),
+		);
+		self::assertNull($table->resolveForTemplate('formatdescription', null, null, 'formatdescription', $sensitive));
+		self::assertSame(
+			'formatDescription',
+			$table->registeredSpelling('formatdescription', null, null, $sensitive),
+		);
+	}
+
+	public function testLatte2SpellingsOfOneNameWithDifferentCallablesAreUntyped(): void
+	{
+		$renderTime = new RenderTimeFilterSet(
+			[
+				'fmt' => [self::class, 'fixtureFilterMethod', false, true, null],
+				'Fmt' => ['', 'strtoupper', false, true, null],
+			],
+			false,
+			false,
+		);
+
+		self::assertSame(
+			[Helpers::class, 'untypedFilter', false, false, true, null],
+			self::table()->resolveForTemplate('fmt', null, null, 'fmt', $renderTime),
+		);
+	}
+
+	public function testOpenRenderTimeSetKnowsEveryNameUntyped(): void
+	{
+		$open = new RenderTimeFilterSet([], true, false);
+
+		self::assertSame(
+			[Helpers::class, 'untypedFilter', false, false, true, null],
+			self::table()->resolveForTemplate('definitelynotafilter', null, null, 'definitelyNotAFilter', $open),
+		);
+		self::assertNull(
+			self::table()->resolveForTemplate(
+				'definitelynotafilter',
+				null,
+				null,
+				'definitelyNotAFilter',
+				RenderTimeFilterSet::none(),
+			),
+		);
 	}
 
 	private function templateTypeCustoms(): TemplateTypeCustoms
