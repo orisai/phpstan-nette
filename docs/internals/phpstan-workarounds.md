@@ -201,7 +201,19 @@ with the code.
 
 #### Measured cost
 
-> **Pending.** Not measured yet; fill in from the procedure below.
+Measured on a consumer with about 3,400 analysed files and 450 templates, PHPStan 2.3.5, parallel workers, three
+interleaved repetitions per variant at a 1-minute load below 4. Only the cost was measured (variants A and B, unchanged
+project); the stale-entry steps 3-6 of the procedure below were not run.
+
+| Run | A, bypass on (s) | B, bypass off (s) |
+|---|---|---|
+| Whole `tmpDir` deleted | 69.1 / 70.6 / 71.8 | 69.7 / 71.8 / 69.7 |
+| Only the result cache deleted | 33.6 / 33.5 / 32.9 | 32.9 / 32.4 / 32.5 |
+| Warm, nothing changed | 10.3 / 10.1 / 9.5 | 9.7 / 10.2 / 9.8 |
+
+The finding sets were identical in every pair. Files under `tmpDir/cache` mentioning `.latte`: 466 with the bypass,
+1,372 without. The differences are within run-to-run noise, so the bypass has no measurable cost and salting the key
+would buy nothing; the bypass stays.
 
 #### Measurement procedure
 
