@@ -902,7 +902,8 @@ even though at runtime they may leak there depending on render order.
 
 ### Latte discovery formulas
 
-Templates are linked to the presenters and controls rendering them. Nette's own `formatTemplateFiles()` and
+Templates are linked to the presenters and controls rendering them — the file passed to `$template->setFile()`, to
+`$template->render()` or to `$template->renderToString()` included. Nette's own `formatTemplateFiles()` and
 `formatLayoutTemplateFiles()` are recognized without configuration. An override of either, and a control method
 deriving its template path by convention, is your code — assign it a formula:
 
@@ -1174,7 +1175,7 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 - `{default $x = …}` is analysed as `$x ??= …`; at runtime an existing `null` variable keeps `null`.
 - [Render-time filters](#latte-render-time-filters) need discovery. A filter is not seen when it is registered on an
   engine not obtained from the template (a `Latte\Engine` your code creates), inside a closure or a `try` block, by
-  a renderer which passes the file to `render()` instead of `setFile()`, or with `addFunction()` (render-time
+  a renderer whose engine renders the file itself (`$latte->render($file)`), or with `addFunction()` (render-time
   functions stay unknown). A renderer's filters count in every template it reaches, also where another renderer of the
   same template registers none, and whether the registration runs before the render is not checked. Closures are
   typed by their native types only; their PHPDoc types are not read.

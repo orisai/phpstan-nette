@@ -87,7 +87,7 @@ use function substr;
  * @phpstan-type LifecycleState array{presenter: bool, methods: array<int, array{name: string, public: bool, static: bool}>, edges: array<int, list<int>>, mutations: list<array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION|MutationFact::KIND_SWITCH, argument: string|null, line: int, conditional: bool, methodId: int, file: string}>, signalTargets: list<array{name: string, conditional: bool}>, signalTargetIds: list<array{id: int, conditional: bool}>, closures: list<array{node: Closure|ArrowFunction, conditional: bool, file: string, declaringClass: ClassReflection}>, closureIds: list<int>}
  * @phpstan-type ViewEntry array{certainty: Certainty::HAPPENS|Certainty::MAYBE, sites: list<array{file: string, line: int}>, sources: list<MutationFact|string>}
  * @phpstan-type FilterBuilder array{filters: array<string, FilterFact>, open: bool}
- * @phpstan-type SetFileSeed array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, methodId: int, conventionMethod: string|null}
+ * @phpstan-type SetFileSeed array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, methodId: int, conventionMethod: string|null, renderSite: bool}
  */
 final class PhpRenderWalk
 {
@@ -99,6 +99,8 @@ final class PhpRenderWalk
 	private const SET_FILE_METHOD = 'setFile';
 
 	private const RENDER_METHOD = 'render';
+
+	private const RENDER_METHODS = ['render', 'rendertostring'];
 
 	private const GET_LATTE_METHOD = 'getlatte';
 
@@ -374,21 +376,25 @@ final class PhpRenderWalk
 		$discoveryEntries = [];
 		foreach ($setFileBuilder as $found) {
 			$phase = self::phaseOf($contexts[$found['methodId']] ?? []);
-			$setFileFacts[] = new SetFileFact(
-				$found['kind'],
-				$found['path'],
-				$found['certainty'],
-				$found['site'],
-				$phase,
-				MutationFact::EFFECTIVE_YES,
-			);
-			$mutationFacts[] = new MutationFact(
-				MutationFact::KIND_SET_FILE,
-				$phase,
-				MutationFact::EFFECTIVE_YES,
-				$found['site']['line'],
-				$found['path'],
-			);
+			// A render with a file argument renders that file without setting it: it links the file
+			// like setFile() but leaves the template's own file, and so its mutations, alone.
+			if (!$found['renderSite']) {
+				$setFileFacts[] = new SetFileFact(
+					$found['kind'],
+					$found['path'],
+					$found['certainty'],
+					$found['site'],
+					$phase,
+					MutationFact::EFFECTIVE_YES,
+				);
+				$mutationFacts[] = new MutationFact(
+					MutationFact::KIND_SET_FILE,
+					$phase,
+					MutationFact::EFFECTIVE_YES,
+					$found['site']['line'],
+					$found['path'],
+				);
+			}
 
 			$scope = self::setFileDiscoveryScope($lifecycle, $found['methodId']);
 			$conventionPath = $found['kind'] === SetFileFact::KIND_CONVENTION && $found['conventionMethod'] !== null
@@ -810,11 +816,13 @@ final class PhpRenderWalk
 		);
 		$this->extractRenderSitesFromMethod(
 			$node,
+			$key,
 			$file,
 			$entryClass,
 			$declaringClass,
 			$templateLocals,
 			$renderSiteBuilder,
+			$setFileBuilder,
 		);
 		$this->extractTemplateClassCandidatesFromMethod($node, $entryClass, $declaringClass, $templateClassCandidates);
 		$this->extractLifecycleFromMethod($node, $key, $file, $declaringClass, $lifecycle);
@@ -1270,6 +1278,13 @@ final class PhpRenderWalk
 			$stmts,
 			false,
 			function (Stmt $stmt, bool $conditional) use ($file, $entryClass, $declaringClass, $templateLocals, $engineLocals, &$perMethod, &$readSet, &$filterBuilder): void {
+				$render = $this->templateRenderCallOf($stmt, $entryClass, $declaringClass, $templateLocals);
+				if ($render !== null) {
+					$this->recordRenderParams($render, $conditional, $file, $entryClass, $declaringClass, $perMethod);
+
+					return;
+				}
+
 				if (!$stmt instanceof Expression) {
 					return;
 				}
@@ -1337,6 +1352,41 @@ final class PhpRenderWalk
 		$name = $var->name->toString();
 
 		$builder[$name] = self::mergeAssignmentEntry($builder[$name] ?? null, $type, $conditional, $site);
+	}
+
+	// render($file, ['name' => $value]) hands the template its variables like $template->name = $value.
+
+	/**
+	 * @param array<string, array{type: Type, certainty: Certainty::*, sites: list<array{file: string, line: int}>}> $builder
+	 */
+	private function recordRenderParams(
+		MethodCall $call,
+		bool $conditional,
+		string $file,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array &$builder
+	): void
+	{
+		$params = self::argValue($call->args, 1, 'params');
+		if (!$params instanceof Array_) {
+			return;
+		}
+
+		foreach ($params->items as $item) {
+			if (!$item->key instanceof String_) {
+				continue;
+			}
+
+			$type = $this->typeOfExpr($item->value, $entryClass, $declaringClass) ?? new MixedType();
+			$name = $item->key->value;
+			$builder[$name] = self::mergeAssignmentEntry(
+				$builder[$name] ?? null,
+				$type,
+				$conditional,
+				['file' => $file, 'line' => $item->getStartLine()],
+			);
+		}
 	}
 
 	/**
@@ -1853,6 +1903,7 @@ final class PhpRenderWalk
 					'site' => ['file' => $file, 'line' => $stmt->getStartLine()],
 					'methodId' => $methodId,
 					'conventionMethod' => $classified['conventionMethod'],
+					'renderSite' => false,
 				];
 			},
 		);
@@ -1892,14 +1943,17 @@ final class PhpRenderWalk
 	/**
 	 * @param array<string, true> $templateLocals
 	 * @param list<array{fileArgPresent: bool, literalPath: string|null, site: array{file: string, line: int}}> $builder
+	 * @param list<SetFileSeed> $setFileBuilder
 	 */
 	private function extractRenderSitesFromMethod(
 		ClassMethod $method,
+		int $methodId,
 		string $file,
 		ClassReflection $entryClass,
 		ClassReflection $declaringClass,
 		array $templateLocals,
-		array &$builder
+		array &$builder,
+		array &$setFileBuilder
 	): void
 	{
 		$stmts = $method->stmts;
@@ -1910,33 +1964,77 @@ final class PhpRenderWalk
 		$this->walkConditionalStructure(
 			$stmts,
 			false,
-			// $conditional is unused here (not a bug): RenderSiteFact carries no Certainty field
-			// per the Task 1 binding interface, so render sites have nothing to downgrade to MAYBE.
-			function (Stmt $stmt, bool $conditional) use ($file, $entryClass, $declaringClass, $templateLocals, &$builder): void {
-				if (!$stmt instanceof Expression || !$stmt->expr instanceof MethodCall) {
+			function (Stmt $stmt, bool $conditional) use ($methodId, $file, $entryClass, $declaringClass, $templateLocals, &$builder, &$setFileBuilder): void {
+				$call = $this->templateRenderCallOf($stmt, $entryClass, $declaringClass, $templateLocals);
+				if ($call === null) {
 					return;
 				}
 
-				$call = $stmt->expr;
-				if (!$call->name instanceof Identifier || $call->name->toString() !== self::RENDER_METHOD) {
-					return;
-				}
-
-				// Same receiver-type filter as setFile: an unrelated ->render() (e.g. rendering a
-				// child Nette Control, not the Template) must not be recorded.
-				if (!$this->isTemplateReceiver($call->var, $entryClass, $declaringClass, $templateLocals)) {
-					return;
-				}
-
-				$argExpr = $this->firstArgValue($call->args);
+				$argExpr = self::argValue($call->args, 0, 'file');
 
 				$builder[] = [
 					'fileArgPresent' => $argExpr !== null,
 					'literalPath' => $argExpr === null ? null : $this->resolveLiteralPath($argExpr, $file),
 					'site' => ['file' => $file, 'line' => $stmt->getStartLine()],
 				];
+
+				if (
+					$argExpr === null
+					|| (
+						$argExpr instanceof ConstFetch
+						&& strtolower(
+							$argExpr->name->toString(),
+						) === 'null'
+					)
+				) {
+					return;
+				}
+
+				$classified = $this->classifySetFileArg($argExpr, $file);
+				$setFileBuilder[] = [
+					'kind' => $classified['kind'],
+					'path' => $classified['path'],
+					'certainty' => $conditional ? Certainty::MAYBE : Certainty::HAPPENS,
+					'site' => ['file' => $file, 'line' => $stmt->getStartLine()],
+					'methodId' => $methodId,
+					'conventionMethod' => $classified['conventionMethod'],
+					'renderSite' => true,
+				];
 			},
 		);
+	}
+
+	// $template->render(...) or ->renderToString(...) as a statement, an assigned value or a returned
+	// one, on the same receivers setFile() and the template's variables are read on.
+
+	/**
+	 * @param array<string, true> $templateLocals
+	 */
+	private function templateRenderCallOf(
+		Stmt $stmt,
+		ClassReflection $entryClass,
+		ClassReflection $declaringClass,
+		array $templateLocals
+	): ?MethodCall
+	{
+		if ($stmt instanceof Expression) {
+			$expr = $stmt->expr instanceof Assign ? $stmt->expr->expr : $stmt->expr;
+		} elseif ($stmt instanceof Return_) {
+			$expr = $stmt->expr;
+		} else {
+			return null;
+		}
+
+		if (
+			!$expr instanceof MethodCall
+			|| !$expr->name instanceof Identifier
+			|| !in_array(strtolower($expr->name->toString()), self::RENDER_METHODS, true)
+			|| !$this->isTemplateReceiver($expr->var, $entryClass, $declaringClass, $templateLocals)
+		) {
+			return null;
+		}
+
+		return $expr;
 	}
 
 	/**
@@ -2717,6 +2815,7 @@ final class PhpRenderWalk
 					'site' => ['file' => $file, 'line' => $stmt->getStartLine()],
 					'methodId' => $closureId,
 					'conventionMethod' => $classified['conventionMethod'],
+					'renderSite' => false,
 				];
 			},
 		);

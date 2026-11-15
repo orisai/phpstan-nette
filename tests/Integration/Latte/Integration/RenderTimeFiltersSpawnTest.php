@@ -226,8 +226,7 @@ final class OtherControl extends Nette\Application\UI\Control
 
 	public function render(): void
 	{
-		$this->template->setFile(__DIR__ . '/other.latte');
-		$this->template->render();
+		$this->template->render(__DIR__ . '/other.latte', ['title' => 'Other']);
 	}
 
 }
@@ -245,8 +244,8 @@ final class DynamicControl extends Nette\Application\UI\Control
 	public function render(string $name): void
 	{
 		$this->template->addFilter($name, 'strtoupper');
-		$this->template->setFile(__DIR__ . '/dynamic.latte');
-		$this->template->render();
+		$html = $this->template->renderToString(__DIR__ . '/dynamic.latte');
+		echo $html;
 	}
 
 }

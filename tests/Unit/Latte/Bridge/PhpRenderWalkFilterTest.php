@@ -18,9 +18,13 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FilterPresente
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FirstClassCallableControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\LoaderFilterControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\OpenFilterControl;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\RenderFileControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\UnrelatedFilterControl;
+use function array_keys;
+use function basename;
 use function dirname;
 use function realpath;
+use function sort;
 
 final class PhpRenderWalkFilterTest extends PHPStanTestCase
 {
@@ -106,6 +110,26 @@ final class PhpRenderWalkFilterTest extends PHPStanTestCase
 			],
 			self::describe($facts),
 		);
+	}
+
+	public function testRenderWithAFileLinksItLikeSetFile(): void
+	{
+		$facts = $this->walk()->factsFor(RenderFileControl::class);
+		$discovery = $facts->getDiscovery();
+		self::assertNotNull($discovery);
+
+		$linked = [];
+		foreach ($discovery->getViewCandidates() as $candidates) {
+			foreach ($candidates as $candidate) {
+				$linked[] = $candidate->getKind() . ' ' . basename($candidate->getPath());
+			}
+		}
+
+		sort($linked);
+		self::assertSame(['setFile fragment.latte', 'setFile rendered.latte'], $linked);
+		self::assertSame([], $facts->getSetFileTargets());
+		self::assertSame(['count', 'title'], array_keys($facts->getAssignments()));
+		self::assertCount(2, $facts->getRenderSites());
 	}
 
 	public function testFiltersSurviveTheArrayRoundTrip(): void

@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   traits) are known in the templates it renders and in their includes and layouts, checked against the registered
   callable — closures and private methods by their native signature; a dynamic name or a filter loader stops unknown
   filters from being reported there (needs `orisai.nette.latte.discovery.enabled`)
+- Latte: a template passed to `$template->render($file)` or `$template->renderToString($file)` is linked to its
+  renderer like one passed to `setFile()`; the literal keys of the params array are its template variables
 - Latte: methods a presenter or control gets from its first-party traits are read for template variables, template
   files and filters like its own
 

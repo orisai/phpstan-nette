@@ -167,21 +167,21 @@ final class PhpRenderWalkScaleTest extends PHPStanTestCase
 		ksort($discoveryCandidateKinds, SORT_STRING);
 		self::assertSame(
 			[
-				CandidatePath::KIND_CONVENTION => 15,
+				CandidatePath::KIND_CONVENTION => 16,
 				CandidatePath::KIND_FORMULA => 20,
-				CandidatePath::KIND_SET_FILE => 5,
+				CandidatePath::KIND_SET_FILE => 7,
 			],
 			$discoveryCandidateKinds,
 		);
 		self::assertSame(20, $discoveryLayoutTotal);
 		self::assertSame(5, $discoveryOpaqueTotal);
-		self::assertSame(75, $discoveryProbeTotal);
+		self::assertSame(78, $discoveryProbeTotal);
 
 		ksort($discoveryProbeKinds, SORT_STRING);
 		self::assertSame(
 			[
 				DiscoveryFact::PROBE_DIR => 5,
-				DiscoveryFact::PROBE_FILE => 60,
+				DiscoveryFact::PROBE_FILE => 63,
 				DiscoveryFact::PROBE_LISTING => 10,
 			],
 			$discoveryProbeKinds,

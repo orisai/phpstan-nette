@@ -1331,7 +1331,7 @@ The dump lists the facts by domain, one line each:
   site,
 - **setFile targets** — kind (`literal` with the resolved path, `convention`, `opaque`) plus
   certainty and site,
-- **render sites** — site plus the literal file argument, `(file arg, non-literal)` or
+- **render sites** — `render()`/`renderToString()` calls: site plus the literal file argument, `(file arg, non-literal)` or
   `(no file arg)`,
 - **filters** — only when the class registers any: `name: kind target (certainty) @ file:line` per
   filter (a stub prints its kind only), the header marked `(open: …)` for a dynamic name or a filter
@@ -1594,6 +1594,14 @@ tripwires the same way the include-semantics probes are. The facts the model enc
 - **A control links every template its render methods set** — `render()` and `renderX()` are
   separate entry points (`{control x}` vs `{control x:y}`), so each method's last `setFile()` wins
   for that method. A presenter keeps one winner per view.
+- **A render with a file argument links like `setFile()`** — `$template->render($file, $params)` and
+  `renderToString($file, $params)`, as a statement, an assigned or a returned value
+  (`PhpRenderWalk::templateRenderCallOf()`, on the receivers `setFile()` is read on), add the same
+  discovery entry a `setFile($file)` in that method adds, with the same argument classification
+  (literal, convention, opaque). They are no `SetFileFact` and no mutation: the call renders the file
+  without setting it, so the template's own file is unchanged. A literal-keyed `$params` array is
+  recorded as the template's variables, like `$template->name = …`. A render on the engine
+  (`$template->getLatte()->render($file)`) links nothing.
 
 ### Views: method-derived, write-derived, file-derived
 
@@ -2256,8 +2264,8 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   `addFunction()`, `$compiler->addFilter()`/`addMacro()` stay unknown names. A filter registered on an
   engine the walk cannot tie to a template (a `Latte\Engine` from a factory, a template reached
   through a foreign object, a closure or `try` body, a statement nested in an expression), or by a
-  renderer discovery does not link to the template (`$template->render($file)` with a file argument
-  links nothing — the same as for its variables), is unknown there; a dynamic name opens the set
+  renderer discovery does not link to the template (an engine's own `render($file)` links nothing), is
+  unknown there; a dynamic name opens the set
   instead (*Render-time filters* above). Registration order is not modelled: a filter registered after
   the render, or only on some paths, counts as registered, and a renderer linked to a template makes
   its filters known in every template it reaches, also where another renderer of the same template
