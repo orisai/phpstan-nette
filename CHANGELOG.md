@@ -124,6 +124,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `orisai.nette.latte.unknownFilter`
 - Development: the timed performance budget tests, including the Forms inference on/off ratio, are replaced by phpbench
   benchmarks (`make bench`), run by hand
+- The analysis parser hands PHP files to PHPStan's `pathRoutingParser` as PHPStan 2.3.5 wires it, without the extra
+  content-keyed `CachedParser` an older PHPStan had in front of it
 
 ### Fixed
 

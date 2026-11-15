@@ -309,6 +309,10 @@ parameters:
 		-
 			identifiers: [phpstanApi.classConstant, staticMethod.dynamicCall]
 			path: ../tests/Unit/Latte/Rule/LatteProvenanceTipRegistryTest.php
+		# Pins the phar's own service definitions this library mirrors.
+		-
+			identifier: phpstanApi.classConstant
+			path: ../tests/Unit/Support/PharServiceWiringTest.php
 		-
 			identifier: phpstanApi.constructor
 			path: ../tests/Unit/Latte/Bridge/Discovery/PreAnalysisIndexBuilderTest.php

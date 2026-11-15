@@ -1,0 +1,12 @@
+parameters:
+	customRulesetUsed: true
+	bootstrapFiles:
+		- ../../../tests/autoload.php
+	fileExtensions: [php, latte]
+	orisai:
+		nette:
+			latte:
+				enabled: true
+
+includes:
+	- ../../../extension.neon

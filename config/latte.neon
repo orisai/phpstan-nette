@@ -109,12 +109,10 @@ parameters:
 		- ../src/Latte/Testing/dumpLatteDiscovery.php
 
 services:
-	# The phar's defaultAnalysisParser under a delegate-able name.
+	# The phar's defaultAnalysisParser under a delegate-able name, defined as the phar defines it
+	# (PharServiceWiringTest pins that definition).
 	latteInnerAnalysisParser:
-		class: PHPStan\Parser\CachedParser
-		arguments:
-			originalParser: @pathRoutingParser
-			cachedNodesByStringCountMax: %cache.nodesByStringCountMax%
+		factory: @pathRoutingParser
 		autowired: false
 
 	# Resolves a real Latte\Engine for CustomsHarvester: orisai.nette.dic.containerLoader's ILatteFactory
@@ -205,8 +203,8 @@ services:
 	latteAnalysisPipeline:
 		class: OriPhpstan\Nette\Latte\Postprocess\AnalysisPipeline
 		arguments:
-			# NOT @latteInnerAnalysisParser: CachedParser::parseString returns the SAME,
-			# already-eliminator-mutated node objects for byte-identical generated PHP source. A
+			# NOT @latteInnerAnalysisParser: its parseString() reaches the phar's CachedParser, which
+			# returns the SAME, already-eliminator-mutated node objects for byte-identical generated PHP source. A
 			# second parse of identical source (e.g. two templates that happen to compile to the
 			# same code) would silently lose its own filter diagnostics and share mutated
 			# line/node attributes with the first.
