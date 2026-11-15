@@ -129,6 +129,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Latte: a fix aimed at a template from elsewhere – an error a `CollectedDataNode` rule reports in a `.latte` file, or
+  a fixed node naming one – is dropped like the fixes of a rule analysing the template; it used to render compiled
+  PHP against the template's text, warn, and let `--fix` overwrite the template with garbage
 - Latte 3.1.7 and nette/forms 3.3.1 generated code is reduced like the earlier releases': a filtered `{capture}`'s
   `Html` re-wrap ternary, `{formContainer}`'s `bindsForm: false` and `{/form}`'s `$form = forms->end() ?? $form`, which
   now types `$form` after a nested `{/form}` as the enclosing form of the same template method

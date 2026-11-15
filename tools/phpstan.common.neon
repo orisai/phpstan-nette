@@ -257,7 +257,7 @@ parameters:
 			identifiers: [phpstanApi.interface, phpstanApi.method]
 			path: ../src/Latte/Rule/LatteFixStrippingRegistry.php
 		-
-			identifier: phpstanApi.interface
+			identifiers: [phpstanApi.interface, phpstanApi.method]
 			path: ../src/Latte/Rule/LatteFixStrippingRule.php
 		-
 			identifiers: [phpstanApi.interface, phpstanApi.method]

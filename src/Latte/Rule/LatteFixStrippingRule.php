@@ -3,6 +3,7 @@
 namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Latte\FixSupport;
+use OriPhpstan\Nette\Latte\TemplatePath;
 use PhpParser\Node;
 use PHPStan\Analyser\DependencyTracker;
 use PHPStan\Analyser\Scope;
@@ -48,15 +49,35 @@ final class LatteFixStrippingRule implements Rule
 	public function processNode(Node $node, Scope $scope): array
 	{
 		$errors = $this->rule->processNode($node, $scope);
-
-		if (FixSupport::supportsFixes($scope)) {
-			return $errors;
-		}
+		$templateScope = !FixSupport::supportsFixes($scope);
 
 		return array_map(
-			static fn (IdentifierRuleError $error): IdentifierRuleError => self::stripFix($error, $scope),
+			static fn (IdentifierRuleError $error): IdentifierRuleError => $templateScope || self::fixReachesTemplate(
+				$error,
+			)
+				? self::stripFix($error, $scope)
+				: $error,
 			$errors,
 		);
+	}
+
+	private static function fixReachesTemplate(IdentifierRuleError $error): bool
+	{
+		if (!$error instanceof FixableNodeRuleError) {
+			return false;
+		}
+
+		if ($error instanceof FileRuleError && TemplatePath::is($error->getFile())) {
+			return true;
+		}
+
+		foreach ($error->getNodeFixes() as $nodeFix) {
+			if ($nodeFix->file !== null && TemplatePath::is($nodeFix->file)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// Belt-and-braces for rules that do not consult FixSupport (PHPStan core rules ship several
