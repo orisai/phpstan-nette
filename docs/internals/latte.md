@@ -826,9 +826,9 @@ imperative `addFilter()` calls. Three channels are modeled:
   real Latte engine and enumerating it (below).
 - **Per-template customs** — Latte's own `{templateType C}` + `processParams()` mechanism, where
   `C`'s own tagged/attributed methods become filters/functions (below).
-- **Render-time filters** — `addFilter()` calls the renderer's PHP code makes on the template or its
-  engine before rendering, read by the same render walk that records the template's variables and
-  file (*Render-time filters* below). Render-time functions (`addFunction()`) and compiler-level
+- **Render-time filters and functions** — `addFilter()`/`addFunction()` calls the renderer's PHP
+  code makes on the template or its engine before rendering, read by the same render walk that records
+  the template's variables and file (*Render-time filters and functions* below). Compiler-level
   `$compiler->addFilter()`/`addMacro()` stay out of scope — see *Known limitations*.
 
 ### Engine harvest (global customs)
@@ -952,12 +952,21 @@ instead - their filters report unknown rather than risk a stale cache - and `dum
 shows a `harvest note:` saying so. `dumpLatteCustoms()` lists
 those names under `loader filters:` when the engine has loaders.
 
-### Render-time filters
+### Render-time filters and functions
 
 `$template->addFilter()` delegates to the template's engine, so a filter PHP code registers on the
 template, on `$template->getLatte()` or on a local holding either is an engine filter for that render:
 known in the rendered template and in everything the engine renders for it — its `{include}`,
 `{import}`, `{embed}` and `{layout}`/`{extends}` targets and the auto-layout.
+
+`addFunction()` follows every rule below exactly as `addFilter()` does — receivers, callables, stubs,
+merge, open sets, propagation and invalidation; its facts are `PhpRenderFacts::getFunctions()`. A
+render-time function is compiled by none of the analysis engines, so its call stays a literal function call
+in the generated code, which `FilterRewriter` rewrites when `FunctionTable::resolveForTemplate()` knows the
+name; a registered name shadows a PHP function of the same name, as it does at runtime once Latte compiles
+it as a registered function. A function taking the template as its first parameter (Latte 3's
+`FunctionExecutor` passes it in) is checked without it. Every supported Latte line has `Engine::addFunction()`
+(Latte 2 since 2.6; the supported Latte 2 line is 2.11).
 
 **Harvest — the variable walk.** `PhpRenderWalk::extractTemplateWritesFromMethod()` is one leaf pass
 for both template writes: a `$receiver->x = …` assignment and a `$receiver->addFilter(…)` statement are
@@ -968,7 +977,7 @@ assigned from one). Every method the walk reaches is walked — the class's ance
 calls, overridden `createTemplate()` bodies, lifecycle hooks — and so are the methods first-party traits
 give each class of the chain (`declaredMethodNodes()`): a trait's `createTemplate()` override or
 lifecycle hook is called by the vendor, never by a walked method. The result is `PhpRenderFacts`'
-`filters` (one `FilterFact` per name) and `hasOpenFilterSet`, persisted with the facts
+`filters` (one `CallableFact` per name) and `hasOpenFilterSet`, persisted with the facts
 (`PhpFactsCache::FORMAT_VERSION` 14).
 
 **Callables** (`classifyFilterCallable()`), all resolved through PHPStan reflection, never runtime
@@ -1002,8 +1011,8 @@ once and `FilterRewriter` gives every call site its own copy on the call's line.
 
 **Merge.** A name registered twice with the same callable keeps it; with two different callables —
 two branches, two methods, two renderers of one template — it is known and untyped
-(`FilterFact::mergedWith()`), since no order between those registrations is provable. Latte 2 files
-filters under their lowercase name (`RenderTimeFilterSet`), so two spellings differing in case merge the
+(`CallableFact::mergedWith()`), since no order between those registrations is provable. Latte 2 files
+filters under their lowercase name (`RenderTimeCallableSet`), so two spellings differing in case merge the
 same way there; Latte 3 keeps them apart, and a spelling differing only in case reports
 `orisai.nette.latte.filterCaseMismatch` naming the registered one.
 
@@ -1018,7 +1027,7 @@ template the renderer reaches types an otherwise unknown filter as `Helpers::unt
 reporting `orisai.nette.latte.unknownFilter` — OPEN, never false-close. A name no template can write
 (not `[a-z_]\w*`) is ignored.
 
-**Per template** (`RenderTimeFilters`). The renderers reaching a template are its own discovery
+**Per template** (`RenderTimeCustoms`). The renderers reaching a template are its own discovery
 records plus those of every template above it, transitively along the non-discovery incoming edges
 (`TemplateNeighbourhood::renderersReaching()`, the same upward walk as `ancestors()`): an included
 partial or a layout knows the filters of every renderer of every includer. Only qualifying facts
@@ -2255,22 +2264,25 @@ so that a change to the walk that silently shrinks or grows it is noticed.
   discovered via `CustomsHarvester` (*Custom filters, functions and macros* above) is treated as
   available to every template, regardless of which presenter/control actually wires it at runtime.
   Per-template customs (`{templateType}`'s own methods, same section) and render-time filters
-  (*Render-time filters*, scoped by the renderers reaching a template) are the channels that ARE
+  (*Render-time filters and functions*, scoped by the renderers reaching a template) are the channels that ARE
   scoped.
 - **Per-template customs are scoped to the declaring template only, by deliberate, strict design —
   see *Per-template customs* above for the full runtime-leak rationale and the documented
   recommendation for new code.**
-- **Render-time registration is modelled for filters only, and only where the walk sees it.**
-  `addFunction()`, `$compiler->addFilter()`/`addMacro()` stay unknown names. A filter registered on an
-  engine the walk cannot tie to a template (a `Latte\Engine` from a factory, a template reached
-  through a foreign object, a closure or `try` body, a statement nested in an expression), or by a
-  renderer discovery does not link to the template (an engine's own `render($file)` links nothing), is
-  unknown there; a dynamic name opens the set
-  instead (*Render-time filters* above). Registration order is not modelled: a filter registered after
-  the render, or only on some paths, counts as registered, and a renderer linked to a template makes
-  its filters known in every template it reaches, also where another renderer of the same template
-  registers none. Closure stubs read native types only, and a callable whose stub cannot be printed is
-  untyped. On Latte 2 `CaseMismatchScanner` does not compare against render-time names.
+- **Render-time registration is modelled for filters and functions, and only where the walk sees it.**
+  `$compiler->addFilter()`/`addMacro()` stay unknown names; a template-aware render-time function is
+  checked without its template argument. A registration on an engine the walk cannot tie to a template
+  (a `Latte\Engine` from a factory, a template reached through a foreign object, a closure or `try` body,
+  a statement nested in an expression), or by a renderer discovery does not link to the template (an
+  engine's own `render($file)` links nothing), is unknown there; a dynamic name opens the set instead
+  (*Render-time filters and functions* above). Closure stubs read native types only, and a callable
+  whose stub cannot be printed is untyped. On Latte 2 `CaseMismatchScanner` does not compare against
+  render-time names.
+- **Registration order is not modelled.** The facts are per renderer class, not per render path: a filter
+  or function a renderer registers anywhere the walk reaches counts in every template that renderer
+  reaches, also on a path where the registration has not run — registered after the `render()` call, in
+  `afterRender()`/`shutdown()`, in another action, signal or branch than the one rendering — and also in a
+  template another renderer, registering nothing, renders too.
 - **The case-mismatch scanner does not see `n:attribute` expressions.** `CaseMismatchScanner` only
   tokenizes `Latte\Token::MACRO_TAG` text; a filter/function name written exclusively inside an
   `n:attribute` value (e.g. `n:if="$x|upper"`) never reaches it — accepted, documented gap.
@@ -2536,13 +2548,13 @@ And the implementation-ledgered additions:
   registrations via a real, harvested Latte engine (the application's compiled DI container through
   `orisai.nette.dic.containerLoader`, or `orisai.nette.latte.engineLoader` for pure `latte/latte`), per-template registrations
   via Latte's own `{templateType}` + `processParams()` mechanism. See *Custom filters, functions
-  and macros* above. Render-time `addFilter()` calls from presenter/control PHP code are read by the
-  phase-3 render walk (*Render-time filters* above); `addFunction()`/`addMacro()` are not.
+  and macros* above. Render-time `addFilter()`/`addFunction()` calls from presenter/control PHP code are
+  read by the phase-3 render walk (*Render-time filters and functions* above); `addMacro()` is not.
 - **Phase 3** — presenter/control render analysis (`$template->x` assignments, `render`/`setFile`
   resolution) to provide real root contexts across the PHP↔Latte boundary, add the convention
   edges that lift the `orisai.nette.latte.unknownBlock` suppression above, and model imperative
-  filter/function/macro registration (filters are modelled, see *Render-time filters*; functions and
-  macros still report as unknown, see *Known limitations*).
+  filter/function/macro registration (filters and functions are modelled, see *Render-time filters and
+  functions*; macros still report as unknown, see *Known limitations*).
   Three slices are shipped: per-class render-fact extraction (*`dumpLatteRenderFacts()`* above),
   template-class pairing (*Template-class pairing* above) and template-file discovery
   (*Template-file discovery* above — convention edges now exist for every linked template, which

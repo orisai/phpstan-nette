@@ -2,14 +2,18 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
+use OriPhpstan\Nette\Latte\Includes\RenderTimeCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use PhpParser\Node\Expr\Closure;
 use function strtolower;
 
-// One template's render-time filters, resolved: [class, method, isContentAware, isStatic, stub]. Latte 2
-// files a filter under its lowercase name, so two spellings registered with different callables there
-// are one filter of no known signature.
-final class RenderTimeFilterSet
+// One template's render-time filters or functions, resolved: [class, method, isContentAware, isStatic,
+// stub]. Latte 2 files them under their lowercase name, so two spellings registered with different
+// callables there are one name of no known signature.
+/**
+ * @phpstan-import-type OpenSite from RenderTimeCustoms
+ */
+final class RenderTimeCallableSet
 {
 
 	/** @var array<string, array{string, string, bool, bool, Closure|null}> */
@@ -18,16 +22,18 @@ final class RenderTimeFilterSet
 	/** @var array<string, string> */
 	private array $spellings = [];
 
-	private bool $open;
+	/** @var list<OpenSite> */
+	private array $openSites;
 
 	private bool $caseSensitive;
 
 	/**
 	 * @param array<string, array{string, string, bool, bool, Closure|null}> $entries
+	 * @param list<OpenSite> $openSites
 	 */
-	public function __construct(array $entries, bool $open, bool $caseSensitive)
+	public function __construct(array $entries, array $openSites, bool $caseSensitive)
 	{
-		$this->open = $open;
+		$this->openSites = $openSites;
 		$this->caseSensitive = $caseSensitive;
 		foreach ($entries as $name => $entry) {
 			$key = $caseSensitive ? $name : strtolower($name);
@@ -40,7 +46,7 @@ final class RenderTimeFilterSet
 
 	public static function none(): self
 	{
-		return new self([], false, false);
+		return new self([], [], false);
 	}
 
 	/**
@@ -62,7 +68,7 @@ final class RenderTimeFilterSet
 
 	public function isOpen(): bool
 	{
-		return $this->open;
+		return $this->openSites !== [];
 	}
 
 }

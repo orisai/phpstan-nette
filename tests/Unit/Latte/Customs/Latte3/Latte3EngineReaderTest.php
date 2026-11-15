@@ -129,7 +129,7 @@ final class Latte3EngineReaderTest extends BaseTestCase
 			$filters->resolveForTemplate('shout', null, null),
 		);
 		self::assertSame(
-			[FixtureExtension::class, 'twice', false, false, false],
+			[FixtureExtension::class, 'twice', false, false, false, null],
 			$functions->resolveForTemplate('twice', null, null),
 		);
 		self::assertFalse($functions->receivesTemplate('twice'));

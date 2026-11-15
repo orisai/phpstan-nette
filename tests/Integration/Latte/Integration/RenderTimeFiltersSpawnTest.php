@@ -293,6 +293,61 @@ PHP);
 		);
 	}
 
+	public function testRegisteredFunctionsAreTypedWhereverTheirRenderersReach(): void
+	{
+		$this->project->write('src/Money.php', <<<'PHP'
+<?php declare(strict_types = 1);
+
+final class Money
+{
+
+	public static function format(int $cents): string
+	{
+		return (string) $cents;
+	}
+
+}
+
+PHP);
+		$this->project->write('src/ShopControl.php', <<<'PHP'
+<?php declare(strict_types = 1);
+
+/**
+ * @property-read Nette\Bridges\ApplicationLatte\DefaultTemplate $template
+ */
+final class ShopControl extends Nette\Application\UI\Control
+{
+
+	public function render(): void
+	{
+		$this->template->addFunction('money', [Money::class, 'format']);
+		$this->template->getLatte()->addFunction('discount', function (int $percent): float {
+			return $percent / 100;
+		});
+		$this->template->render(__DIR__ . '/shop.latte');
+	}
+
+}
+
+PHP);
+		$this->project->write(
+			'src/shop.latte',
+			"{=money(100)}\n{=money('x')}\n{=discount(5)}\n{=discount('x')}\n{include 'price.latte'}\n",
+		);
+		$this->project->write('src/price.latte', "{=money('y')}\n");
+		$this->project->write('src/other.latte', "{=money(1)}\n");
+
+		self::assertSame(
+			[
+				'other.latte:1 function.notFound Function money not found.',
+				'price.latte:1 argument.type Parameter #1 $cents of static method Money::format() expects int, string given.',
+				'shop.latte:2 argument.type Parameter #1 $cents of static method Money::format() expects int, string given.',
+				'shop.latte:4 argument.type Parameter #1 $percent of closure expects int, string given.',
+			],
+			$this->analyse(),
+		);
+	}
+
 	/**
 	 * @requires PHP >= 8.1
 	 */

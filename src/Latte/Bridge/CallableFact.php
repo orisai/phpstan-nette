@@ -7,7 +7,7 @@ use function array_merge;
 use function strcmp;
 use function usort;
 
-final class FilterFact
+final class CallableFact
 {
 
 	public const KIND_STATIC = 'static';
@@ -19,6 +19,10 @@ final class FilterFact
 	public const KIND_STUB = 'stub';
 
 	public const KIND_UNTYPED = 'untyped';
+
+	public const OPEN_DYNAMIC_NAME = 'dynamic name';
+
+	public const OPEN_LOADER = 'filter loader';
 
 	private string $name;
 

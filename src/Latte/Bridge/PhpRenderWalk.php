@@ -86,7 +86,7 @@ use function substr;
 /**
  * @phpstan-type LifecycleState array{presenter: bool, methods: array<int, array{name: string, public: bool, static: bool}>, edges: array<int, list<int>>, mutations: list<array{kind: MutationFact::KIND_SET_VIEW|MutationFact::KIND_SET_ACTION|MutationFact::KIND_SWITCH, argument: string|null, line: int, conditional: bool, methodId: int, file: string}>, signalTargets: list<array{name: string, conditional: bool}>, signalTargetIds: list<array{id: int, conditional: bool}>, closures: list<array{node: Closure|ArrowFunction, conditional: bool, file: string, declaringClass: ClassReflection}>, closureIds: list<int>}
  * @phpstan-type ViewEntry array{certainty: Certainty::HAPPENS|Certainty::MAYBE, sites: list<array{file: string, line: int}>, sources: list<MutationFact|string>}
- * @phpstan-type FilterBuilder array{filters: array<string, FilterFact>, open: bool}
+ * @phpstan-type FilterBuilder array{filters: array<string, CallableFact>, functions: array<string, CallableFact>, openFilters: list<array{file: string, line: int, reason: CallableFact::OPEN_*}>, openFunctions: list<array{file: string, line: int, reason: CallableFact::OPEN_*}>}
  * @phpstan-type SetFileSeed array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, methodId: int, conventionMethod: string|null, renderSite: bool}
  */
 final class PhpRenderWalk
@@ -108,7 +108,9 @@ final class PhpRenderWalk
 
 	private const ADD_FILTER_LOADER_METHOD = 'addfilterloader';
 
-	private const FILTER_NAME_PATTERN = '~^[a-z_][a-z0-9_]*$~i';
+	private const ADD_FUNCTION_METHOD = 'addfunction';
+
+	private const CALLABLE_NAME_PATTERN = '~^[a-z_][a-z0-9_]*$~i';
 
 	private const FACTORY_STATIC_METHOD = 'create';
 
@@ -275,7 +277,7 @@ final class PhpRenderWalk
 		$assignmentBuilder = [];
 
 		/** @var FilterBuilder $filterBuilder */
-		$filterBuilder = ['filters' => [], 'open' => false];
+		$filterBuilder = ['filters' => [], 'functions' => [], 'openFilters' => [], 'openFunctions' => []];
 
 		/** @var list<SetFileSeed> $setFileBuilder */
 		$setFileBuilder = [];
@@ -457,7 +459,9 @@ final class PhpRenderWalk
 			$this->discoveryResolver->resolve($classReflection, $lifecycle['presenter'], $viewNames, $discoveryEntries),
 			$this->finalizeCreateTemplateControl($classReflection, $controlShapes),
 			$filterBuilder['filters'],
-			$filterBuilder['open'],
+			$filterBuilder['openFilters'],
+			$filterBuilder['functions'],
+			$filterBuilder['openFunctions'],
 		);
 	}
 
@@ -1479,7 +1483,11 @@ final class PhpRenderWalk
 		}
 
 		$methodName = strtolower($call->name->toString());
-		if ($methodName !== self::ADD_FILTER_METHOD && $methodName !== self::ADD_FILTER_LOADER_METHOD) {
+		if (
+			$methodName !== self::ADD_FILTER_METHOD
+			&& $methodName !== self::ADD_FILTER_LOADER_METHOD
+			&& $methodName !== self::ADD_FUNCTION_METHOD
+		) {
 			return;
 		}
 
@@ -1491,15 +1499,21 @@ final class PhpRenderWalk
 			return;
 		}
 
+		$function = $methodName === self::ADD_FUNCTION_METHOD;
+		$site = ['file' => $file, 'line' => $call->getStartLine()];
 		$nameExpr = self::argValue($call->args, 0, 'name');
 		if ($methodName === self::ADD_FILTER_LOADER_METHOD || !$nameExpr instanceof String_) {
-			$builder['open'] = true;
+			$builder[$function ? 'openFunctions' : 'openFilters'][] = $site + [
+				'reason' => $methodName === self::ADD_FILTER_LOADER_METHOD
+					? CallableFact::OPEN_LOADER
+					: CallableFact::OPEN_DYNAMIC_NAME,
+			];
 
 			return;
 		}
 
 		// A name no template can write is never called, so it registers nothing to know.
-		if (preg_match(self::FILTER_NAME_PATTERN, $nameExpr->value) !== 1) {
+		if (preg_match(self::CALLABLE_NAME_PATTERN, $nameExpr->value) !== 1) {
 			return;
 		}
 
@@ -1511,17 +1525,18 @@ final class PhpRenderWalk
 		);
 
 		$name = $nameExpr->value;
-		$fact = new FilterFact(
+		$fact = new CallableFact(
 			$name,
 			$kind,
 			$target,
-			$contentAware,
+			$contentAware && !$function,
 			$conditional ? Certainty::MAYBE : Certainty::HAPPENS,
-			[['file' => $file, 'line' => $call->getStartLine()]],
+			[$site],
 		);
 
-		$builder['filters'][$name] = isset($builder['filters'][$name])
-			? $builder['filters'][$name]->mergedWith($fact)
+		$key = $function ? 'functions' : 'filters';
+		$builder[$key][$name] = isset($builder[$key][$name])
+			? $builder[$key][$name]->mergedWith($fact)
 			: $fact;
 	}
 
@@ -1545,7 +1560,7 @@ final class PhpRenderWalk
 
 	/**
 	 * @param list<string> $readSet
-	 * @return array{FilterFact::KIND_*, string, bool}
+	 * @return array{CallableFact::KIND_*, string, bool}
 	 */
 	private function classifyFilterCallable(
 		?Expr $expr,
@@ -1554,7 +1569,7 @@ final class PhpRenderWalk
 		array &$readSet
 	): array
 	{
-		$untyped = [FilterFact::KIND_UNTYPED, '', false];
+		$untyped = [CallableFact::KIND_UNTYPED, '', false];
 
 		if ($expr instanceof Closure || $expr instanceof ArrowFunction) {
 			return self::stubTarget(FilterClosureStub::of($expr, $declaringClass, $this->reflectionProvider));
@@ -1685,11 +1700,11 @@ final class PhpRenderWalk
 
 	/**
 	 * @param list<string> $readSet
-	 * @return array{FilterFact::KIND_*, string, bool}
+	 * @return array{CallableFact::KIND_*, string, bool}
 	 */
 	private function methodFilterTarget(string $className, string $methodName, bool $staticForm, array &$readSet): array
 	{
-		$untyped = [FilterFact::KIND_UNTYPED, '', false];
+		$untyped = [CallableFact::KIND_UNTYPED, '', false];
 		if (!$this->hasClass($className)) {
 			return $untyped;
 		}
@@ -1716,7 +1731,7 @@ final class PhpRenderWalk
 
 		if ($method->isPublic()) {
 			return [
-				$method->isStatic() ? FilterFact::KIND_STATIC : FilterFact::KIND_INSTANCE,
+				$method->isStatic() ? CallableFact::KIND_STATIC : CallableFact::KIND_INSTANCE,
 				$class->getName() . '::' . $method->getName(),
 				$contentAware,
 			];
@@ -1738,13 +1753,13 @@ final class PhpRenderWalk
 
 	/**
 	 * @param list<string> $readSet
-	 * @return array{FilterFact::KIND_*, string, bool}
+	 * @return array{CallableFact::KIND_*, string, bool}
 	 */
 	private function functionFilterTarget(string $functionName, array &$readSet): array
 	{
 		$name = new FullyQualified(ltrim($functionName, '\\'));
 		if (!$this->reflectionProvider->hasFunction($name, null)) {
-			return [FilterFact::KIND_UNTYPED, '', false];
+			return [CallableFact::KIND_UNTYPED, '', false];
 		}
 
 		$function = $this->reflectionProvider->getFunction($name, null);
@@ -1757,18 +1772,18 @@ final class PhpRenderWalk
 		$contentAware = $parameters !== []
 			&& $parameters[0]->getNativeType()->getObjectClassNames() === [FilterInfo::class];
 
-		return [FilterFact::KIND_FUNCTION, $function->getName(), $contentAware];
+		return [CallableFact::KIND_FUNCTION, $function->getName(), $contentAware];
 	}
 
 	/**
 	 * @param array{string, bool}|null $stub
-	 * @return array{FilterFact::KIND_*, string, bool}
+	 * @return array{CallableFact::KIND_*, string, bool}
 	 */
 	private static function stubTarget(?array $stub): array
 	{
 		return $stub === null
-			? [FilterFact::KIND_UNTYPED, '', false]
-			: [FilterFact::KIND_STUB, $stub[0], $stub[1]];
+			? [CallableFact::KIND_UNTYPED, '', false]
+			: [CallableFact::KIND_STUB, $stub[0], $stub[1]];
 	}
 
 	/**

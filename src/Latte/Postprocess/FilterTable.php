@@ -97,7 +97,7 @@ final class FilterTable
 		?string $templateTypeClass,
 		?TemplateTypeCustoms $templateTypeCustoms,
 		?string $writtenName = null,
-		?RenderTimeFilterSet $renderTime = null
+		?RenderTimeCallableSet $renderTime = null
 	): ?array
 	{
 		$exact = $this->caseSensitive ? $writtenName : null;
@@ -133,7 +133,7 @@ final class FilterTable
 		string $writtenName,
 		?string $templateTypeClass,
 		?TemplateTypeCustoms $templateTypeCustoms,
-		?RenderTimeFilterSet $renderTime = null
+		?RenderTimeCallableSet $renderTime = null
 	): ?string
 	{
 		if (!$this->caseSensitive) {

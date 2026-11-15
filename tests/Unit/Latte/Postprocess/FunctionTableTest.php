@@ -87,7 +87,7 @@ final class FunctionTableTest extends BaseTestCase
 		);
 
 		self::assertSame(
-			[self::class, 'fixtureFunctionMethod', false, false, true],
+			[self::class, 'fixtureFunctionMethod', false, false, true, null],
 			$table->resolveForTemplate('myfunction', null, null, 'myFunction'),
 		);
 		self::assertNull($table->resolveForTemplate('myfunction', null, null, 'MyFunction'));
@@ -102,7 +102,7 @@ final class FunctionTableTest extends BaseTestCase
 		$customs = $this->templateTypeCustoms();
 
 		self::assertSame(
-			[ProcessParamsQualificationFixture::class, 'docFunction', false, true, false],
+			[ProcessParamsQualificationFixture::class, 'docFunction', false, true, false, null],
 			$table->resolveForTemplate(
 				'docfunction',
 				ProcessParamsQualificationFixture::class,
@@ -130,7 +130,7 @@ final class FunctionTableTest extends BaseTestCase
 		$table = self::table(self::harvestedWithFunction('myFunction', [self::class, 'fixtureFunctionMethod']));
 
 		self::assertSame(
-			[self::class, 'fixtureFunctionMethod', false, false, true],
+			[self::class, 'fixtureFunctionMethod', false, false, true, null],
 			$table->resolveForTemplate('myfunction', null, null, 'MYfunction'),
 		);
 		self::assertNull($table->registeredSpelling('MYfunction', null, null));
@@ -154,7 +154,10 @@ final class FunctionTableTest extends BaseTestCase
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame([ProcessParamsQualificationFixture::class, 'docFunction', false, true, false], $resolved);
+		self::assertSame(
+			[ProcessParamsQualificationFixture::class, 'docFunction', false, true, false, null],
+			$resolved,
+		);
 	}
 
 	public function testResolveForTemplateFallsBackToTheBaseTableWhenTheTemplateTypeClassHasNoMatchingFunction(): void
@@ -165,7 +168,7 @@ final class FunctionTableTest extends BaseTestCase
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame([self::filtersClass(), 'clamp', false, false, true], $resolved);
+		self::assertSame([self::filtersClass(), 'clamp', false, false, true, null], $resolved);
 	}
 
 	// See FilterTableTest's identical-in-spirit test - the same last-write-wins runtime precedence
@@ -181,7 +184,10 @@ final class FunctionTableTest extends BaseTestCase
 			$this->templateTypeCustoms(),
 		);
 
-		self::assertSame([ProcessParamsQualificationFixture::class, 'docFunction', false, true, false], $resolved);
+		self::assertSame(
+			[ProcessParamsQualificationFixture::class, 'docFunction', false, true, false, null],
+			$resolved,
+		);
 	}
 
 	private function templateTypeCustoms(): TemplateTypeCustoms

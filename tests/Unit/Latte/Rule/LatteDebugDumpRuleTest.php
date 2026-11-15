@@ -677,9 +677,11 @@ final class LatteDebugDumpRuleTest extends BaseTestCase
 			self::assertCount(1, $errors);
 			self::assertStringEndsWith(
 				"\nrender sites: (none)"
-				. "\nfilters: (open: a dynamic name or a filter loader)"
+				. "\nfilters: (open: filter loader @ {$file}:21)"
 				. "\nmail: static " . FilterHelpers::class . "::email (happens) @ {$file}:16"
-				. "\nshout: stub (maybe) @ {$file}:18",
+				. "\nshout: stub (maybe) @ {$file}:18"
+				. "\nfunctions:"
+				. "\nmoney: static " . FilterHelpers::class . "::email (happens) @ {$file}:22",
 				$errors[0]->getMessage(),
 			);
 		} finally {

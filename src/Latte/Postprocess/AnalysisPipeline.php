@@ -2,7 +2,7 @@
 
 namespace OriPhpstan\Nette\Latte\Postprocess;
 
-use OriPhpstan\Nette\Latte\Bridge\FilterFact;
+use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Compile\CompileResult;
 use OriPhpstan\Nette\Latte\Compile\Diagnostic;
 use OriPhpstan\Nette\Latte\Customs\CustomsHarvester;
@@ -11,7 +11,7 @@ use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Declarations\Declarations;
 use OriPhpstan\Nette\Latte\Includes\CapturedOverlay;
 use OriPhpstan\Nette\Latte\Includes\LatteUniverse;
-use OriPhpstan\Nette\Latte\Includes\RenderTimeFilters;
+use OriPhpstan\Nette\Latte\Includes\RenderTimeCustoms;
 use OriPhpstan\Nette\Latte\Includes\TemplateContext;
 use OriPhpstan\Nette\Latte\Includes\TemplateEdgeIndex;
 use OriPhpstan\Nette\Latte\Postprocess\Eliminator\AttrShellEliminator;
@@ -69,7 +69,7 @@ final class AnalysisPipeline
 
 	private bool $providerScanEnabled;
 
-	private ?RenderTimeFilters $renderTimeFilters;
+	private ?RenderTimeCustoms $renderTimeCustoms;
 
 	/** @var array<string, Closure|null> */
 	private array $stubs = [];
@@ -85,10 +85,10 @@ final class AnalysisPipeline
 		?TemplateTypeCustoms $templateTypeCustoms = null,
 		bool $includeIsolation = false,
 		bool $providerScanEnabled = true,
-		?RenderTimeFilters $renderTimeFilters = null
+		?RenderTimeCustoms $renderTimeCustoms = null
 	)
 	{
-		$this->renderTimeFilters = $renderTimeFilters;
+		$this->renderTimeCustoms = $renderTimeCustoms;
 		$this->phpParser = $phpParser;
 		$this->adapterAccessor = $adapterAccessor;
 		$this->templateTypeCustoms = $templateTypeCustoms;
@@ -232,34 +232,55 @@ final class AnalysisPipeline
 		return $this->functionTable;
 	}
 
-	private function renderTimeFilterSet(string $relativePath): RenderTimeFilterSet
+	/**
+	 * @return array{RenderTimeCallableSet, RenderTimeCallableSet}
+	 */
+	private function renderTimeSets(string $relativePath): array
 	{
-		if ($this->renderTimeFilters === null || $relativePath === '') {
-			return RenderTimeFilterSet::none();
+		if ($this->renderTimeCustoms === null || $relativePath === '') {
+			return [RenderTimeCallableSet::none(), RenderTimeCallableSet::none()];
 		}
 
+		$caseSensitive = $this->adapterAccessor->get()->family()->latteLine !== ShapeFamily::LATTE_2;
+
+		return [
+			new RenderTimeCallableSet(
+				$this->renderTimeEntries($this->renderTimeCustoms->filtersFor($relativePath)),
+				$this->renderTimeCustoms->openFilterSitesFor($relativePath),
+				$caseSensitive,
+			),
+			new RenderTimeCallableSet(
+				$this->renderTimeEntries($this->renderTimeCustoms->functionsFor($relativePath)),
+				$this->renderTimeCustoms->openFunctionSitesFor($relativePath),
+				$caseSensitive,
+			),
+		];
+	}
+
+	/**
+	 * @param array<string, CallableFact> $facts
+	 * @return array<string, array{string, string, bool, bool, Closure|null}>
+	 */
+	private function renderTimeEntries(array $facts): array
+	{
 		$entries = [];
-		foreach ($this->renderTimeFilters->filtersFor($relativePath) as $name => $fact) {
+		foreach ($facts as $name => $fact) {
 			$entries[$name] = $this->renderTimeEntry($fact);
 		}
 
-		return new RenderTimeFilterSet(
-			$entries,
-			$this->renderTimeFilters->isOpenFor($relativePath),
-			$this->adapterAccessor->get()->family()->latteLine !== ShapeFamily::LATTE_2,
-		);
+		return $entries;
 	}
 
 	/**
 	 * @return array{string, string, bool, bool, Closure|null}
 	 */
-	private function renderTimeEntry(FilterFact $fact): array
+	private function renderTimeEntry(CallableFact $fact): array
 	{
 		$untyped = [Helpers::class, 'untypedFilter', false, true, null];
 		$target = $fact->getTarget();
 		switch ($fact->getKind()) {
-			case FilterFact::KIND_STATIC:
-			case FilterFact::KIND_INSTANCE:
+			case CallableFact::KIND_STATIC:
+			case CallableFact::KIND_INSTANCE:
 				$pos = strpos($target, '::');
 				if ($pos === false) {
 					return $untyped;
@@ -269,12 +290,12 @@ final class AnalysisPipeline
 					substr($target, 0, $pos),
 					substr($target, $pos + 2),
 					$fact->isContentAware(),
-					$fact->getKind() === FilterFact::KIND_STATIC,
+					$fact->getKind() === CallableFact::KIND_STATIC,
 					null,
 				];
-			case FilterFact::KIND_FUNCTION:
+			case CallableFact::KIND_FUNCTION:
 				return ['', $target, $fact->isContentAware(), true, null];
-			case FilterFact::KIND_STUB:
+			case CallableFact::KIND_STUB:
 				$stub = $this->stub($target);
 
 				return $stub === null ? $untyped : ['', '', $fact->isContentAware(), true, $stub];
@@ -394,13 +415,15 @@ final class AnalysisPipeline
 		// below - never to an unrelated file that happens to declare the same {templateType}.
 		// FilterTable/FunctionTable hold the installed line's own stock filters and functions
 		// (LatteVersionAdapter::defaultCallables()).
+		[$renderTimeFilters, $renderTimeFunctions] = $this->renderTimeSets($relativePath);
 		$filterDiagnostics = (new FilterRewriter($family))->rewrite(
 			$processed,
 			$this->filterTable(),
 			$this->functionTable(),
 			$declarations->getTemplateTypeClass(),
 			$this->templateTypeCustoms,
-			$this->renderTimeFilterSet($relativePath),
+			$renderTimeFilters,
+			$renderTimeFunctions,
 		);
 		$this->lastDiagnostics = array_merge($compileDiagnostics, $injectorDiagnostics, $filterDiagnostics);
 

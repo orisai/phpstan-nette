@@ -18,7 +18,7 @@ use const SORT_STRING;
 
 /**
  * @phpstan-type MutationArrayShape array{kind: MutationFact::KIND_*, phase: MutationFact::PHASE_*, effectiveness: MutationFact::EFFECTIVE_*, line: int, argument: string|null}
- * @phpstan-type FactsArrayShape array{assignments: array<string, array{typeString: string, certainty: Certainty::*, sites: list<array{file: string, line: int}>}>, setFileTargets: list<array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, phase: MutationFact::PHASE_*, effectiveness: MutationFact::EFFECTIVE_*}>, templateClass: array{className: string, channel: TemplateClassFact::CHANNEL_*, certainty: Certainty::*, sites: list<int>}|null, renderSites: list<array{fileArgPresent: bool, literalPath: string|null, site: array{file: string, line: int}}>, readSet: list<string>, templateClassCandidates: list<array{className: string, channel: TemplateClassFact::CHANNEL_*, certainty: Certainty::*, sites: list<int>}>, views: array<string, array{name: string, certainty: Certainty::*, sites: list<array{file: string, line: int}>, sources: list<MutationArrayShape|string>}>, mutations: list<MutationArrayShape>, hasOpenViewSet: bool, discovery: DiscoveryShape|null, createTemplateControl: self::CONTROL_*|null, filters: array<string, array{name: string, kind: FilterFact::KIND_*, target: string, contentAware: bool, certainty: Certainty::*, sites: list<array{file: string, line: int}>}>, hasOpenFilterSet: bool}
+ * @phpstan-type FactsArrayShape array{assignments: array<string, array{typeString: string, certainty: Certainty::*, sites: list<array{file: string, line: int}>}>, setFileTargets: list<array{kind: SetFileFact::KIND_*, path: string|null, certainty: Certainty::*, site: array{file: string, line: int}, phase: MutationFact::PHASE_*, effectiveness: MutationFact::EFFECTIVE_*}>, templateClass: array{className: string, channel: TemplateClassFact::CHANNEL_*, certainty: Certainty::*, sites: list<int>}|null, renderSites: list<array{fileArgPresent: bool, literalPath: string|null, site: array{file: string, line: int}}>, readSet: list<string>, templateClassCandidates: list<array{className: string, channel: TemplateClassFact::CHANNEL_*, certainty: Certainty::*, sites: list<int>}>, views: array<string, array{name: string, certainty: Certainty::*, sites: list<array{file: string, line: int}>, sources: list<MutationArrayShape|string>}>, mutations: list<MutationArrayShape>, hasOpenViewSet: bool, discovery: DiscoveryShape|null, createTemplateControl: self::CONTROL_*|null, filters: array<string, array{name: string, kind: CallableFact::KIND_*, target: string, contentAware: bool, certainty: Certainty::*, sites: list<array{file: string, line: int}>}>, openFilterSites: list<array{file: string, line: int, reason: CallableFact::OPEN_*}>, functions: array<string, array{name: string, kind: CallableFact::KIND_*, target: string, contentAware: bool, certainty: Certainty::*, sites: list<array{file: string, line: int}>}>, openFunctionSites: list<array{file: string, line: int, reason: CallableFact::OPEN_*}>}
  * @phpstan-import-type DiscoveryShape from DiscoveryFact
  */
 final class PhpRenderFacts
@@ -71,10 +71,17 @@ final class PhpRenderFacts
 	/** @var self::CONTROL_*|null */
 	private ?string $createTemplateControl;
 
-	/** @var array<string, FilterFact> */
+	/** @var array<string, CallableFact> */
 	private array $filters;
 
-	private bool $hasOpenFilterSet;
+	/** @var list<array{file: string, line: int, reason: CallableFact::OPEN_*}> */
+	private array $openFilterSites;
+
+	/** @var array<string, CallableFact> */
+	private array $functions;
+
+	/** @var list<array{file: string, line: int, reason: CallableFact::OPEN_*}> */
+	private array $openFunctionSites;
 
 	/**
 	 * @param array<string, AssignmentFact> $assignments
@@ -85,7 +92,10 @@ final class PhpRenderFacts
 	 * @param array<string, ViewFact> $views
 	 * @param list<MutationFact> $mutations
 	 * @param self::CONTROL_*|null $createTemplateControl
-	 * @param array<string, FilterFact> $filters
+	 * @param array<string, CallableFact> $filters
+	 * @param list<array{file: string, line: int, reason: CallableFact::OPEN_*}> $openFilterSites
+	 * @param array<string, CallableFact> $functions
+	 * @param list<array{file: string, line: int, reason: CallableFact::OPEN_*}> $openFunctionSites
 	 */
 	public function __construct(
 		array $assignments,
@@ -100,7 +110,9 @@ final class PhpRenderFacts
 		?DiscoveryFact $discovery = null,
 		?string $createTemplateControl = null,
 		array $filters = [],
-		bool $hasOpenFilterSet = false
+		array $openFilterSites = [],
+		array $functions = [],
+		array $openFunctionSites = []
 	)
 	{
 		ksort($assignments, SORT_STRING);
@@ -130,7 +142,10 @@ final class PhpRenderFacts
 		$this->createTemplateControl = $createTemplateControl;
 		ksort($filters, SORT_STRING);
 		$this->filters = $filters;
-		$this->hasOpenFilterSet = $hasOpenFilterSet;
+		$this->openFilterSites = $openFilterSites;
+		ksort($functions, SORT_STRING);
+		$this->functions = $functions;
+		$this->openFunctionSites = $openFunctionSites;
 	}
 
 	public static function empty(): self
@@ -177,7 +192,12 @@ final class PhpRenderFacts
 
 		$filters = [];
 		foreach ($data['filters'] as $fact) {
-			$filters[$fact['name']] = FilterFact::fromArray($fact);
+			$filters[$fact['name']] = CallableFact::fromArray($fact);
+		}
+
+		$functions = [];
+		foreach ($data['functions'] as $fact) {
+			$functions[$fact['name']] = CallableFact::fromArray($fact);
 		}
 
 		return new self(
@@ -193,7 +213,9 @@ final class PhpRenderFacts
 			$data['discovery'] === null ? null : DiscoveryFact::fromArray($data['discovery']),
 			$data['createTemplateControl'],
 			$filters,
-			$data['hasOpenFilterSet'],
+			$data['openFilterSites'],
+			$functions,
+			$data['openFunctionSites'],
 		);
 	}
 
@@ -277,7 +299,7 @@ final class PhpRenderFacts
 	}
 
 	/**
-	 * @return array<string, FilterFact>
+	 * @return array<string, CallableFact>
 	 */
 	public function getFilters(): array
 	{
@@ -286,7 +308,31 @@ final class PhpRenderFacts
 
 	public function hasOpenFilterSet(): bool
 	{
-		return $this->hasOpenFilterSet;
+		return $this->openFilterSites !== [];
+	}
+
+	/**
+	 * @return list<array{file: string, line: int, reason: CallableFact::OPEN_*}>
+	 */
+	public function getOpenFilterSites(): array
+	{
+		return $this->openFilterSites;
+	}
+
+	/**
+	 * @return array<string, CallableFact>
+	 */
+	public function getFunctions(): array
+	{
+		return $this->functions;
+	}
+
+	/**
+	 * @return list<array{file: string, line: int, reason: CallableFact::OPEN_*}>
+	 */
+	public function getOpenFunctionSites(): array
+	{
+		return $this->openFunctionSites;
 	}
 
 	public function getCanonicalHash(): string
@@ -327,8 +373,10 @@ final class PhpRenderFacts
 			'hasOpenViewSet' => $this->hasOpenViewSet,
 			'discovery' => $this->discovery === null ? null : $this->discovery->toArray(),
 			'createTemplateControl' => $this->createTemplateControl,
-			'filters' => array_map(static fn (FilterFact $fact): array => $fact->toArray(), $this->filters),
-			'hasOpenFilterSet' => $this->hasOpenFilterSet,
+			'filters' => array_map(static fn (CallableFact $fact): array => $fact->toArray(), $this->filters),
+			'openFilterSites' => $this->openFilterSites,
+			'functions' => array_map(static fn (CallableFact $fact): array => $fact->toArray(), $this->functions),
+			'openFunctionSites' => $this->openFunctionSites,
 		];
 	}
 

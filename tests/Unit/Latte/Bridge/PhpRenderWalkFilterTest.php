@@ -3,6 +3,7 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Bridge;
 
 use OriPhpstan\Nette\Forms\Shape\Certainty;
+use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\DiscoveryResolver;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderFacts;
 use OriPhpstan\Nette\Latte\Bridge\PhpRenderWalk;
@@ -16,6 +17,7 @@ use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FilterBasePres
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FilterHelpers;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FilterPresenter;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FirstClassCallableControl;
+use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\FunctionControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\LoaderFilterControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\OpenFilterControl;
 use Tests\OriPhpstan\Nette\Unit\Latte\Bridge\Fixtures\App\Filters\RenderFileControl;
@@ -130,6 +132,32 @@ final class PhpRenderWalkFilterTest extends PHPStanTestCase
 		self::assertSame([], $facts->getSetFileTargets());
 		self::assertSame(['count', 'title'], array_keys($facts->getAssignments()));
 		self::assertCount(2, $facts->getRenderSites());
+	}
+
+	public function testFunctionsAreRecordedLikeFilters(): void
+	{
+		$facts = $this->walk()->factsFor(FunctionControl::class);
+
+		$functions = [];
+		foreach ($facts->getFunctions() as $name => $function) {
+			$functions[$name] = [$function->getKind(), $function->getTarget()];
+		}
+
+		self::assertSame(
+			[
+				'money' => ['static', self::Helpers . '::email'],
+				'twice' => ['stub', 'static function (int $i): int { /** @var int $ʟ_filterResult */ $ʟ_filterResult = \OriPhpstan\Nette\Latte\Runtime\Helpers::untypedFilter(); return $ʟ_filterResult; }'],
+			],
+			$functions,
+		);
+		self::assertSame([], $facts->getFilters());
+		self::assertSame([], $facts->getOpenFilterSites());
+		self::assertSame(
+			[['file' => self::fileOf(
+				FunctionControl::class,
+			), 'line' => 19, 'reason' => CallableFact::OPEN_DYNAMIC_NAME]],
+			$facts->getOpenFunctionSites(),
+		);
 	}
 
 	public function testFiltersSurviveTheArrayRoundTrip(): void

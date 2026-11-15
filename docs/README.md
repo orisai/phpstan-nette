@@ -29,7 +29,7 @@ PHPStan understands Nette DI containers, Nette Forms, Latte templates and how th
 	- [Forms annotations](#forms-annotations)
 	- [Forms catalogs](#forms-catalogs)
 	- [Latte engine loader](#latte-engine-loader)
-	- [Latte render-time filters](#latte-render-time-filters)
+	- [Latte render-time filters and functions](#latte-render-time-filters-and-functions)
 	- [Latte template customs](#latte-template-customs)
 	- [Latte discovery formulas](#latte-discovery-formulas)
 	- [Bridges extension points](#bridges-extension-points)
@@ -810,7 +810,7 @@ parameters:
 ```
 
 With neither, only Latte's built-in filters, functions and macros are known. Filters your presenters and
-controls add before rendering are read from their code ([render-time filters](#latte-render-time-filters)).
+controls add before rendering are read from their code ([render-time filters and functions](#latte-render-time-filters-and-functions)).
 
 On Latte 3, everything the engine's extensions register is read: their tags (including the `n:` attributes Latte
 derives from a paired tag), filters, functions and providers, plus the functions added with `addFunction()` and the
@@ -831,11 +831,12 @@ every PHP file in its class's directory and below, so editing one of its node cl
 your extensions in a directory of their own — an extension in the project root directory is identified by the files of
 that directory only. A directory which cannot be read is reported (`orisai.nette.latte.customsHarvest`) and left out.
 
-### Latte render-time filters
+### Latte render-time filters and functions
 
-With [discovery](#latte-discovery-formulas) on (`orisai.nette.latte.discovery.enabled`), a filter a presenter or
-control registers on its template before rendering is known in the templates it renders — and in everything those
-include, import, embed or use as a layout, since they render with the same engine:
+With [discovery](#latte-discovery-formulas) on (`orisai.nette.latte.discovery.enabled`), a filter or a function a
+presenter or control registers on its template before rendering (`addFilter()`, `addFunction()`) is known in the
+templates it renders — and in everything those include, import, embed or use as a layout, since they render with the
+same engine:
 
 ```php
 protected function createTemplate(): Template
@@ -850,6 +851,7 @@ protected function createTemplate(): Template
 protected function beforeRender(): void
 {
 	$this->template->addFilter('visibleForRole', fn (?string $role): string => (string) $role);
+	$this->template->addFunction('money', [Money::class, 'format']);
 }
 ```
 
@@ -868,8 +870,8 @@ calls and in its traits, on `$this->template`, `$this->getTemplate()`, a local h
 - A filter registered with a dynamic name (`addFilter($name, …)`) or a filter loader added on the template's engine
   (`addFilterLoader()`) can be any name, so unknown filters are not reported in the templates that renderer reaches;
   they are untyped there.
-- A registered filter replaces a filter of the same name from your engine or Latte, as at runtime; a filter of the
-  template's `{templateType}` class replaces both.
+- A registered filter or function replaces one of the same name from your engine, Latte or PHP, as at runtime; one of
+  the template's `{templateType}` class replaces both.
 - Editing the registration, or the file declaring the callable, analyses the affected templates again.
 
 ### Latte template customs
@@ -1111,7 +1113,7 @@ template's lines. PHPStan's own rules (`variable.undefined`, `method.notFound`, 
 - `{include}`, `{extends}`, `{layout}`, `{import}` and `{embed}` pass types between templates, checked against what the
   target declares
 - filters and functions are checked against their real signatures, including your own
-  ([engine loader](#latte-engine-loader), [render-time filters](#latte-render-time-filters),
+  ([engine loader](#latte-engine-loader), [render-time filters and functions](#latte-render-time-filters-and-functions),
   [template customs](#latte-template-customs))
 - the template factory's variables (`$user`, `$baseUrl`, `$basePath`, `$flashes`) are provided where the factory
   provides them, and so are a presenter's `#[TemplateVariable]` properties (nette/application 3.2)
@@ -1173,12 +1175,15 @@ off; both delegate to PHPStan's own services for everything but `.latte` files.
 
 - The `slice` filter keeps value types, but keys widen to `int|string`.
 - `{default $x = …}` is analysed as `$x ??= …`; at runtime an existing `null` variable keeps `null`.
-- [Render-time filters](#latte-render-time-filters) need discovery. A filter is not seen when it is registered on an
-  engine not obtained from the template (a `Latte\Engine` your code creates), inside a closure or a `try` block, by
-  a renderer whose engine renders the file itself (`$latte->render($file)`), or with `addFunction()` (render-time
-  functions stay unknown). A renderer's filters count in every template it reaches, also where another renderer of the
-  same template registers none, and whether the registration runs before the render is not checked. Closures are
-  typed by their native types only; their PHPDoc types are not read.
+- [Render-time filters and functions](#latte-render-time-filters-and-functions) need discovery. A registration is not
+  seen on an engine not obtained from the template (a `Latte\Engine` your code creates), inside a closure or a `try`
+  block, or for a file the engine renders itself (`$latte->render($file)`).
+- Registration order is not checked: a filter or function a renderer registers anywhere counts in every template that
+  renderer reaches, also on a path where the registration has not run — registered after the render call, or in
+  another action, signal or branch than the one rendering — and also where another renderer of the same template
+  registers none.
+- Render-time closures are typed by their native types only; their PHPDoc types are not read. A function whose first
+  parameter takes the template (`Latte\Runtime\Template`, which Latte 3 passes in) is checked as if it did not.
 - A template property declared with a supertype of the factory's template class gets no factory variables.
 - In the `@var` of a `{templateType}` class's property, type aliases (`@phpstan-type`, `@phpstan-import-type`) are not
   resolved and only the tag's first line is read; a `@template` parameter of the class is what the template class's

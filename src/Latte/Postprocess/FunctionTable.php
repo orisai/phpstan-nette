@@ -8,6 +8,7 @@ use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
+use PhpParser\Node\Expr\Closure as ClosureExpr;
 use Throwable;
 use function array_key_first;
 use function ksort;
@@ -70,35 +71,42 @@ final class FunctionTable
 	// per-template FUNCTION entries.
 
 	/**
-	 * @return array{string, string, bool, bool, bool}|null
+	 * @return array{string, string, bool, bool, bool, ClosureExpr|null}|null
 	 */
 	public function resolveForTemplate(
 		string $lowerName,
 		?string $templateTypeClass,
 		?TemplateTypeCustoms $templateTypeCustoms,
-		?string $writtenName = null
+		?string $writtenName = null,
+		?RenderTimeCallableSet $renderTime = null
 	): ?array
 	{
 		$exact = $this->caseSensitive ? $writtenName : null;
 		if ($templateTypeClass !== null && $templateTypeCustoms !== null) {
 			$scoped = $templateTypeCustoms->functionsFor($templateTypeClass)[$lowerName] ?? null;
 			if ($scoped !== null && ($exact === null || $scoped[1] === $exact)) {
-				return [$scoped[0], $scoped[1], $scoped[2], true, $scoped[3]];
+				return [$scoped[0], $scoped[1], $scoped[2], true, $scoped[3], null];
 			}
+		}
+
+		$registered = $renderTime !== null ? $renderTime->resolve($writtenName ?? $lowerName) : null;
+		if ($registered !== null) {
+			return [$registered[0], $registered[1], false, false, $registered[3], $registered[4]];
 		}
 
 		$base = $this->resolve($lowerName);
 
 		return $base === null || ($exact !== null && !isset($this->spellings[$lowerName][$exact]))
 			? null
-			: [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName])];
+			: [$base[0], $base[1], $base[2], false, !isset($this->instanceDispatch[$lowerName]), null];
 	}
 
 	// See FilterTable::registeredSpelling().
 	public function registeredSpelling(
 		string $writtenName,
 		?string $templateTypeClass,
-		?TemplateTypeCustoms $templateTypeCustoms
+		?TemplateTypeCustoms $templateTypeCustoms,
+		?RenderTimeCallableSet $renderTime = null
 	): ?string
 	{
 		if (!$this->caseSensitive) {
@@ -111,6 +119,11 @@ final class FunctionTable
 			if ($scoped !== null && $scoped[1] !== $writtenName) {
 				return $scoped[1];
 			}
+		}
+
+		$registered = $renderTime !== null ? $renderTime->registeredSpelling($writtenName) : null;
+		if ($registered !== null) {
+			return $registered;
 		}
 
 		$spellings = $this->spellings[$lowerName] ?? [];

@@ -19,6 +19,7 @@ final class DumpedFilterControl extends Control
 		}
 
 		$this->template->getLatte()->addFilterLoader(static fn (string $name): ?callable => null);
+		$this->template->getLatte()->addFunction('money', [FilterHelpers::class, 'email']);
 	}
 
 }

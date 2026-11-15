@@ -84,7 +84,9 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 	private ?TemplateTypeCustoms $templateTypeCustoms = null;
 
-	private ?RenderTimeFilterSet $renderTimeFilters = null;
+	private ?RenderTimeCallableSet $renderTimeFilters = null;
+
+	private ?RenderTimeCallableSet $renderTimeFunctions = null;
 
 	/** @var array<Diagnostic> */
 	private array $diagnostics = [];
@@ -104,7 +106,8 @@ final class FilterRewriter extends NodeVisitorAbstract
 		FunctionTable $functionTable,
 		?string $templateTypeClass = null,
 		?TemplateTypeCustoms $templateTypeCustoms = null,
-		?RenderTimeFilterSet $renderTimeFilters = null
+		?RenderTimeCallableSet $renderTimeFilters = null,
+		?RenderTimeCallableSet $renderTimeFunctions = null
 	): array
 	{
 		$this->filterTable = $filterTable;
@@ -112,6 +115,7 @@ final class FilterRewriter extends NodeVisitorAbstract
 		$this->templateTypeClass = $templateTypeClass;
 		$this->templateTypeCustoms = $templateTypeCustoms;
 		$this->renderTimeFilters = $renderTimeFilters;
+		$this->renderTimeFunctions = $renderTimeFunctions;
 		$this->diagnostics = [];
 
 		$traverser = new NodeTraverser();
@@ -179,11 +183,13 @@ final class FilterRewriter extends NodeVisitorAbstract
 						$this->templateTypeClass,
 						$this->templateTypeCustoms,
 						$literalName,
+						$this->renderTimeFunctions,
 					) !== null
 					|| $this->functionTable->registeredSpelling(
 						$literalName,
 						$this->templateTypeClass,
 						$this->templateTypeCustoms,
+						$this->renderTimeFunctions,
 					) !== null
 				);
 
@@ -405,15 +411,16 @@ final class FilterRewriter extends NodeVisitorAbstract
 				: null;
 			$stub = $resolved !== null ? $resolved[5] : null;
 		} else {
-			$stub = null;
 			$resolved = $this->functionTable !== null
 				? $this->functionTable->resolveForTemplate(
 					strtolower($name),
 					$this->templateTypeClass,
 					$this->templateTypeCustoms,
 					$name,
+					$this->renderTimeFunctions,
 				)
 				: null;
+			$stub = $resolved !== null ? $resolved[5] : null;
 		}
 
 		// Every replacement node below is newly constructed (never a startLine/endLine attribute
@@ -446,7 +453,10 @@ final class FilterRewriter extends NodeVisitorAbstract
 
 		if ($stub !== null) {
 			$call = new FuncCall(self::stubAt($stub, $line), $finalArgs, $attributes);
-			$call->setAttribute(self::FILTER_PROVENANCE_ATTRIBUTE, $name);
+			$call->setAttribute(
+				$kind === 'filter' ? self::FILTER_PROVENANCE_ATTRIBUTE : self::FUNCTION_NO_TIP_ATTRIBUTE,
+				$kind === 'filter' ? $name : true,
+			);
 
 			return $call;
 		}
@@ -482,7 +492,12 @@ final class FilterRewriter extends NodeVisitorAbstract
 				: null;
 		} else {
 			$spelling = $this->functionTable !== null
-				? $this->functionTable->registeredSpelling($name, $this->templateTypeClass, $this->templateTypeCustoms)
+				? $this->functionTable->registeredSpelling(
+					$name,
+					$this->templateTypeClass,
+					$this->templateTypeCustoms,
+					$this->renderTimeFunctions,
+				)
 				: null;
 		}
 

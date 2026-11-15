@@ -3,8 +3,8 @@
 namespace OriPhpstan\Nette\Latte\Rule;
 
 use OriPhpstan\Nette\Configuration\ConfigurationGuard;
+use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Bridge\Discovery\CandidatePath;
-use OriPhpstan\Nette\Latte\Bridge\FilterFact;
 use OriPhpstan\Nette\Latte\Bridge\MutationFact;
 use OriPhpstan\Nette\Latte\Bridge\Pairing\PairingJudge;
 use OriPhpstan\Nette\Latte\Bridge\Pairing\PairingOpaque;
@@ -35,6 +35,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\VerbosityLevel;
 use function array_keys;
 use function array_map;
+use function array_merge;
 use function count;
 use function implode;
 use function is_string;
@@ -391,22 +392,47 @@ final class LatteDebugDumpRule implements Rule
 			}
 		}
 
-		if ($facts->getFilters() !== [] || $facts->hasOpenFilterSet()) {
-			$lines[] = 'filters:' . ($facts->hasOpenFilterSet() ? ' (open: a dynamic name or a filter loader)' : '');
-			foreach ($facts->getFilters() as $filter) {
-				$lines[] = sprintf(
-					'%s: %s (%s) @ %s',
-					$filter->getName(),
-					$filter->getKind() === FilterFact::KIND_STUB || $filter->getTarget() === ''
-						? $filter->getKind()
-						: $filter->getKind() . ' ' . $filter->getTarget(),
-					$filter->getCertainty(),
-					$this->describeSites($filter->getSites()),
-				);
-			}
-		}
+		$lines = array_merge(
+			$lines,
+			$this->describeCallables('filters', $facts->getFilters(), $facts->getOpenFilterSites()),
+			$this->describeCallables('functions', $facts->getFunctions(), $facts->getOpenFunctionSites()),
+		);
 
 		return $this->error(implode("\n", $lines), $node);
+	}
+
+	/**
+	 * @param array<string, CallableFact> $callables
+	 * @param list<array{file: string, line: int, reason: CallableFact::OPEN_*}> $openSites
+	 * @return list<string>
+	 */
+	private function describeCallables(string $heading, array $callables, array $openSites): array
+	{
+		if ($callables === [] && $openSites === []) {
+			return [];
+		}
+
+		$open = [];
+		foreach ($openSites as $site) {
+			$open[] = $site['reason'] . ' @ ' . $this->describeSites(
+				[['file' => $site['file'], 'line' => $site['line']]],
+			);
+		}
+
+		$lines = [$heading . ':' . ($open === [] ? '' : ' (open: ' . implode(', ', $open) . ')')];
+		foreach ($callables as $callable) {
+			$lines[] = sprintf(
+				'%s: %s (%s) @ %s',
+				$callable->getName(),
+				$callable->getKind() === CallableFact::KIND_STUB || $callable->getTarget() === ''
+					? $callable->getKind()
+					: $callable->getKind() . ' ' . $callable->getTarget(),
+				$callable->getCertainty(),
+				$this->describeSites($callable->getSites()),
+			);
+		}
+
+		return $lines;
 	}
 
 	private function dumpPairing(FuncCall $node, DependencyTracker $scope): IdentifierRuleError

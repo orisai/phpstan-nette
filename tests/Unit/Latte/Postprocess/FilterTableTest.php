@@ -3,11 +3,12 @@
 namespace Tests\OriPhpstan\Nette\Unit\Latte\Postprocess;
 
 use Closure;
+use OriPhpstan\Nette\Latte\Bridge\CallableFact;
 use OriPhpstan\Nette\Latte\Customs\FilterLoaderProbe;
 use OriPhpstan\Nette\Latte\Customs\HarvestedCustoms;
 use OriPhpstan\Nette\Latte\Customs\TemplateTypeCustoms;
 use OriPhpstan\Nette\Latte\Postprocess\FilterTable;
-use OriPhpstan\Nette\Latte\Postprocess\RenderTimeFilterSet;
+use OriPhpstan\Nette\Latte\Postprocess\RenderTimeCallableSet;
 use OriPhpstan\Nette\Latte\Runtime\Helpers;
 use OriPhpstan\Nette\Latte\Version\DefaultCallables;
 use PHPStan\Parser\Parser;
@@ -336,9 +337,9 @@ final class FilterTableTest extends BaseTestCase
 
 	public function testRenderTimeFilterReplacesTheEnginesOwnOfThatName(): void
 	{
-		$renderTime = new RenderTimeFilterSet(
+		$renderTime = new RenderTimeCallableSet(
 			['upper' => [self::class, 'fixtureFilterMethod', false, true, null]],
-			false,
+			[],
 			false,
 		);
 
@@ -348,15 +349,15 @@ final class FilterTableTest extends BaseTestCase
 		);
 		self::assertSame(
 			[self::filtersClass(), 'upper', false, false, true, null],
-			self::table()->resolveForTemplate('upper', null, null, 'upper', RenderTimeFilterSet::none()),
+			self::table()->resolveForTemplate('upper', null, null, 'upper', RenderTimeCallableSet::none()),
 		);
 	}
 
 	public function testTemplateTypeFilterWinsOverARenderTimeOne(): void
 	{
-		$renderTime = new RenderTimeFilterSet(
+		$renderTime = new RenderTimeCallableSet(
 			['docFilter' => [self::class, 'fixtureFilterMethod', false, true, null]],
-			false,
+			[],
 			false,
 		);
 
@@ -375,8 +376,8 @@ final class FilterTableTest extends BaseTestCase
 	public function testRenderTimeNamesFollowTheLinesCaseRule(): void
 	{
 		$entry = [self::class, 'fixtureFilterMethod', false, true, null];
-		$insensitive = new RenderTimeFilterSet(['formatDescription' => $entry], false, false);
-		$sensitive = new RenderTimeFilterSet(['formatDescription' => $entry], false, true);
+		$insensitive = new RenderTimeCallableSet(['formatDescription' => $entry], [], false);
+		$sensitive = new RenderTimeCallableSet(['formatDescription' => $entry], [], true);
 		$table = new FilterTable(self::defaults(), null, true);
 
 		self::assertNotNull(
@@ -394,12 +395,12 @@ final class FilterTableTest extends BaseTestCase
 
 	public function testLatte2SpellingsOfOneNameWithDifferentCallablesAreUntyped(): void
 	{
-		$renderTime = new RenderTimeFilterSet(
+		$renderTime = new RenderTimeCallableSet(
 			[
 				'fmt' => [self::class, 'fixtureFilterMethod', false, true, null],
 				'Fmt' => ['', 'strtoupper', false, true, null],
 			],
-			false,
+			[],
 			false,
 		);
 
@@ -411,7 +412,11 @@ final class FilterTableTest extends BaseTestCase
 
 	public function testOpenRenderTimeSetKnowsEveryNameUntyped(): void
 	{
-		$open = new RenderTimeFilterSet([], true, false);
+		$open = new RenderTimeCallableSet(
+			[],
+			[['class' => 'DynamicControl', 'file' => '/app/DynamicControl.php', 'line' => 12, 'reason' => CallableFact::OPEN_DYNAMIC_NAME]],
+			false,
+		);
 
 		self::assertSame(
 			[Helpers::class, 'untypedFilter', false, false, true, null],
@@ -423,7 +428,7 @@ final class FilterTableTest extends BaseTestCase
 				null,
 				null,
 				'definitelyNotAFilter',
-				RenderTimeFilterSet::none(),
+				RenderTimeCallableSet::none(),
 			),
 		);
 	}
